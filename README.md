@@ -1,0 +1,44 @@
+# FitnessCoach
+
+A web app that turns a short quiz into a gym plan the user can trust, with an AI coach that explains each exercise and answers questions when a movement feels wrong.
+
+Team project for ECE1724 Advanced Web Development, University of Toronto, Fall 2026.
+
+**Status:** idea agreed 12 October; proposal drafting; architecture and plan drafts in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/PLAN.md](docs/PLAN.md). Proposal due Sunday 8 November.
+
+## Team
+
+Mohammad Harun, Farnaz Moayyedian, Nabeegh Khan, Sharum.
+
+## Stack
+
+| Layer | Choice |
+|---|---|
+| App | Next.js App Router, TypeScript (Server Components, Server Actions, route handlers) |
+| UI | Tailwind CSS, shadcn/ui, mobile-first |
+| Data | PostgreSQL with Prisma |
+| Files | DigitalOcean Spaces, private bucket |
+| Auth | Better Auth |
+| AI | Gemini API, Groq as fallback |
+| Payments | Stripe in test mode |
+
+## Repository layout
+
+```
+src/app/          pages and route handlers
+src/components/   UI components
+src/lib/          auth, database client, AI client, storage client
+prisma/           schema and migrations
+docs/             architecture, plan, meetings
+```
+
+Lands with the skeleton; until then only `docs/` exists.
+
+## How we work
+
+- One Issue per task, assigned to whoever takes it.
+- Code: one branch per Issue (`feature/`, `fix/`), a pull request with `Closes #<n>`, one teammate review, squash and merge.
+- Documentation goes straight to `main`.
+- Commits: `<type>(<scope>): <summary>`, imperative, under 50 characters (`feat`, `fix`, `docs`, `chore`, `ci`).
+- Everyone commits their own work; the course reads contribution from the Git history.
+- Meeting notes in `docs/meetings/` the same day. AI use logged in `ai-session.md`.
