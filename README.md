@@ -41,6 +41,8 @@ Lands with the skeleton; until then only `docs/` exists.
 
 ## How we work
 
+- Tasks live on the [project board](https://github.com/users/nabeegh-khan/projects/3): Backlog, Ready, In progress, In review, Done.
+
 - One Issue per task, assigned to whoever takes it.
 - Code: one branch per Issue (`feature/`, `fix/`), a pull request with `Closes #<n>`, one teammate review, squash and merge.
 - Documentation goes straight to `main`.
