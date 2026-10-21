@@ -8,7 +8,12 @@ Team project for ECE1724 Advanced Web Development, University of Toronto, Fall 2
 
 ## Team
 
-Mohammad Harun, Farnaz Moayyedian, Nabeegh Khan, Sharum.
+| Name | Student number | Email | GitHub |
+|---|---|---|---|
+| Mohammad Harun | 1005235844 | mohammad.harun@mail.utoronto.ca | [@harunm1](https://github.com/harunm1) |
+| Farnaz Moayyedian | 1003849954 | farnaz.moayyedian@mail.utoronto.ca | [@farnazmn](https://github.com/farnazmn) |
+| Shubham Panchal | 1012431067 | s.panchal@mail.utoronto.ca | [@shubham2110-lab](https://github.com/shubham2110-lab) |
+| Nabeegh Khan | 1001388152 | nabeegh.khan@mail.utoronto.ca | [@nabeegh-khan](https://github.com/nabeegh-khan) |
 
 ## Stack
 
