@@ -39,8 +39,14 @@ None is documented as asking follow-up questions about where a movement is felt.
 
 The AI SDK is on v7 and retries a failed call twice by default ([codercops](https://blog.codercops.com/blog/vercel-ai-sdk-2026)); confirm a Groq provider package when installing.
 
+## Exercise data
+
+[free-exercise-db](https://github.com/yuhonas/free-exercise-db): 800+ exercises as JSON with primary and secondary muscles, equipment, level, step-by-step instructions and images, under the Unlicense (public domain). It can seed the exercise library directly and drive the body map from its muscle names.
+
+Hevy's API needs a Hevy Pro subscription and a personal API key tied to one account, so it suits syncing one user's own workouts, not supplying our app's exercise data ([Serval docs](https://docs.serval.com/sections/integrations/hevy)).
+
 ## For the next meeting
 
 - Groq first, or Gemini?
-- Gym only, or home workouts too?
-- Who writes the exercise library and its cues?
+- Scope: gym only, or gym and running? Running plans are distance and pace progressions built by rules, so they reuse the plan, logging and verifier with little new code. Pilates has no open dataset and would need its library written by hand.
+- Who imports free-exercise-db and adds form cues for the exercises the coach uses most?

@@ -1,6 +1,6 @@
 # Plan (draft)
 
-Draft for proposal section 3. Owners are filled in once each person agrees; open items are for the Tuesday 27 October meeting.
+Draft for proposal section 3. One proposal section per person. Owners are filled in once each person agrees at the next meeting.
 
 ## Dates
 
@@ -18,7 +18,7 @@ Draft for proposal section 3. Owners are filled in once each person agrees; open
 |---|---|---|
 | 1. Motivation | 20% | open (similar apps and sources are in [RESEARCH.md](RESEARCH.md#1-motivation)) |
 | 2. Objectives, architecture, features | 50% | Nabeegh |
-| 3. Plan and responsibilities | 15% | Nabeegh |
+| 3. Plan and responsibilities | 15% | open (draft in this file) |
 | 4. Initial reasoning and AI exploration | 15% | open |
 
 ## Build areas
