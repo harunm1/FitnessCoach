@@ -34,7 +34,7 @@ src/app/          pages and route handlers
 src/components/   UI components
 src/lib/          auth, database client, AI client, storage client
 prisma/           schema and migrations
-docs/             architecture, plan, meetings
+docs/             architecture, plan, research
 ```
 
 Lands with the skeleton; until then only `docs/` exists.
@@ -48,4 +48,4 @@ Lands with the skeleton; until then only `docs/` exists.
 - Documentation goes straight to `main`.
 - Commits: `<type>(<scope>): <summary>`, imperative, under 50 characters (`feat`, `fix`, `docs`, `chore`, `ci`).
 - Everyone commits their own work; the course reads contribution from the Git history.
-- Meeting notes in `docs/meetings/` the same day. AI use logged in `ai-session.md`.
+- Decisions go in the decisions table in `docs/ARCHITECTURE.md` and in the issue they settle. AI use logged in `ai-session.md`.
