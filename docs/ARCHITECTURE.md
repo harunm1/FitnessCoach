@@ -41,26 +41,23 @@ A plan that fails is regenerated once, then the user gets a rule-based default p
 
 **Form feedback questions are bounded:** where it is felt, at which point in the rep, the weight against usual. The answers pick a fix from the exercise's library entry (cues, common mistakes), so the advice traces to text we wrote.
 
-**One model call per message, not multi-agent.** The checking is done by the verifier, so a second agent adds tokens and delay without catching more. Multi-agent systems use 3 to 10 times the tokens of one agent ([Anthropic](https://www.claude.com/blog/building-multi-agent-systems-when-and-how-to-use-them)).
-
 **Text, not voice.** Voice adds speech-to-text, text-to-speech, microphone permissions and latency, and is not one of the course's advanced features. Streamed text replies are.
 
 ## Decisions
 
 | | Choice | Why | Cost |
 |---|---|---|---|
-| D1 | Next.js App Router (option A) | Nothing outside the app calls the backend, so no public REST API is needed. Server Components load data on the server; Server Actions are typed form handlers with CSRF protection; route handlers cover the Stripe webhook and streamed coach replies | Tied to Next.js; a mobile app later needs an API |
+| D1 | Next.js App Router (option A) ([research](RESEARCH.md#2-architecture)) | Nothing outside the app calls the backend, so no public REST API is needed. Server Components load data on the server; Server Actions are typed form handlers with CSRF protection; route handlers cover the Stripe webhook and streamed coach replies | Tied to Next.js; a mobile app later needs an API |
 | D2 | PostgreSQL with Prisma | Relational data: user to plan to exercises to logged sets; typed queries and committed migrations | Complex reports may need raw SQL |
 | D3 | Private Spaces bucket, key in the database | Photos are personal; short-lived signed URLs for upload and view | A server round trip per photo |
-| D4 | Groq first, Gemini as fallback | Groq's free tier needs no card and allows about 1,000 requests a day on its larger models ([eesel](https://eesel.ai/blog/groq-pricing)). Gemini's free tier is Flash-only with reported limits near 20 requests a day, and free-tier prompts can be used to improve Google's products ([agentdeals](https://agentdeals.dev/gemini-api-pricing-changes)) | Two providers behind one function; prompts tested on both |
+| D4 | Groq first, Gemini as fallback ([research](RESEARCH.md#2-architecture)) | More free requests a day than Gemini, no card, and Gemini's free tier may use prompts to improve Google's products | Two providers behind one function; prompts tested on both |
 | D5 | Deploy to a hosted platform for the demo | A live URL is shown in the presentation and README; it tests env vars, secrets and storage the way users meet them | Hosted database and setup time; free-tier limits. Running locally is the fallback |
 
 ## Advanced features
 
 Promised: authentication with four access tiers checked on the server; external APIs (the coach).
-Planned: real-time (streamed replies, notifications), photo processing (resize, strip location, then-vs-now image), Redux Toolkit for the quiz, body map and workout session, Stripe test mode.
+Planned ([shortcuts](RESEARCH.md#3-plan-shortcuts-for-the-advanced-features)): real-time (streamed replies, notifications), photo processing (resize, strip location, then-vs-now image), Redux Toolkit for the quiz, body map and workout session, Stripe test mode.
 
 ## Open
 
-- Gym only, or home workouts too?
-- Who writes the exercise library and its cues (about 40 exercises)?
+Listed in [RESEARCH.md](RESEARCH.md#for-the-next-meeting) for the next meeting.
