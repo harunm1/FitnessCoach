@@ -1,28 +1,23 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+// ESLint flat config for Next.js 16 (eslint-config-next is native flat config from v16,
+// so the FlatCompat wrapper we had on 15 is gone). Shape follows the Next.js ESLint
+// docs, "With Prettier": Prettier's config goes after the Next.js rules so it can switch
+// off any formatting rule they turn on; Prettier itself owns formatting.
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+import prettier from "eslint-config-prettier/flat";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
-const eslintConfig = [
-  // "prettier" goes last so it can switch off any formatting rule the Next.js configs turn on
-  // (Next.js ESLint docs, "With Prettier").
-  ...compat.extends("next/core-web-vitals", "next/typescript", "prettier"),
-  {
-    ignores: [
-      "node_modules/**",
-      ".next/**",
-      "out/**",
-      "build/**",
-      "next-env.d.ts",
-      "src/generated/**",
-    ],
-  },
-];
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  prettier,
+  globalIgnores([
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+    "src/generated/**", // Prisma Client, regenerated on install
+  ]),
+]);
 
 export default eslintConfig;
