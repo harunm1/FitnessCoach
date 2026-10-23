@@ -1,0 +1,8 @@
+# Generated or vendored files; Prettier should never rewrite these.
+node_modules
+.next
+out
+build
+coverage
+package-lock.json
+next-env.d.ts
