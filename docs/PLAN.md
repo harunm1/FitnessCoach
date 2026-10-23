@@ -1,42 +1,51 @@
-# Plan
+# Plan (draft)
 
-Draft for proposal section 3 (plan and responsibilities). Owners are added as people take a slice; nobody is assigned without agreeing.
+Draft for proposal section 3. One proposal section per person. Owners are filled in once each person agrees at the next meeting.
 
 ## Dates
 
 | Window | Goal | Course deadline |
 |---|---|---|
-| 20 to 25 Oct | architecture and plan drafted | team formation, Sun 25 Oct |
-| 26 Oct to 8 Nov | proposal written; skeleton: Next.js app, Prisma schema, sign-in, CI on pull requests | **proposal, Sun 8 Nov (15%)** |
-| 9 to 18 Nov | core: quiz, AI plan, workout logging, tiers | team health check, Wed 18 Nov |
-| 19 to 26 Nov | planned features, demo rehearsal; work frozen 26 Nov | introduction Wed 25 Nov; slides Thu 26 Nov |
-| 27 Nov to 6 Dec | presentation with live demo; README report, `ai-session.md`, video | **presentation, Fri 27 Nov or Fri 4 Dec (10%)**; **final, Sun 6 Dec (35%)** |
+| 21 to 25 Oct | architecture, plan and skeleton | team formation on Quercus, Sun 25 Oct |
+| 26 Oct to 8 Nov | proposal written; schema, sign-in and CI in place | **proposal, Sun 8 Nov (15%)** |
+| 9 to 18 Nov | core path works: quiz, plan, logged workout | team health check, Wed 18 Nov |
+| 19 to 26 Nov | planned features; work frozen 26 Nov | introduction Wed 25 Nov; slides Thu 26 Nov |
+| 27 Nov to 6 Dec | live demo; README report, `ai-session.md`, video | **presentation, Fri 27 Nov or Fri 4 Dec (10%)**; **final, Sun 6 Dec (35%)** |
 
-## Slices
+## Proposal sections
 
-| Slice | Owner | Lands in |
+| Section | Weight | Owner |
 |---|---|---|
-| Architecture, plan, proposal sections 2 and 3 | Nabeegh | `docs/` |
-| Skeleton, database schema, CI | open | `prisma/`, `.github/workflows/` |
-| Sign-in, access tiers, Stripe test mode | open | `src/lib/auth`, billing routes |
-| AI coach: plan generation, chat, form feedback | open | `src/lib/ai`, coach routes |
-| Quiz, body map, workout session (Redux Toolkit) | open | `src/app/quiz`, `src/components` |
-| Progress: logging, streaks, heatmap, photos | open | progress pages, `src/lib/storage` |
-| Proposal sections 1 and 4 (motivation; reasoning and AI exploration) | open | the proposal |
+| 1. Motivation | 20% | open (similar apps and sources are in [RESEARCH.md](RESEARCH.md#1-motivation)) |
+| 2. Objectives, architecture, features | 50% | Nabeegh |
+| 3. Plan and responsibilities | 15% | open (draft in this file) |
+| 4. Initial reasoning and AI exploration | 15% | open |
 
-Each slice is someone's own commits, Issues and pull requests. The demo path (quiz, plan, one coached exercise, a logged workout) depends only on the skeleton, sign-in and the AI coach. The other slices add to it.
+## Build areas
+
+Each area is one person's issues, branches and pull requests, so contribution shows in the Git history.
+
+| Area | What it covers | Owner |
+|---|---|---|
+| Foundation | Next.js skeleton, Prettier and ESLint, CI, Prisma schema and seed | Nabeegh |
+| AI coach | plan generation, the verifier, streamed chat, body-map follow-up questions | Nabeegh |
+| Accounts | Better Auth sign-in, the four access tiers, Stripe test mode | open |
+| Quiz and workout session | quiz, body map, today's session screen, Redux Toolkit | open |
+| Progress | workout history, streaks, heatmap, photos (Spaces, `sharp`) | open |
+
+The demo path is foundation, accounts and the AI coach. Quiz, session and progress add to it, and each starts once the schema is merged.
 
 ## Integration
 
-- The schema and the AI coach's JSON shape are agreed before feature work, so slices can be built in parallel against them.
-- Every pull request runs lint, typecheck and tests in CI.
-- Checkpoints: Sat 14 Nov (core path works end to end) and Sat 21 Nov (everything, demo dry run).
+- The Prisma schema and the coach's plan JSON are agreed first, so every area builds against them.
+- One issue per task, one branch per issue, a pull request with `Closes #n`, one teammate review, squash and merge.
+- CI runs lint, typecheck and tests on every pull request.
+- Checkpoints: Sat 14 Nov (core path end to end), Sat 21 Nov (everything, demo dry run).
 
 ## Risks
 
 | Risk | Mitigation |
 |---|---|
-| Next meeting is not until reading week, close to the 8 Nov deadline | proposal sections written asynchronously on Discord before then |
-| AI free tier is rate-limited or down during the demo | Groq fallback; one recorded backup of the coach |
-| Stripe takes longer than expected | it sits off the demo path; tiers work from a date field without it |
-| Too many features for four people | two promised, the rest planned and shown only if finished |
+| LLM free tier rate-limited during the demo | Groq with Gemini fallback; one recorded backup |
+| Stripe takes longer than planned | off the demo path; tiers work from a trial end date without it |
+| An area stalls | areas off the demo path can slip without breaking the demo |
