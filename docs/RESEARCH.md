@@ -6,12 +6,12 @@ What we checked on 20 October, grouped by the proposal section it feeds.
 
 **Similar apps**
 
-| App | What it does | Price (US) |
-|---|---|---|
-| SensAI | AI chat coach with memory; builds programs | $6.99/mo |
-| Fitbod | Generates each strength session | $15.99/mo |
-| JuggernautAI | Adjusts powerlifting programs from set feedback | $34.99/mo |
-| Future | Human coach by message | $149 to $199/mo |
+| App          | What it does                                    | Price (US)      |
+| ------------ | ----------------------------------------------- | --------------- |
+| SensAI       | AI chat coach with memory; builds programs      | $6.99/mo        |
+| Fitbod       | Generates each strength session                 | $15.99/mo       |
+| JuggernautAI | Adjusts powerlifting programs from set feedback | $34.99/mo       |
+| Future       | Human coach by message                          | $149 to $199/mo |
 
 None is documented as asking follow-up questions about where a movement is felt. That is the gap the body map fills. A $10/month tier sits in the AI-app range, well under a human coach. ([SensAI review](https://www.sensai.fit/blog/best-ai-personal-trainer-apps-2026))
 
@@ -27,15 +27,15 @@ None is documented as asking follow-up questions about where a movement is felt.
 
 ## 3. Plan: shortcuts for the advanced features
 
-| Feature | Tool | What it saves |
-|---|---|---|
-| Real-time | Vercel AI SDK `streamText` and `useChat` | Streamed coach replies without our own socket code |
-| Coach plan and verifier | AI SDK structured output with a Zod schema | Plan JSON checked against one schema |
-| Forms | One Zod schema per form, browser and Server Action | Validation written once |
-| File processing | `sharp` | Resize and strip metadata, including GPS |
-| Loading and error states | `loading.tsx`, `error.tsx` per route | No hand-written spinners or error pages |
-| Demo evidence | One Playwright test of quiz, plan, logged set, in CI | Proof the demo path works |
-| Shared data | `prisma db seed` | Exercise library and a demo user in one command |
+| Feature                  | Tool                                                 | What it saves                                      |
+| ------------------------ | ---------------------------------------------------- | -------------------------------------------------- |
+| Real-time                | Vercel AI SDK `streamText` and `useChat`             | Streamed coach replies without our own socket code |
+| Coach plan and verifier  | AI SDK structured output with a Zod schema           | Plan JSON checked against one schema               |
+| Forms                    | One Zod schema per form, browser and Server Action   | Validation written once                            |
+| File processing          | `sharp`                                              | Resize and strip metadata, including GPS           |
+| Loading and error states | `loading.tsx`, `error.tsx` per route                 | No hand-written spinners or error pages            |
+| Demo evidence            | One Playwright test of quiz, plan, logged set, in CI | Proof the demo path works                          |
+| Shared data              | `prisma db seed`                                     | Exercise library and a demo user in one command    |
 
 The AI SDK is on v7 and retries a failed call twice by default ([codercops](https://blog.codercops.com/blog/vercel-ai-sdk-2026)); confirm a Groq provider package when installing.
 
