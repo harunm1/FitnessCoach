@@ -4,34 +4,34 @@ Draft for proposal section 3. One proposal section per person. Owners are filled
 
 ## Dates
 
-| Window | Goal | Course deadline |
-|---|---|---|
-| 21 to 25 Oct | architecture, plan and skeleton | team formation on Quercus, Sun 25 Oct |
-| 26 Oct to 8 Nov | proposal written; schema, sign-in and CI in place | **proposal, Sun 8 Nov (15%)** |
-| 9 to 18 Nov | core path works: quiz, plan, logged workout | team health check, Wed 18 Nov |
-| 19 to 26 Nov | planned features; work frozen 26 Nov | introduction Wed 25 Nov; slides Thu 26 Nov |
-| 27 Nov to 6 Dec | live demo; README report, `ai-session.md`, video | **presentation, Fri 27 Nov or Fri 4 Dec (10%)**; **final, Sun 6 Dec (35%)** |
+| Window          | Goal                                              | Course deadline                                                             |
+| --------------- | ------------------------------------------------- | --------------------------------------------------------------------------- |
+| 21 to 25 Oct    | architecture, plan and skeleton                   | team formation on Quercus, Sun 25 Oct                                       |
+| 26 Oct to 8 Nov | proposal written; schema, sign-in and CI in place | **proposal, Sun 8 Nov (15%)**                                               |
+| 9 to 18 Nov     | core path works: quiz, plan, logged workout       | team health check, Wed 18 Nov                                               |
+| 19 to 26 Nov    | planned features; work frozen 26 Nov              | introduction Wed 25 Nov; slides Thu 26 Nov                                  |
+| 27 Nov to 6 Dec | live demo; README report, `ai-session.md`, video  | **presentation, Fri 27 Nov or Fri 4 Dec (10%)**; **final, Sun 6 Dec (35%)** |
 
 ## Proposal sections
 
-| Section | Weight | Owner |
-|---|---|---|
-| 1. Motivation | 20% | open (similar apps and sources are in [RESEARCH.md](RESEARCH.md#1-motivation)) |
-| 2. Objectives, architecture, features | 50% | Nabeegh |
-| 3. Plan and responsibilities | 15% | open (draft in this file) |
-| 4. Initial reasoning and AI exploration | 15% | open |
+| Section                                 | Weight | Owner                                                                          |
+| --------------------------------------- | ------ | ------------------------------------------------------------------------------ |
+| 1. Motivation                           | 20%    | open (similar apps and sources are in [RESEARCH.md](RESEARCH.md#1-motivation)) |
+| 2. Objectives, architecture, features   | 50%    | Nabeegh                                                                        |
+| 3. Plan and responsibilities            | 15%    | open (draft in this file)                                                      |
+| 4. Initial reasoning and AI exploration | 15%    | open                                                                           |
 
 ## Build areas
 
 Each area is one person's issues, branches and pull requests, so contribution shows in the Git history.
 
-| Area | What it covers | Owner |
-|---|---|---|
-| Foundation | Next.js skeleton, Prettier and ESLint, CI, Prisma schema and seed | Nabeegh |
-| AI coach | plan generation, the verifier, streamed chat, body-map follow-up questions | Nabeegh |
-| Accounts | Better Auth sign-in, the four access tiers, Stripe test mode | open |
-| Quiz and workout session | quiz, body map, today's session screen, Redux Toolkit | open |
-| Progress | workout history, streaks, heatmap, photos (Spaces, `sharp`) | open |
+| Area                     | What it covers                                                             | Owner   |
+| ------------------------ | -------------------------------------------------------------------------- | ------- |
+| Foundation               | Next.js skeleton, Prettier and ESLint, CI, Prisma schema and seed          | Nabeegh |
+| AI coach                 | plan generation, the verifier, streamed chat, body-map follow-up questions | Nabeegh |
+| Accounts                 | Better Auth sign-in, the four access tiers, Stripe test mode               | open    |
+| Quiz and workout session | quiz, body map, today's session screen, Redux Toolkit                      | open    |
+| Progress                 | workout history, streaks, heatmap, photos (Spaces, `sharp`)                | open    |
 
 The demo path is foundation, accounts and the AI coach. Quiz, session and progress add to it, and each starts once the schema is merged.
 
@@ -44,8 +44,8 @@ The demo path is foundation, accounts and the AI coach. Quiz, session and progre
 
 ## Risks
 
-| Risk | Mitigation |
-|---|---|
-| LLM free tier rate-limited during the demo | Groq with Gemini fallback; one recorded backup |
-| Stripe takes longer than planned | off the demo path; tiers work from a trial end date without it |
-| An area stalls | areas off the demo path can slip without breaking the demo |
+| Risk                                       | Mitigation                                                     |
+| ------------------------------------------ | -------------------------------------------------------------- |
+| LLM free tier rate-limited during the demo | Groq with Gemini fallback; one recorded backup                 |
+| Stripe takes longer than planned           | off the demo path; tiers work from a trial end date without it |
+| An area stalls                             | areas off the demo path can slip without breaking the demo     |

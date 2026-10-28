@@ -4,11 +4,11 @@
 
 A mobile-first website, used on the phone at the gym and on a laptop at home.
 
-| When | What the user does |
-|---|---|
-| Before | Takes the quiz (goal, days a week, equipment, injuries), gets a plan built from our exercise library |
+| When   | What the user does                                                                                                |
+| ------ | ----------------------------------------------------------------------------------------------------------------- |
+| Before | Takes the quiz (goal, days a week, equipment, injuries), gets a plan built from our exercise library              |
 | During | Opens today's session: logs sets with large buttons, rest timer, asks the coach ("bench is taken, what instead?") |
-| After | Sees streaks, a calendar heatmap and progress photos |
+| After  | Sees streaks, a calendar heatmap and progress photos                                                              |
 
 The coach is a chat panel on every page, not only the body map. Tapping a muscle on the body map opens the chat with that exercise and spot already filled in.
 
@@ -30,6 +30,7 @@ flowchart LR
 **Plans are picked, not invented.** The model chooses exercises by ID from our library and fills sets, reps and rest. It cannot name an exercise we do not have.
 
 **A verifier checks everything before it is saved or shown.** Plain TypeScript, unit-tested, no second model:
+
 - the reply matches the JSON schema
 - every exercise ID exists and fits the user's equipment and reported injuries
 - sets, reps and rest are in range; no exercise twice on one day
@@ -45,13 +46,13 @@ A plan that fails is regenerated once, then the user gets a rule-based default p
 
 ## Decisions
 
-| | Choice | Why | Cost |
-|---|---|---|---|
-| D1 | Next.js App Router (option A) ([research](RESEARCH.md#2-architecture)) | Nothing outside the app calls the backend, so no public REST API is needed. Server Components load data on the server; Server Actions are typed form handlers with CSRF protection; route handlers cover the Stripe webhook and streamed coach replies | Tied to Next.js; a mobile app later needs an API |
-| D2 | PostgreSQL with Prisma | Relational data: user to plan to exercises to logged sets; typed queries and committed migrations | Complex reports may need raw SQL |
-| D3 | Private Spaces bucket, key in the database | Photos are personal; short-lived signed URLs for upload and view | A server round trip per photo |
-| D4 | Groq first, Gemini as fallback ([research](RESEARCH.md#2-architecture)) | More free requests a day than Gemini, no card, and Gemini's free tier may use prompts to improve Google's products | Two providers behind one function; prompts tested on both |
-| D5 | Deploy to a hosted platform for the demo | A live URL is shown in the presentation and README; it tests env vars, secrets and storage the way users meet them | Hosted database and setup time; free-tier limits. Running locally is the fallback |
+|     | Choice                                                                  | Why                                                                                                                                                                                                                                                    | Cost                                                                              |
+| --- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| D1  | Next.js App Router (option A) ([research](RESEARCH.md#2-architecture))  | Nothing outside the app calls the backend, so no public REST API is needed. Server Components load data on the server; Server Actions are typed form handlers with CSRF protection; route handlers cover the Stripe webhook and streamed coach replies | Tied to Next.js; a mobile app later needs an API                                  |
+| D2  | PostgreSQL with Prisma                                                  | Relational data: user to plan to exercises to logged sets; typed queries and committed migrations                                                                                                                                                      | Complex reports may need raw SQL                                                  |
+| D3  | Private Spaces bucket, key in the database                              | Photos are personal; short-lived signed URLs for upload and view                                                                                                                                                                                       | A server round trip per photo                                                     |
+| D4  | Groq first, Gemini as fallback ([research](RESEARCH.md#2-architecture)) | More free requests a day than Gemini, no card, and Gemini's free tier may use prompts to improve Google's products                                                                                                                                     | Two providers behind one function; prompts tested on both                         |
+| D5  | Deploy to a hosted platform for the demo                                | A live URL is shown in the presentation and README; it tests env vars, secrets and storage the way users meet them                                                                                                                                     | Hosted database and setup time; free-tier limits. Running locally is the fallback |
 
 ## Advanced features
 
