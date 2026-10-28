@@ -1,0 +1,25 @@
+# Runs on every push and pull request. A PR cannot be merged until this passes
+# once we make it a required check in branch protection (same setup as my AI-M repo).
+# The four steps mirror the npm scripts, so what passes locally passes here.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # npm ci installs exactly what package-lock.json says; npm install could drift.
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
