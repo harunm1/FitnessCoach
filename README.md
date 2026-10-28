@@ -18,7 +18,7 @@ Team project for ECE1724 Advanced Web Development, University of Toronto, Fall 2
 | AI coach, including running plans                                  | Nabeegh                | #11   |
 | Quiz, body map, today's session                                    | Mohammad               | #15   |
 | Progress and photos (cloud upload and download)                    | Farnaz                 | #16   |
-| Accounts: sign-in, tiers, Stripe test mode                         | open                   | #14   |
+| Accounts: sign-in, tiers, Stripe test mode                         | Shubham                | #14   |
 
 The proposal is one Markdown file, 2,000 words at most; each owner commits their own section, and every member submits the same file on Quercus (#13).
 
