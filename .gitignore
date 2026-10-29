@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# the template is committed; real values stay local
+!.env.example
+
+# Prisma Client, regenerated on install
+/src/generated/prisma

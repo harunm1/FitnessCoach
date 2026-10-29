@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fitnesscoach-postgres
+    environment:
+      POSTGRES_USER: fitnesscoach
+      POSTGRES_PASSWORD: fitnesscoach
+      POSTGRES_DB: fitnesscoach
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fitnesscoach -d fitnesscoach"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  postgres_data:
