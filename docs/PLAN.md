@@ -1,7 +1,5 @@
 # Plan (draft)
 
-Draft for proposal section 3. One proposal section per person. Owners are filled in once each person agrees at the next meeting.
-
 ## Dates
 
 | Window          | Goal                                              | Course deadline                                                             |
@@ -14,38 +12,40 @@ Draft for proposal section 3. One proposal section per person. Owners are filled
 
 ## Proposal sections
 
-| Section                                 | Weight | Owner                                                                          |
-| --------------------------------------- | ------ | ------------------------------------------------------------------------------ |
-| 1. Motivation                           | 20%    | open (similar apps and sources are in [RESEARCH.md](RESEARCH.md#1-motivation)) |
-| 2. Objectives, architecture, features   | 50%    | Nabeegh                                                                        |
-| 3. Plan and responsibilities            | 15%    | open (draft in this file)                                                      |
-| 4. Initial reasoning and AI exploration | 15%    | open                                                                           |
+| Section                                 | Weight | Owner         |
+| --------------------------------------- | ------ | ------------- |
+| 1. Motivation                           | 20%    | Mohammad (#3) |
+| 2. Objectives, architecture, features   | 50%    | Nabeegh       |
+| 3. Plan and responsibilities            | 15%    | Shubham (#5)  |
+| 4. Initial reasoning and AI exploration | 15%    | Farnaz (#6)   |
 
 ## Build areas
 
-Each area is one person's issues, branches and pull requests, so contribution shows in the Git history.
+| Area                     | What it covers                                                                                                                       | Owner    |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| Foundation               | Next.js skeleton, Prettier/ESLint, CI, Prisma schema/seed, exercise dataset                                                          | Nabeegh  |
+| AI coach                 | workout/running plan generation, verifier, streamed chat, AI/body-map follow-up                                                      | Nabeegh  |
+| Accounts                 | Better Auth, tiers, Stripe test mode; shared local Docker Compose PostgreSQL (`localhost:5432`, #23), authentication/backend support | Shubham  |
+| Quiz and workout session | quiz, interactive body map, today's session, Redux Toolkit, workout/running logging                                                  | Mohammad |
+| Progress                 | history, streaks, calendar heatmap, photos/cloud storage, workout/running progress                                                   | Farnaz   |
 
-| Area                     | What it covers                                                             | Owner   |
-| ------------------------ | -------------------------------------------------------------------------- | ------- |
-| Foundation               | Next.js skeleton, Prettier and ESLint, CI, Prisma schema and seed          | Nabeegh |
-| AI coach                 | plan generation, the verifier, streamed chat, body-map follow-up questions | Nabeegh |
-| Accounts                 | Better Auth sign-in, the four access tiers, Stripe test mode               | open    |
-| Quiz and workout session | quiz, body map, today's session screen, Redux Toolkit                      | open    |
-| Progress                 | workout history, streaks, heatmap, photos (Spaces, `sharp`)                | open    |
-
-The demo path is foundation, accounts and the AI coach. Quiz, session and progress add to it, and each starts once the schema is merged.
+Demo: sign in → complete quiz → generate workout plan → open workout session → log workout → view progress.
+Running is planned; nearby-gym discovery and MCP exercise tools remain optional/stretch.
 
 ## Integration
 
-- The Prisma schema and the coach's plan JSON are agreed first, so every area builds against them.
-- One issue per task, one branch per issue, a pull request with `Closes #n`, one teammate review, squash and merge.
-- CI runs lint, typecheck and tests on every pull request.
-- Checkpoints: Sat 14 Nov (core path end to end), Sat 21 Nov (everything, demo dry run).
+- Agree shared Prisma schema and workout-plan JSON first.
+- One GitHub issue/task, branch/issue; PR: `Closes #n`, teammate review, squash merge.
+- Integrate frequently. CI: formatting, lint, typecheck, tests, build.
+- Checkpoints: Sat 14 Nov (core path), Sat 21 Nov (demo dry run).
 
 ## Risks
 
-| Risk                                       | Mitigation                                                     |
-| ------------------------------------------ | -------------------------------------------------------------- |
-| LLM free tier rate-limited during the demo | Groq with Gemini fallback; one recorded backup                 |
-| Stripe takes longer than planned           | off the demo path; tiers work from a trial end date without it |
-| An area stalls                             | areas off the demo path can slip without breaking the demo     |
+| Risk                  | Mitigation                |
+| --------------------- | ------------------------- |
+| LLM limits/outage     | validate output; fallback |
+| Stripe delays         | outside demo path         |
+| Feature-area delays   | stable core demo          |
+| Migration conflicts   | discuss schema changes    |
+| Integration conflicts | integrate regularly       |
+| Cloud storage setup   | verify configuration      |
