@@ -18,6 +18,22 @@ Issues #7 (provider choice) and #19 (the test profiles). Results feed proposal s
 
 **Limits.** One run per profile per provider, so a one-profile difference is noise. The prompt is the current `buildPlanPrompt`; a prompt change means a rerun.
 
-## Results
+## Results, 30 October
 
-Not run yet.
+| Measure                                      | Groq `openai/gpt-oss-120b` | Gemini `gemini-3.5-flash`         |
+| -------------------------------------------- | -------------------------- | --------------------------------- |
+| First reply passes the verifier              | 10 of 10                   | 10 of 10                          |
+| Retries after a rejected plan                | 0                          | 0                                 |
+| Fallbacks to the rule-based plan, first pass | 4, all from rate limits    | 2, all from server errors         |
+| HTTP errors                                  | 9, all 429 (rate limit)    | 10, all 503 (service unavailable) |
+| Time per reply, median and slowest           | 3.5 s, 5.6 s               | 9.9 s, 15.1 s                     |
+
+**One change from the criteria.** In the first pass, with 3 seconds between profiles, four Groq profiles and two Gemini profiles got no reply at all because of HTTP errors. Those six were rerun the same day, one at a time with 30 to 65 seconds between calls, nothing else changed. The pass rate counts the first reply that came back for each profile. Files: `eval/results/2026-10-30-<provider>.json` and the `-rerun` files.
+
+**Decision: Groq stays (D4).** Neither provider produced a plan the verifier rejected, so Gemini is not clearly better on the main measure, and Groq answered about three times faster. Both hit errors inside ten profiles, which is a demo risk for each: Groq refused calls 3 seconds apart and accepted them a minute apart, and Gemini returned 503 on about one call in three.
+
+**What this means for the coach (#11).**
+
+1. On a 429 or 503 the coach should wait and retry, or switch to the other provider, before counting a failed attempt. D4 names Gemini as the fallback; today `coachModel` picks one provider.
+2. The verifier checks equipment, injuries, days and ranges, so 10 of 10 means the plans are safe and well-formed, not that they are good programs. Reading a few plans by hand belongs in proposal section 4.
+3. The exercise list sent to the model has to be filtered and capped by the caller (here six per muscle, 32 to 85 exercises). The comment in `buildPlanPrompt` says the list is already filtered, so the coach route must do it.

@@ -1,0 +1,94 @@
+{
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "rows": [
+    {
+      "id": "kettlebells-2-days-back-shoulder",
+      "offered": 32,
+      "source": "COACH",
+      "attempts": 1,
+      "firstReplyPassed": true,
+      "calls": [
+        {
+          "ms": 2558,
+          "reply": {
+            "name": "2-Day Strength Plan",
+            "days": [
+              {
+                "name": "Day 1",
+                "exercises": [
+                  {
+                    "exerciseId": "Bodyweight_Squat",
+                    "sets": 4,
+                    "reps": 12,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "One-Arm_Kettlebell_Floor_Press",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Body_Tricep_Press",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Butt_Lift_Bridge",
+                    "sets": 3,
+                    "reps": 15,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Air_Bike",
+                    "sets": 3,
+                    "reps": 20,
+                    "restSeconds": 60
+                  }
+                ]
+              },
+              {
+                "name": "Day 2",
+                "exercises": [
+                  {
+                    "exerciseId": "Two-Arm_Kettlebell_Row",
+                    "sets": 4,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Floor_Glute-Ham_Raise",
+                    "sets": 3,
+                    "reps": 8,
+                    "restSeconds": 120
+                  },
+                  {
+                    "exerciseId": "Pullups",
+                    "sets": 3,
+                    "reps": 6,
+                    "restSeconds": 120
+                  },
+                  {
+                    "exerciseId": "Isometric_Neck_Exercise_-_Front_And_Back",
+                    "sets": 2,
+                    "reps": 30,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Alternate_Heel_Touchers",
+                    "sets": 3,
+                    "reps": 20,
+                    "restSeconds": 60
+                  }
+                ]
+              }
+            ]
+          },
+          "problems": []
+        }
+      ]
+    }
+  ]
+}

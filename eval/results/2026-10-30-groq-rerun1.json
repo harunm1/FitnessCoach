@@ -1,0 +1,270 @@
+{
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "rows": [
+    {
+      "id": "machines-6-days",
+      "offered": 79,
+      "source": "COACH",
+      "attempts": 1,
+      "firstReplyPassed": true,
+      "calls": [
+        {
+          "ms": 3988,
+          "reply": {
+            "name": "6-Day Strength Plan",
+            "days": [
+              {
+                "name": "Monday",
+                "exercises": [
+                  {
+                    "exerciseId": "Bodyweight_Squat",
+                    "sets": 4,
+                    "reps": 12,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Cable_Deadlifts",
+                    "sets": 4,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Calf_Press",
+                    "sets": 4,
+                    "reps": 15,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Bench_Dips",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Cable_Chest_Press",
+                    "sets": 4,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Alternating_Cable_Shoulder_Press",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  }
+                ]
+              },
+              {
+                "name": "Tuesday",
+                "exercises": [
+                  {
+                    "exerciseId": "Inverted_Row",
+                    "sets": 4,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Cable_Preacher_Curl",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Lying_Cable_Curl",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Ab_Crunch_Machine",
+                    "sets": 3,
+                    "reps": 15,
+                    "restSeconds": 45
+                  },
+                  {
+                    "exerciseId": "Flutter_Kicks",
+                    "sets": 3,
+                    "reps": 20,
+                    "restSeconds": 45
+                  },
+                  {
+                    "exerciseId": "Cable_Internal_Rotation",
+                    "sets": 2,
+                    "reps": 15,
+                    "restSeconds": 45
+                  }
+                ]
+              },
+              {
+                "name": "Wednesday",
+                "exercises": [
+                  {
+                    "exerciseId": "Chair_Squat",
+                    "sets": 4,
+                    "reps": 12,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Freehand_Jump_Squat",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Seated_Calf_Raise",
+                    "sets": 4,
+                    "reps": 15,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Lying_Leg_Curls",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Glute_Kickback",
+                    "sets": 3,
+                    "reps": 15,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Cable_Hip_Adduction",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  }
+                ]
+              },
+              {
+                "name": "Thursday",
+                "exercises": [
+                  {
+                    "exerciseId": "Cable_Iron_Cross",
+                    "sets": 4,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Decline_Push-Up",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Cable_Incline_Triceps_Extension",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Body_Tricep_Press",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Cable_Seated_Lateral_Raise",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Cable_Shrugs",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  }
+                ]
+              },
+              {
+                "name": "Friday",
+                "exercises": [
+                  {
+                    "exerciseId": "Elevated_Cable_Rows",
+                    "sets": 4,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Smith_Machine_Bent_Over_Row",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "High_Cable_Curls",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Cable_Wrist_Curl",
+                    "sets": 3,
+                    "reps": 15,
+                    "restSeconds": 45
+                  },
+                  {
+                    "exerciseId": "3_4_Sit-Up",
+                    "sets": 3,
+                    "reps": 20,
+                    "restSeconds": 45
+                  },
+                  {
+                    "exerciseId": "Air_Bike",
+                    "sets": 2,
+                    "reps": 30,
+                    "restSeconds": 30
+                  }
+                ]
+              },
+              {
+                "name": "Saturday",
+                "exercises": [
+                  {
+                    "exerciseId": "Bodyweight_Walking_Lunge",
+                    "sets": 4,
+                    "reps": 12,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Bent_Over_Low-Pulley_Side_Lateral",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Cable_Rope_Rear-Delt_Rows",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Butt_Lift_Bridge",
+                    "sets": 3,
+                    "reps": 15,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Cable_Chest_Press",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Seated_One-arm_Cable_Pulley_Rows",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  }
+                ]
+              }
+            ]
+          },
+          "problems": []
+        }
+      ]
+    }
+  ]
+}
