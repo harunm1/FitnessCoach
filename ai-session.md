@@ -41,3 +41,33 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** `vi.fn<PlanModel>()` keeps the call types; yes, run the fallback through the verifier in a test so it can never ship a plan the coach would be rejected for.
 
 **Did with it:** wrote `generatePlan.ts`, `defaultPlan.ts` and three tests (pass first time, retry with the problems in the prompt, fallback that passes the verifier). Nine tests pass in total.
+
+### 27 October 2026, provider research before meeting 2 (issues #7, #22)
+
+**Before asking:** the architecture doc said Groq first, Gemini as fallback, on free-tier limits and data use. I wanted that checked against current pricing pages and against any evidence that an open-weight model is good enough for short structured output, so the meeting could decide on facts.
+
+**Asked:** what each provider's free tier allows today, and whether published results compare open-weight models with the best closed ones on short structured judgements.
+
+**Got:** Groq's free tier at about 1,000 requests a day on its large models with no card; Gemini's free tier near 20 requests a day on Flash with prompts usable to improve Google's products; a 2026 paper (Jiang and Fowler) where Llama 3.1 70B graded code explanations as well as the best model tested.
+
+**Did with it:** wrote the comparison into #22 and the meeting notes; the team agreed to test both rather than decide on the research. The Llama result was already stale by 30 October (Groq no longer serves Llama), which is why the test, not the citation, decides.
+
+### 30 October 2026, provider adapters and the first head-to-head (issues #7, #11, #19)
+
+**Before asking:** the plan logic takes the model as a function, so the adapters were two fetch calls behind one type, chosen by an environment variable. I wrote the comparison criteria into `docs/COACH_EVAL.md` before running anything: first-reply verifier pass rate first, then retries, fallbacks, latency, errors, and the rule that Groq stays unless Gemini is clearly better.
+
+**Asked:** the request shapes for Groq's JSON mode and Gemini's JSON response type; how a Vitest test mocks `fetch` so CI runs with no key; how to read a thinking model's reply when it returns thought parts first.
+
+**Got:** `response_format: {type: "json_object"}` for Groq, which needs the word JSON in the prompt; `generationConfig.responseMimeType` for Gemini; `vi.stubGlobal("fetch", ...)` with a `Response` per call; skip parts flagged `thought`.
+
+**Did with it:** wrote `providers.ts` and nine mocked-fetch tests, then ran ten fixed profiles on each provider. Both passed the verifier on every reply; every failure was the provider refusing the call (Groq 429, Gemini 503). The AI had suggested capping the exercise list at six per muscle to fit Groq's token limit; I ran with that cap, then rejected it in round 2 because the coach should see every exercise the user can do.
+
+### 30 October 2026, retry, provider fallback and the full library (issues #7, #11, #19)
+
+**Before asking:** three things were missing after round 1: a wait-and-retry on rate limits and outages, a switch to the other provider when the first is down, and the whole library in the prompt instead of a capped list. My rule for the retry: only transport errors are retried, and only when the provider's own wait is short; a bad reply goes back to the plan logic, which already retries once with the problems listed.
+
+**Asked:** what Google and Groq recommend for 429 and 503; what headers carry the wait; how many tokens the full list costs in different formats.
+
+**Got:** both recommend exponential backoff with jitter on 429 and 5xx and no retry on 400-class errors; Gemini puts `retryDelay` in the 429 body and Groq sends `x-ratelimit-reset-tokens` rather than `Retry-After` on a tokens-per-minute limit (found by reading the headers, not from the AI, which had assumed `Retry-After`); names grouped by muscle cost about 40% fewer tokens than one `id (muscles)` line per exercise.
+
+**Did with it:** wrote `withRetry` and `withFallback` with fourteen more tests, then reran the eval. Round 2 found three real faults the AI's first version had not predicted: the model returns near misses of library names ("Standing Calf Raise" for "Standing Calf Raises"), copies the group label into the name, and writes a plank as 60 reps. Each got a code or prompt fix and a test, and the production chain then served 10 of 10 plans with no rule-based fallback while absorbing nine Groq rate limits. Gemini 3.5 Flash's free tier ran out at 20 requests during the run, so the fallback is Flash-Lite. Results and the trade-offs table are in `docs/COACH_EVAL.md`.

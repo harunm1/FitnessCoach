@@ -4,7 +4,12 @@
 // can change without touching it.
 import { buildDefaultPlan } from "./defaultPlan";
 import type { PlanInput } from "./schema";
-import { verifyPlan, type LibraryExercise, type VerifyProfile } from "./verify";
+import {
+  fitsProfile,
+  verifyPlan,
+  type LibraryExercise,
+  type VerifyProfile,
+} from "./verify";
 
 // What the coach needs from a model: given a prompt, return parsed JSON (or throw).
 export type PlanModel = (prompt: string) => Promise<unknown>;
@@ -17,25 +22,81 @@ export type GeneratedPlan = {
 
 const MAX_ATTEMPTS = 2;
 
+// Every exercise the user can do goes into the prompt; none is dropped for length.
+// Names grouped by muscle and category cost about 40% fewer tokens than one "id
+// (muscles)" line each: the full gym list (694 exercises) is about 4,700 tokens,
+// which leaves room for the reply inside Groq's free-tier 8,000 tokens a minute
+// (docs/COACH_EVAL.md, round 2).
 export function buildPlanPrompt(
   profile: VerifyProfile,
   library: LibraryExercise[],
   problems: string[] = [],
 ): string {
-  // Only exercises the user can do are offered, so the model can't pick outside them.
-  const options = library
-    .map((e) => `${e.id} (${e.primaryMuscles.join(", ")})`)
+  const groups = new Map<string, string[]>();
+  for (const e of library) {
+    const key = `${e.primaryMuscles[0] ?? "other"}${e.category ? ` (${e.category})` : ""}`;
+    groups.set(key, [...(groups.get(key) ?? []), e.name ?? e.id]);
+  }
+  const options = [...groups]
+    .map(([group, names]) => `${group}: ${names.join("; ")}`)
     .join("\n");
   const retry =
     problems.length > 0
       ? `\nYour last plan was rejected for these reasons. Fix every one:\n- ${problems.join("\n- ")}\n`
       : "";
   return [
-    `Build a ${profile.daysPerWeek}-day weekly strength plan as JSON: {"name", "days": [{"name", "exercises": [{"exerciseId", "sets", "reps", "restSeconds"}]}]}.`,
-    `Use only these exercise ids:\n${options}`,
-    `2 to 8 exercises a day, no exercise twice on a day, sets 1 to 6, reps 1 to 30, rest 30 to 300 seconds.`,
+    `Build a ${profile.daysPerWeek}-day weekly strength plan as JSON: {"name", "days": [{"name", "exercises": [{"exercise", "sets", "reps", "restSeconds"}]}]}.`,
+    `"exercise" must be an exact name from this list, which is grouped as "muscle (category): name; name":\n${options}`,
+    `2 to 8 exercises a day, no exercise twice on a day, sets 1 to 6, reps 1 to 30, rest 30 to 300 seconds. For a timed hold such as a plank, give reps as the number of holds (for example 3 sets of 1), not seconds.`,
     retry,
   ].join("\n\n");
+}
+
+// Round 2 of the eval (docs/COACH_EVAL.md) showed the models return near misses of
+// real names: "Standing Calf Raise" for "Standing Calf Raises". Case, punctuation,
+// "the", a trailing s and a copied group label are forgiven; an invented exercise is
+// still rejected.
+export function normaliseName(name: string): string {
+  return name
+    .replace(/^.*:\s*/, "") // "chest (strength): Dumbbell Flyes" copies the group label
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, " ")
+    .replace(/\bthe\b/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.replace(/s$/, ""))
+    .join(" ");
+}
+
+// The model answers with exercise names; the plan is stored and verified by id. A
+// name not in the library is kept as written, so the verifier reports it.
+export function namesToIds(raw: unknown, library: LibraryExercise[]): unknown {
+  const idByName = new Map(
+    library.map((e) => [normaliseName(e.name ?? e.id), e.id]),
+  );
+  if (typeof raw !== "object" || raw === null) return raw;
+  const plan = raw as { days?: unknown };
+  if (!Array.isArray(plan.days)) return raw;
+  return {
+    ...plan,
+    days: plan.days.map((day) => {
+      if (typeof day !== "object" || day === null) return day;
+      const d = day as { exercises?: unknown };
+      if (!Array.isArray(d.exercises)) return day;
+      return {
+        ...d,
+        exercises: d.exercises.map((slot) => {
+          if (typeof slot !== "object" || slot === null) return slot;
+          const { exercise, ...rest } = slot as Record<string, unknown>;
+          if (typeof exercise !== "string") return slot;
+          return {
+            exerciseId: idByName.get(normaliseName(exercise)) ?? exercise,
+            ...rest,
+          };
+        }),
+      };
+    }),
+  };
 }
 
 export async function generatePlan(
@@ -43,13 +104,14 @@ export async function generatePlan(
   profile: VerifyProfile,
   library: LibraryExercise[],
 ): Promise<GeneratedPlan> {
+  const usable = library.filter((e) => fitsProfile(e, profile));
   const byId = new Map(library.map((e) => [e.id, e]));
   let problems: string[] = [];
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      const raw = await model(buildPlanPrompt(profile, library, problems));
-      const result = verifyPlan(raw, profile, byId);
+      const raw = await model(buildPlanPrompt(profile, usable, problems));
+      const result = verifyPlan(namesToIds(raw, usable), profile, byId);
       if (result.ok)
         return { plan: result.plan, source: "COACH", attempts: attempt };
       problems = result.problems;
