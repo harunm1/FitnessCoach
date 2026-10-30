@@ -49,15 +49,32 @@ export class ProviderError extends Error {
   }
 }
 
-// Retry-After is seconds or an HTTP date (RFC 9110). Gemini's 429 body carries
-// RetryInfo.retryDelay such as "17s" instead.
-function retryAfterMs(res: Response, body: string): number | undefined {
+// "54.5s", "7m12s" or "1h2m3.5s" (Groq's x-ratelimit-reset-* headers) to milliseconds.
+function durationMs(text: string): number | undefined {
+  const m = text.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+(?:\.\d+)?)s)?$/);
+  if (!m || !m[0]) return undefined;
+  return (
+    Number(m[1] ?? 0) * 3_600_000 +
+    Number(m[2] ?? 0) * 60_000 +
+    Number(m[3] ?? 0) * 1_000
+  );
+}
+
+// How long the provider says to wait. Retry-After is seconds or an HTTP date
+// (RFC 9110); Groq also sends x-ratelimit-reset-tokens on a tokens-per-minute 429,
+// and Gemini's 429 body carries RetryInfo.retryDelay such as "17s".
+export function retryAfterMs(res: Response, body: string): number | undefined {
   const header = res.headers.get("retry-after");
   if (header) {
     const seconds = Number(header);
     if (Number.isFinite(seconds)) return seconds * 1000;
     const date = Date.parse(header);
     if (!Number.isNaN(date)) return Math.max(0, date - Date.now());
+  }
+  const reset = res.headers.get("x-ratelimit-reset-tokens");
+  if (reset) {
+    const ms = durationMs(reset);
+    if (ms !== undefined) return ms;
   }
   const delay = body.match(/"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"/);
   return delay ? Number(delay[1]) * 1000 : undefined;
@@ -243,8 +260,14 @@ export function coachModel(
   if (lead !== "groq" && lead !== "gemini") {
     throw new Error(`COACH_PROVIDER must be groq or gemini, not "${lead}"`);
   }
+  // GROQ_MODEL and GEMINI_MODEL override the defaults, so a model swap is a setting.
   const build = (name: "groq" | "gemini", key: string) =>
-    withRetry(name === "groq" ? groqModel(key) : geminiModel(key), options);
+    withRetry(
+      name === "groq"
+        ? groqModel(key, env.GROQ_MODEL || GROQ_MODEL)
+        : geminiModel(key, env.GEMINI_MODEL || GEMINI_MODEL),
+      options,
+    );
   const other = lead === "groq" ? "gemini" : "groq";
   const keyName = (name: string) => `${name.toUpperCase()}_API_KEY`;
   const primary = build(lead, requireKey(env, keyName(lead)));

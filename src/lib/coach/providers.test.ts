@@ -8,6 +8,7 @@ import {
   GROQ_MODEL,
   groqModel,
   ProviderError,
+  retryAfterMs,
   withFallback,
   withRetry,
 } from "./providers";
@@ -201,6 +202,30 @@ describe("withRetry", () => {
     const sleep = vi.fn<(ms: number) => Promise<void>>(async () => {});
     await withRetry(geminiModel(KEY), { sleep })("x");
     expect(sleep).toHaveBeenCalledWith(3000);
+  });
+
+  it("reads Groq's x-ratelimit-reset-tokens and skips the wait when it is long", async () => {
+    expect(
+      retryAfterMs(
+        new Response("", { headers: { "x-ratelimit-reset-tokens": "7m12s" } }),
+        "",
+      ),
+    ).toBe(432_000);
+    expect(
+      retryAfterMs(
+        new Response("", { headers: { "x-ratelimit-reset-tokens": "4.5s" } }),
+        "",
+      ),
+    ).toBe(4_500);
+    const fetchMock = queueFetch({
+      status: 429,
+      body: {},
+      headers: { "x-ratelimit-reset-tokens": "54.5s" },
+    });
+    await expect(
+      withRetry(groqModel(KEY), { sleep: noSleep })("x"),
+    ).rejects.toThrow("HTTP 429");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("backs off on a 503 and gives up after two retries", async () => {

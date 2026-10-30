@@ -47,15 +47,33 @@ export function buildPlanPrompt(
   return [
     `Build a ${profile.daysPerWeek}-day weekly strength plan as JSON: {"name", "days": [{"name", "exercises": [{"exercise", "sets", "reps", "restSeconds"}]}]}.`,
     `"exercise" must be an exact name from this list, which is grouped as "muscle (category): name; name":\n${options}`,
-    `2 to 8 exercises a day, no exercise twice on a day, sets 1 to 6, reps 1 to 30, rest 30 to 300 seconds.`,
+    `2 to 8 exercises a day, no exercise twice on a day, sets 1 to 6, reps 1 to 30, rest 30 to 300 seconds. For a timed hold such as a plank, give reps as the number of holds (for example 3 sets of 1), not seconds.`,
     retry,
   ].join("\n\n");
+}
+
+// Round 2 of the eval (docs/COACH_EVAL.md) showed the models return near misses of
+// real names: "Standing Calf Raise" for "Standing Calf Raises". Case, punctuation,
+// "the", a trailing s and a copied group label are forgiven; an invented exercise is
+// still rejected.
+export function normaliseName(name: string): string {
+  return name
+    .replace(/^.*:\s*/, "") // "chest (strength): Dumbbell Flyes" copies the group label
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, " ")
+    .replace(/\bthe\b/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.replace(/s$/, ""))
+    .join(" ");
 }
 
 // The model answers with exercise names; the plan is stored and verified by id. A
 // name not in the library is kept as written, so the verifier reports it.
 export function namesToIds(raw: unknown, library: LibraryExercise[]): unknown {
-  const idByName = new Map(library.map((e) => [e.name ?? e.id, e.id]));
+  const idByName = new Map(
+    library.map((e) => [normaliseName(e.name ?? e.id), e.id]),
+  );
   if (typeof raw !== "object" || raw === null) return raw;
   const plan = raw as { days?: unknown };
   if (!Array.isArray(plan.days)) return raw;
@@ -71,7 +89,10 @@ export function namesToIds(raw: unknown, library: LibraryExercise[]): unknown {
           if (typeof slot !== "object" || slot === null) return slot;
           const { exercise, ...rest } = slot as Record<string, unknown>;
           if (typeof exercise !== "string") return slot;
-          return { exerciseId: idByName.get(exercise) ?? exercise, ...rest };
+          return {
+            exerciseId: idByName.get(normaliseName(exercise)) ?? exercise,
+            ...rest,
+          };
         }),
       };
     }),
