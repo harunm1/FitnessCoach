@@ -7,6 +7,9 @@ import {
   geminiModel,
   GROQ_MODEL,
   groqModel,
+  ProviderError,
+  withFallback,
+  withRetry,
 } from "./providers";
 import type { LibraryExercise } from "./verify";
 
@@ -151,5 +154,157 @@ describe("generatePlan with a provider", () => {
     );
     expect(result.source).toBe("DEFAULT");
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+// One response per call, in order; headers allow a Retry-After.
+function queueFetch(
+  ...responses: { status: number; body: unknown; headers?: HeadersInit }[]
+) {
+  const fn = vi.fn<typeof fetch>();
+  for (const r of responses) {
+    fn.mockResolvedValueOnce(
+      new Response(JSON.stringify(r.body), {
+        status: r.status,
+        headers: r.headers,
+      }),
+    );
+  }
+  vi.stubGlobal("fetch", fn);
+  return fn;
+}
+
+const noSleep = vi.fn<(ms: number) => Promise<void>>(async () => {});
+
+describe("withRetry", () => {
+  it("waits the Retry-After a 429 asks for, then succeeds", async () => {
+    const fetchMock = queueFetch(
+      { status: 429, body: {}, headers: { "retry-after": "2" } },
+      { status: 200, body: groqReply("{}") },
+    );
+    const sleep = vi.fn<(ms: number) => Promise<void>>(async () => {});
+    await expect(withRetry(groqModel(KEY), { sleep })("x")).resolves.toEqual(
+      {},
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(sleep).toHaveBeenCalledWith(2000);
+  });
+
+  it("reads Gemini's retryDelay from the error body", async () => {
+    queueFetch(
+      {
+        status: 429,
+        body: { error: { details: [{ retryDelay: "3s" }] } },
+      },
+      { status: 200, body: geminiReply([{ text: "{}" }]) },
+    );
+    const sleep = vi.fn<(ms: number) => Promise<void>>(async () => {});
+    await withRetry(geminiModel(KEY), { sleep })("x");
+    expect(sleep).toHaveBeenCalledWith(3000);
+  });
+
+  it("backs off on a 503 and gives up after two retries", async () => {
+    const fetchMock = queueFetch(
+      { status: 503, body: {} },
+      { status: 503, body: {} },
+      { status: 503, body: {} },
+    );
+    const sleep = vi.fn<(ms: number) => Promise<void>>(async () => {});
+    await expect(
+      withRetry(geminiModel(KEY), { sleep })("x"),
+    ).rejects.toBeInstanceOf(ProviderError);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const [first, second] = sleep.mock.calls.map((c) => c[0] as number);
+    expect(first).toBeGreaterThanOrEqual(500);
+    expect(first).toBeLessThanOrEqual(1000);
+    expect(second).toBeGreaterThanOrEqual(1000);
+    expect(second).toBeLessThanOrEqual(2000);
+  });
+
+  it("does not retry a 400, or wait out a Retry-After longer than the cap", async () => {
+    let fetchMock = queueFetch({ status: 400, body: {} });
+    await expect(
+      withRetry(groqModel(KEY), { sleep: noSleep })("x"),
+    ).rejects.toThrow("HTTP 400");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    fetchMock = queueFetch({
+      status: 429,
+      body: {},
+      headers: { "retry-after": "45" },
+    });
+    await expect(
+      withRetry(groqModel(KEY), { sleep: noSleep })("x"),
+    ).rejects.toThrow("HTTP 429");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not retry a timeout on the same provider", async () => {
+    const fetchMock = vi.fn(async () => {
+      throw new DOMException("timed out", "TimeoutError");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const err = await withRetry(groqModel(KEY), { sleep: noSleep })("x").catch(
+      (e: unknown) => e,
+    );
+    expect(err).toBeInstanceOf(ProviderError);
+    expect((err as ProviderError).timedOut).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not retry a reply that is not JSON; that is generatePlan's job", async () => {
+    const fetchMock = queueFetch({ status: 200, body: groqReply("not json") });
+    await expect(
+      withRetry(groqModel(KEY), { sleep: noSleep })("x"),
+    ).rejects.toThrow("not valid JSON");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("withFallback and coachModel with both keys", () => {
+  it("moves to Gemini when Groq stays rate-limited, and reports each step", async () => {
+    const fetchMock = queueFetch(
+      { status: 429, body: {}, headers: { "retry-after": "1" } },
+      { status: 429, body: {}, headers: { "retry-after": "1" } },
+      { status: 429, body: {}, headers: { "retry-after": "1" } },
+      { status: 200, body: geminiReply([{ text: JSON.stringify(plan) }]) },
+    );
+    const events: unknown[] = [];
+    const model = coachModel(
+      { GROQ_API_KEY: KEY, GEMINI_API_KEY: KEY },
+      { sleep: noSleep, onEvent: (e) => events.push(e) },
+    );
+    await expect(model("x")).resolves.toEqual(plan);
+    const urls = fetchMock.mock.calls.map((c) => String(c[0]));
+    expect(urls.slice(0, 3).every((u) => u.includes("api.groq.com"))).toBe(
+      true,
+    );
+    expect(urls[3]).toContain("generativelanguage.googleapis.com");
+    expect(events).toEqual([
+      { provider: "Groq", action: "retry", status: 429, waitMs: 1000 },
+      { provider: "Groq", action: "retry", status: 429, waitMs: 1000 },
+      { provider: "Groq", action: "fallback", status: 429 },
+    ]);
+  });
+
+  it("does not switch provider for a bad reply", async () => {
+    const primary = vi.fn(async () => {
+      throw new Error("Groq reply was not valid JSON");
+    });
+    const fallback = vi.fn(async () => ({}));
+    await expect(withFallback(primary, fallback)("x")).rejects.toThrow(
+      "not valid JSON",
+    );
+    expect(fallback).not.toHaveBeenCalled();
+  });
+
+  it("uses one provider when only its key is set", async () => {
+    const fetchMock = queueFetch({ status: 503, body: {} });
+    const model = coachModel(
+      { GROQ_API_KEY: KEY },
+      { retries: 0, sleep: noSleep },
+    );
+    await expect(model("x")).rejects.toThrow("HTTP 503");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
