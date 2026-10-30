@@ -1,0 +1,904 @@
+{
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "rows": [
+    {
+      "id": "gym-3-days",
+      "offered": 85,
+      "source": "COACH",
+      "attempts": 1,
+      "firstReplyPassed": true,
+      "calls": [
+        {
+          "ms": 3501,
+          "reply": {
+            "name": "3-Day Strength Plan",
+            "days": [
+              {
+                "name": "Day 1",
+                "exercises": [
+                  {
+                    "exerciseId": "Barbell_Full_Squat",
+                    "sets": 4,
+                    "reps": 8,
+                    "restSeconds": 120
+                  },
+                  {
+                    "exerciseId": "Barbell_Deadlift",
+                    "sets": 3,
+                    "reps": 5,
+                    "restSeconds": 180
+                  },
+                  {
+                    "exerciseId": "Barbell_Bench_Press_-_Medium_Grip",
+                    "sets": 4,
+                    "reps": 8,
+                    "restSeconds": 120
+                  },
+                  {
+                    "exerciseId": "Bent_Over_Barbell_Row",
+                    "sets": 4,
+                    "reps": 8,
+                    "restSeconds": 120
+                  },
+                  {
+                    "exerciseId": "Barbell_Curl",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Bench_Dips",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 90
+                  }
+                ]
+              },
+              {
+                "name": "Day 2",
+                "exercises": [
+                  {
+                    "exerciseId": "Barbell_Incline_Bench_Press_-_Medium_Grip",
+                    "sets": 4,
+                    "reps": 8,
+                    "restSeconds": 120
+                  },
+                  {
+                    "exerciseId": "Barbell_Shrug",
+                    "sets": 4,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Alternating_Kettlebell_Row",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Alternate_Hammer_Curl",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Barbell_Seated_Calf_Raise",
+                    "sets": 4,
+                    "reps": 15,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Kettlebell_Sumo_High_Pull",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 90
+                  }
+                ]
+              },
+              {
+                "name": "Day 3",
+                "exercises": [
+                  {
+                    "exerciseId": "Barbell_Lunge",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Barbell_Incline_Shoulder_Raise",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Bent_Over_Two-Arm_Long_Bar_Row",
+                    "sets": 4,
+                    "reps": 8,
+                    "restSeconds": 120
+                  },
+                  {
+                    "exerciseId": "Cable_Preacher_Curl",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Cable_Lying_Triceps_Extension",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Hyperextensions_With_No_Hyperextension_Bench",
+                    "sets": 3,
+                    "reps": 15,
+                    "restSeconds": 60
+                  }
+                ]
+              }
+            ]
+          },
+          "problems": []
+        }
+      ]
+    },
+    {
+      "id": "gym-5-days",
+      "offered": 85,
+      "source": "COACH",
+      "attempts": 1,
+      "firstReplyPassed": true,
+      "calls": [
+        {
+          "ms": 5640,
+          "reply": {
+            "name": "5-Day Strength Plan",
+            "days": [
+              {
+                "name": "Day 1 - Upper Push",
+                "exercises": [
+                  {
+                    "exerciseId": "Barbell_Bench_Press_-_Medium_Grip",
+                    "sets": 4,
+                    "reps": 8,
+                    "restSeconds": 120
+                  },
+                  {
+                    "exerciseId": "Alternating_Floor_Press",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Arnold_Dumbbell_Press",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Cable_Incline_Triceps_Extension",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Bench_Dips",
+                    "sets": 3,
+                    "reps": 15,
+                    "restSeconds": 60
+                  }
+                ]
+              },
+              {
+                "name": "Day 2 - Lower Body",
+                "exercises": [
+                  {
+                    "exerciseId": "Barbell_Full_Squat",
+                    "sets": 4,
+                    "reps": 6,
+                    "restSeconds": 180
+                  },
+                  {
+                    "exerciseId": "Barbell_Deadlift",
+                    "sets": 4,
+                    "reps": 5,
+                    "restSeconds": 180
+                  },
+                  {
+                    "exerciseId": "Barbell_Lunge",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Calf_Press",
+                    "sets": 4,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Glute_Kickback",
+                    "sets": 3,
+                    "reps": 15,
+                    "restSeconds": 60
+                  }
+                ]
+              },
+              {
+                "name": "Day 3 - Back & Biceps",
+                "exercises": [
+                  {
+                    "exerciseId": "Bent_Over_Barbell_Row",
+                    "sets": 4,
+                    "reps": 8,
+                    "restSeconds": 120
+                  },
+                  {
+                    "exerciseId": "Elevated_Cable_Rows",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Barbell_Curl",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Alternate_Hammer_Curl",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Cable_Wrist_Curl",
+                    "sets": 3,
+                    "reps": 15,
+                    "restSeconds": 45
+                  }
+                ]
+              },
+              {
+                "name": "Day 4 - Shoulders & Core",
+                "exercises": [
+                  {
+                    "exerciseId": "Alternating_Cable_Shoulder_Press",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Anti-Gravity_Press",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Barbell_Ab_Rollout",
+                    "sets": 3,
+                    "reps": 8,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Flutter_Kicks",
+                    "sets": 3,
+                    "reps": 20,
+                    "restSeconds": 45
+                  },
+                  {
+                    "exerciseId": "Air_Bike",
+                    "sets": 3,
+                    "reps": 30,
+                    "restSeconds": 60
+                  }
+                ]
+              },
+              {
+                "name": "Day 5 - Full Body",
+                "exercises": [
+                  {
+                    "exerciseId": "Kettlebell_Sumo_High_Pull",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Dumbbell_Clean",
+                    "sets": 3,
+                    "reps": 8,
+                    "restSeconds": 120
+                  },
+                  {
+                    "exerciseId": "Barbell_Shrug",
+                    "sets": 4,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Barbell_Step_Ups",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Cable_Hammer_Curls_-_Rope_Attachment",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  }
+                ]
+              }
+            ]
+          },
+          "problems": []
+        }
+      ]
+    },
+    {
+      "id": "gym-4-days-knee",
+      "offered": 78,
+      "source": "COACH",
+      "attempts": 1,
+      "firstReplyPassed": true,
+      "calls": [
+        {
+          "ms": 3505,
+          "reply": {
+            "name": "4-Day Strength Plan",
+            "days": [
+              {
+                "name": "Day 1",
+                "exercises": [
+                  {
+                    "exerciseId": "Alternating_Floor_Press",
+                    "sets": 4,
+                    "reps": 8,
+                    "restSeconds": 120
+                  },
+                  {
+                    "exerciseId": "Arnold_Dumbbell_Press",
+                    "sets": 4,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Bench_Dips",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Barbell_Ab_Rollout",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 60
+                  }
+                ]
+              },
+              {
+                "name": "Day 2",
+                "exercises": [
+                  {
+                    "exerciseId": "Bent_Over_Barbell_Row",
+                    "sets": 4,
+                    "reps": 8,
+                    "restSeconds": 120
+                  },
+                  {
+                    "exerciseId": "Alternating_Kettlebell_Row",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Cable_Preacher_Curl",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Barbell_Seated_Calf_Raise",
+                    "sets": 4,
+                    "reps": 15,
+                    "restSeconds": 90
+                  }
+                ]
+              },
+              {
+                "name": "Day 3",
+                "exercises": [
+                  {
+                    "exerciseId": "Kettlebell_Hang_Clean",
+                    "sets": 4,
+                    "reps": 6,
+                    "restSeconds": 150
+                  },
+                  {
+                    "exerciseId": "Glute_Kickback",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Stiff_Leg_Barbell_Good_Morning",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 120
+                  },
+                  {
+                    "exerciseId": "Alternating_Deltoid_Raise",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  }
+                ]
+              },
+              {
+                "name": "Day 4",
+                "exercises": [
+                  {
+                    "exerciseId": "Barbell_Shrug",
+                    "sets": 4,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Cable_Wrist_Curl",
+                    "sets": 3,
+                    "reps": 15,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Flutter_Kicks",
+                    "sets": 3,
+                    "reps": 30,
+                    "restSeconds": 45
+                  },
+                  {
+                    "exerciseId": "Barbell_Curl",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  }
+                ]
+              }
+            ]
+          },
+          "problems": []
+        }
+      ]
+    },
+    {
+      "id": "machines-6-days",
+      "offered": 79,
+      "source": "DEFAULT",
+      "attempts": 2,
+      "firstReplyPassed": false,
+      "calls": [
+        {
+          "ms": 54,
+          "error": "Groq returned HTTP 429"
+        },
+        {
+          "ms": 139,
+          "error": "Groq returned HTTP 429"
+        }
+      ]
+    },
+    {
+      "id": "dumbbells-3-days",
+      "offered": 72,
+      "source": "COACH",
+      "attempts": 1,
+      "firstReplyPassed": true,
+      "calls": [
+        {
+          "ms": 3715,
+          "reply": {
+            "name": "3-Day Strength Plan",
+            "days": [
+              {
+                "name": "Day 1",
+                "exercises": [
+                  {
+                    "exerciseId": "Around_The_Worlds",
+                    "sets": 4,
+                    "reps": 8,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Arnold_Dumbbell_Press",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Close-Grip_Dumbbell_Press",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Decline_Dumbbell_Bench_Press",
+                    "sets": 4,
+                    "reps": 8,
+                    "restSeconds": 120
+                  },
+                  {
+                    "exerciseId": "Alternating_Deltoid_Raise",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  }
+                ]
+              },
+              {
+                "name": "Day 2",
+                "exercises": [
+                  {
+                    "exerciseId": "Bent_Over_Two-Dumbbell_Row",
+                    "sets": 4,
+                    "reps": 8,
+                    "restSeconds": 120
+                  },
+                  {
+                    "exerciseId": "Pullups",
+                    "sets": 3,
+                    "reps": 6,
+                    "restSeconds": 180
+                  },
+                  {
+                    "exerciseId": "Dumbbell_Alternate_Bicep_Curl",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Concentration_Curls",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Dumbbell_Shrug",
+                    "sets": 4,
+                    "reps": 12,
+                    "restSeconds": 90
+                  }
+                ]
+              },
+              {
+                "name": "Day 3",
+                "exercises": [
+                  {
+                    "exerciseId": "Bodyweight_Squat",
+                    "sets": 4,
+                    "reps": 15,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Dumbbell_Lunges",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Butt_Lift_Bridge",
+                    "sets": 3,
+                    "reps": 15,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Flutter_Kicks",
+                    "sets": 3,
+                    "reps": 30,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "3_4_Sit-Up",
+                    "sets": 3,
+                    "reps": 20,
+                    "restSeconds": 60
+                  }
+                ]
+              }
+            ]
+          },
+          "problems": []
+        }
+      ]
+    },
+    {
+      "id": "dumbbells-bands-3-days-shoulder",
+      "offered": 59,
+      "source": "DEFAULT",
+      "attempts": 2,
+      "firstReplyPassed": false,
+      "calls": [
+        {
+          "ms": 180,
+          "error": "Groq returned HTTP 429"
+        },
+        {
+          "ms": 282,
+          "error": "Groq returned HTTP 429"
+        }
+      ]
+    },
+    {
+      "id": "dumbbells-1-day-wrist",
+      "offered": 63,
+      "source": "COACH",
+      "attempts": 2,
+      "firstReplyPassed": false,
+      "calls": [
+        {
+          "ms": 68,
+          "error": "Groq returned HTTP 429"
+        },
+        {
+          "ms": 1719,
+          "reply": {
+            "name": "Full Body Strength - Day 1",
+            "days": [
+              {
+                "name": "Day 1",
+                "exercises": [
+                  {
+                    "exerciseId": "Bodyweight_Squat",
+                    "sets": 4,
+                    "reps": 12,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Bent_Over_Two-Dumbbell_Row",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 120
+                  },
+                  {
+                    "exerciseId": "Arnold_Dumbbell_Press",
+                    "sets": 3,
+                    "reps": 8,
+                    "restSeconds": 120
+                  },
+                  {
+                    "exerciseId": "Bench_Dips",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Flutter_Kicks",
+                    "sets": 2,
+                    "reps": 20,
+                    "restSeconds": 60
+                  }
+                ]
+              }
+            ]
+          },
+          "problems": []
+        }
+      ]
+    },
+    {
+      "id": "bodyweight-2-days",
+      "offered": 39,
+      "source": "DEFAULT",
+      "attempts": 2,
+      "firstReplyPassed": false,
+      "calls": [
+        {
+          "ms": 196,
+          "error": "Groq returned HTTP 429"
+        },
+        {
+          "ms": 78,
+          "error": "Groq returned HTTP 429"
+        }
+      ]
+    },
+    {
+      "id": "bodyweight-4-days-back",
+      "offered": 37,
+      "source": "COACH",
+      "attempts": 1,
+      "firstReplyPassed": true,
+      "calls": [
+        {
+          "ms": 4132,
+          "reply": {
+            "name": "4-Day Strength Plan",
+            "days": [
+              {
+                "name": "Day 1",
+                "exercises": [
+                  {
+                    "exerciseId": "Bodyweight_Squat",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Bench_Dips",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Chin-Up",
+                    "sets": 3,
+                    "reps": 5,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Clock_Push-Up",
+                    "sets": 3,
+                    "reps": 8,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Glute_Kickback",
+                    "sets": 3,
+                    "reps": 15,
+                    "restSeconds": 45
+                  },
+                  {
+                    "exerciseId": "Flutter_Kicks",
+                    "sets": 2,
+                    "reps": 20,
+                    "restSeconds": 30
+                  }
+                ]
+              },
+              {
+                "name": "Day 2",
+                "exercises": [
+                  {
+                    "exerciseId": "Bodyweight_Walking_Lunge",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Incline_Push-Up",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Pullups",
+                    "sets": 3,
+                    "reps": 4,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Single_Leg_Glute_Bridge",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 45
+                  },
+                  {
+                    "exerciseId": "Alternate_Heel_Touchers",
+                    "sets": 2,
+                    "reps": 15,
+                    "restSeconds": 30
+                  },
+                  {
+                    "exerciseId": "Air_Bike",
+                    "sets": 2,
+                    "reps": 30,
+                    "restSeconds": 30
+                  }
+                ]
+              },
+              {
+                "name": "Day 3",
+                "exercises": [
+                  {
+                    "exerciseId": "Freehand_Jump_Squat",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Dips_-_Triceps_Version",
+                    "sets": 3,
+                    "reps": 8,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Wide-Grip_Rear_Pull-Up",
+                    "sets": 3,
+                    "reps": 4,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Butt_Lift_Bridge",
+                    "sets": 3,
+                    "reps": 15,
+                    "restSeconds": 45
+                  },
+                  {
+                    "exerciseId": "Bottoms_Up",
+                    "sets": 2,
+                    "reps": 12,
+                    "restSeconds": 30
+                  },
+                  {
+                    "exerciseId": "Isometric_Neck_Exercise_-_Front_And_Back",
+                    "sets": 2,
+                    "reps": 20,
+                    "restSeconds": 30
+                  }
+                ]
+              },
+              {
+                "name": "Day 4",
+                "exercises": [
+                  {
+                    "exerciseId": "Body-Up",
+                    "sets": 3,
+                    "reps": 8,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Inverted_Row",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Decline_Push-Up",
+                    "sets": 3,
+                    "reps": 8,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Step-up_with_Knee_Raise",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Leg_Lift",
+                    "sets": 3,
+                    "reps": 15,
+                    "restSeconds": 45
+                  },
+                  {
+                    "exerciseId": "V-Bar_Pullup",
+                    "sets": 3,
+                    "reps": 5,
+                    "restSeconds": 90
+                  }
+                ]
+              }
+            ]
+          },
+          "problems": []
+        }
+      ]
+    },
+    {
+      "id": "kettlebells-2-days-back-shoulder",
+      "offered": 32,
+      "source": "DEFAULT",
+      "attempts": 2,
+      "firstReplyPassed": false,
+      "calls": [
+        {
+          "ms": 77,
+          "error": "Groq returned HTTP 429"
+        },
+        {
+          "ms": 161,
+          "error": "Groq returned HTTP 429"
+        }
+      ]
+    }
+  ]
+}

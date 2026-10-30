@@ -1,0 +1,135 @@
+{
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "rows": [
+    {
+      "id": "dumbbells-bands-3-days-shoulder",
+      "offered": 59,
+      "source": "COACH",
+      "attempts": 1,
+      "firstReplyPassed": true,
+      "calls": [
+        {
+          "ms": 3397,
+          "reply": {
+            "name": "3-Day Strength Plan",
+            "days": [
+              {
+                "name": "Day 1",
+                "exercises": [
+                  {
+                    "exerciseId": "Bodyweight_Squat",
+                    "sets": 4,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Dumbbell_Alternate_Bicep_Curl",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Bent_Over_Two-Dumbbell_Row_With_Palms_In",
+                    "sets": 4,
+                    "reps": 8,
+                    "restSeconds": 120
+                  },
+                  {
+                    "exerciseId": "Band_Skull_Crusher",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Glute_Kickback",
+                    "sets": 3,
+                    "reps": 15,
+                    "restSeconds": 60
+                  }
+                ]
+              },
+              {
+                "name": "Day 2",
+                "exercises": [
+                  {
+                    "exerciseId": "Dumbbell_Lunges",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Pullups",
+                    "sets": 3,
+                    "reps": 8,
+                    "restSeconds": 120
+                  },
+                  {
+                    "exerciseId": "Dumbbell_Flyes",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Dumbbell_One-Arm_Triceps_Extension",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Calf_Raise_On_A_Dumbbell",
+                    "sets": 4,
+                    "reps": 15,
+                    "restSeconds": 45
+                  }
+                ]
+              },
+              {
+                "name": "Day 3",
+                "exercises": [
+                  {
+                    "exerciseId": "Dumbbell_Squat",
+                    "sets": 4,
+                    "reps": 8,
+                    "restSeconds": 120
+                  },
+                  {
+                    "exerciseId": "Inverted_Row",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Dumbbell_Shrug",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Stiff-Legged_Dumbbell_Deadlift",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 120
+                  },
+                  {
+                    "exerciseId": "Flutter_Kicks",
+                    "sets": 3,
+                    "reps": 20,
+                    "restSeconds": 45
+                  },
+                  {
+                    "exerciseId": "Band_Hip_Adductions",
+                    "sets": 3,
+                    "reps": 15,
+                    "restSeconds": 60
+                  }
+                ]
+              }
+            ]
+          },
+          "problems": []
+        }
+      ]
+    }
+  ]
+}
