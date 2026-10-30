@@ -157,6 +157,32 @@ describe("the full exercise list in the prompt", () => {
     ]);
   });
 
+  it("accepts a near miss of a real name (case, punctuation, the, plural, group label)", async () => {
+    const model = vi.fn<PlanModel>().mockResolvedValue({
+      name: "P",
+      days: [
+        {
+          name: "Full",
+          exercises: [
+            { exercise: "barbell bench", sets: 3, reps: 8, restSeconds: 90 },
+            {
+              exercise: "chest (strength): the pushup.",
+              sets: 3,
+              reps: 12,
+              restSeconds: 60,
+            },
+          ],
+        },
+      ],
+    });
+    const result = await generatePlan(model, user, named);
+    expect(result.source).toBe("COACH");
+    expect(result.plan.days[0].exercises.map((e) => e.exerciseId)).toEqual([
+      "Barbell_Bench",
+      "Pushups",
+    ]);
+  });
+
   it("names an invented exercise in the retry prompt", async () => {
     const model = vi.fn<PlanModel>().mockResolvedValue({
       name: "P",
