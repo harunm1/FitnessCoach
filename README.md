@@ -39,6 +39,62 @@ docs/             architecture, plan, research, meetings
 
 Lands with the skeleton; until then only `docs/` exists.
 
+## Local Development
+
+Prerequisites: Node.js, npm, and Docker Desktop with Docker Compose available.
+Start Docker Desktop before running the Docker commands. When using WSL, enable
+Docker Desktop integration for your distribution.
+
+Install dependencies and copy the environment template:
+
+```bash
+npm install
+cp .env.example .env
+```
+
+In PowerShell, use this equivalent copy command:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Docker runs PostgreSQL only; run the Next.js application locally with npm.
+PostgreSQL uses host `localhost`, port `5432`, database `fitnesscoach`, username
+`fitnesscoach`, and password `fitnesscoach`. The expected `DATABASE_URL` is:
+
+```dotenv
+DATABASE_URL="postgresql://fitnesscoach:fitnesscoach@localhost:5432/fitnesscoach?schema=public"
+```
+
+Start PostgreSQL and check its status:
+
+```bash
+docker compose up -d
+docker compose ps
+```
+
+Wait until the `postgres` service reports `healthy`, then apply migrations, seed
+the exercise dataset and demo user, and start the application:
+
+```bash
+npm run db:migrate
+npm run db:seed
+npm run dev
+```
+
+Stop PostgreSQL while keeping its data in the named volume:
+
+```bash
+docker compose down
+```
+
+To reset the local database, remove the containers and named volume. This deletes
+all local PostgreSQL data; run migrations and seeding again after starting it:
+
+```bash
+docker compose down -v
+```
+
 ## How we work
 
 - Tasks live on the [project board](https://github.com/users/nabeegh-khan/projects/3): Backlog, Ready, In progress, In review, Done.

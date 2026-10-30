@@ -6,3 +6,5 @@ build
 coverage
 package-lock.json
 next-env.d.ts
+src/generated
+prisma/migrations
