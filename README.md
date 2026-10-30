@@ -24,7 +24,7 @@ Team project for ECE1724 Advanced Web Development, University of Toronto, Fall 2
 | Data     | PostgreSQL with Prisma                                                             |
 | Files    | DigitalOcean Spaces, private bucket                                                |
 | Auth     | Better Auth                                                                        |
-| AI       | Gemini API, Groq as fallback                                                       |
+| AI       | Groq first, Gemini as fallback (D4); both tested on the same profiles (#7)         |
 | Payments | Stripe in test mode                                                                |
 
 ## Repository layout
