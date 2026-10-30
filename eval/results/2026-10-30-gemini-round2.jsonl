@@ -1,0 +1,5 @@
+{"id":"gym-3-days","offered":694,"source":"DEFAULT","attempts":2,"firstReplyPassed":false,"events":[],"calls":[{"ms":295,"error":"Gemini returned HTTP 429"},{"ms":213,"error":"Gemini returned HTTP 429"}]}
+{"id":"gym-5-days","offered":694,"source":"DEFAULT","attempts":2,"firstReplyPassed":false,"events":[{"provider":"Gemini","action":"retry","status":503,"waitMs":538}],"calls":[{"ms":7453,"error":"Gemini returned HTTP 429"},{"ms":175,"error":"Gemini returned HTTP 429"}]}
+{"id":"gym-4-days-knee","offered":522,"source":"DEFAULT","attempts":2,"firstReplyPassed":false,"events":[],"calls":[{"ms":316,"error":"Gemini returned HTTP 429"},{"ms":176,"error":"Gemini returned HTTP 429"}]}
+{"id":"machines-6-days","offered":336,"source":"DEFAULT","attempts":2,"firstReplyPassed":false,"events":[],"calls":[{"ms":287,"error":"Gemini returned HTTP 429"},{"ms":189,"error":"Gemini returned HTTP 429"}]}
+{"id":"dumbbells-3-days","offered":311,"source":"DEFAULT","attempts":2,"firstReplyPassed":false,"events":[],"calls":[{"ms":333,"error":"Gemini returned HTTP 429"},{"ms":163,"error":"Gemini returned HTTP 429"}]}

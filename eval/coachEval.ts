@@ -34,11 +34,13 @@ async function main() {
   // is the production setup, Groq first with Gemini behind it.
   const env =
     mode === "chain"
-      ? { ...process.env, COACH_PROVIDER: "groq" }
+      ? { ...process.env, COACH_PROVIDER: process.env.COACH_PROVIDER ?? "groq" }
       : {
           COACH_PROVIDER: mode,
           [`${mode.toUpperCase()}_API_KEY`]:
             process.env[`${mode.toUpperCase()}_API_KEY`],
+          GROQ_MODEL: process.env.GROQ_MODEL,
+          GEMINI_MODEL: process.env.GEMINI_MODEL,
         };
   const events: ProviderEvent[] = [];
   const model = coachModel(env, { onEvent: (e) => events.push(e) });
