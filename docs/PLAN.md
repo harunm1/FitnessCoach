@@ -12,22 +12,22 @@
 
 ## Proposal sections
 
-| Section                                 | Weight | Owner                                                                          |
-| --------------------------------------- | ------ | ------------------------------------------------------------------------------ |
+| Section                                 | Weight | Owner         |
+| --------------------------------------- | ------ | ------------- |
 | 1. Motivation                           | 20%    | Mohammad (#3) |
-| 2. Objectives, architecture, features   | 50%    | Nabeegh                                                                        |
-| 3. Plan and responsibilities            | 15%    | Shubham (#5)                                                      |
-| 4. Initial reasoning and AI exploration | 15%    | Farnaz (#6)                                                                    |
+| 2. Objectives, architecture, features   | 50%    | Nabeegh       |
+| 3. Plan and responsibilities            | 15%    | Shubham (#5)  |
+| 4. Initial reasoning and AI exploration | 15%    | Farnaz (#6)   |
 
 ## Build areas
 
-| Area | What it covers | Owner |
-| --- | --- | --- |
-| Foundation | Next.js skeleton, Prettier/ESLint, CI, Prisma schema/seed, exercise dataset | Nabeegh |
-| AI coach | workout/running plan generation, verifier, streamed chat, AI/body-map follow-up | Nabeegh |
-| Accounts | Better Auth, tiers, Stripe test mode; shared local Docker Compose PostgreSQL (`localhost:5432`, #23), authentication/backend support | Shubham |
-| Quiz and workout session | quiz, interactive body map, today's session, Redux Toolkit, workout/running logging | Mohammad |
-| Progress | history, streaks, calendar heatmap, photos/cloud storage, workout/running progress | Farnaz |
+| Area                     | What it covers                                                                                                                       | Owner    |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| Foundation               | Next.js skeleton, Prettier/ESLint, CI, Prisma schema/seed, exercise dataset                                                          | Nabeegh  |
+| AI coach                 | workout/running plan generation, verifier, streamed chat, AI/body-map follow-up                                                      | Nabeegh  |
+| Accounts                 | Better Auth, tiers, Stripe test mode; shared local Docker Compose PostgreSQL (`localhost:5432`, #23), authentication/backend support | Shubham  |
+| Quiz and workout session | quiz, interactive body map, today's session, Redux Toolkit, workout/running logging                                                  | Mohammad |
+| Progress                 | history, streaks, calendar heatmap, photos/cloud storage, workout/running progress                                                   | Farnaz   |
 
 Demo: sign in → complete quiz → generate workout plan → open workout session → log workout → view progress.
 Running is planned; nearby-gym discovery and MCP exercise tools remain optional/stretch.
@@ -41,11 +41,11 @@ Running is planned; nearby-gym discovery and MCP exercise tools remain optional/
 
 ## Risks
 
-| Risk | Mitigation |
-| --- | --- |
-| LLM limits/outage | validate output; fallback |
-| Stripe delays | outside demo path |
-| Feature-area delays | stable core demo |
-| Migration conflicts | discuss schema changes |
-| Integration conflicts | integrate regularly |
-| Cloud storage setup | verify configuration |
+| Risk                  | Mitigation                |
+| --------------------- | ------------------------- |
+| LLM limits/outage     | validate output; fallback |
+| Stripe delays         | outside demo path         |
+| Feature-area delays   | stable core demo          |
+| Migration conflicts   | discuss schema changes    |
+| Integration conflicts | integrate regularly       |
+| Cloud storage setup   | verify configuration      |
