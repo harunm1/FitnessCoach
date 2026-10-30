@@ -40,6 +40,7 @@ The demo path is foundation, accounts and the AI coach. Quiz, session and progre
 
 - The Prisma schema and the coach's plan JSON are agreed first, so every area builds against them.
 - One issue per task, one branch per issue, a pull request with `Closes #n`, one teammate review, squash and merge.
+- The reviewer is the teammate whose area the change touches, so reviews spread across the team instead of landing on one person. Every request carries a review-by date three to four calendar days out, the same rule for everyone. A branch carrying more than one person's commits merges with a merge commit, so each commit keeps its author.
 - CI runs lint, typecheck and tests on every pull request.
 - Checkpoints: Sat 14 Nov (core path end to end), Sat 21 Nov (everything working end to end). Features and new code stop Mon 23 Nov; after that only fixes, so the presentation shows finished work and the last two weeks go to testing, the report and the video.
 
