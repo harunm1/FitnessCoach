@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import SetLogForm from "@/components/SetLogForm";
 import { startOrResumeWorkout } from "./actions";
 
 const demoEmail = "demo@fitnesscoach.local";
@@ -33,18 +34,40 @@ export default async function SessionPage() {
     },
   });
   const firstDay = plan?.days[0];
-  const activeWorkout = plan && firstDay
-    ? await prisma.workout.findFirst({
-        where: {
-          user: { email: demoEmail },
-          planId: plan.id,
-          planDayId: firstDay.id,
-          finishedAt: null,
-        },
-        orderBy: { startedAt: "desc" },
-        select: { startedAt: true },
-      })
-    : null;
+  const activeWorkout =
+    plan && firstDay
+      ? await prisma.workout.findFirst({
+          where: {
+            user: { email: demoEmail },
+            planId: plan.id,
+            planDayId: firstDay.id,
+            finishedAt: null,
+          },
+          orderBy: { startedAt: "desc" },
+          select: {
+            startedAt: true,
+            sets: {
+              orderBy: [{ exerciseId: "asc" }, { setNumber: "asc" }],
+              select: {
+                id: true,
+                exerciseId: true,
+                setNumber: true,
+                reps: true,
+                weightKg: true,
+              },
+            },
+          },
+        })
+      : null;
+  const loggedByExercise = new Map<
+    string,
+    NonNullable<typeof activeWorkout>["sets"]
+  >();
+  for (const set of activeWorkout?.sets ?? []) {
+    const exerciseSets = loggedByExercise.get(set.exerciseId) ?? [];
+    exerciseSets.push(set);
+    loggedByExercise.set(set.exerciseId, exerciseSets);
+  }
 
   return (
     <main className="min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12">
@@ -53,7 +76,10 @@ export default async function SessionPage() {
           <Link className="text-sm font-bold tracking-[0.12em]" href="/">
             FORM
           </Link>
-          <Link className="text-xs text-foreground/60 underline underline-offset-4" href="/onboarding">
+          <Link
+            className="text-xs text-foreground/60 underline underline-offset-4"
+            href="/onboarding"
+          >
             Edit profile
           </Link>
         </header>
@@ -61,7 +87,7 @@ export default async function SessionPage() {
         {plan && firstDay ? (
           <>
             <div className="mb-8">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/60">
+              <p className="text-xs font-semibold tracking-[0.14em] text-foreground/60 uppercase">
                 Your training plan
               </p>
               <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">
@@ -71,7 +97,10 @@ export default async function SessionPage() {
             </div>
 
             {activeWorkout ? (
-              <p className="mb-6 border-l-2 border-foreground px-3 py-2 text-sm" role="status">
+              <p
+                className="mb-6 border-l-2 border-foreground px-3 py-2 text-sm"
+                role="status"
+              >
                 Workout in progress since{" "}
                 {new Intl.DateTimeFormat("en", {
                   hour: "numeric",
@@ -80,30 +109,78 @@ export default async function SessionPage() {
               </p>
             ) : null}
 
+            {activeWorkout && (
+              <p className="mb-4 text-xs text-foreground/60">
+                {activeWorkout.sets.length} sets logged across this workout.
+              </p>
+            )}
+
             <section aria-label={`${firstDay.name} exercises`}>
               <ol className="divide-y divide-foreground/15 border-y border-foreground/15">
-                {firstDay.exercises.map((slot, index) => (
-                  <li className="grid gap-3 py-5 sm:grid-cols-[3rem_minmax(0,1fr)_auto] sm:items-center" key={slot.id}>
-                    <span className="font-mono text-xs text-foreground/50">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <div>
-                      <h2 className="m-0 text-base font-semibold">
-                        {slot.exercise.name}
-                      </h2>
-                      <p className="mb-0 mt-1 text-xs capitalize text-foreground/60">
-                        {slot.exercise.primaryMuscles.join(" · ")}
-                        {slot.exercise.equipment && ` · ${slot.exercise.equipment}`}
-                      </p>
-                    </div>
-                    <p className="m-0 text-sm text-foreground/70 sm:text-right">
-                      {slot.sets} sets × {slot.reps} reps
-                      <span className="block text-xs text-foreground/50">
-                        {slot.restSeconds}s rest
+                {firstDay.exercises.map((slot, index) => {
+                  const sets = loggedByExercise.get(slot.exerciseId) ?? [];
+                  const remaining = Math.max(slot.sets - sets.length, 0);
+                  return (
+                    <li
+                      className="grid gap-3 py-5 sm:grid-cols-[3rem_minmax(0,1fr)_auto] sm:items-center"
+                      key={slot.id}
+                    >
+                      <span className="font-mono text-xs text-foreground/50">
+                        {String(index + 1).padStart(2, "0")}
                       </span>
-                    </p>
-                  </li>
-                ))}
+                      <div>
+                        <h2 className="m-0 text-base font-semibold">
+                          {slot.exercise.name}
+                        </h2>
+                        <p className="mt-1 mb-0 text-xs text-foreground/60 capitalize">
+                          {slot.exercise.primaryMuscles.join(" · ")}
+                          {slot.exercise.equipment &&
+                            ` · ${slot.exercise.equipment}`}
+                        </p>
+                        {activeWorkout && (
+                          <>
+                            <p className="mt-3 mb-0 text-xs font-medium text-foreground/70">
+                              {sets.length} / {slot.sets} sets logged
+                              {remaining > 0
+                                ? ` · ${remaining} remaining`
+                                : " · Complete"}
+                            </p>
+                            {sets.length > 0 && (
+                              <ul
+                                aria-label={`${slot.exercise.name} logged sets`}
+                                className="mt-2 flex flex-wrap gap-2 p-0"
+                              >
+                                {sets.map((set) => (
+                                  <li
+                                    className="list-none border border-foreground/15 bg-white px-2 py-1 text-[11px] text-foreground/70"
+                                    key={set.id}
+                                  >
+                                    Set {set.setNumber}: {set.reps} reps
+                                    {set.weightKg !== null &&
+                                      ` · ${set.weightKg.toString()} kg`}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                            {remaining > 0 && (
+                              <SetLogForm
+                                exerciseId={slot.exerciseId}
+                                nextSetNumber={sets.length + 1}
+                                targetReps={slot.reps}
+                              />
+                            )}
+                          </>
+                        )}
+                      </div>
+                      <p className="m-0 text-sm text-foreground/70 sm:text-right">
+                        {slot.sets} sets × {slot.reps} reps
+                        <span className="block text-xs text-foreground/50">
+                          {slot.restSeconds}s rest
+                        </span>
+                      </p>
+                    </li>
+                  );
+                })}
               </ol>
             </section>
 
@@ -121,10 +198,12 @@ export default async function SessionPage() {
           </>
         ) : (
           <section className="py-10">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/60">
+            <p className="text-xs font-semibold tracking-[0.14em] text-foreground/60 uppercase">
               No plan saved yet
             </p>
-            <h1 className="mt-3 text-3xl font-semibold">Set up your profile first</h1>
+            <h1 className="mt-3 text-3xl font-semibold">
+              Set up your profile first
+            </h1>
             <p className="mt-3 max-w-lg text-sm leading-6 text-foreground/70">
               Complete the quiz to create a starter plan for your week.
             </p>
