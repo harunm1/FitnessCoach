@@ -53,3 +53,13 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** suggestions to test both valid day-count boundaries, invalid fractional and non-numeric day counts, unknown goal and level values, unsupported equipment, and injury notes at and over the length limit.
 
 **Did with it:** checked each suggestion against the schema instead of treating the list as requirements, added the applicable cases, and ran the focused Vitest file. An initial test run exposed that Vitest did not resolve the schema's `@/` alias, so I changed that import to a relative path. The focused tests passed (11/11), and the full suite passed (12/12).
+
+### 1 November 2026, rest timer UI
+
+**Before asking:** the rest timer countdown worked, but its state changes were subtle and users could think the button did nothing.
+
+**Asked:** how to make the timer's running, paused, and completed states clearer and more visually noticeable.
+
+**Got:** suggestions to give the countdown stronger visual emphasis and display a clear status label as it changes state.
+
+**Did with it:** updated the timer to highlight while running and show explicit “Resting”, “Paused”, and “Rest complete” states; verified in the browser that clicking Start rest changes the button to Pause timer and the countdown decreases. Styled the UI with Tailwind utility classes. No shadcn/ui components were used.

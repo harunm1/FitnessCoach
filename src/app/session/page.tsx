@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import RestTimer from "@/components/RestTimer";
 import SetLogForm from "@/components/SetLogForm";
 import { getNextPlanDayIndex } from "@/lib/workout/progression";
 import { finishWorkout, startOrResumeWorkout } from "./actions";
@@ -163,21 +164,27 @@ export default async function SessionPage() {
                                 : " · Complete"}
                             </p>
                             {sets.length > 0 && (
-                              <ul
-                                aria-label={`${slot.exercise.name} logged sets`}
-                                className="mt-2 flex flex-wrap gap-2 p-0"
-                              >
-                                {sets.map((set) => (
-                                  <li
-                                    className="list-none border border-foreground/15 bg-white px-2 py-1 text-[11px] text-foreground/70"
-                                    key={set.id}
-                                  >
-                                    Set {set.setNumber}: {set.reps} reps
-                                    {set.weightKg !== null &&
-                                      ` · ${set.weightKg.toString()} kg`}
-                                  </li>
-                                ))}
-                              </ul>
+                              <>
+                                <ul
+                                  aria-label={`${slot.exercise.name} logged sets`}
+                                  className="mt-2 flex flex-wrap gap-2 p-0"
+                                >
+                                  {sets.map((set) => (
+                                    <li
+                                      className="list-none border border-foreground/15 bg-white px-2 py-1 text-[11px] text-foreground/70"
+                                      key={set.id}
+                                    >
+                                      Set {set.setNumber}: {set.reps} reps
+                                      {set.weightKg !== null &&
+                                        ` · ${set.weightKg.toString()} kg`}
+                                    </li>
+                                  ))}
+                                </ul>
+                                <RestTimer
+                                  exerciseName={slot.exercise.name}
+                                  restSeconds={slot.restSeconds}
+                                />
+                              </>
                             )}
                             {remaining > 0 && (
                               <SetLogForm
