@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { saveQuizProfile } from "@/app/onboarding/actions";
 import {
   equipmentOptions,
@@ -130,18 +131,23 @@ export default function QuizForm() {
         />
       </div>
 
-      {(clientError || state.message) && (
+      {(clientError || state.status === "error") && (
         <p
           aria-live="polite"
-          className={`border-l-2 px-3 py-2 text-sm ${state.status === "error" || clientError ? "border-red-700 text-red-800" : "border-foreground text-foreground"}`}
-          role={state.status === "error" || clientError ? "alert" : "status"}
+          className="border-l-2 border-red-700 px-3 py-2 text-sm text-red-800"
+          role="alert"
         >
           {clientError || state.message}
         </p>
       )}
 
       {state.status === "success" && (
-        <p className="text-xs text-foreground/60">You can update these answers by submitting the quiz again.</p>
+        <div aria-live="polite" className="space-y-2 border-l-2 border-foreground px-3 py-2" role="status">
+          <p className="m-0 text-sm">{state.message}</p>
+          <Link className="inline-block text-sm font-semibold underline underline-offset-4" href="/session">
+            View your plan
+          </Link>
+        </div>
       )}
 
       <button

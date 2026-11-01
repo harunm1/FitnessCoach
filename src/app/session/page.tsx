@@ -1,0 +1,111 @@
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+
+const demoEmail = "demo@fitnesscoach.local";
+
+export default async function SessionPage() {
+  const plan = await prisma.plan.findFirst({
+    where: {
+      active: true,
+      user: { email: demoEmail },
+    },
+    orderBy: { createdAt: "desc" },
+    include: {
+      days: {
+        orderBy: { dayIndex: "asc" },
+        take: 1,
+        include: {
+          exercises: {
+            orderBy: { order: "asc" },
+            include: {
+              exercise: {
+                select: {
+                  name: true,
+                  equipment: true,
+                  primaryMuscles: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+  const firstDay = plan?.days[0];
+
+  return (
+    <main className="min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12">
+      <div className="mx-auto max-w-3xl">
+        <header className="mb-10 flex items-center justify-between border-b border-foreground/15 pb-5">
+          <Link className="text-sm font-bold tracking-[0.12em]" href="/">
+            FORM
+          </Link>
+          <Link className="text-xs text-foreground/60 underline underline-offset-4" href="/onboarding">
+            Edit profile
+          </Link>
+        </header>
+
+        {plan && firstDay ? (
+          <>
+            <div className="mb-8">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/60">
+                Your training plan
+              </p>
+              <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">
+                {firstDay.name}
+              </h1>
+              <p className="mt-3 text-sm text-foreground/70">{plan.name}</p>
+            </div>
+
+            <section aria-label={`${firstDay.name} exercises`}>
+              <ol className="divide-y divide-foreground/15 border-y border-foreground/15">
+                {firstDay.exercises.map((slot, index) => (
+                  <li className="grid gap-3 py-5 sm:grid-cols-[3rem_minmax(0,1fr)_auto] sm:items-center" key={slot.id}>
+                    <span className="font-mono text-xs text-foreground/50">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <div>
+                      <h2 className="m-0 text-base font-semibold">
+                        {slot.exercise.name}
+                      </h2>
+                      <p className="mb-0 mt-1 text-xs capitalize text-foreground/60">
+                        {slot.exercise.primaryMuscles.join(" · ")}
+                        {slot.exercise.equipment && ` · ${slot.exercise.equipment}`}
+                      </p>
+                    </div>
+                    <p className="m-0 text-sm text-foreground/70 sm:text-right">
+                      {slot.sets} sets × {slot.reps} reps
+                      <span className="block text-xs text-foreground/50">
+                        {slot.restSeconds}s rest
+                      </span>
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            </section>
+
+            <p className="mt-6 text-xs text-foreground/60">
+              Showing the first day of your {plan.days.length}-day plan.
+            </p>
+          </>
+        ) : (
+          <section className="py-10">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/60">
+              No plan saved yet
+            </p>
+            <h1 className="mt-3 text-3xl font-semibold">Set up your profile first</h1>
+            <p className="mt-3 max-w-lg text-sm leading-6 text-foreground/70">
+              Complete the quiz to create a starter plan for your week.
+            </p>
+            <Link
+              className="mt-6 inline-flex min-h-11 items-center bg-foreground px-5 text-sm font-semibold text-background"
+              href="/onboarding"
+            >
+              Go to quiz
+            </Link>
+          </section>
+        )}
+      </div>
+    </main>
+  );
+}
