@@ -141,3 +141,31 @@ export async function startOrResumeWorkout() {
 
   redirect("/session");
 }
+
+export async function finishWorkout() {
+  const user = await prisma.user.findUnique({
+    where: { email: demoEmail },
+    select: { id: true },
+  });
+  if (!user) redirect("/onboarding");
+
+  const workout = await prisma.workout.findFirst({
+    where: {
+      userId: user.id,
+      finishedAt: null,
+      plan: { active: true },
+    },
+    orderBy: { startedAt: "desc" },
+    select: { id: true },
+  });
+
+  if (workout) {
+    await prisma.workout.updateMany({
+      where: { id: workout.id, userId: user.id, finishedAt: null },
+      data: { finishedAt: new Date() },
+    });
+  }
+
+  revalidatePath("/session");
+  redirect("/session");
+}

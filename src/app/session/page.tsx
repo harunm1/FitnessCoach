@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import SetLogForm from "@/components/SetLogForm";
-import { startOrResumeWorkout } from "./actions";
+import { finishWorkout, startOrResumeWorkout } from "./actions";
 
 const demoEmail = "demo@fitnesscoach.local";
 
@@ -59,6 +59,19 @@ export default async function SessionPage() {
           },
         })
       : null;
+  const completedWorkout =
+    plan && firstDay && !activeWorkout
+      ? await prisma.workout.findFirst({
+          where: {
+            user: { email: demoEmail },
+            planId: plan.id,
+            planDayId: firstDay.id,
+            finishedAt: { not: null },
+          },
+          orderBy: { finishedAt: "desc" },
+          select: { finishedAt: true },
+        })
+      : null;
   const loggedByExercise = new Map<
     string,
     NonNullable<typeof activeWorkout>["sets"]
@@ -106,6 +119,18 @@ export default async function SessionPage() {
                   hour: "numeric",
                   minute: "2-digit",
                 }).format(activeWorkout.startedAt)}
+              </p>
+            ) : completedWorkout ? (
+              <p
+                className="mb-6 border-l-2 border-emerald-700 px-3 py-2 text-sm text-emerald-900"
+                role="status"
+              >
+                Workout completed
+                {completedWorkout.finishedAt &&
+                  ` at ${new Intl.DateTimeFormat("en", {
+                    hour: "numeric",
+                    minute: "2-digit",
+                  }).format(completedWorkout.finishedAt)}`}
               </p>
             ) : null}
 
@@ -187,14 +212,30 @@ export default async function SessionPage() {
             <p className="mt-6 text-xs text-foreground/60">
               Showing the first day of your {plan.days.length}-day plan.
             </p>
-            <form action={startOrResumeWorkout} className="mt-8">
-              <button
-                className="min-h-12 bg-foreground px-5 text-sm font-semibold text-background transition-opacity hover:opacity-80"
-                type="submit"
-              >
-                {activeWorkout ? "Resume workout" : "Start workout"}
-              </button>
-            </form>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <form action={startOrResumeWorkout}>
+                <button
+                  className="min-h-12 bg-foreground px-5 text-sm font-semibold text-background transition-opacity hover:opacity-80"
+                  type="submit"
+                >
+                  {activeWorkout
+                    ? "Resume workout"
+                    : completedWorkout
+                      ? "Start another workout"
+                      : "Start workout"}
+                </button>
+              </form>
+              {activeWorkout && (
+                <form action={finishWorkout}>
+                  <button
+                    className="min-h-12 border border-foreground/25 px-5 text-sm font-semibold transition-colors hover:bg-foreground/5"
+                    type="submit"
+                  >
+                    Finish workout
+                  </button>
+                </form>
+              )}
+            </div>
           </>
         ) : (
           <section className="py-10">
