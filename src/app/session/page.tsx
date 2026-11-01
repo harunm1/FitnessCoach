@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import RestTimer from "@/components/RestTimer";
+import RunMetricsForm from "@/components/RunMetricsForm";
 import SetLogForm from "@/components/SetLogForm";
 import { getNextPlanDayIndex } from "@/lib/workout/progression";
 import { finishWorkout, startOrResumeWorkout } from "./actions";
@@ -45,6 +46,8 @@ export default async function SessionPage() {
         select: {
           startedAt: true,
           planDayId: true,
+          distanceKm: true,
+          durationSeconds: true,
           sets: {
             orderBy: [{ exerciseId: "asc" }, { setNumber: "asc" }],
             select: {
@@ -207,6 +210,35 @@ export default async function SessionPage() {
                 })}
               </ol>
             </section>
+
+            {activeWorkout && (
+              <section
+                aria-labelledby="run-entry-title"
+                className="mt-8 border-t border-foreground/15 pt-6"
+              >
+                <p className="m-0 text-[10px] font-semibold tracking-[0.12em] text-foreground/55 uppercase">
+                  Optional workout entry
+                </p>
+                <h2
+                  className="mt-2 mb-0 text-lg font-semibold"
+                  id="run-entry-title"
+                >
+                  Running distance and time
+                </h2>
+                {activeWorkout.distanceKm !== null &&
+                  activeWorkout.durationSeconds !== null && (
+                    <p className="mt-2 mb-0 text-sm text-foreground/70">
+                      Saved run: {activeWorkout.distanceKm.toString()} km in{" "}
+                      {Math.floor(activeWorkout.durationSeconds / 60)} min{" "}
+                      {activeWorkout.durationSeconds % 60} sec
+                    </p>
+                  )}
+                <RunMetricsForm
+                  distanceKm={activeWorkout.distanceKm?.toString() ?? null}
+                  durationSeconds={activeWorkout.durationSeconds}
+                />
+              </section>
+            )}
 
             <p className="mt-6 text-xs text-foreground/60">
               {activeWorkout
