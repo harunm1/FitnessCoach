@@ -1,29 +1,47 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useActionState, useState, type FormEvent } from "react";
+import { saveQuizProfile } from "@/app/onboarding/actions";
+import {
+  equipmentOptions,
+  quizProfileSchema,
+  type QuizActionState,
+} from "@/lib/onboarding/schema";
 
 const controlClassName =
   "mt-2 min-h-11 w-full border border-foreground/20 bg-white px-3 text-sm outline-none focus:border-foreground focus:ring-2 focus:ring-foreground/10";
 
-const equipmentOptions = [
-  "Bodyweight only",
-  "Dumbbells",
-  "Barbell",
-  "Cable machine",
-  "Weight machines",
-  "Kettlebells",
-];
-
 export default function QuizForm() {
-  const [submitted, setSubmitted] = useState(false);
+  const initialState: QuizActionState = { status: "idle", message: "" };
+  const [state, formAction, isPending] = useActionState(
+    saveQuizProfile,
+    initialState,
+  );
+  const [clientError, setClientError] = useState("");
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSubmitted(true);
+    const formData = new FormData(event.currentTarget);
+    const parsed = quizProfileSchema.safeParse({
+      goal: formData.get("goal"),
+      level: formData.get("level"),
+      daysPerWeek: formData.get("daysPerWeek"),
+      equipment: formData.getAll("equipment"),
+      injuries: formData.get("injuries") ?? "",
+    });
+
+    if (!parsed.success) {
+      event.preventDefault();
+      setClientError(
+        parsed.error.issues[0]?.message ?? "Check your answers and try again.",
+      );
+      return;
+    }
+
+    setClientError("");
   }
 
   return (
-    <form className="space-y-7" onSubmit={handleSubmit}>
+    <form action={formAction} className="space-y-7" onSubmit={handleSubmit}>
       <fieldset className="space-y-3">
         <legend className="text-sm font-semibold">What is your main goal?</legend>
         <div className="grid gap-2 sm:grid-cols-2">
@@ -82,16 +100,16 @@ export default function QuizForm() {
           {equipmentOptions.map((option, index) => (
             <label
               className="flex min-h-11 cursor-pointer items-center gap-3 border border-foreground/15 bg-white px-3 text-sm has-[:checked]:border-foreground has-[:checked]:bg-foreground/[0.04]"
-              key={option}
+              key={option.value}
             >
               <input
                 className="accent-foreground"
                 defaultChecked={index === 0}
                 name="equipment"
                 type="checkbox"
-                value={option}
+                value={option.value}
               />
-              {option}
+              {option.label}
             </label>
           ))}
         </div>
@@ -112,17 +130,26 @@ export default function QuizForm() {
         />
       </div>
 
-      {submitted && (
-        <p aria-live="polite" className="border-l-2 border-foreground px-3 py-2 text-sm" role="status">
-          Quiz UI is ready. Saving your profile will be added next.
+      {(clientError || state.message) && (
+        <p
+          aria-live="polite"
+          className={`border-l-2 px-3 py-2 text-sm ${state.status === "error" || clientError ? "border-red-700 text-red-800" : "border-foreground text-foreground"}`}
+          role={state.status === "error" || clientError ? "alert" : "status"}
+        >
+          {clientError || state.message}
         </p>
       )}
 
+      {state.status === "success" && (
+        <p className="text-xs text-foreground/60">You can update these answers by submitting the quiz again.</p>
+      )}
+
       <button
-        className="min-h-12 w-full bg-foreground px-5 text-sm font-semibold text-background transition-opacity hover:opacity-80 sm:w-auto"
+        className="min-h-12 w-full bg-foreground px-5 text-sm font-semibold text-background transition-opacity hover:opacity-80 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
+        disabled={isPending}
         type="submit"
       >
-        Continue
+        {isPending ? "Saving..." : state.status === "success" ? "Update profile" : "Save profile"}
       </button>
     </form>
   );
