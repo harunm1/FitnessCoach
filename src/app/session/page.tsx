@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import SetLogForm from "@/components/SetLogForm";
+import { getNextPlanDayIndex } from "@/lib/workout/progression";
 import { finishWorkout, startOrResumeWorkout } from "./actions";
 
 const demoEmail = "demo@fitnesscoach.local";
@@ -15,7 +16,6 @@ export default async function SessionPage() {
     include: {
       days: {
         orderBy: { dayIndex: "asc" },
-        take: 1,
         include: {
           exercises: {
             orderBy: { order: "asc" },
@@ -33,45 +33,46 @@ export default async function SessionPage() {
       },
     },
   });
-  const firstDay = plan?.days[0];
-  const activeWorkout =
-    plan && firstDay
-      ? await prisma.workout.findFirst({
-          where: {
-            user: { email: demoEmail },
-            planId: plan.id,
-            planDayId: firstDay.id,
-            finishedAt: null,
-          },
-          orderBy: { startedAt: "desc" },
-          select: {
-            startedAt: true,
-            sets: {
-              orderBy: [{ exerciseId: "asc" }, { setNumber: "asc" }],
-              select: {
-                id: true,
-                exerciseId: true,
-                setNumber: true,
-                reps: true,
-                weightKg: true,
-              },
+  const activeWorkout = plan
+    ? await prisma.workout.findFirst({
+        where: {
+          user: { email: demoEmail },
+          planId: plan.id,
+          finishedAt: null,
+        },
+        orderBy: { startedAt: "desc" },
+        select: {
+          startedAt: true,
+          planDayId: true,
+          sets: {
+            orderBy: [{ exerciseId: "asc" }, { setNumber: "asc" }],
+            select: {
+              id: true,
+              exerciseId: true,
+              setNumber: true,
+              reps: true,
+              weightKg: true,
             },
           },
-        })
-      : null;
-  const completedWorkout =
-    plan && firstDay && !activeWorkout
-      ? await prisma.workout.findFirst({
+        },
+      })
+    : null;
+  const completedWorkoutCount =
+    plan && !activeWorkout
+      ? await prisma.workout.count({
           where: {
             user: { email: demoEmail },
             planId: plan.id,
-            planDayId: firstDay.id,
             finishedAt: { not: null },
           },
-          orderBy: { finishedAt: "desc" },
-          select: { finishedAt: true },
         })
-      : null;
+      : 0;
+  const nextDayIndex = plan
+    ? getNextPlanDayIndex(completedWorkoutCount, plan.days.length)
+    : null;
+  const sessionDay =
+    plan?.days.find((day) => day.id === activeWorkout?.planDayId) ??
+    (nextDayIndex === null ? undefined : plan?.days[nextDayIndex]);
   const loggedByExercise = new Map<
     string,
     NonNullable<typeof activeWorkout>["sets"]
@@ -97,16 +98,19 @@ export default async function SessionPage() {
           </Link>
         </header>
 
-        {plan && firstDay ? (
+        {plan && sessionDay ? (
           <>
             <div className="mb-8">
               <p className="text-xs font-semibold tracking-[0.14em] text-foreground/60 uppercase">
-                Your training plan
+                {activeWorkout ? "Workout in progress" : "Next workout"}
               </p>
               <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">
-                {firstDay.name}
+                {sessionDay.name}
               </h1>
               <p className="mt-3 text-sm text-foreground/70">{plan.name}</p>
+              <p className="mt-1 text-xs text-foreground/60">
+                Day {sessionDay.dayIndex + 1} of {plan.days.length}
+              </p>
             </div>
 
             {activeWorkout ? (
@@ -120,18 +124,6 @@ export default async function SessionPage() {
                   minute: "2-digit",
                 }).format(activeWorkout.startedAt)}
               </p>
-            ) : completedWorkout ? (
-              <p
-                className="mb-6 border-l-2 border-emerald-700 px-3 py-2 text-sm text-emerald-900"
-                role="status"
-              >
-                Workout completed
-                {completedWorkout.finishedAt &&
-                  ` at ${new Intl.DateTimeFormat("en", {
-                    hour: "numeric",
-                    minute: "2-digit",
-                  }).format(completedWorkout.finishedAt)}`}
-              </p>
             ) : null}
 
             {activeWorkout && (
@@ -140,9 +132,9 @@ export default async function SessionPage() {
               </p>
             )}
 
-            <section aria-label={`${firstDay.name} exercises`}>
+            <section aria-label={`${sessionDay.name} exercises`}>
               <ol className="divide-y divide-foreground/15 border-y border-foreground/15">
-                {firstDay.exercises.map((slot, index) => {
+                {sessionDay.exercises.map((slot, index) => {
                   const sets = loggedByExercise.get(slot.exerciseId) ?? [];
                   const remaining = Math.max(slot.sets - sets.length, 0);
                   return (
@@ -210,7 +202,9 @@ export default async function SessionPage() {
             </section>
 
             <p className="mt-6 text-xs text-foreground/60">
-              Showing the first day of your {plan.days.length}-day plan.
+              {activeWorkout
+                ? "Resume this session or finish it when you are done."
+                : "Your next plan day is ready when you are."}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <form action={startOrResumeWorkout}>
@@ -220,8 +214,8 @@ export default async function SessionPage() {
                 >
                   {activeWorkout
                     ? "Resume workout"
-                    : completedWorkout
-                      ? "Start another workout"
+                    : completedWorkoutCount > 0
+                      ? "Start next workout"
                       : "Start workout"}
                 </button>
               </form>

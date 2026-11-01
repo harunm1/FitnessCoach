@@ -8,6 +8,7 @@ import {
   setLogSchema,
   type SetLogActionState,
 } from "@/lib/workout/setLogSchema";
+import { getNextPlanDayIndex } from "@/lib/workout/progression";
 
 const demoEmail = "demo@fitnesscoach.local";
 
@@ -111,33 +112,45 @@ export async function startOrResumeWorkout() {
       id: true,
       days: {
         orderBy: { dayIndex: "asc" },
-        take: 1,
         select: { id: true },
       },
     },
   });
-  const firstDay = plan?.days[0];
-  if (!plan || !firstDay) redirect("/onboarding");
+  if (!plan || plan.days.length === 0) redirect("/onboarding");
 
   const existingWorkout = await prisma.workout.findFirst({
     where: {
       userId: user.id,
       planId: plan.id,
-      planDayId: firstDay.id,
       finishedAt: null,
     },
+    orderBy: { startedAt: "desc" },
     select: { id: true },
   });
 
-  if (!existingWorkout) {
-    await prisma.workout.create({
-      data: {
-        userId: user.id,
-        planId: plan.id,
-        planDayId: firstDay.id,
-      },
-    });
-  }
+  if (existingWorkout) redirect("/session");
+
+  const completedWorkoutCount = await prisma.workout.count({
+    where: {
+      userId: user.id,
+      planId: plan.id,
+      finishedAt: { not: null },
+    },
+  });
+  const nextDayIndex = getNextPlanDayIndex(
+    completedWorkoutCount,
+    plan.days.length,
+  );
+  const nextDay = nextDayIndex === null ? undefined : plan.days[nextDayIndex];
+  if (!nextDay) redirect("/onboarding");
+
+  await prisma.workout.create({
+    data: {
+      userId: user.id,
+      planId: plan.id,
+      planDayId: nextDay.id,
+    },
+  });
 
   redirect("/session");
 }
