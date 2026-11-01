@@ -41,3 +41,15 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** `vi.fn<PlanModel>()` keeps the call types; yes, run the fallback through the verifier in a test so it can never ship a plan the coach would be rejected for.
 
 **Did with it:** wrote `generatePlan.ts`, `defaultPlan.ts` and three tests (pass first time, retry with the problems in the prompt, fallback that passes the verifier). Nine tests pass in total.
+
+## Mohammad
+
+### 31 October 2026, onboarding quiz validation edge cases
+
+**Before asking:** the quiz schema already constrained training days to 1–7, goal and level to Prisma enums, equipment to the supported exercise-library values, and injury notes to 500 characters. The existing tests covered a valid form payload, missing equipment, and an out-of-range schedule, but not the boundaries or malformed values.
+
+**Asked:** what edge cases should be added to `schema.test.ts` based on the current quiz schema.
+
+**Got:** suggestions to test both valid day-count boundaries, invalid fractional and non-numeric day counts, unknown goal and level values, unsupported equipment, and injury notes at and over the length limit.
+
+**Did with it:** checked each suggestion against the schema instead of treating the list as requirements, added the applicable cases, and ran the focused Vitest file. An initial test run exposed that Vitest did not resolve the schema's `@/` alias, so I changed that import to a relative path. The focused tests passed (11/11), and the full suite passed (12/12).
