@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
@@ -5,6 +7,12 @@ export default function Home() {
       <p className="mt-3 text-sm text-foreground/70">
         A fitness coach for a routine that fits your life.
       </p>
+      <Link
+        className="mt-8 inline-flex min-h-11 items-center justify-center bg-foreground px-5 text-sm font-medium text-background transition-opacity hover:opacity-80"
+        href="/onboarding"
+      >
+        Start your quiz
+      </Link>
     </main>
   );
 }
