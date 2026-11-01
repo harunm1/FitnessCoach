@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { startOrResumeWorkout } from "./actions";
 
 const demoEmail = "demo@fitnesscoach.local";
 
@@ -32,6 +33,18 @@ export default async function SessionPage() {
     },
   });
   const firstDay = plan?.days[0];
+  const activeWorkout = plan && firstDay
+    ? await prisma.workout.findFirst({
+        where: {
+          user: { email: demoEmail },
+          planId: plan.id,
+          planDayId: firstDay.id,
+          finishedAt: null,
+        },
+        orderBy: { startedAt: "desc" },
+        select: { startedAt: true },
+      })
+    : null;
 
   return (
     <main className="min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12">
@@ -56,6 +69,16 @@ export default async function SessionPage() {
               </h1>
               <p className="mt-3 text-sm text-foreground/70">{plan.name}</p>
             </div>
+
+            {activeWorkout ? (
+              <p className="mb-6 border-l-2 border-foreground px-3 py-2 text-sm" role="status">
+                Workout in progress since{" "}
+                {new Intl.DateTimeFormat("en", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                }).format(activeWorkout.startedAt)}
+              </p>
+            ) : null}
 
             <section aria-label={`${firstDay.name} exercises`}>
               <ol className="divide-y divide-foreground/15 border-y border-foreground/15">
@@ -87,6 +110,14 @@ export default async function SessionPage() {
             <p className="mt-6 text-xs text-foreground/60">
               Showing the first day of your {plan.days.length}-day plan.
             </p>
+            <form action={startOrResumeWorkout} className="mt-8">
+              <button
+                className="min-h-12 bg-foreground px-5 text-sm font-semibold text-background transition-opacity hover:opacity-80"
+                type="submit"
+              >
+                {activeWorkout ? "Resume workout" : "Start workout"}
+              </button>
+            </form>
           </>
         ) : (
           <section className="py-10">
