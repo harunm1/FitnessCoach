@@ -167,6 +167,8 @@ model Workout {
   planDay    PlanDay?  @relation(fields: [planDayId], references: [id], onDelete: SetNull)
   startedAt  DateTime  @default(now())
   finishedAt DateTime?
+  distanceKm Decimal?  @db.Decimal(6, 2)
+  durationSeconds Int?
   notes      String?
 
   sets SetLog[]
