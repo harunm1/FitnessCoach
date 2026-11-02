@@ -1,7 +1,10 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { quizProfileSchema, type QuizActionState } from "@/lib/onboarding/schema";
+import {
+  quizProfileSchema,
+  type QuizActionState,
+} from "@/lib/onboarding/schema";
 import { PlanSource } from "@/generated/prisma/client";
 import { buildDefaultPlan } from "@/lib/coach/defaultPlan";
 import { verifyPlan } from "@/lib/coach/verify";
@@ -23,7 +26,9 @@ export async function saveQuizProfile(
   if (!parsed.success) {
     return {
       status: "error",
-      message: parsed.error.issues[0]?.message ?? "Check your quiz answers and try again.",
+      message:
+        parsed.error.issues[0]?.message ??
+        "Check your quiz answers and try again.",
     };
   }
 
@@ -36,7 +41,8 @@ export async function saveQuizProfile(
     if (!user) {
       return {
         status: "error",
-        message: "The demo profile is not set up yet. Seed the database and try again.",
+        message:
+          "The demo profile is not set up yet. Seed the database and try again.",
       };
     }
 
@@ -84,7 +90,8 @@ export async function saveQuizProfile(
     if (!verification.ok) {
       return {
         status: "error",
-        message: "We could not verify a suitable plan. Please update your answers and try again.",
+        message:
+          "We could not verify a suitable plan. Please update your answers and try again.",
       };
     }
 
@@ -136,7 +143,8 @@ export async function saveQuizProfile(
   } catch {
     return {
       status: "error",
-      message: "Could not save your profile. Check the database connection and try again.",
+      message:
+        "Could not save your profile. Check the database connection and try again.",
     };
   }
 }

@@ -26,14 +26,17 @@ describe("quizProfileSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it.each(["1", "7"])("accepts the boundary training schedule %s days", (days) => {
-    const result = quizProfileSchema.safeParse({
-      ...validProfile,
-      daysPerWeek: days,
-    });
+  it.each(["1", "7"])(
+    "accepts the boundary training schedule %s days",
+    (days) => {
+      const result = quizProfileSchema.safeParse({
+        ...validProfile,
+        daysPerWeek: days,
+      });
 
-    expect(result.success).toBe(true);
-  });
+      expect(result.success).toBe(true);
+    },
+  );
 
   it.each(["0", "8", "2.5", "not-a-number"])(
     "rejects invalid training schedule %s",

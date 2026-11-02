@@ -44,7 +44,9 @@ export default function QuizForm() {
   return (
     <form action={formAction} className="space-y-7" onSubmit={handleSubmit}>
       <fieldset className="space-y-3">
-        <legend className="text-sm font-semibold">What is your main goal?</legend>
+        <legend className="text-sm font-semibold">
+          What is your main goal?
+        </legend>
         <div className="grid gap-2 sm:grid-cols-2">
           {[
             ["STRENGTH", "Get stronger"],
@@ -74,8 +76,16 @@ export default function QuizForm() {
         <label className="text-sm font-semibold" htmlFor="level">
           How would you describe your experience?
         </label>
-        <select className={controlClassName} defaultValue="" id="level" name="level" required>
-          <option disabled value="">Choose your experience level</option>
+        <select
+          className={controlClassName}
+          defaultValue=""
+          id="level"
+          name="level"
+          required
+        >
+          <option disabled value="">
+            Choose your experience level
+          </option>
           <option value="BEGINNER">New or returning to exercise</option>
           <option value="INTERMEDIATE">I have a regular routine</option>
           <option value="EXPERT">I have trained consistently for years</option>
@@ -86,7 +96,12 @@ export default function QuizForm() {
         <label className="text-sm font-semibold" htmlFor="daysPerWeek">
           How many days per week can you train?
         </label>
-        <select className={controlClassName} defaultValue="3" id="daysPerWeek" name="daysPerWeek">
+        <select
+          className={controlClassName}
+          defaultValue="3"
+          id="daysPerWeek"
+          name="daysPerWeek"
+        >
           {[1, 2, 3, 4, 5, 6, 7].map((days) => (
             <option key={days} value={days}>
               {days} {days === 1 ? "day" : "days"}
@@ -96,7 +111,9 @@ export default function QuizForm() {
       </div>
 
       <fieldset className="space-y-3">
-        <legend className="text-sm font-semibold">What equipment can you use?</legend>
+        <legend className="text-sm font-semibold">
+          What equipment can you use?
+        </legend>
         <div className="grid gap-2 sm:grid-cols-2">
           {equipmentOptions.map((option, index) => (
             <label
@@ -142,9 +159,16 @@ export default function QuizForm() {
       )}
 
       {state.status === "success" && (
-        <div aria-live="polite" className="space-y-2 border-l-2 border-foreground px-3 py-2" role="status">
+        <div
+          aria-live="polite"
+          className="space-y-2 border-l-2 border-foreground px-3 py-2"
+          role="status"
+        >
           <p className="m-0 text-sm">{state.message}</p>
-          <Link className="inline-block text-sm font-semibold underline underline-offset-4" href="/session">
+          <Link
+            className="inline-block text-sm font-semibold underline underline-offset-4"
+            href="/session"
+          >
             View your plan
           </Link>
         </div>
@@ -155,7 +179,11 @@ export default function QuizForm() {
         disabled={isPending}
         type="submit"
       >
-        {isPending ? "Saving..." : state.status === "success" ? "Update profile" : "Save profile"}
+        {isPending
+          ? "Saving..."
+          : state.status === "success"
+            ? "Update profile"
+            : "Save profile"}
       </button>
     </form>
   );

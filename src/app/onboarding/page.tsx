@@ -13,7 +13,7 @@ export default function OnboardingPage() {
         </header>
 
         <div className="mb-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/60">
+          <p className="text-xs font-semibold tracking-[0.14em] text-foreground/60 uppercase">
             Getting started
           </p>
           <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">

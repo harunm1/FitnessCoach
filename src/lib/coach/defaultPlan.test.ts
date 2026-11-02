@@ -35,18 +35,18 @@ describe("buildDefaultPlan", () => {
 
     expect(plan.days).toHaveLength(1);
     expect(plan.days[0]?.exercises.length).toBeGreaterThanOrEqual(2);
-    expect(new Set(plan.days[0]?.exercises.map((exercise) => exercise.exerciseId)).size).toBe(
-      plan.days[0]?.exercises.length,
-    );
+    expect(
+      new Set(plan.days[0]?.exercises.map((exercise) => exercise.exerciseId))
+        .size,
+    ).toBe(plan.days[0]?.exercises.length);
   });
 
   it("uses other compatible library exercises when a split has too few matches", () => {
     const plan = buildDefaultPlan(profile, library.slice(0, 2));
 
-    expect(plan.days[0]?.exercises.map((exercise) => exercise.exerciseId)).toEqual([
-      "barbell-squat",
-      "bench-press",
-    ]);
+    expect(
+      plan.days[0]?.exercises.map((exercise) => exercise.exerciseId),
+    ).toEqual(["barbell-squat", "bench-press"]);
   });
 
   it("rejects a library that cannot provide two safe exercises for every day", () => {

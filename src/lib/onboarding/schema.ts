@@ -15,7 +15,11 @@ export const quizProfileSchema = z.object({
   level: z.enum(Level),
   daysPerWeek: z.coerce.number().int().min(1).max(7),
   equipment: z
-    .array(z.enum(equipmentOptions.map((option) => option.value) as [string, ...string[]]))
+    .array(
+      z.enum(
+        equipmentOptions.map((option) => option.value) as [string, ...string[]],
+      ),
+    )
     .min(1, "Select at least one equipment option."),
   injuries: z.string().trim().max(500),
 });
