@@ -8,6 +8,8 @@ import { finishWorkout, startOrResumeWorkout } from "./actions";
 
 const demoEmail = "demo@fitnesscoach.local";
 
+export const dynamic = "force-dynamic";
+
 export default async function SessionPage() {
   const plan = await prisma.plan.findFirst({
     where: {
