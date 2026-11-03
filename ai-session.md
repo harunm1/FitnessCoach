@@ -195,3 +195,29 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** SensAI's App Store listing at $6.99 a month and Future's site at $199 a month; the chat code shows a fixed message when the model is down, not a cached reply; and four review findings: Groq sends a token-wait header as well as Retry-After, Section 3's review rule contradicted the 3 November decision, the SensAI title was off, and Section 2 no longer said where verified plans go.
 
 **Did with it:** made each change in its own commit naming the section's owner, cut repetition in Section 2 to stay under the cap, and rebuilt the combined file from the sections. The proposal ends at 1,985 words.
+
+## Shubham
+
+### 3 November 2026, verified accounts (issue #14, milestone 1)
+
+**Before asking:** I set the account requirements and requested a detailed plan
+based on the existing architecture and code. I chose to include email verification
+and password reset in the first login release, with trial and Stripe work in later
+milestones. Existing Prisma User IDs and fitness relations needed to stay intact.
+
+**Asked:** help review the design, implement milestone 1 in reviewable increments,
+and investigate errors encountered during local setup.
+
+**Got:** AI-assisted implementation of Better Auth with Prisma, database sessions,
+verification and recovery emails, a protected account page, and automated tests.
+The checks covered session expiry, forged tier input, reset tokens and the browser
+login flow, using an isolated test database.
+
+**Did with it:** worked through local setup and asked for help when migration
+reported a P1000 authentication error. The connection checks showed that Docker
+accepted the configured credentials while Windows PostgreSQL was also running;
+stopping the Windows service required administrator access. I also checked why
+verification emails appeared in Mailpit and learned that local email capture needs
+real SMTP settings to deliver to users' inboxes. I requested separate commits for
+the backend, account screens, and tests/documentation. Trial activation, admin
+bootstrap and Stripe remain for later milestones.
