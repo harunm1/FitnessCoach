@@ -10,7 +10,7 @@ The technical objective is a coach people can trust: every plan is checked in co
 
 ![Component diagram: frontend, the Next.js backend with its request layer and AI coach, the data stores and external services](../img/architecture.png)
 
-*Figure 1. Solid lines carry requests and data; dashed lines are the fallback provider, seeding and CI.*
+_Figure 1. Solid lines carry requests and data; dashed lines are the fallback provider, seeding and CI._
 
 We use Option A, Next.js full-stack with the App Router, because no outside client calls our backend. The frontend is React components styled with Tailwind CSS and shadcn/ui. It talks to the backend in three ways: Server Components load data on the server before the page renders; Server Actions, typed functions validated by Zod, handle every form and save; and one route handler serves coach chat. Every request checks the Better Auth session and the user's tier on the server.
 
@@ -22,50 +22,50 @@ The AI coach is a backend module where the model proposes and code decides: the 
 
 Each Prisma entity serves a feature:
 
-| Entity | Relationships | Feature it serves |
-| --- | --- | --- |
-| `User`, `Profile` | one to one; goal, mode, days, equipment, injuries, occupation, activity level | Sign-in, tiers, the quiz |
-| `Exercise` | referenced by plan slots and set logs | The 876-exercise library from free-exercise-db (Yuhonas, n.d.), with our form cues |
-| `Plan`, `PlanDay` | user has many plans; plan has many days (strength, run or rest) | The weekly plan |
-| `PlanExercise`, `PlanRun` | strength slots reference an `Exercise` id; a run day has type, distance, pace | Plans contain only exercises we hold |
-| `Workout`, `SetLog`, `RunLog` | user has many workouts; each has set logs or a run log | Session logging, history, streaks |
-| `Conversation`, `Message` | user has many; body-map messages keep exercise and region | Coach chat that remembers feedback |
-| `ProgressPhoto` | user has many photos; stores a key, not the file | Progress photos |
+| Entity                        | Relationships                                                                 | Feature it serves                                                                  |
+| ----------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `User`, `Profile`             | one to one; goal, mode, days, equipment, injuries, occupation, activity level | Sign-in, tiers, the quiz                                                           |
+| `Exercise`                    | referenced by plan slots and set logs                                         | The 876-exercise library from free-exercise-db (Yuhonas, n.d.), with our form cues |
+| `Plan`, `PlanDay`             | user has many plans; plan has many days (strength, run or rest)               | The weekly plan                                                                    |
+| `PlanExercise`, `PlanRun`     | strength slots reference an `Exercise` id; a run day has type, distance, pace | Plans contain only exercises we hold                                               |
+| `Workout`, `SetLog`, `RunLog` | user has many workouts; each has set logs or a run log                        | Session logging, history, streaks                                                  |
+| `Conversation`, `Message`     | user has many; body-map messages keep exercise and region                     | Coach chat that remembers feedback                                                 |
+| `ProgressPhoto`               | user has many photos; stores a key, not the file                              | Progress photos                                                                    |
 
 Reads go through Prisma's typed client from Server Components; writes go through Server Actions, and every query is filtered by the signed-in user's id. Photos meet the cloud storage requirement: the bucket is private, the server issues upload and view URLs that expire after a few minutes, and `ProgressPhoto` keeps only the key.
 
 ### 2.4 Key design decisions
 
-| Decision | Why it fits FitnessCoach | Trade-off |
-| --- | --- | --- |
-| The model picks exercise ids from our library | It cannot invent an exercise or prescribe one the user cannot do | The library fills the prompt: one plan a minute per account on Groq's free tier (Groq, 2026) |
-| Running by rule; strength by the model | Running progressions are arithmetic; strength choices benefit from the model | Less variety in running plans |
-| Better Auth, not Auth0 | Users and sessions stay in our PostgreSQL beside the tier | We run authentication ourselves |
-| Groq first, Gemini as fallback | In our test ([COACH_EVAL.md](../COACH_EVAL.md)) each free tier failed within ten requests; the chain served ten verified plans of ten | Two keys to manage |
+| Decision                                      | Why it fits FitnessCoach                                                                                                              | Trade-off                                                                                    |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| The model picks exercise ids from our library | It cannot invent an exercise or prescribe one the user cannot do                                                                      | The library fills the prompt: one plan a minute per account on Groq's free tier (Groq, 2026) |
+| Running by rule; strength by the model        | Running progressions are arithmetic; strength choices benefit from the model                                                          | Less variety in running plans                                                                |
+| Better Auth, not Auth0                        | Users and sessions stay in our PostgreSQL beside the tier                                                                             | We run authentication ourselves                                                              |
+| Groq first, Gemini as fallback                | In our test ([COACH_EVAL.md](../COACH_EVAL.md)) each free tier failed within ten requests; the chain served ten verified plans of ten | Two keys to manage                                                                           |
 
 ### 2.5 Failure handling, error states and testing
 
 A failure degrades one capability, never the whole app: without a model provider, users still get a rule-based plan and can log workouts.
 
-| Failure | How the app responds |
-| --- | --- |
-| Dropped connection while logging | The entry stays on screen, marked unsaved, with a retry; a set or run is stored once per workout, so a retry never logs it twice |
-| Dropped connection during chat | The reply is saved on the server as it completes; reopening the chat loads it from the conversation |
-| Bad input | Zod on the form and again in the Server Action; field errors in plain words, never a stack trace |
-| Model slow, rate-limited or down | 30-second timeout, a retry after the provider's stated wait, then the other provider, then the rule-based plan; chat shows a cached reply |
-| Malformed or unsafe plan | Schema check, then the verifier (ids exist, equipment owned, injuries avoided, ranges, no duplicates, day count); one regeneration with the problems listed |
-| Out-of-scope or unsafe chat | Rules in code, not the prompt: reported pain stops the exercise and suggests a professional; the coach does not diagnose |
+| Failure                          | How the app responds                                                                                                                                        |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dropped connection while logging | The entry stays on screen, marked unsaved, with a retry; a set or run is stored once per workout, so a retry never logs it twice                            |
+| Dropped connection during chat   | The reply is saved on the server as it completes; reopening the chat loads it from the conversation                                                         |
+| Bad input                        | Zod on the form and again in the Server Action; field errors in plain words, never a stack trace                                                            |
+| Model slow, rate-limited or down | 30-second timeout, a retry after the provider's stated wait, then the other provider, then the rule-based plan; chat shows a cached reply                   |
+| Malformed or unsafe plan         | Schema check, then the verifier (ids exist, equipment owned, injuries avoided, ranges, no duplicates, day count); one regeneration with the problems listed |
+| Out-of-scope or unsafe chat      | Rules in code, not the prompt: reported pain stops the exercise and suggests a professional; the coach does not diagnose                                    |
 
 Every model call is logged with provider, prompt version, latency and outcome. Testing runs from the first commit: Vitest unit tests with the network mocked, CI (format, lint, types, tests, build) on every pull request, and ten fixed coach profiles replayed in CI. From mid-November we use the app at the gym and log what breaks.
 
 ### 2.6 How the required technologies are used
 
-| Requirement | Our use |
-| --- | --- |
-| TypeScript, Next.js | App Router: Server Components, Server Actions, one route handler |
-| Tailwind CSS, shadcn/ui | Mobile-first, responsive screens |
-| PostgreSQL | Prisma schema, migrations, seeded library |
-| Cloud storage | Private bucket for progress photos |
+| Requirement             | Our use                                                          |
+| ----------------------- | ---------------------------------------------------------------- |
+| TypeScript, Next.js     | App Router: Server Components, Server Actions, one route handler |
+| Tailwind CSS, shadcn/ui | Mobile-first, responsive screens                                 |
+| PostgreSQL              | Prisma schema, migrations, seeded library                        |
+| Cloud storage           | Private bucket for progress photos                               |
 
 ### 2.7 Advanced features
 
