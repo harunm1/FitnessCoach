@@ -113,6 +113,14 @@ all local PostgreSQL data; run migrations and seeding again after starting it:
 docker compose down -v
 ```
 
+### Verified accounts
+
+For signup, email verification, login, password recovery and account setup, see
+[the accounts guide](docs/ACCOUNTS.md). Add the Better Auth and SMTP values from
+`.env.example` to your existing `.env`, generate your own secret, and apply the
+new migration before using `/sign-up`. The guide also explains isolated database
+and browser tests.
+
 ## How we work
 
 - Tasks live on the [project board](https://github.com/users/nabeegh-khan/projects/3): Backlog, Ready, In progress, In review, Done.

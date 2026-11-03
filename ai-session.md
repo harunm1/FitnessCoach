@@ -41,3 +41,29 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** `vi.fn<PlanModel>()` keeps the call types; yes, run the fallback through the verifier in a test so it can never ship a plan the coach would be rejected for.
 
 **Did with it:** wrote `generatePlan.ts`, `defaultPlan.ts` and three tests (pass first time, retry with the problems in the prompt, fallback that passes the verifier). Nine tests pass in total.
+
+## Shubham
+
+### 3 November 2026, verified accounts (issue #14, milestone 1)
+
+**Before asking:** I set the account requirements and requested a detailed plan
+based on the existing architecture and code. I chose to include email verification
+and password reset in the first login release, with trial and Stripe work in later
+milestones. Existing Prisma User IDs and fitness relations needed to stay intact.
+
+**Asked:** help review the design, implement milestone 1 in reviewable increments,
+and investigate errors encountered during local setup.
+
+**Got:** AI-assisted implementation of Better Auth with Prisma, database sessions,
+verification and recovery emails, a protected account page, and automated tests.
+The checks covered session expiry, forged tier input, reset tokens and the browser
+login flow, using an isolated test database.
+
+**Did with it:** worked through local setup and asked for help when migration
+reported a P1000 authentication error. The connection checks showed that Docker
+accepted the configured credentials while Windows PostgreSQL was also running;
+stopping the Windows service required administrator access. I also checked why
+verification emails appeared in Mailpit and learned that local email capture needs
+real SMTP settings to deliver to users' inboxes. I requested separate commits for
+the backend, account screens, and tests/documentation. Trial activation, admin
+bootstrap and Stripe remain for later milestones.
