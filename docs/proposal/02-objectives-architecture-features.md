@@ -25,7 +25,7 @@ Each Prisma entity serves a feature:
 | Entity | Relationships | Feature it serves |
 | --- | --- | --- |
 | `User`, `Profile` | one to one; goal, mode, days, equipment, injuries, occupation, activity level | Sign-in, tiers, the quiz |
-| `Exercise` | referenced by plan slots and set logs | The 876-exercise library, with our form cues |
+| `Exercise` | referenced by plan slots and set logs | The 876-exercise library from free-exercise-db (Yuhonas, n.d.), with our form cues |
 | `Plan`, `PlanDay` | user has many plans; plan has many days (strength, run or rest) | The weekly plan |
 | `PlanExercise`, `PlanRun` | strength slots reference an `Exercise` id; a run day has type, distance, pace | Plans contain only exercises we hold |
 | `Workout`, `SetLog`, `RunLog` | user has many workouts; each has set logs or a run log | Session logging, history, streaks |
@@ -38,10 +38,10 @@ Reads go through Prisma's typed client from Server Components; writes go through
 
 | Decision | Why it fits FitnessCoach | Trade-off |
 | --- | --- | --- |
-| The model picks exercise ids from our library | It cannot invent an exercise or prescribe one the user cannot do | The library fills the prompt: one plan a minute per account on Groq's free tier |
+| The model picks exercise ids from our library | It cannot invent an exercise or prescribe one the user cannot do | The library fills the prompt: one plan a minute per account on Groq's free tier (Groq, 2026) |
 | Running by rule; strength by the model | Running progressions are arithmetic; strength choices benefit from the model | Less variety in running plans |
 | Better Auth, not Auth0 | Users and sessions stay in our PostgreSQL beside the tier | We run authentication ourselves |
-| Groq first, Gemini as fallback | In our test each free tier failed within ten requests; the chain served ten verified plans of ten | Two keys to manage |
+| Groq first, Gemini as fallback | In our test ([COACH_EVAL.md](../COACH_EVAL.md)) each free tier failed within ten requests; the chain served ten verified plans of ten | Two keys to manage |
 
 ### 2.5 Failure handling, error states and testing
 
@@ -79,3 +79,9 @@ One planned extension, reported as finished only if it is: **real-time** coach r
 ### 2.8 Scope and feasibility
 
 We have started: the Next.js skeleton, the Prisma schema and first migration, the seeded library, CI, and plan generation with the verifier are on `main`, and the provider layer is in review with 32 tests. Each area (accounts; quiz and session; progress and photos; coach) builds against the shared schema and merges weekly. Voice, camera form checks and payments are out of scope. Demo features freeze on 23 November; the demo path is sign-in, quiz, plan, a logged workout and one coach exchange.
+
+### References
+
+Groq. (2026). _Rate limits_ [Documentation]. GroqCloud. https://console.groq.com/docs/rate-limits
+
+Yuhonas. (n.d.). _free-exercise-db_ [Data set]. GitHub. https://github.com/yuhonas/free-exercise-db
