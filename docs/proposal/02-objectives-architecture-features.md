@@ -49,7 +49,7 @@ A failure degrades one capability, never the whole app: without a model provider
 
 | Failure | How the app responds |
 | --- | --- |
-| Dropped connection while logging | The entry stays on screen, marked unsaved, with a retry; a client id under a unique key means a retry never logs twice |
+| Dropped connection while logging | The entry stays on screen, marked unsaved, with a retry; a set or run is stored once per workout, so a retry never logs it twice |
 | Dropped connection during chat | The reply is saved on the server as it completes; reopening the chat loads it from the conversation |
 | Bad input | Zod on the form and again in the Server Action; field errors in plain words, never a stack trace |
 | Model slow, rate-limited or down | 30-second timeout, a retry after the provider's stated wait, then the other provider, then the rule-based plan; chat shows a cached reply |
