@@ -6,10 +6,10 @@ Initially, we defined the problem simply. A user takes a quiz about their goals 
 
 ### 4.2 Exploration and Evaluation
 
-Our research on free-tier limits pointed to Groq, but it could not settle the choice, so the team decided to test both providers. We wrote down how we would judge the results, then asked Groq and Gemini to create plans for the same ten user profiles. Both produced plans that passed our verifier, the code that checks every plan before it is saved. The real difference was reliability: on its own, each provider failed some requests because of free-tier limits or server errors.
+Our research on free-tier limits pointed to Groq, but it could not settle the choice, so the team decided to test both providers. We wrote down how we would judge the results, then asked Groq and Gemini to create plans for the same ten user profiles. In the first round, both produced plans that passed our verifier. The real difference was reliability: on its own, each provider failed some requests because of free-tier limits or server errors.
 
-AI helped us build this test, and we checked its answers. It assumed Groq reports how long to wait in a standard `Retry-After` header, but Groq's actual responses use a different header, so our retry logic reads that one. AI also suggested sending only six exercises per muscle group to stay within Groq's token limit. We tried it and rejected it, because the coach should see every exercise the user can do. Grouping exercise names by muscle made the full library fit instead.
+AI helped us build this test, and we checked its answers. It assumed Groq reports how long to wait in a standard `Retry-After` header, but Groq's actual responses use a different header, so our retry logic reads that one. AI also suggested sending only six exercises per muscle group to fit Groq's token limit. We tried it and rejected it, because the coach should see every exercise the user can do; grouping names by muscle made them all fit.
 
 ### 4.3 How the Design Changed
 
-The final design uses both providers. Groq handles each request first; if it fails, the app retries after a short wait or switches to Gemini. In our test, this produced ten verified plans out of ten. Running is now included from the start, with running days built by rules and checked by the same verifier. Progress photos now meet the course's cloud storage requirement, and Stripe was moved off the core demo path.
+Instead of choosing one provider, we now chain them as described in Section 2, and in our test the chain produced ten verified plans out of ten. Running is included from the start, progress photos meet the cloud storage requirement, and Stripe moved off the core demo path.
