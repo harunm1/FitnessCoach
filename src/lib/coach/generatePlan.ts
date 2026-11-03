@@ -2,7 +2,14 @@
 // fall back to the rule-based plan. The model call is passed in, so this logic is
 // tested without a network or an API key, and the provider (Groq or Gemini, issue #7)
 // can change without touching it.
+import {
+  PLAN_PROMPT_VERSION,
+  writeRecord,
+  type CoachOutcome,
+  type CoachSink,
+} from "./coachLog";
 import { buildDefaultPlan } from "./defaultPlan";
+import type { ProviderEvent } from "./providers";
 import type { PlanInput } from "./schema";
 import {
   fitsProfile,
@@ -99,31 +106,84 @@ export function namesToIds(raw: unknown, library: LibraryExercise[]): unknown {
   };
 }
 
+export type GenerateOptions = {
+  log?: CoachSink; // one record per model call (#41)
+  takeProviderEvents?: () => ProviderEvent[]; // from providerEventCollector
+  now?: () => number;
+};
+
 export async function generatePlan(
   model: PlanModel,
   profile: VerifyProfile,
   library: LibraryExercise[],
+  { log, takeProviderEvents = () => [], now = Date.now }: GenerateOptions = {},
 ): Promise<GeneratedPlan> {
   const usable = library.filter((e) => fitsProfile(e, profile));
   const byId = new Map(library.map((e) => [e.id, e]));
   let problems: string[] = [];
+  const base = { kind: "plan" as const, promptVersion: PLAN_PROMPT_VERSION };
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const started = now();
+    let raw: unknown;
     try {
-      const raw = await model(buildPlanPrompt(profile, usable, problems));
-      const result = verifyPlan(namesToIds(raw, usable), profile, byId);
-      if (result.ok)
-        return { plan: result.plan, source: "COACH", attempts: attempt };
-      problems = result.problems;
-    } catch {
+      raw = await model(buildPlanPrompt(profile, usable, problems));
+    } catch (e) {
       // A failed call or unparseable reply counts as a failed attempt.
       problems = ["the reply was not valid JSON for the plan shape"];
+      await writeRecord(log, {
+        ...base,
+        attempt,
+        latencyMs: now() - started,
+        outcome: "error",
+        providerEvents: takeProviderEvents(),
+        error: e instanceof Error ? e.message : String(e),
+      });
+      continue;
     }
+    const latencyMs = now() - started;
+    const providerEvents = takeProviderEvents();
+    const result = verifyPlan(namesToIds(raw, usable), profile, byId);
+    if (result.ok) {
+      await writeRecord(log, {
+        ...base,
+        attempt,
+        latencyMs,
+        outcome: okOutcome(attempt, providerEvents),
+        providerEvents,
+        raw,
+      });
+      return { plan: result.plan, source: "COACH", attempts: attempt };
+    }
+    problems = result.problems;
+    await writeRecord(log, {
+      ...base,
+      attempt,
+      latencyMs,
+      outcome: "rejected",
+      providerEvents,
+      problems,
+      raw,
+    });
   }
 
+  await writeRecord(log, {
+    ...base,
+    attempt: MAX_ATTEMPTS,
+    latencyMs: 0,
+    outcome: "rule_based",
+    providerEvents: [],
+    problems,
+  });
   return {
     plan: buildDefaultPlan(profile, library),
     source: "DEFAULT",
     attempts: MAX_ATTEMPTS,
   };
+}
+
+function okOutcome(attempt: number, events: ProviderEvent[]): CoachOutcome {
+  if (events.some((e) => e.action === "fallback")) return "switched";
+  if (attempt > 1 || events.some((e) => e.action === "retry")) return "retried";
+  return "ok";
 }
