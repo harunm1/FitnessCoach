@@ -61,3 +61,18 @@ Issues #7 (provider choice) and #19 (the test profiles). Results feed proposal s
 - Retry and fallback: kept if run 3 ends with no rule-based plans.
 
 **Limits.** One run per profile per setting; a model or prompt change means a rerun. Free-tier limits are per account and change without notice.
+
+## Round 2 results, 30 October
+
+| Run | Profiles | First reply passes the verifier | Served by the coach (not the rule-based plan) | Provider errors |
+| --- | --- | --- | --- | --- |
+| 1. Groq alone, full library | 4, then 2 rerun | 1 of 4; 1 of 2 on the rerun | 1 of 4; 1 of 2 | 3, all 429 |
+| 2a. Gemini 3.5 Flash alone | 5 | 0 of 5 | 0 of 5 | 10, all 429 (daily free-tier cap) |
+| 2b. Gemini 3.5 Flash-Lite alone | 5 | 2 of 5 | 5 of 5 | 0 |
+| 3. Groq, then Gemini Flash-Lite (production) | 10 | 9 of 10 | 10 of 10 | 9 Groq limits absorbed: 3 retried, 6 sent to Gemini |
+
+Files: `eval/results/2026-10-30-groq-round2.jsonl`, `-groq-round2b.jsonl`, `-gemini-round2.jsonl`, `-gemini-round2-lite.jsonl`, `-chain-round2.jsonl`.
+
+**Why runs 1 and 2 stopped before ten profiles.** Run 1 was stopped after four profiles because the full library exposed three faults in matching the model's answers to the library: near-miss names ("Standing Calf Raise" for "Standing Calf Raises"), the group label copied into the name, and a plank written as 60 reps. Each got a code or prompt fix and a test, two profiles were rerun to check the fix, and the remaining profiles moved to run 3. Run 2 stopped after five profiles because Gemini 3.5 Flash's free tier allows 20 requests a day and every call returned 429; Flash-Lite served the same five profiles, so it became the fallback model (`GEMINI_MODEL` in `.env`).
+
+**Decisions against the criteria.** Full library kept: the production chain passed the verifier on the first reply for 9 of 10 profiles, the threshold set before the run. Groq stays the lead provider: Gemini was not clearly better. Retry and fallback kept: run 3 ended with no rule-based plans.
