@@ -7,6 +7,22 @@ export type BodyMapExercise = {
   instructions: string[];
 };
 
+export const BODY_MAP_MUSCLE_NAMES = [
+  "shoulders",
+  "chest",
+  "biceps",
+  "triceps",
+  "forearms",
+  "abdominals",
+  "middle back",
+  "lats",
+  "lower back",
+  "quadriceps",
+  "glutes",
+  "hamstrings",
+  "calves",
+] as const;
+
 export function findExercisesForMuscle(
   muscle: string,
   exercises: BodyMapExercise[],
