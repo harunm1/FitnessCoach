@@ -11,8 +11,8 @@ import { weeklyCapKm, type RunProfile } from "./verifyRunning";
 const WEEKS: Record<number, { type: RunType; share: number }[]> = {
   1: [{ type: "EASY", share: 1 }],
   2: [
-    { type: "EASY", share: 0.55 },
-    { type: "LONG", share: 0.45 },
+    { type: "EASY", share: 0.45 },
+    { type: "LONG", share: 0.55 },
   ],
   3: [
     { type: "EASY", share: 0.4 },
