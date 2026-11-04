@@ -119,6 +119,7 @@ docker compose down -v
 
 - One Issue per task, assigned to whoever takes it.
 - Code: one short branch per Issue, named `name/issue-topic` (`farnaz/16-progress`), a pull request with `Closes #<n>`, one teammate review, squash and merge. Merge `main` into your branch every few days.
+- Reviews: a request gives three days. With no review by then, the author says so in a dated comment on the pull request and squash-merges (D14 in `docs/ARCHITECTURE.md`).
 - Documentation (`docs/`, README, meeting notes) goes straight to `main`, no pull request.
 - Commits: `<type>(<scope>): <summary>`, imperative, under 50 characters (`feat`, `fix`, `docs`, `chore`, `ci`).
 - Everyone commits their own work; the course reads contribution from the Git history.
