@@ -25,6 +25,8 @@ None is documented as asking follow-up questions about where a movement is felt.
 
 **Auth.** Better Auth has a Prisma adapter and a Next.js handler; Prisma's own guide only guards pages in the browser, so we check the session and tier on the server ([Prisma](https://prisma.io/docs/guides/betterauth-nextjs)).
 
+**Auth, the alternatives (checked 30 October).** Auth0 is a managed service: the user store sits on Auth0's side and the free tier ends at 7,500 monthly active users, after which it bills per user ([pkgpulse](https://www.pkgpulse.com/guides/lucia-auth-v3-vs-better-auth-vs-stack-auth-self-hosted-2026)); Auth.js (NextAuth) is the older self-hosted library and defaults to JWT sessions, which cannot be revoked before expiry without a server-side blocklist ([nexty.dev](https://nexty.dev/blogs/nextjs-boilerplate-better-auth-drizzle)); Better Auth is self-hosted, TypeScript-native, keeps users and sessions in our PostgreSQL through a Prisma adapter, and ships rate limiting and CSRF protection ([Better Stack](https://betterstack.com/community/guides/scaling-nodejs/better-auth-vs-nextauth-authjs-vs-autho/), [OpenReplay](https://blog.openreplay.com/betterauth-explained-rapid-developer-adoption/)). Our tiers come from Stripe and must sit next to the user row, so the user store has to be ours; that, and database sessions we can end on the server, is why Better Auth over Auth0, not only that the course recommends it.
+
 ## 3. Plan: shortcuts for the advanced features
 
 | Feature                  | Tool                                                 | What it saves                                      |
