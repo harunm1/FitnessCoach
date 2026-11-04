@@ -15,9 +15,9 @@ const WEEKS: Record<number, { type: RunType; share: number }[]> = {
     { type: "LONG", share: 0.55 },
   ],
   3: [
-    { type: "EASY", share: 0.4 },
+    { type: "EASY", share: 0.35 },
     { type: "TEMPO", share: 0.25 },
-    { type: "LONG", share: 0.35 },
+    { type: "LONG", share: 0.4 },
   ],
   4: [
     { type: "EASY", share: 0.25 },
