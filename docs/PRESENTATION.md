@@ -37,6 +37,11 @@ From the course's presentation guidelines and rubric (read 3 November). Slides a
 - Unit tests on the verifier, providers, guardrails, running and hybrid weeks; CI runs format, lint, types and tests.
 - Decisions D1 to D14 in `docs/ARCHITECTURE.md`; design review in `docs/design-reviews/`.
 
+## Likely questions
+
+- **Why not just use ChatGPT?** A general model doesn't know this user: no profile, injuries, equipment, plan or logged workouts, and nothing checks its answer. Our coach is grounded in the user's own data from PostgreSQL, picks only from our exercise library, and every plan passes the verifier and the safety rules in code before it is saved or shown.
+- **Why buttons instead of a chat box?** Between sets people tap, they don't type paragraphs. The coach is driven by quick-reply buttons and short bounded questions; free text is optional.
+
 ## Still to decide as a team
 
 - Who speaks each section and who drives the demo.
