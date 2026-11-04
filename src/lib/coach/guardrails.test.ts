@@ -20,6 +20,24 @@ describe("checkUserMessage", () => {
   });
 
   it.each([
+    "how do I avoid knee pain when squatting?",
+    "tips to prevent shoulder pain on bench press",
+    "how can I reduce lower back pain risk when deadlifting",
+  ])("gives safe guidance for a question about avoiding pain: %s", (text) => {
+    expect(checkUserMessage(text)).toEqual({
+      action: "PAIN_GUIDANCE",
+      reply: REPLIES.PAIN_GUIDANCE,
+    });
+  });
+
+  it.each([
+    "my knee hurts, how do I avoid making it worse?",
+    "I felt a sharp pain, how do I stop it happening again",
+  ])("still stops when the question also reports pain: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("PAIN_STOP");
+  });
+
+  it.each([
     "my legs are really sore from yesterday's session",
     "the last set burned but there was no pain",
     "squats felt hard but it doesn't hurt",
