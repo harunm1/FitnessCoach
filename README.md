@@ -42,7 +42,7 @@ The proposal is one Markdown file, 2,000 words at most; each owner commits their
 | Data     | PostgreSQL with Prisma                                                             |
 | Files    | Private S3-compatible bucket; provider chosen in #16                               |
 | Auth     | Better Auth                                                                        |
-| AI       | Groq first, Gemini as fallback (D4); both tried on the same profiles (#7)          |
+| AI       | Groq first, Gemini as fallback (D4); both tested on the same profiles (#7)         |
 | Payments | Stripe in test mode                                                                |
 
 ## Repository layout
