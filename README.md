@@ -22,7 +22,7 @@ Team project for ECE1724 Advanced Web Development, University of Toronto, Fall 2
 
 The proposal is one Markdown file, 2,000 words at most; each owner commits their own section, and every member submits the same file on Quercus (#13).
 
-**Demo path:** sign-in, quiz, plan, logged workout, coach. Everything else adds to it and must not break it. Core path working end to end by Saturday 14 November; feature freeze 26 November.
+**Demo path:** sign-in, quiz, plan, logged workout, coach. Everything else adds to it and must not break it. Core path working end to end by Sunday 15 November; demo-feature freeze Monday 23 November.
 
 ## Team
 

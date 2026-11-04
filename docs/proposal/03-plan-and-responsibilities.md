@@ -4,7 +4,7 @@ During team formation, we shared backgrounds and preferences and divided work ar
 
 ### 3.1 Stages
 
-The course health check on 18 November and final report on 6 December anchor our schedule. Our core path—sign-in, quiz, plan, logged workout and one coach exchange—is due 14 November. Demo features freeze on 23 November; 24–26 November goes to slides, rehearsals and live-demo testing. Development and polishing continue until the report.
+The course health check on 18 November and final report on 6 December anchor our schedule. Our core path—sign-in, quiz, plan, logged workout and one coach exchange—is due 15 November. Demo features freeze on 23 November; 24–26 November goes to slides, rehearsals and live-demo testing. Development and polishing continue until the report.
 
 ### 3.2 Responsibilities
 

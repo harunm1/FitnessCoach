@@ -8,7 +8,7 @@ During team formation, we shared backgrounds and preferences and divided work ar
 | --------------- | ---------------------------------------------------- | ------------------------------------------ |
 | 21 to 25 Oct    | architecture, plan and skeleton                      | team formation on Quercus, Sun 25 Oct      |
 | 26 Oct to 8 Nov | proposal written; schema, sign-in and CI in place    | **proposal, Sun 8 Nov (15%)**              |
-| 9 to 18 Nov     | core path by 14 Nov; integrate and use the app       | team health check, Wed 18 Nov              |
+| 9 to 18 Nov     | core path by 15 Nov; integrate and use the app       | team health check, Wed 18 Nov              |
 | 19 to 23 Nov    | integrate demo features; freeze demo scope on 23 Nov |                                            |
 | 24 to 26 Nov    | slides, rehearsals and testing the live demo         | introduction Wed 25 Nov; slides Thu 26 Nov |
 | 27 Nov to 6 Dec | development, polishing, report and video             | **final report, Sun 6 Dec (35%)**          |
@@ -32,7 +32,7 @@ During team formation, we shared backgrounds and preferences and divided work ar
 | Quiz and workout session | quiz, body map and session screens                 | Mohammad |
 | Progress                 | workout history, progress photos and cloud storage | Farnaz   |
 
-Core path: sign in → quiz → workout plan → logged workout → one coach exchange, by 14 November.
+Core path: sign in → quiz → workout plan → logged workout → one coach exchange, by 15 November.
 Running is built alongside lifting.
 
 ## Integration
@@ -43,7 +43,7 @@ Running is built alongside lifting.
 - One issue per task, one branch per issue, one feature or fix per PR with `Closes #n`, so review fits in one sitting. Code and proposal PRs need one teammate approval; proposal/documentation PRs request all teammates. Meeting/admin notes may go directly to unprotected `main`.
 - Branches merge weekly so the app runs together. Send no teammate more than three small, separate PRs daily. Squash and merge by default; use a merge commit for branches with multiple authors so their commits retain attribution.
 - CI runs formatting, lint, TypeScript checks, tests and build. We use the app ourselves as each piece lands.
-- Checkpoints: 14 Nov (core path), 21 Nov (integration review), 23 Nov (demo-feature freeze), 24–26 Nov (slides, rehearsals and live-demo tests). Development and polishing continue to the 6 Dec final report.
+- Checkpoints: 15 Nov (core path), 21 Nov (integration review), 23 Nov (demo-feature freeze), 24–26 Nov (slides, rehearsals and live-demo tests). Development and polishing continue to the 6 Dec final report.
 
 ## Risks
 
