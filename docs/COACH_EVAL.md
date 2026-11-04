@@ -64,12 +64,12 @@ Issues #7 (provider choice) and #19 (the test profiles). Results feed proposal s
 
 ## Round 2 results, 30 October
 
-| Run | Profiles | First reply passes the verifier | Served by the coach (not the rule-based plan) | Provider errors |
-| --- | --- | --- | --- | --- |
-| 1. Groq alone, full library | 4, then 2 rerun | 1 of 4; 1 of 2 on the rerun | 1 of 4; 1 of 2 | 3, all 429 |
-| 2a. Gemini 3.5 Flash alone | 5 | 0 of 5 | 0 of 5 | 10, all 429 (daily free-tier cap) |
-| 2b. Gemini 3.5 Flash-Lite alone | 5 | 2 of 5 | 5 of 5 | 0 |
-| 3. Groq, then Gemini Flash-Lite (production) | 10 | 9 of 10 | 10 of 10 | 9 Groq limits absorbed: 3 retried, 6 sent to Gemini |
+| Run                                          | Profiles        | First reply passes the verifier | Served by the coach (not the rule-based plan) | Provider errors                                     |
+| -------------------------------------------- | --------------- | ------------------------------- | --------------------------------------------- | --------------------------------------------------- |
+| 1. Groq alone, full library                  | 4, then 2 rerun | 1 of 4; 1 of 2 on the rerun     | 1 of 4; 1 of 2                                | 3, all 429                                          |
+| 2a. Gemini 3.5 Flash alone                   | 5               | 0 of 5                          | 0 of 5                                        | 10, all 429 (daily free-tier cap)                   |
+| 2b. Gemini 3.5 Flash-Lite alone              | 5               | 2 of 5                          | 5 of 5                                        | 0                                                   |
+| 3. Groq, then Gemini Flash-Lite (production) | 10              | 9 of 10                         | 10 of 10                                      | 9 Groq limits absorbed: 3 retried, 6 sent to Gemini |
 
 Files: `eval/results/2026-10-30-groq-round2.jsonl`, `-groq-round2b.jsonl`, `-gemini-round2.jsonl`, `-gemini-round2-lite.jsonl`, `-chain-round2.jsonl`.
 
