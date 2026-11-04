@@ -44,6 +44,8 @@ A plan that fails is regenerated once with the problems listed, then the user ge
 
 **Form feedback questions are bounded:** where it is felt, at which point in the rep, the weight against usual. The answers pick a fix from the exercise's library entry (cues, common mistakes), so the advice traces to text we wrote.
 
+**One chat turn, in a fixed order** (`src/lib/coach/chat.ts`, #11): the guardrail check on the message, then the model with a system prompt built from this user's plan and profile, then the check on the reply. If no provider answers, the user gets a short fixed reply and logging keeps working. Plans and chat use the same provider order (`coachModel`, `coachChatModel`).
+
 **Text, not voice.** Voice adds speech-to-text, text-to-speech, microphone permissions and latency, and is not one of the course's advanced features. Streamed text replies are.
 
 ## Decisions

@@ -2,7 +2,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { generatePlan } from "./generatePlan";
 import {
+  coachChatModel,
   coachModel,
+  geminiChat,
+  groqChat,
   GEMINI_MODEL,
   geminiModel,
   GROQ_MODEL,
@@ -331,5 +334,56 @@ describe("withFallback and coachModel with both keys", () => {
     );
     await expect(model("x")).rejects.toThrow("HTTP 503");
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("chat providers", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const messages = [
+    { role: "system" as const, content: "rules" },
+    { role: "assistant" as const, content: "earlier reply" },
+    { role: "user" as const, content: "what pace for my easy run?" },
+  ];
+
+  it("Groq sends the messages as they are and returns plain text", async () => {
+    const fetchMock = mockFetch(200, groqReply("  About 6:00 per km.  "));
+    expect(await groqChat(KEY)(messages)).toBe("About 6:00 per km.");
+    const { body } = sent(fetchMock);
+    expect(body.messages).toEqual(messages);
+    expect(body.response_format).toBeUndefined();
+  });
+
+  it("Gemini moves the system prompt to systemInstruction and maps roles", async () => {
+    const fetchMock = mockFetch(
+      200,
+      geminiReply([
+        { text: "thinking", thought: true },
+        { text: "About 6:00 per km." },
+      ]),
+    );
+    expect(await geminiChat(KEY)(messages)).toBe("About 6:00 per km.");
+    const { body } = sent(fetchMock);
+    expect(body.systemInstruction).toEqual({ parts: [{ text: "rules" }] });
+    expect(body.contents.map((c: { role: string }) => c.role)).toEqual([
+      "model",
+      "user",
+    ]);
+  });
+
+  it("coachChatModel falls back to Gemini when Groq is rate limited", async () => {
+    const fn = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("{}", { status: 429 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(geminiReply([{ text: "From Gemini." }])), {
+          status: 200,
+        }),
+      );
+    vi.stubGlobal("fetch", fn);
+    const chat = coachChatModel(
+      { GROQ_API_KEY: KEY, GEMINI_API_KEY: KEY },
+      { retries: 0 },
+    );
+    expect(await chat(messages)).toBe("From Gemini.");
   });
 });

@@ -1,0 +1,79 @@
+// One coach chat turn (#11). The order is fixed in code, the same way the plan path
+// is (docs/ARCHITECTURE.md, The coach):
+//   1. the user's message goes through checkUserMessage; a pain, diagnosis or
+//      off-topic message gets its fixed reply and no model call is made
+//   2. the model sees a system prompt built here from the user's own plan and
+//      profile, then the conversation, then the new message as a user message
+//   3. the reply goes through checkCoachReply before anyone sees it
+//   4. if no provider answers, the user gets a short fixed reply and the rest of the
+//      app keeps working (Section 2.5: a failure degrades one capability)
+import {
+  buildChatMessages,
+  checkCoachReply,
+  checkUserMessage,
+  type ChatMessage,
+} from "./guardrails";
+import type { ChatModel } from "./providers";
+
+export type ChatSource = "COACH" | "GUARDRAIL" | "UNAVAILABLE";
+
+export type CoachTurn = { reply: string; source: ChatSource };
+
+export const UNAVAILABLE_REPLY =
+  "The coach can't answer right now. Your plan and logging still work; try the chat again in a minute.";
+
+// Only what the coach needs to answer about this user's training. No name, email or
+// photo goes into a prompt (D4).
+export type CoachContext = {
+  goal: string;
+  level: string;
+  daysPerWeek: number;
+  equipment: string[];
+  injuries: string | null;
+  // Today's or the next session, as short lines such as "Bench press 3 x 10".
+  sessionLines: string[];
+};
+
+// Bump when the wording changes, so logged replies can be grouped by prompt.
+export const CHAT_PROMPT_VERSION = "chat-v1";
+
+export function buildCoachSystemPrompt(ctx: CoachContext): string {
+  return [
+    "You are FitnessCoach, a strength and running coach inside a training app.",
+    "Answer only about this user's training, recovery and the session below. Keep replies under 120 words.",
+    "Suggest exercise swaps only from movements the user's equipment allows, and say why in one line.",
+    "Never diagnose, never name a medication or dose, and if the user reports pain, tell them to stop that exercise and see a professional.",
+    "",
+    `Goal: ${ctx.goal}. Level: ${ctx.level}. Days a week: ${ctx.daysPerWeek}.`,
+    `Equipment: ${ctx.equipment.join(", ") || "body weight only"}.`,
+    `Reported injuries: ${ctx.injuries?.trim() || "none"}.`,
+    "Session:",
+    ...(ctx.sessionLines.length ? ctx.sessionLines : ["rest day"]),
+  ].join("\n");
+}
+
+export async function coachReply(
+  model: ChatModel,
+  ctx: CoachContext,
+  history: ChatMessage[],
+  userText: string,
+): Promise<CoachTurn> {
+  const guard = checkUserMessage(userText);
+  if (guard.action !== "ALLOW") {
+    return { reply: guard.reply, source: "GUARDRAIL" };
+  }
+
+  let reply: string;
+  try {
+    reply = await model(
+      buildChatMessages(buildCoachSystemPrompt(ctx), history, userText),
+    );
+  } catch {
+    return { reply: UNAVAILABLE_REPLY, source: "UNAVAILABLE" };
+  }
+
+  const checked = checkCoachReply(reply);
+  return checked.action === "ALLOW"
+    ? { reply, source: "COACH" }
+    : { reply: checked.reply, source: "GUARDRAIL" };
+}
