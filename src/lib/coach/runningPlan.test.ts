@@ -55,6 +55,19 @@ describe("buildRunningPlan", () => {
     expect(plan.days.at(-1)?.run.type).toBe("LONG");
   });
 
+  it("makes the long run the longest run of the week", () => {
+    for (let runDaysPerWeek = 2; runDaysPerWeek <= 5; runDaysPerWeek++) {
+      const plan = buildRunningPlan({
+        ...RUN_PROFILES.activeWithHistory,
+        runDaysPerWeek,
+      });
+      const long = plan.days.find((d) => d.run.type === "LONG")!;
+      for (const d of plan.days) {
+        expect(long.run.distanceKm).toBeGreaterThanOrEqual(d.run.distanceKm);
+      }
+    }
+  });
+
   it("sets paces from the easy pace", () => {
     const plan = buildRunningPlan(RUN_PROFILES.physicalJobFiveDays);
     const pace = Object.fromEntries(
