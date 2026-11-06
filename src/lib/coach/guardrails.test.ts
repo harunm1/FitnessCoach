@@ -214,6 +214,148 @@ describe("checkUserMessage", () => {
   });
 });
 
+// Mental health, the third harm category in Jörke et al., CHI 2026 (arXiv
+// 2510.05449, Table 2), and red-flag symptoms during exercise.
+describe("crisis and red-flag messages", () => {
+  const CRISIS_TEXT =
+    "I'm really sorry you're feeling this way. I'm a training coach, so I'm not the right support for this, but you don't have to go through it alone. You can call or text 9-8-8 any time, day or night, to reach the Suicide Crisis Helpline in Canada. If you're in immediate danger, call 911.";
+  const RED_FLAG_TEXT =
+    "Stop exercising now. Chest pain, fainting or trouble breathing during exercise need medical attention: call 911 if it's severe or doesn't settle quickly, otherwise see a doctor before training again.";
+
+  it("uses the agreed wording, character for character", () => {
+    expect(REPLIES.CRISIS).toBe(CRISIS_TEXT);
+    expect(REPLIES.RED_FLAG).toBe(RED_FLAG_TEXT);
+  });
+
+  it.each([
+    "I don't want to be alive anymore",
+    "I don’t want to be alive anymore",
+    "thinking about ending it",
+    "I want to hurt myself",
+    "I've been thinking about suicide",
+    "sometimes I want to kill myself",
+    "I want to end my life",
+    "I want to die",
+    "I wanna die",
+    "I don't see the point in living",
+    "I've been cutting myself",
+    "I keep cutting myself",
+    "I cut myself last night",
+    "nobody would miss me",
+    "I can't go on",
+    "I wish I wasn't alive",
+    "I'd rather be dead",
+    "I'm planning to take my life",
+    "I want to stop living",
+    "life isn't worth living",
+    "I'm thinking of ending things",
+    "I don't want to exist",
+    "I don't wanna be alive",
+    "kms",
+    "I hurt myself on purpose",
+    "I've been hurting myself",
+    "I took too many pills on purpose",
+    "I'm going to take all my pills",
+  ])("gives the crisis reply: %s", (text) => {
+    expect(checkUserMessage(text)).toEqual({
+      action: "CRISIS",
+      reply: CRISIS_TEXT,
+    });
+  });
+
+  it("checks crisis before every other rule", () => {
+    expect(
+      checkUserMessage(
+        "my knee hurts and I don't want to be alive anymore, I hate my body",
+      ).action,
+    ).toBe("CRISIS");
+  });
+
+  it.each([
+    "I felt chest pain on the last interval",
+    "my chest got tight during the run",
+    "chest tightness while sprinting",
+    "I fainted after the last set",
+    "I nearly fainted during squats",
+    "I almost passed out on the bike",
+    "I couldn't breathe properly on the hill, really short of breath",
+    "my heart was beating irregularly during the run",
+    "felt palpitations after intervals",
+    "my chest hurts during runs",
+    "pain in my chest on the bike",
+    "sharp pain in my chest",
+    "my chest is killing me",
+    "my chest feels heavy when I run",
+    "pressure in my chest during the run",
+    "my chest tightened on the hill",
+    "my heartbeat felt irregular",
+    "heart was pounding irregularly",
+    "my heart felt like it was skipping",
+    "irregular heart rhythm",
+    "heart skipped beats during squats",
+    "I collapsed after the set",
+    "I got dizzy and collapsed",
+    "gasping and can't catch my breath",
+    "couldn't catch my breath for ten minutes",
+    "really struggled to breathe",
+    "I can not breathe",
+  ])("stops exercise on a red-flag symptom: %s", (text) => {
+    expect(checkUserMessage(text)).toEqual({
+      action: "RED_FLAG",
+      reply: RED_FLAG_TEXT,
+    });
+  });
+
+  it("checks red flags before pain", () => {
+    expect(
+      checkUserMessage("my knee hurts and I had chest pain on the run").action,
+    ).toBe("RED_FLAG");
+  });
+
+  it.each([
+    "this workout is killing me",
+    "these squats are killing me",
+    "I'm dying after that run",
+    "kill this set",
+    "my chest is sore from bench yesterday",
+    "I don't want to hurt myself on heavy deadlifts",
+    "heart racing after intervals",
+    "I'm going to cut myself some slack this week",
+    "I want to cut myself a break on rest days",
+    "I want to end it with planks",
+    "I'm going to end it on a heavy single",
+    "I'm planning to end it after 3 sets",
+    "suicide sprints today",
+    "shuttle runs, aka suicides, tomorrow",
+    "I don't want to live without lifting lol",
+    "faint praise from my coach on that set",
+    "pass out the water bottles after the run",
+    "out of breath after sprints, normal?",
+    "I ran 5 kms today",
+  ])("lets effort and ordinary training talk through: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("ALLOW");
+  });
+
+  it.each([
+    "my knee's killing me",
+    "my knee is really killing me",
+    "knee is killing me",
+    "my shoulder's been killing me since Monday",
+    "my lower back muscles are killing me",
+    "my knees have been killing me",
+    "I had a faint ache in my shoulder",
+    "I don’t know why but my knee hurts",
+  ])("still stops on a pain report: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("PAIN_STOP");
+  });
+
+  it("gives guidance, not a stop, for a question about avoiding pain", () => {
+    expect(checkUserMessage("how do I squat so I don't get pain?").action).toBe(
+      "PAIN_GUIDANCE",
+    );
+  });
+});
+
 describe("checkCoachReply", () => {
   it.each([
     "That sounds like tendinitis, so rest it for a week.",
