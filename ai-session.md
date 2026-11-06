@@ -81,3 +81,13 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** the modules and tests (#45, #47, #48, #49, #53, #54), plus a loop test over every history from 1 to 60 km and every week from 1 to 7 days, which caught two weeks that went over the cap.
 
 **Did with it:** saving a week once to a real PostgreSQL (PGlite with all migrations) showed the generated split gave a two- or three-run week a long run shorter than its easy run. The unit tests had passed because none of them checked that. I fixed the shares and added a test that the long run is the longest for two to five run days. The first fix went up before the full test run and needed a second commit. I checked the Groq free-tier limits cited in Section 2 against Groq's own rate-limits page.
+
+### 6 November 2026, Section 2 trim for the final proposal (issues #4, #13)
+
+**Before asking:** the four sections came to about 2,280 words against the 2,000-word cap, and Section 2 (mine) was the longest. I set the rule for the cut: every objective, the diagram, the entity table, the decision and failure tables and both advanced features stay; only repetition and wording go. The technologies table repeated 2.2 and 2.3, so it could become one sentence.
+
+**Asked:** for tighter wording of each paragraph and table row under that rule, and a word count that does not treat table pipes as words.
+
+**Got:** shorter rows and sentences, and a count of the whole proposal at about 1,990 words with pipes and table rules removed.
+
+**Did with it:** kept the cuts that only removed words and put back three that dropped substance (that each record belongs to a user, the activity-level field, and runs as well as sets in the logging row). Brought in the Section 2 changes already on `main` from the 3 November design review (Better Auth citation, pilot on a deployed preview, sentence-at-a-time streaming), and changed the CI replay of ten coach profiles to future tense, since it is still in review.
