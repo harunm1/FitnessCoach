@@ -8,7 +8,7 @@ The technical objective is a trustworthy coach: code checks every plan before it
 
 ### 2.2 Architecture and data flow
 
-![Component diagram of the frontend, backend, AI coach, data stores and services](../img/architecture.png)
+![Component diagram of the frontend, backend, AI coach, data stores and services](https://raw.githubusercontent.com/harunm1/FitnessCoach/main/docs/img/architecture.png)
 
 _Figure 1. Solid lines: requests and data; dashed: fallback provider, seeding and CI._
 
@@ -34,12 +34,12 @@ Server Components read through Prisma, Server Actions write, and every query is 
 
 ### 2.4 Key design decisions
 
-| Decision                                      | Why it fits FitnessCoach                                                                               | Trade-off                                                               |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
-| The model picks exercise ids from our library | No invented exercises, none the user cannot do                                                         | A long prompt: about one plan a minute on Groq's free tier (Groq, 2026) |
-| Running by rule, strength by the model        | Running progression is arithmetic; strength choice benefits from a model                               | Less varied running plans                                               |
-| Better Auth, not Auth0                        | Users and sessions stay in our database beside the tier (Better Auth, 2026)                            | We run authentication ourselves                                         |
-| Groq first, Gemini as fallback                | In our [test](../COACH_EVAL.md) each free tier failed within ten requests; the chain served ten of ten | Two keys to manage                                                      |
+| Decision                                      | Why it fits FitnessCoach                                                                                                                                   | Trade-off                                                               |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| The model picks exercise ids from our library | No invented exercises, none the user cannot do                                                                                                             | A long prompt: about one plan a minute on Groq's free tier (Groq, 2026) |
+| Running by rule, strength by the model        | Running progression is arithmetic; strength choice benefits from a model                                                                                   | Less varied running plans                                               |
+| Better Auth, not Auth0                        | Users and sessions stay in our database beside the tier (Better Auth, 2026)                                                                                | We run authentication ourselves                                         |
+| Groq first, Gemini as fallback                | In our [test](https://github.com/harunm1/FitnessCoach/blob/main/docs/COACH_EVAL.md) each free tier failed within ten requests; the chain served ten of ten | Two keys to manage                                                      |
 
 ### 2.5 Failure handling, error states and testing
 
@@ -72,11 +72,3 @@ One planned extension, reported only if finished: **real-time** coach replies st
 ### 2.8 Scope and feasibility
 
 On `main`: the Next.js skeleton, Prisma schema and first migration, seeded library, CI, plan generation with the verifier, and provider fallback. Each area (accounts; quiz and session; progress and photos; coach) builds against the shared schema and merges weekly. Voice, camera form checks and payments are out of scope. Demo features freeze on 23 November; the demo path is sign-in, quiz, plan, a logged workout and one coach exchange.
-
-### References
-
-Better Auth. (2026). _Prisma_ [Documentation]. https://www.better-auth.com/docs/adapters/prisma
-
-Groq. (2026). _Rate limits_ [Documentation]. GroqCloud. https://console.groq.com/docs/rate-limits
-
-Yuhonas. (n.d.). _free-exercise-db_ [Data set]. GitHub. https://github.com/yuhonas/free-exercise-db
