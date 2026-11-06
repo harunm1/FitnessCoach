@@ -103,11 +103,11 @@ describe("saveWeek", () => {
     const prisma = {
       $transaction: vi.fn(async (fn: (t: typeof tx) => unknown) => fn(tx)),
     };
-    return { prisma: prisma as unknown as PrismaClient, calls };
+    return { prisma: prisma as unknown as PrismaClient, calls, tx };
   }
 
   it("locks the user row, then deactivates, then creates, in one transaction", async () => {
-    const { prisma, calls } = fakePrisma();
+    const { prisma, calls, tx } = fakePrisma();
     const week = buildHybridWeek(profile, library);
     await expect(saveWeek(prisma, "u1", week, "DEFAULT")).resolves.toEqual({
       planId: 7,
@@ -117,9 +117,20 @@ describe("saveWeek", () => {
       "deactivate",
       "create",
     ]);
+    // Only this user's row is locked and only this user's plans are touched.
+    expect(tx.$queryRaw.mock.calls[0].slice(1)).toEqual(["u1"]);
+    expect(tx.plan.updateMany).toHaveBeenCalledWith({
+      where: { userId: "u1", active: true },
+      data: { active: false },
+    });
+    expect(tx.plan.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ userId: "u1", active: true }),
+      }),
+    );
   });
 
-  it("rejects when the insert fails, so the transaction rolls back", async () => {
+  it("propagates an insert failure out of the transaction", async () => {
     const { prisma } = fakePrisma(true);
     const week = buildHybridWeek(profile, library);
     await expect(saveWeek(prisma, "u1", week, "DEFAULT")).rejects.toThrow(
