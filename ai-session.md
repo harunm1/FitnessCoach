@@ -141,3 +141,13 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** Google's support article: the coach is built with Gemini, gives personalized weekly fitness plans, and needs a Fitbit or Pixel Watch. The check confirmed the two studies and the prices, and found one wrong phrase: the adherence review lists personal characteristics, not individual circumstances.
 
 **Did with it:** added Google to the competitor sentence and the reference list, fixed the phrase and a dangling "Their", and shortened the last paragraph so the proposal stays at 2,000 words. The store page gave no readable text, so the citation is the support article.
+
+### 6 November 2026, Future's price in Section 1 (issue #13)
+
+**Before asking:** the review of Section 1 found Future's $149 figure only in an old Future blog post and a competitor's review. I wanted the price taken from Future's own site.
+
+**Asked:** what Future's homepage states as its price today.
+
+**Got:** "$50 first month, then $199/month", with no $149 or annual rate on the page.
+
+**Did with it:** changed the range to $199 per month in Section 1 and the combined file; the word count did not change.
