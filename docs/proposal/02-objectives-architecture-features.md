@@ -2,9 +2,9 @@
 
 ### 2.1 Objectives
 
-FitnessCoach is a personalized fitness coach. A short quiz produces a weekly gym, running or hybrid plan that fits the user's goal, equipment, schedule, injuries and daily life; the user logs sessions on their phone, and plan and progress update as they train. A coach chat answers questions about the user's own plan.
+A short quiz produces a weekly gym, running or hybrid plan that fits the user's goal, equipment, schedule, injuries and daily life; the user logs sessions on their phone, and plan and progress update as they train. A coach chat answers questions about the user's own plan.
 
-The technical objective is a trustworthy coach: code checks every plan before it is saved, and dropped connections, bad input and model outages never lose data or leave an empty screen.
+The technical objective is a trustworthy coach: code checks every plan before it is saved, and failures never lose data or leave an empty screen.
 
 ### 2.2 Architecture and data flow
 
@@ -45,14 +45,14 @@ Server Components read through Prisma, Server Actions write, and every query is 
 
 A failure degrades one capability, never the whole app: without a model, users still get a rule-based plan.
 
-| Failure                          | How the app responds                                                                                                                                |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dropped connection while logging | The entry stays on screen, marked unsaved, with a retry; a retry never stores a set or run twice                                                    |
-| Dropped connection during chat   | The server saves the finished reply; reopening the chat loads it                                                                                    |
-| Bad input                        | Zod on the form and in the Server Action; plain errors, no stack trace                                                                              |
-| Model slow, rate-limited or down | 30-second timeout, a short retry, the other provider, then the rule-based plan; chat shows a cached reply                                           |
-| Malformed or unsafe plan         | Schema check, then the verifier (ids exist, equipment owned, injuries avoided, ranges, no duplicates, day count); one regeneration listing problems |
-| Out-of-scope or unsafe chat      | Rules in code: reported pain stops the exercise and suggests a professional; no diagnosis                                                           |
+| Failure                          | How the app responds                                                                                                         |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Dropped connection while logging | The entry stays on screen, marked unsaved, with a retry; a retry never stores a set or run twice                             |
+| Dropped connection during chat   | The server saves the finished reply; reopening the chat loads it                                                             |
+| Bad input                        | Zod on the form and in the Server Action; plain errors, no stack trace                                                       |
+| Model slow, rate-limited or down | 30-second timeout, a short retry, the other provider, then the rule-based plan; chat shows a cached reply                    |
+| Malformed or unsafe plan         | Schema check, then the verifier (ids, equipment, injuries, ranges, duplicates, day count); one regeneration listing problems |
+| Out-of-scope or unsafe chat      | Rules in code: reported pain stops the exercise and suggests a professional; no diagnosis                                    |
 
 Every model call will be logged with provider, prompt version, latency and outcome. Vitest unit tests mock the network; CI runs format, lint, types, tests and build on every pull request, and will replay ten fixed coach profiles. From mid-November we pilot the demo path on a deployed preview and log what breaks as issues labelled `pilot`.
 
@@ -64,11 +64,11 @@ TypeScript throughout; Next.js, Tailwind CSS and shadcn/ui as in 2.2; PostgreSQL
 
 We commit to two:
 
-1. **Authentication and authorization.** Better Auth sign-in; four tiers checked on the server in every Server Action and route handler: free (plans, logging), trial, pro (adds coach chat), admin (edits the library).
+1. **Authentication and authorization.** Better Auth sign-in; four tiers checked on the server in every Server Action and route handler: free (plans, logging), trial, pro (adds coach chat; set by an admin, or by Stripe test mode if built), admin (edits the library).
 2. **Integration with an external AI API.** Groq, with Gemini as fallback, writes strength plans and answers chat behind the verifier; plans land in the session screen's tables.
 
 One planned extension, reported only if finished: **real-time** coach replies streamed a sentence at a time, each checked before it is shown.
 
 ### 2.8 Scope and feasibility
 
-On `main`: the Next.js skeleton, strength schema and first migration, seeded library, CI, plan generation with the verifier, and provider fallback. Each area (accounts; quiz and session; progress and photos; coach) builds against the shared schema and merges weekly. Voice, camera form checks and payments are out of scope.
+On `main`: the Next.js skeleton, strength schema and first migration, seeded library, CI, plan generation with the verifier, and provider fallback. Each area builds against the shared schema and merges weekly. Voice and camera form checks are out of scope; Stripe test-mode upgrades to pro are a stretch off the demo path.
