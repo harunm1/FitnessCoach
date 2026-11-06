@@ -10,7 +10,7 @@ The technical objective is a trustworthy coach: code checks every plan before it
 
 ![Component diagram of the frontend, backend, AI coach, data stores and services](https://raw.githubusercontent.com/harunm1/FitnessCoach/main/docs/img/architecture.png)
 
-_Figure 1. Solid lines: requests and data; dashed: fallback provider, seeding and CI._
+_Figure 1. Dashed lines: fallback provider, seeding and CI._
 
 We use Option A, Next.js full-stack with the App Router: no outside client calls our backend. The React frontend (Tailwind CSS, shadcn/ui) reaches the backend three ways: Server Components load data before the page renders, Server Actions validated by Zod handle every form, and one route handler serves coach chat.
 
@@ -71,4 +71,4 @@ One planned extension, reported only if finished: **real-time** coach replies st
 
 ### 2.8 Scope and feasibility
 
-On `main`: the Next.js skeleton, Prisma schema and first migration, seeded library, CI, plan generation with the verifier, and provider fallback. Each area (accounts; quiz and session; progress and photos; coach) builds against the shared schema and merges weekly. Voice, camera form checks and payments are out of scope. Demo features freeze on 23 November; the demo path is sign-in, quiz, plan, a logged workout and one coach exchange.
+On `main`: the Next.js skeleton, Prisma schema and first migration, seeded library, CI, plan generation with the verifier, and provider fallback. Each area (accounts; quiz and session; progress and photos; coach) builds against the shared schema and merges weekly. Voice, camera form checks and payments are out of scope.
