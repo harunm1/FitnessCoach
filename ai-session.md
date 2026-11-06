@@ -222,6 +222,9 @@ I worked on accounts, access tiers and Stripe test-mode billing, which meant the
 
 ### Stripe test-mode subscriptions (issue #14, milestone 3)
 
+This entry records the separate billing work; the sign-in and tiers PR contains
+Milestones 1–2. The complete billing implementation is preserved on its own branch.
+
 **Before asking:** I took a backup before adding billing and set up a Stripe sandbox. I decided on monthly and yearly PRO subscriptions, kept separate from the cardless app trial.
 
 **Asked:** how Checkout, billing management and webhooks should work with our existing access tiers. I was also unsure about parts of the Stripe setup, so I asked for detailed instructions, and I asked for a review of cases I might be missing.

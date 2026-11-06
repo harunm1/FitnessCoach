@@ -1,5 +1,3 @@
-import { Suspense } from "react";
-import { BillingPanel } from "@/components/auth/billing-panel";
 import { requireAccount } from "@/lib/auth/access";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { TrialButton } from "@/components/auth/trial-button";
@@ -18,7 +16,7 @@ function trialDaysRemaining(endsAt: Date | null, active: boolean) {
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: Promise<{ access?: string; billing?: string }>;
+  searchParams: Promise<{ access?: string }>;
 }) {
   const { user, access } = await requireAccount();
   const params = await searchParams;
@@ -149,20 +147,6 @@ export default async function AccountPage({
                 </p>
               )}
             </section>
-            {!adminEnabled && (
-              <Suspense
-                fallback={
-                  <section
-                    className={styles.card}
-                    aria-label="Loading membership"
-                  >
-                    Loading membership…
-                  </section>
-                }
-              >
-                <BillingPanel userId={user.id} returned={params.billing} />
-              </Suspense>
-            )}
             <section className={styles.card} aria-labelledby="access-heading">
               <div className={styles.cardHeading}>
                 <h2 id="access-heading" className={styles.cardTitle}>

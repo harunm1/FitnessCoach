@@ -1,8 +1,8 @@
-# Local development: accounts, access tiers and billing
+# Local development: accounts and access tiers
 
-Start here for Milestones 1–3 of Issue #14. [ACCOUNTS.md](ACCOUNTS.md) explains
-account behavior and integration contracts; [BILLING.md](BILLING.md) explains
-Stripe; [ACCOUNTS_TESTING.md](ACCOUNTS_TESTING.md) contains acceptance checks.
+Start here for Milestones 1–2 of Issue #14. [ACCOUNTS.md](ACCOUNTS.md) explains
+account behavior and integration contracts; [ACCOUNTS_TESTING.md](ACCOUNTS_TESTING.md)
+contains acceptance checks. Billing is reviewed in a separate follow-up PR.
 
 ## Prerequisites
 
@@ -10,8 +10,6 @@ Stripe; [ACCOUNTS_TESTING.md](ACCOUNTS_TESTING.md) contains acceptance checks.
 - Docker Desktop with Compose. Start Docker Desktop first; enable WSL integration
   if running commands from WSL. Use Windows Node/npm in PowerShell, or Linux
   Node/npm in WSL; do not share native `node_modules` between the two.
-- A Stripe sandbox and Stripe CLI only when testing billing. Auth, free access
-  and the cardless trial work without Stripe settings.
 
 Use the accounts feature branch containing the milestone changes. Uncommitted
 files exist only on the machine where they were edited; a fresh clone includes
@@ -54,16 +52,7 @@ public deployments.
 | `SMTP_SECURE`                | `false` locally; commonly `true` for implicit TLS on 465 and `false` for STARTTLS on 587. Follow the provider's instructions. |
 | `SMTP_FROM`                  | Sender name/address; use a provider-approved address for real mail.                                                           |
 | `SMTP_USER`, `SMTP_PASSWORD` | Leave both blank for Mailpit; configure both for authenticated SMTP.                                                          |
-| `STRIPE_SECRET_KEY`          | Optional sandbox server key, beginning `sk_test_`.                                                                            |
-| `STRIPE_WEBHOOK_SECRET`      | Optional local listener's `whsec_` value; required when enabling billing.                                                     |
-| `STRIPE_MONTHLY_PRICE_ID`    | Optional `price_` ID for the monthly recurring price.                                                                         |
-| `STRIPE_YEARLY_PRICE_ID`     | Optional `price_` ID for the annual recurring price.                                                                          |
-| `STRIPE_PRICE_ID`            | Legacy single-price compatibility ID. Retain it while existing subscriptions use it.                                          |
 | `TEST_DATABASE_URL`          | Tests only; must explicitly name a separate database ending `_test`. Never use the development database.                      |
-
-Configure both named Stripe prices to offer both options. Amounts/currency are
-read from Stripe; they are not trusted from the browser. Existing project test
-prices are CAD 10/month and CAD 100/year, with annual billing paid upfront.
 
 ## 2. Start PostgreSQL — setup terminal
 
@@ -111,35 +100,14 @@ To send real email, replace SMTP host/port/sender and both authentication values
 with your provider's settings, then restart Next.js. Real inbox delivery depends
 on that provider and is not established by Mailpit tests.
 
-## 4. Optional Stripe setup — listener terminal
-
-Follow [BILLING.md](BILLING.md) to create the product/prices, configure the portal
-and add private settings. Install the [Stripe CLI](https://docs.stripe.com/stripe-cli),
-then run:
-
-```powershell
-stripe login
-stripe listen --forward-to localhost:3000/api/stripe/webhook
-```
-
-Authenticate to the same sandbox as your key and prices. Put this listener's
-signing secret in `STRIPE_WEBHOOK_SECRET`. It differs from a Dashboard endpoint
-secret. Keep the listener open while testing; unrelated signed events are safely
-ignored. The app rejects live keys and live events.
-
-Configure the default customer portal for cancellation **at period end**, payment
-method updates and invoice history. Keep plan/quantity changes disabled. Do not
-change another subscription while testing a fixture account.
-
-## 5. Start Next.js — app terminal
+## 4. Start Next.js — app terminal
 
 ```powershell
 npm run dev
 ```
 
 Open http://localhost:3000. If the app chooses another port because 3000 is busy,
-stop the duplicate server or deliberately update both BETTER_AUTH_URL and the
-listener target to match. Restart the app after changing `.env`. One app process
+stop the duplicate server or deliberately update BETTER_AUTH_URL to match. Restart the app after changing `.env`. One app process
 should own the development port.
 
 1. Open `/sign-up`, enter your name/email and a 12–128 character password.
@@ -148,20 +116,17 @@ should own the development port.
 4. Start the free trial only when ready. It lasts seven days without a card.
 5. Use Change password on the account page when signed in. Use Forgot password
    on sign-in for email recovery when you cannot authenticate.
-6. With billing configured, choose Monthly or Yearly and select Upgrade to PRO
-   (test). Verify the recurring amount/currency in hosted Checkout. After a
-   successful test payment, PRO and coach access refresh in the same login.
 
 See [the acceptance matrix](ACCOUNTS_TESTING.md) for every expected outcome,
-including negative cases and cancellation/renewal verification.
+including negative cases, trial expiry and tier changes.
 
 ## Normal restart and shutdown
 
-For later sessions, start Docker Desktop, PostgreSQL, Mailpit if needed and the
-Stripe listener if testing billing, then `npm run dev`. Keep existing secrets and
-data; dependency installation, migrations and seed are not daily restart steps.
+For later sessions, start Docker Desktop, PostgreSQL and Mailpit if needed, then
+run `npm run dev`. Keep existing secrets and data; dependency installation,
+migrations and seed are not daily restart steps.
 
-Stop Next.js, Mailpit or the listener with Ctrl+C in their terminals. Stop the
+Stop Next.js or Mailpit with Ctrl+C in their terminals. Stop the
 database without deleting data:
 
 ```powershell
@@ -175,8 +140,8 @@ docker compose down -v
 ```
 
 After a reset, restart PostgreSQL, apply migrations and seed again. Source-code
-backups do not back up PostgreSQL or cancel Stripe subscriptions. Coordinate
-migration-aware rollback rather than resetting a database containing useful data.
+backups do not back up PostgreSQL. Coordinate migration-aware rollback rather
+than resetting a database containing useful data.
 
 ## Troubleshooting
 
@@ -187,11 +152,8 @@ migration-aware rollback rather than resetting a database containing useful data
 | Port 3000 already used                         | Stop the other FitnessCoach server; avoid running two dev servers.                                                                                                                                                                        |
 | Missing auth secret                            | Generate a private value, set BETTER_AUTH_SECRET and restart.                                                                                                                                                                             |
 | Verification/reset email absent                | Check Mailpit and SMTP settings. Resend through the UI; unverified users cannot sign in.                                                                                                                                                  |
-| `stripe` not recognized                        | Install the CLI, reopen the terminal and run `stripe --version`.                                                                                                                                                                          |
-| No billing prices displayed                    | Check the test key and price IDs belong to the same sandbox, that prices are active fixed monthly/yearly prices, and restart after editing `.env`.                                                                                        |
 | Webhook 400                                    | Compare the listener signing secret and the app's `.env`; use the raw payload and correct local origin.                                                                                                                                   |
 | Webhook 500                                    | Retry after fixing the provider/database problem; failed events are not marked processed.                                                                                                                                                 |
-| Paid but still awaiting confirmation           | Keep the listener running. The return page retries briefly; use Refresh billing status and inspect Stripe's payment/subscription state. Never pay again merely to refresh access.                                                         |
 | Existing subscriber cannot see upgrade pricing | Management/refresh and last verified status remain available while pricing is unavailable. Errors are retryable; access still expires at its verified deadline.                                                                           |
 | Formatting warnings on Windows                 | Source text uses LF through .gitattributes and Prettier. Save with LF; avoid converting files back to CRLF.                                                                                                                               |
 | Windows npm EPERM on a `.node` file            | Stop this project's running dev server before reinstalling locked native dependencies.                                                                                                                                                    |
