@@ -13,7 +13,7 @@ import {
   checkUserMessage,
   type ChatMessage,
 } from "./guardrails";
-import type { ChatModel } from "./providers";
+import type { ChatModel, ChatStream } from "./providers";
 
 export type ChatSource = "COACH" | "GUARDRAIL" | "UNAVAILABLE";
 
@@ -87,4 +87,56 @@ export async function coachReply(
   return checked.action === "ALLOW"
     ? { reply, source: "COACH" }
     : { reply: checked.reply, source: "GUARDRAIL" };
+}
+
+// Streamed chat turn (#11, D10). Text is released a sentence at a time, and the reply
+// check runs on everything so far before each sentence goes out, so a diagnosis is
+// caught before the user reads it, not after. If the check trips, the stream stops
+// and the fixed reply follows; if the provider fails, the user sees the fixed
+// unavailable line.
+export async function* coachReplyStream(
+  stream: ChatStream,
+  ctx: CoachContext,
+  history: ChatMessage[],
+  userText: string,
+): AsyncGenerator<string> {
+  const guard = checkUserMessage(userText);
+  if (guard.action !== "ALLOW") {
+    yield guard.reply;
+    return;
+  }
+  let sent = "";
+  let pending = "";
+  const release = function* (text: string) {
+    const checked = checkCoachReply(sent + text);
+    if (checked.action !== "ALLOW") throw new GuardrailStop(checked.reply);
+    sent += text;
+    yield text;
+  };
+  try {
+    for await (const piece of stream(
+      buildChatMessages(buildCoachSystemPrompt(ctx), history, userText),
+    )) {
+      pending += piece;
+      // Release every complete sentence; keep the unfinished tail.
+      const cut = pending.search(/[.!?]\s(?=[^.!?]*$)/);
+      if (cut >= 0) {
+        yield* release(pending.slice(0, cut + 2));
+        pending = pending.slice(cut + 2);
+      }
+    }
+    if (pending) yield* release(pending);
+  } catch (e) {
+    if (e instanceof GuardrailStop) {
+      yield (sent ? "\n\n" : "") + e.reply;
+      return;
+    }
+    yield sent ? "\n\n" + UNAVAILABLE_REPLY : UNAVAILABLE_REPLY;
+  }
+}
+
+class GuardrailStop extends Error {
+  constructor(readonly reply: string) {
+    super("guardrail");
+  }
 }
