@@ -66,7 +66,7 @@ export const REPLIES = {
 // soreness after training is expected and should not stop a session. "Sharp" counts
 // only next to a pain word, so "I feel sharp today" is not a report.
 const PAIN =
-  /\b(pain|painful|hurts?|hurting|aches?|aching|(my \w+( \w+)? (is|are) killing me)|sharp (pain|twinge|ache)|stabbing|shooting|throbbing|pinch(es|ed|ing)?|numb(ness)?|tingl(e|ing)|popped|pop(ping)? sound|snapped|(something|a) snap|rolled my|tweaked|swollen|swelling)\b/i;
+  /\b(pain|painful|hurts?|hurting|aches?|aching|((knees?|back|shoulders?|hips?|ankles?|wrists?|elbows?|neck|legs?|feet|foot|hamstrings?|calf|calves|quads?|glutes?|muscles?|joints?|shins?)('s been|'s| is| are| has been| have been| keeps?| been)?( really| still| so)? killing me)|sharp (pain|twinge|ache)|stabbing|shooting|throbbing|pinch(es|ed|ing)?|numb(ness)?|tingl(e|ing)|popped|pop(ping)? sound|snapped|(something|a) snap|rolled my|tweaked|swollen|swelling)\b/i;
 // "no pain", "not painful", "doesn't hurt" are reassurance, not a report. Only the
 // negated phrase is removed, so "no pain on the warm-up but my knee hurts" still reports.
 // Not when the words between are stop/way: "never stops hurting", "no way this pain
@@ -76,7 +76,7 @@ const NEGATED_PAIN =
 const DIAGNOSIS =
   /\b(diagnos\w*|do i have|is it (a )?(torn|tear|broken|fracture|sprain|strain)|what injury|tendinitis|tendonitis|herniat\w*|ibuprofen|advil|painkillers?|pills?|medication|meds|dosage)\b/i;
 const TRAINING =
-  /\b(workout|exercise|train(ing)?|plan|set|sets|reps?|weight|lift\w*|squat\w*|bench|deadlift\w*|press|curl\w*|row\w*|run\w*|jog\w*|pace|km|mile\w*|marathon|sprint\w*|interval\w*|tempo|cardio|stretch\w*|warm[- ]?up|cool[- ]?down|rest|recover\w*|sleep|protein|eat\w*|diet|calori\w*|muscle\w*|gym|form|knee|back|shoulder|hip|ankle|leg\w*|arm\w*|chest|core|abs|sore\w*|tired|fatigue|strength|endurance|body|goal\w*|week|day|session|fat|lose|loss|gain\w*|heavy)\b/i;
+  /\b(workout|exercise|train(ing)?|plan|set|sets|reps?|weight|lift\w*|squat\w*|plank\w*|bench|deadlift\w*|press|curl\w*|row\w*|run\w*|ran|jog\w*|pace|kms?|mile\w*|marathon|sprint\w*|interval\w*|tempo|cardio|stretch\w*|warm[- ]?up|cool[- ]?down|rest|recover\w*|sleep|protein|eat\w*|diet|calori\w*|muscle\w*|gym|form|knee|back|shoulder|hip|ankle|leg\w*|arm\w*|chest|core|abs|sore\w*|tired|fatigue|strength|endurance|body|goal\w*|week|day|session|fat|lose|loss|gain\w*|heavy)\b/i;
 
 // Narrow on purpose: a fat-loss goal ("lose fat", "cut calories", "lose weight") is
 // ordinary coaching, and "I'm starving after my run" is hunger. These match
@@ -93,23 +93,27 @@ const MINDSET =
 // report when the user says something hurts them now ("my knee hurts", "I felt a
 // sharp pain"), and a report always wins.
 const PAIN_QUESTION =
-  /\b(how (do|can|should|would) (i|you|we)|how to|ways? to|tips? (for|to|on)|what can i do to)\b.*\b(avoid|prevent|reduce|protect|stop|without)\b/i;
+  /\b(how (do|can|should|would) (i|you|we)|how to|ways? to|tips? (for|to|on)|what can i do to)\b.*\b(avoid|prevent|reduce|protect|stop|without|don't|doesn't)\b/i;
 const PAIN_REPORT =
   /\b(my|i've|i have|i had|i felt|i feel|i'm feeling|it|that|this)\b(\s+\w+){0,3}\s+(hurts?|hurting|is painful|pain(ful)?|aches?|aching|popped|numb|swollen|tingl\w*)\b|\b(i felt|i feel|i have|i've got|i got|getting)\b(\s+\w+){0,3}\s+(pain|sharp|stabbing|shooting)\b/i;
 
-// Not wanting to be alive, suicide, self-harm or ending one's life. Checked before
-// every other rule. "Don't want to hurt myself on deadlifts" is caution, not harm, so
-// a negation right before "want to hurt myself" is excluded; "this workout is killing
-// me" and "I'm dying after that run" are effort.
+// Not wanting to be alive, suicide, self-harm or ending one's life, overdose included.
+// Checked before every other rule. Training talk is kept out: "this workout is
+// killing me", "suicide sprints", "end it with planks", "cut myself some slack",
+// "don't want to hurt myself on deadlifts", "5 kms".
 const CRISIS =
-  /\b(suicid\w*|kill(ing)? myself|end(ing)? my (own )?life|end(ing)? it all|(thinking about|think about|want to|going to|gonna|plan(ning)? to) end(ing)? it|(do ?n'?t|do not|don't) want to (be alive|live|be here|wake up)|wish i (was|were) dead|better off dead|self[- ]?harm\w*|(?<!(n'?t|not|never) )(want|going|plan(ning)?) to (hurt|harm|cut) myself|(hurting|harming|cutting) myself on purpose)\b/i;
+  /\b(suicid(e|al)(?! (sprints?|runs?|drills?|shuttles?))|kill(ing)? myself|(?<!\d\s?)kms|unalive|end(ing)? my (own )?life|take my (own )?life|end(ing)? it all|ending things|(thinking about|thinking of|think about|want to|going to|gonna|plan(ning)? to) end(ing)? it(?! (with|on|after|early|at|by|there|here|now)\b)|(do ?n'?t|do not) (want|wanna)( to)? (be alive|live(?! (in|with|without|near|at|on|by|until|till)\b)|be here anymore|wake up|exist)|(want|wanna|going to|gonna) (to )?die|wish i (was|were)( not|n'?t) (alive|here|born)|wish i (was|were) dead|(rather|better off) (be )?dead|(no|don'?t see the|what'?s the) point (in|of) (living|life|going on)|(life|living) (is ?n'?t|is not) worth|can'?t go on(?! (a|the|with|my|today|this|that|runs?|holiday|vacation)\b)|(nobody|no one) would (miss|care)|stop living|self[- ]?harm\w*|(?<!(n'?t|not|never) )(want|going|plan(ning)?) to (hurt|harm) myself|(cut|cutting|burn(ing)?) myself(?! (some|a|off|short|slack)\b)|(hurt(ing)?|harm(ing)?|cut(ting)?) myself on purpose|been (hurting|harming) myself(?! (with|on|by|doing|lifting|running)\b)|(too many|all (of )?my|a bunch of) (pills|meds)|overdos\w*)\b/i;
 // Red-flag symptoms during or after exercise. "My chest is sore from bench" is
-// soreness and stays with the effort rule; a racing heart after a sprint is expected.
+// soreness and stays with the effort rule; a racing heart after a sprint, "faint
+// praise" and "pass out the water bottles" are not symptoms. Any shortness of breath
+// counts, on the safe side of "severe".
 const RED_FLAG =
-  /\b(chest (pain|pains|tightness|pressure)|chest (got|gets|is|was|feels|felt) (tight|painful)|tight(ness)? in my chest|(nearly |almost )?faint(ed|ing)?|passed out|pass out|blacked out|(could ?n'?t|can'?t|could not|cannot) breathe|trouble breathing|struggling to breathe|short(ness)? of breath|irregular(ly)? heart ?beat|heart ?beat (was |is )?irregular|heart (was |is )?(beating )?irregular(ly)?|palpitations?|heart (is |was )?(skipping|fluttering))\b/i;
+  /\b(chest (pain|pains|tightness|pressure)|chest (got|gets|is|was|feels|felt|feeling) (tight|painful|heavy)|chest (hurts?|hurting|aches?|aching|is killing me)|chest tighten\w*|(pain|pressure|tightness|ache|heaviness) in my chest|faint(ed|ing)|(feel|felt|feeling|feels|went|got|getting|nearly|almost|about to) faint|passed out|pass out(?! (the|a|some|these|those|them|water)\b)|blacked out|collaps\w*|(could ?n'?t|can'?t|could not|cannot|can not) (breathe|catch my breath)|trouble breathing|struggl\w* to breathe|short(ness)? of breath|irregular(ly)? heart ?(beat|rhythm)|heart ?beat (felt|feels|was|is|went) irregular|heart (was |is )?(beating |pounding )?irregular(ly)?|palpitations?|heart\w* (felt like it was |was |is |keeps? )?(skipp\w*|flutter\w*)|skipped (a )?beats?)\b/i;
 
 export function checkUserMessage(text: string): Guard {
-  const message = text.trim();
+  // Phone keyboards send curly apostrophes (U+2019 in "don't"); every pattern uses
+  // straight ones.
+  const message = text.trim().replace(/[‘’ʼ]/g, "'");
   if (CRISIS.test(message)) {
     return { action: "CRISIS", reply: REPLIES.CRISIS };
   }
@@ -136,6 +140,11 @@ export function checkUserMessage(text: string): Guard {
   }
   if (diagnosis) {
     return { action: "NO_DIAGNOSIS", reply: REPLIES.NO_DIAGNOSIS };
+  }
+  // "How do I squat so I don't get pain?" is a question even though its pain phrase
+  // is negated.
+  if (!pain && PAIN.test(message) && PAIN_QUESTION.test(message)) {
+    return { action: "PAIN_GUIDANCE", reply: REPLIES.PAIN_GUIDANCE };
   }
   if (pain) {
     if (PAIN_QUESTION.test(affirmed)) {
