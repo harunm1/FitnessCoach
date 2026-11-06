@@ -31,11 +31,18 @@ describe("buildSteps", () => {
     ]);
   });
 
-  it("only builds on a preview deployment, so a pull request never migrates the shared database", () => {
-    expect(buildSteps({ VERCEL_ENV: "preview" })).toEqual(["next build"]);
+  it("migrates the preview database before building a pull request preview", () => {
+    expect(buildSteps({ VERCEL_ENV: "preview" })).toEqual([
+      "prisma migrate deploy",
+      "next build",
+    ]);
   });
 
-  it("only builds outside Vercel", () => {
+  it("only builds in local development", () => {
+    expect(buildSteps({ VERCEL_ENV: "development" })).toEqual(["next build"]);
+  });
+
+  it("only builds outside Vercel, as in CI", () => {
     expect(buildSteps({})).toEqual(["next build"]);
   });
 });

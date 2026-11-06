@@ -59,7 +59,7 @@ Lands with the skeleton; until then only `docs/` exists.
 
 ## Local Development
 
-Prerequisites: Node.js, npm, and Docker Desktop with Docker Compose available.
+Prerequisites: Node.js 22 (the version CI and Vercel use, `engines` in `package.json`), npm, and Docker Desktop with Docker Compose available.
 Start Docker Desktop before running the Docker commands. When using WSL, enable
 Docker Desktop integration for your distribution.
 
@@ -117,39 +117,49 @@ docker compose down -v
 
 The hosted preview runs on Vercel (Hobby) with PostgreSQL on Neon (Free); why is
 decision D15 in `docs/ARCHITECTURE.md`. `vercel.json` sets the build command to
-`scripts/vercel-build.ts`: production deployments run `prisma migrate deploy`, then
-`next build`; pull request previews only build. Previews use their own Neon branch, so
-a pull request never reads or changes the production database.
+`scripts/vercel-build.ts`, which runs `prisma migrate deploy`, then `next build`, on
+production and preview deployments. Production uses the Neon `main` branch and pull
+request previews use a separate `preview` branch, so a pull request never reads or
+changes the production database.
+
+Who does what: Nabeegh sets up Neon (steps 1 to 3). Mohammad creates the Vercel project
+(steps 4 to 6): Vercel lets only the owner of a personal-account repository import it,
+so a collaborator cannot. The project belongs to Mohammad's Hobby account. The
+repository stays public; Vercel's Hobby limits on commit authors apply to private
+repositories.
 
 One-time setup:
 
 1. Create a Neon account at neon.com and a project named `fitnesscoach` in **AWS US
-   East (N. Virginia)**, the region Vercel runs functions in by default (`iad1`). From
+   East (N. Virginia)**, next to Vercel's default function region (`iad1`); the region cannot be changed after
+   the project is created. From
    **Connect**, copy two connection strings for the `main` branch: the pooled one (host
    contains `-pooler`) and the direct one (connection pooling turned off). Append
-   `?connect_timeout=15` to the direct string (or `&connect_timeout=15` if it already
-   has a `?`), so the Prisma CLI waits for a suspended database to wake instead of
-   failing with P1001.
-2. Apply the migrations and seed the `main` branch from your machine, using the direct
-   string:
+   `connect_timeout=15` to the direct string (after `&` if it already has a `?`,
+   otherwise after `?`), so the Prisma CLI waits for a suspended database to wake
+   instead of failing with P1001.
+2. Apply the migrations and seed the `main` branch from your machine. Set both variables
+   to the direct string, so `migrate` (which prefers `DATABASE_URL_UNPOOLED`) and the
+   seed (which reads `DATABASE_URL`) reach the same database:
 
    ```bash
-   DATABASE_URL="<direct string>" npx prisma migrate deploy
-   DATABASE_URL="<direct string>" npx prisma db seed
+   export DATABASE_URL="<direct string>" DATABASE_URL_UNPOOLED="<direct string>"
+   npx prisma migrate deploy
+   npx prisma db seed
+   unset DATABASE_URL DATABASE_URL_UNPOOLED
    ```
 
-   In PowerShell, set it first with `$env:DATABASE_URL="<direct string>"`, run both
-   commands, then `Remove-Item Env:DATABASE_URL`.
+   In PowerShell: `$env:DATABASE_URL="<direct string>"` and
+   `$env:DATABASE_URL_UNPOOLED="<direct string>"`, the two `npx` commands, then
+   `Remove-Item Env:DATABASE_URL, Env:DATABASE_URL_UNPOOLED`.
 
 3. In Neon, create a branch named `preview` from `main`; it starts with the same schema
    and seed data. Copy its pooled and direct strings the same way, with
-   `connect_timeout=15` on the direct one.
-4. Create a Vercel account at vercel.com (Hobby), choose **Add New > Project** and
-   import `harunm1/FitnessCoach`. If GitHub asks the repository owner to approve the
-   Vercel app, Mohammad approves it. Keep the detected Next.js preset; `vercel.json`
-   supplies the build command. The Vercel project belongs to Nabeegh's Hobby account;
-   keep the repository public, because Vercel's Hobby commit-author check applies to
-   private repositories, so teammates' commits to the public repository still deploy.
+   `connect_timeout=15` on the direct one. Send all four strings to Mohammad privately,
+   not in the repository or the team chat.
+4. Mohammad creates a Vercel account at vercel.com (Hobby) with his GitHub login,
+   chooses **Add New > Project** and imports `harunm1/FitnessCoach`. Keep the detected
+   Next.js preset; `vercel.json` supplies the build command.
 5. Before the first deploy, add these under **Settings > Environment Variables**:
 
    | Name                    | Environment         | Value                        |
@@ -163,15 +173,15 @@ One-time setup:
    | `GEMINI_API_KEY`        | Production, Preview | from aistudio.google.com     |
 
 6. Deploy. Each push to `main` redeploys production and applies any new migration to
-   the Neon `main` branch; each pull request gets its own preview URL against the
-   `preview` branch.
+   the Neon `main` branch; each pull request gets its own preview URL and applies its
+   migrations to the `preview` branch first.
 
-After a schema change merges, the next production deployment migrates `main`. Migrations
-run before the new build goes live, so the running version briefly meets the new schema:
-keep migrations additive (new tables and nullable columns), and drop or rename in a later
-change. To bring `preview` up to date, run step 2's `migrate deploy` with its direct
-string, or reset the branch from `main` in Neon. Seed again only when the seed itself
-changes; it upserts, so re-running is safe.
+Migrations run before the new build goes live, so the running version briefly meets
+the new schema: keep migrations additive (new tables and nullable columns), and drop or
+rename in a later change. The `preview` branch is shared by every open pull request; if
+two of them add migrations that conflict, or a pull request closes without merging,
+reset `preview` from `main` in Neon. Seed again only when the seed itself changes; it
+upserts, so re-running is safe.
 
 ## How we work
 

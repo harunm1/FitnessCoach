@@ -12,12 +12,16 @@ export function cliDatabaseUrl(env: Env): string | undefined {
 }
 
 /**
- * Production deployments apply committed migrations before building. Preview
- * deployments of pull requests only build, so an unmerged migration never reaches
- * the shared database. VERCEL_ENV is set at build time (Vercel docs, 5 Nov 2026).
+ * Production and preview deployments apply committed migrations before building, each
+ * to its own Neon branch (Production- and Preview-scoped DATABASE_URL_UNPOOLED), so a
+ * pull request that adds a migration is previewed against a migrated schema without
+ * touching production. Local development and CI (no VERCEL_ENV) only build.
+ * VERCEL_ENV is set at build time (Vercel docs, 5 Nov 2026).
  */
+const MIGRATING_ENVS = new Set(["production", "preview"]);
+
 export function buildSteps(env: Env): string[] {
-  return env.VERCEL_ENV === "production"
+  return MIGRATING_ENVS.has(env.VERCEL_ENV ?? "")
     ? ["prisma migrate deploy", "next build"]
     : ["next build"];
 }

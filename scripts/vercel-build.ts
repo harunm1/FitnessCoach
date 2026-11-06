@@ -4,5 +4,5 @@ import { buildSteps } from "../src/lib/deploy/release";
 
 for (const step of buildSteps(process.env)) {
   console.log(`> ${step}`);
-  execSync(`npx ${step}`, { stdio: "inherit" });
+  execSync(`npx --no-install ${step}`, { stdio: "inherit" });
 }

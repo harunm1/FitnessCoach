@@ -1,6 +1,7 @@
 # Runs on every push and pull request. A PR cannot be merged until this passes
 # once we make it a required check in branch protection (same setup as my AI-M repo).
-# The four steps mirror the npm scripts, so what passes locally passes here.
+# The steps mirror the npm scripts, and the build runs the same script Vercel uses,
+# so what passes locally passes here.
 name: CI
 
 on:
@@ -24,4 +25,4 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       # The Vercel build script; outside Vercel (no VERCEL_ENV) it runs next build only.
-      - run: npx tsx scripts/vercel-build.ts
+      - run: npx --no-install tsx scripts/vercel-build.ts
