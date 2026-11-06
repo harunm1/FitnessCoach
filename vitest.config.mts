@@ -3,6 +3,8 @@ import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
+  // Markup tests use CSS modules; the Next.js build verifies Tailwind processing.
+  css: { postcss: { plugins: [] } },
   test: {
     exclude: [
       ...configDefaults.exclude,

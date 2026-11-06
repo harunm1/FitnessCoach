@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
+import { AccountIcon } from "./account-ui";
+import styles from "./account.module.css";
 
 export function SignOutButton() {
   const router = useRouter();
@@ -27,12 +29,16 @@ export function SignOutButton() {
         type="button"
         onClick={signOut}
         disabled={pending}
-        className="rounded-lg bg-foreground px-4 py-2 text-background focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
+        className={styles.signOutButton}
+        aria-label={pending ? "Signing out…" : "Sign out"}
       >
-        {pending ? "Signing out…" : "Sign out"}
+        <AccountIcon name="logout" size={16} />
+        <span className={styles.signOutLabel}>
+          {pending ? "Signing out…" : "Sign out"}
+        </span>
       </button>
       {error && (
-        <p role="alert" className="mt-2 text-sm">
+        <p role="alert" className={styles.signOutError}>
           {error}
         </p>
       )}

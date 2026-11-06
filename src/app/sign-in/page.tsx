@@ -11,6 +11,7 @@ export default async function SignInPage({
       mode="sign-in"
       verified={params.verified === "1" && !params.error}
       verificationError={Boolean(params.error)}
+      sessionExpired={params.reason === "session-expired"}
     />
   );
 }

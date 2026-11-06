@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { AccountIcon, AuthExperience } from "./account-ui";
+import styles from "./account.module.css";
 import { authClient } from "@/lib/auth/client";
 import {
   emailSchema,
@@ -19,12 +21,12 @@ const copy: Record<
 > = {
   "sign-in": {
     title: "Welcome back",
-    description: "Sign in to your FitnessCoach account.",
+    description: "Sign in to continue your training.",
     submit: "Sign in",
   },
   "sign-up": {
     title: "Create your account",
-    description: "Start your training journey with FitnessCoach.",
+    description: "Create your account to get started.",
     submit: "Create account",
   },
   "forgot-password": {
@@ -45,16 +47,82 @@ const copy: Record<
   },
 };
 
+function PasswordField({
+  confirmation = false,
+  newPassword = false,
+  disabled,
+  invalid = false,
+}: {
+  confirmation?: boolean;
+  newPassword?: boolean;
+  disabled: boolean;
+  invalid?: boolean;
+}) {
+  const id = useId();
+  const [visible, setVisible] = useState(false);
+  const [capsLock, setCapsLock] = useState(false);
+  const label = confirmation ? "Confirm password" : "Password";
+  return (
+    <div className={styles.field}>
+      <label htmlFor={id} className={styles.label}>
+        {label}
+      </label>
+      <div className={styles.inputWrap}>
+        <span className={styles.inputIcon}>
+          <AccountIcon name="lock" size={18} />
+        </span>
+        <input
+          id={id}
+          className={`${styles.input} ${styles.passwordInput}`}
+          type={visible ? "text" : "password"}
+          name={confirmation ? "confirmation" : "password"}
+          autoComplete={newPassword ? "new-password" : "current-password"}
+          minLength={newPassword ? 12 : 1}
+          maxLength={128}
+          required
+          disabled={disabled}
+          aria-invalid={invalid || undefined}
+          aria-describedby={`${id}-hint${invalid ? " auth-error" : ""}`}
+          onKeyUp={(event) => setCapsLock(event.getModifierState("CapsLock"))}
+          onBlur={() => setCapsLock(false)}
+        />
+        <button
+          type="button"
+          className={styles.passwordToggle}
+          onClick={() => setVisible(!visible)}
+          disabled={disabled}
+          aria-label={`${visible ? "Hide" : "Show"} ${confirmation ? "confirm password" : "password"}`}
+          aria-pressed={visible}
+          aria-controls={id}
+        >
+          <AccountIcon name={visible ? "eye-off" : "eye"} size={18} />
+        </button>
+      </div>
+      <p id={`${id}-hint`} className={styles.fieldHint}>
+        {capsLock
+          ? "Caps Lock is on."
+          : newPassword && !confirmation
+            ? "Use 12–128 characters. A passphrase works well."
+            : confirmation
+              ? "Enter your password once more."
+              : "Your password is case-sensitive."}
+      </p>
+    </div>
+  );
+}
+
 export function AuthForm({
   mode,
   token,
   verified = false,
   verificationError = false,
+  sessionExpired = false,
 }: {
   mode: Mode;
   token?: string;
   verified?: boolean;
   verificationError?: boolean;
+  sessionExpired?: boolean;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -64,18 +132,29 @@ export function AuthForm({
       : "",
   );
   const [message, setMessage] = useState("");
+  const [invalidField, setInvalidField] = useState("");
+  const emailInput = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (mode !== "verify-email") return;
+    try {
+      if (emailInput.current && !emailInput.current.value)
+        emailInput.current.value =
+          sessionStorage.getItem("fitnesscoach.pendingEmail") ?? "";
+    } catch {
+      /* The form also works when browser storage is unavailable. */
+    }
+  }, [mode]);
   const config = copy[mode];
   const hasPassword = ["sign-in", "sign-up", "reset-password"].includes(mode);
   const confirmPassword = mode === "sign-up" || mode === "reset-password";
   const invalidReset = mode === "reset-password" && !token;
-  const inputClass =
-    "mt-1 w-full rounded-lg border border-current/25 bg-background px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50";
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (pending) return;
     setError("");
     setMessage("");
+    setInvalidField("");
     const values = new FormData(event.currentTarget);
     const email = String(values.get("email") ?? "").trim();
     const password = String(values.get("password") ?? "");
@@ -90,10 +169,20 @@ export function AuthForm({
             : emailSchema.safeParse(email);
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message ?? "Check the form fields.");
+      const field = String(
+        parsed.error.issues[0]?.path[0] ??
+          (mode === "reset-password" ? "password" : "email"),
+      );
+      setInvalidField(field);
+      const input = event.currentTarget.elements.namedItem(field);
+      if (input instanceof HTMLElement) input.focus();
       return;
     }
     if (confirmPassword && password !== values.get("confirmation")) {
       setError("Passwords must match.");
+      setInvalidField("confirmation");
+      const input = event.currentTarget.elements.namedItem("confirmation");
+      if (input instanceof HTMLElement) input.focus();
       return;
     }
     if (invalidReset) return;
@@ -114,6 +203,11 @@ export function AuthForm({
           );
           return;
         }
+        try {
+          sessionStorage.setItem("fitnesscoach.pendingEmail", email);
+        } catch {
+          /* Optional convenience only. */
+        }
         router.replace("/verify-email");
       } else if (mode === "sign-in") {
         const result = await authClient.signIn.email({ email, password });
@@ -124,6 +218,11 @@ export function AuthForm({
               : "Invalid email or password. Please try again.",
           );
           return;
+        }
+        try {
+          sessionStorage.removeItem("fitnesscoach.pendingEmail");
+        } catch {
+          /* Optional convenience only. */
         }
         router.replace("/account");
         router.refresh();
@@ -174,139 +273,245 @@ export function AuthForm({
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-5 py-12">
-      <Link href="/" className="mb-8 text-xl font-bold">
-        FitnessCoach
-      </Link>
-      <section
-        className="rounded-2xl border border-current/15 p-6 shadow-sm"
-        aria-labelledby="auth-title"
-      >
-        <h1 id="auth-title" className="text-2xl font-semibold">
+    <AuthExperience recovery={!["sign-in", "sign-up"].includes(mode)}>
+      <section className={styles.formSection} aria-labelledby="auth-title">
+        {mode === "sign-in" || mode === "sign-up" ? (
+          <nav className={styles.tabs} aria-label="Account access">
+            <Link
+              href="/sign-in"
+              className={[
+                styles.tab,
+                mode === "sign-in" ? styles.tabActive : "",
+              ].join(" ")}
+              aria-current={mode === "sign-in" ? "page" : undefined}
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/sign-up"
+              className={[
+                styles.tab,
+                mode === "sign-up" ? styles.tabActive : "",
+              ].join(" ")}
+              aria-current={mode === "sign-up" ? "page" : undefined}
+            >
+              Create account
+            </Link>
+          </nav>
+        ) : (
+          <Link href="/sign-in" className={styles.backLink}>
+            <AccountIcon name="arrow" size={16} /> Back to sign in
+          </Link>
+        )}
+        <p className={styles.formEyebrow}>
+          <AccountIcon
+            name={
+              mode === "verify-email"
+                ? "mail"
+                : mode === "sign-up"
+                  ? "spark"
+                  : "activity"
+            }
+            size={15}
+          />{" "}
+          {mode === "sign-in"
+            ? "ACCOUNT ACCESS"
+            : mode === "sign-up"
+              ? "GET STARTED"
+              : "ACCOUNT SUPPORT"}
+        </p>
+        <h1 id="auth-title" className={styles.formTitle}>
           {config.title}
         </h1>
-        <p className="mt-2 text-sm opacity-80">{config.description}</p>
+        <p className={styles.formDescription}>{config.description}</p>
+        {sessionExpired && (
+          <p
+            role="status"
+            className={[styles.notice, styles.sessionNotice].join(" ")}
+          >
+            Your session has expired. Sign in again, or use Forgot password if
+            you need to recover your account.
+          </p>
+        )}
         {verified && (
-          <p role="status" className="mt-4 text-sm">
-            Email verified. You can now sign in.
+          <p
+            role="status"
+            className={[styles.notice, styles.successNotice].join(" ")}
+          >
+            <AccountIcon name="check" size={18} /> Email verified. You can now
+            sign in.
           </p>
         )}
         {invalidReset ? (
-          <p role="alert" className="mt-5">
-            This reset link is invalid or expired. Request a new one below.
+          <p
+            role="alert"
+            className={[styles.notice, styles.errorNotice].join(" ")}
+          >
+            <AccountIcon name="lock" size={18} /> This reset link is invalid or
+            expired. Request a new one below.
           </p>
         ) : (
           <form
             method="post"
             onSubmit={submit}
-            className="mt-6 space-y-4"
+            className={styles.form}
             aria-busy={pending}
           >
             {mode === "sign-up" && (
-              <label className="block text-sm font-medium">
-                Name
-                <input
-                  className={inputClass}
-                  name="name"
-                  autoComplete="name"
-                  maxLength={100}
-                  required
-                  disabled={pending}
-                />
-              </label>
+              <div className={styles.field}>
+                <label htmlFor="auth-name" className={styles.label}>
+                  Name
+                </label>
+                <div className={styles.inputWrap}>
+                  <span className={styles.inputIcon}>
+                    <AccountIcon name="user" size={18} />
+                  </span>
+                  <input
+                    id="auth-name"
+                    className={styles.input}
+                    name="name"
+                    autoComplete="name"
+                    placeholder="Your name"
+                    maxLength={100}
+                    required
+                    disabled={pending}
+                    aria-invalid={invalidField === "name" || undefined}
+                    aria-describedby={
+                      invalidField === "name" ? "auth-error" : undefined
+                    }
+                  />
+                </div>
+              </div>
             )}
             {mode !== "reset-password" && (
-              <label className="block text-sm font-medium">
-                Email
-                <input
-                  className={inputClass}
-                  type="email"
-                  name="email"
-                  autoComplete="email"
-                  maxLength={254}
-                  required
-                  disabled={pending}
-                />
-              </label>
+              <div className={styles.field}>
+                <label htmlFor="auth-email" className={styles.label}>
+                  Email
+                </label>
+                <div className={styles.inputWrap}>
+                  <span className={styles.inputIcon}>
+                    <AccountIcon name="mail" size={18} />
+                  </span>
+                  <input
+                    ref={emailInput}
+                    id="auth-email"
+                    className={styles.input}
+                    type="email"
+                    name="email"
+                    autoComplete="email"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    placeholder="you@example.com"
+                    maxLength={254}
+                    required
+                    disabled={pending}
+                    aria-invalid={invalidField === "email" || undefined}
+                    aria-describedby={
+                      invalidField === "email" ? "auth-error" : undefined
+                    }
+                  />
+                </div>
+              </div>
             )}
             {hasPassword && (
-              <label className="block text-sm font-medium">
-                Password
-                <input
-                  className={inputClass}
-                  type="password"
-                  name="password"
-                  autoComplete={
-                    mode === "sign-in" ? "current-password" : "new-password"
-                  }
-                  minLength={mode === "sign-in" ? 1 : 12}
-                  maxLength={128}
-                  required
-                  disabled={pending}
-                />
-              </label>
+              <PasswordField
+                newPassword={mode !== "sign-in"}
+                disabled={pending}
+                invalid={invalidField === "password"}
+              />
             )}
             {confirmPassword && (
-              <label className="block text-sm font-medium">
-                Confirm password
-                <input
-                  className={inputClass}
-                  type="password"
-                  name="confirmation"
-                  autoComplete="new-password"
-                  minLength={12}
-                  maxLength={128}
-                  required
-                  disabled={pending}
-                />
-              </label>
+              <PasswordField
+                confirmation
+                newPassword
+                disabled={pending}
+                invalid={invalidField === "confirmation"}
+              />
             )}
-            {mode === "sign-up" && (
-              <p className="text-sm opacity-80">
-                Use 12–128 characters. We will email you a verification link.
-              </p>
+            {mode === "sign-in" && (
+              <div className={styles.forgotRow}>
+                <Link className={styles.textLink} href="/forgot-password">
+                  Forgot password?
+                </Link>
+              </div>
             )}
             {error && (
               <p
+                id="auth-error"
                 role="alert"
-                className="text-sm text-red-700 dark:text-red-300"
+                className={[styles.notice, styles.errorNotice].join(" ")}
               >
-                {error}
+                <AccountIcon name="shield" size={18} />
+                <span>{error}</span>
               </p>
             )}
             {message && (
-              <p role="status" className="text-sm">
-                {message}
+              <p
+                role="status"
+                className={[styles.notice, styles.successNotice].join(" ")}
+              >
+                <AccountIcon name="check" size={18} />
+                <span>{message}</span>
               </p>
             )}
             <button
-              className="w-full rounded-lg bg-foreground px-4 py-2.5 font-medium text-background focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
+              className={styles.primaryButton}
               type="submit"
               disabled={
                 pending || Boolean(message && mode === "reset-password")
               }
             >
-              {pending ? "Please wait…" : config.submit}
+              {pending
+                ? mode === "sign-in"
+                  ? "Signing in…"
+                  : mode === "sign-up"
+                    ? "Creating your account…"
+                    : "Sending request…"
+                : config.submit}
+              {!pending && <AccountIcon name="arrow" size={17} />}
             </button>
           </form>
         )}
-        <nav
-          className="mt-6 flex flex-col gap-3 text-sm underline underline-offset-4"
-          aria-label="Account help"
-        >
-          {mode !== "sign-in" && <Link href="/sign-in">Sign in</Link>}
+        {(mode === "verify-email" || mode === "forgot-password") && (
+          <div className={styles.mailTip}>
+            <AccountIcon name="mail" size={19} />
+            <div>
+              <strong>A quick inbox check</strong>Can’t find it? Check your spam
+              folder and make sure your email is correct. The link expires in
+              one hour.
+            </div>
+          </div>
+        )}
+        <nav className={styles.authNav} aria-label="Account help">
+          {mode === "sign-up" && (
+            <>
+              <span>Already part of the team?</span>
+              <Link href="/sign-in">Sign in</Link>
+            </>
+          )}
           {mode === "sign-in" && (
             <>
+              <span>New here?</span>
               <Link href="/sign-up">Create an account</Link>
-              <Link href="/forgot-password">Forgot password?</Link>
+              <span aria-hidden="true">·</span>
               <Link href="/verify-email">Resend verification email</Link>
             </>
           )}
+          {(mode === "forgot-password" || mode === "verify-email") && (
+            <>
+              <span>Ready to get moving?</span>
+              <Link href="/sign-in">Sign in</Link>
+            </>
+          )}
           {mode === "reset-password" && (
-            <Link href="/forgot-password">Request a new reset link</Link>
+            <>
+              <Link href="/sign-in">Sign in</Link>
+              <span aria-hidden="true">·</span>
+              <Link href="/forgot-password">Request a new reset link</Link>
+            </>
           )}
         </nav>
       </section>
-    </main>
+    </AuthExperience>
   );
 }
