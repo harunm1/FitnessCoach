@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { buildHybridWeek, type HybridProfile } from "./hybridWeek";
-import { weekToPlanData } from "./saveWeek";
+import type { PrismaClient } from "@/generated/prisma/client";
+import { saveWeek, weekToPlanData } from "./saveWeek";
 import type { LibraryExercise } from "./verify";
 
 const library: LibraryExercise[] = [
@@ -74,5 +75,55 @@ describe("weekToPlanData", () => {
       }
     }
     expect(days.at(-2)?.run?.create.type).toBe("LONG");
+  });
+});
+
+describe("saveWeek", () => {
+  // Under READ COMMITTED two concurrent saves could each deactivate the old plan and
+  // both insert an active one; locking the user's row first makes them run in turn.
+  function fakePrisma(failCreate = false) {
+    const calls: string[] = [];
+    const tx = {
+      $queryRaw: vi.fn(async (sql: TemplateStringsArray) => {
+        calls.push(`lock:${sql.join("?").replace(/\s+/g, " ").trim()}`);
+        return [];
+      }),
+      plan: {
+        updateMany: vi.fn(async () => {
+          calls.push("deactivate");
+          return { count: 1 };
+        }),
+        create: vi.fn(async () => {
+          calls.push("create");
+          if (failCreate) throw new Error("insert failed");
+          return { id: 7 };
+        }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (fn: (t: typeof tx) => unknown) => fn(tx)),
+    };
+    return { prisma: prisma as unknown as PrismaClient, calls };
+  }
+
+  it("locks the user row, then deactivates, then creates, in one transaction", async () => {
+    const { prisma, calls } = fakePrisma();
+    const week = buildHybridWeek(profile, library);
+    await expect(saveWeek(prisma, "u1", week, "DEFAULT")).resolves.toEqual({
+      planId: 7,
+    });
+    expect(calls).toEqual([
+      'lock:SELECT id FROM "User" WHERE id = ? FOR UPDATE',
+      "deactivate",
+      "create",
+    ]);
+  });
+
+  it("rejects when the insert fails, so the transaction rolls back", async () => {
+    const { prisma } = fakePrisma(true);
+    const week = buildHybridWeek(profile, library);
+    await expect(saveWeek(prisma, "u1", week, "DEFAULT")).rejects.toThrow(
+      "insert failed",
+    );
   });
 });
