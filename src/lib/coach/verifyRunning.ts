@@ -1,8 +1,9 @@
 // Verifier for running plans (#34), the running twin of verify.ts: plain TypeScript,
 // every problem reported at once so a regeneration prompt can list them all.
 //   - no more run days than the user asked for
-//   - the week's distance stays within 10% of last week's logged distance,
-//     or within a starting volume set by activity level when nothing is logged yet
+//   - the week's distance stays within 10% of last week's logged distance, but never
+//     below one shortest run (1 km), so a short logged jog still allows a week;
+//     with nothing logged yet, within a starting volume set by activity level
 //   - at most one long run a week
 import { RUN_LIMITS, runningPlanSchema, type RunningPlanInput } from "./schema";
 
