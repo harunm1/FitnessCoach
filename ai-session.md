@@ -111,3 +111,13 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** the two sentences, and cuts elsewhere in Section 2 that repeat Section 3 or the failure table.
 
 **Did with it:** kept the edits to my section and one clause in Section 1, each in its own commit with the meeting cited. The proposal stays at about 1,990 words. Section 4 still says Stripe payments moved out of scope; I left the wording to its author and raised it on the final-proposal issue. An independent review then caught that the trial tier had no description, so the tier line now names what each tier gets.
+
+### 6 November 2026, README refresh (issues #2, #11, #13, #14, #15, #16, #62)
+
+**Before asking:** the README still described the project as it was before the code landed: proposal drafting, no coach evaluation, an empty repository layout. I decided which sections to replace (top, owners, stack, layout), which to keep as written (team, local development, how we work), and that every line had to match what is on `main` today.
+
+**Asked:** for a draft of the replaced sections and two new local-development subsections, coach keys and checks.
+
+**Got:** a draft README with a dated status line, an owners table, the stack and layout, and the two subsections.
+
+**Did with it:** checked every line against `main` before committing. Three lines were wrong and I changed them. The draft said payments were out of scope, but Stripe test mode is a stretch in #14. It named Cloudflare R2, but the storage decision on `main` does not. It said the app plans without any key, but the code requires the first provider's key. I also corrected the status line: sign-in is on its branch, not in an open pull request.
