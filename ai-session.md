@@ -82,6 +82,36 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Did with it:** reviewed each module against the rules above and ran the tests, typecheck and lint before each pull request (#45, #47, #48, #49, #53, #54). Saving a week once to a real PostgreSQL (PGlite with all migrations) showed that in a two- or three-run week the long run came out shorter than the easy run; the unit tests had passed because none checked it. I changed the shares and added a test that the long run is the longest for two to five run days. I checked the Groq free-tier limits cited in Section 2 against Groq's own rate-limits page.
 
+### 6 November 2026, Section 2 trim for the final proposal (issues #4, #13)
+
+**Before asking:** the four sections came to about 2,280 words against the 2,000-word cap, and Section 2 (mine) was the longest. I set the rule for the cut: every objective, the diagram, the entity table, the decision and failure tables and both advanced features stay; only repetition and wording go. The technologies table repeated 2.2 and 2.3, so it could become one sentence.
+
+**Asked:** for tighter wording of each paragraph and table row under that rule, and a word count that does not treat table pipes as words.
+
+**Got:** shorter rows and sentences, and a count of the whole proposal at about 1,990 words with pipes and table rules removed.
+
+**Did with it:** kept the cuts that only removed words and put back three that dropped substance (that each record belongs to a user, the activity-level field, and runs as well as sets in the logging row). Brought in the Section 2 changes already on `main` from the 3 November design review (Better Auth citation, pilot on a deployed preview, sentence-at-a-time streaming), and changed the CI replay of ten coach profiles to future tense, since it is still in review.
+
+### 6 November 2026, cross-section fixes on the final proposal (issues #4, #13)
+
+**Before asking:** I listed what a grader would trip on when reading the four sections as one file: relative links that are dead outside the repository, Section 3 giving dates without naming its stages, Section 1's subscription model against Section 4's note that payments are out of scope, and three citation formats where the instructor asked for one. My rule: one commit per section, owner named, no rewording beyond the listed fix, and every word added offset in my own Section 2.
+
+**Asked:** for the smallest wording for each fix, one merged APA reference list, and a recount with references included.
+
+**Got:** absolute GitHub links, a one-sentence list of the four stages, a one-clause fix in Section 1, and a merged list of five references.
+
+**Did with it:** checked every link target on `main` and both journal DOIs against Crossref before committing. The merged list saved fewer words than expected and the stages sentence pushed the total to 2,015, so I cut Section 2's demo-path sentence, which restated Section 3's core path and freeze date, and shortened the Figure 1 caption to the dashed lines only. After an independent review I also made three Section 2 claims match the code: the model picks by name from our library, the per-call log is planned, and only the strength part of the schema is on `main`. The proposal ends at about 1,990 words.
+
+### 6 November 2026, Stripe scope in the proposal (issues #13, #14)
+
+**Before asking:** I traced where "payments are out of scope" came from. It entered my own Section 2 during a word trim on 3 November, Section 4 said the same that day, and my Section 1 fix earlier on 6 November followed it; no meeting decided it. The 27 October meeting kept Stripe off the core demo path, to be shown if ready by the freeze, and #14 still includes Stripe test mode. I fixed the four tiers first (free: quiz, rule-based plan, logging; trial: coach until the trial ends; pro: coach, set by an admin or by Stripe test mode if built; admin: the library) and checked the architecture doc already agreed.
+
+**Asked:** for wording that restores Stripe as a stretch in Sections 1 and 2 without adding to the word count.
+
+**Got:** the two sentences, and cuts elsewhere in Section 2 that repeat Section 3 or the failure table.
+
+**Did with it:** kept the edits to my section and one clause in Section 1, each in its own commit with the meeting cited. The proposal stays at about 1,990 words. Section 4 still says Stripe payments moved out of scope; I left the wording to its author and raised it on the final-proposal issue. An independent review then caught that the trial tier had no description, so the tier line now names what each tier gets.
+
 ### 6 November 2026, README refresh (issues #2, #11, #13, #14, #15, #16, #62)
 
 **Before asking:** the README still described the project as it was before the code landed: proposal drafting, no coach evaluation, an empty repository layout. I decided which sections to replace (top, owners, stack, layout), which to keep as written (team, local development, how we work), and that every line had to match what is on `main` today.
@@ -113,3 +143,33 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Did with it:** wrote a failing test for each finding, then the fix, on its own branch (#48, #53, #45, #54, #49). Ran the concurrent-save case against PostgreSQL 16 in Docker before and after the row lock: three active plans without it, one with it. Checked the claim about which eval run hit which matching fault against the result files, and corrected `docs/COACH_EVAL.md` (#55): the copied group label was in run 3 and the calf-raise near miss in run 2b; run 1's own faults were names not in the library and a plank written as 60 reps. Findings that do not block a merge are listed on each pull request.
 
 **Later the same day:** from my literature scan I added two things before #48 merges. I chose the triggers and the reply rules: fixed replies with no model call, narrow enough that a fat-loss goal never trips them, NEDIC for eating concerns, and the plan left unchanged on a guilt or self-worth message. I used AI to check the two papers and the NEDIC helpline against their own pages, and to suggest test phrases. The suggested phrases included hunger ("I'm starving after my run"), which my first pattern wrongly caught. A second independent review then tried both directions: it found ordinary messages the patterns caught ("disgusting weather for a run", "I'm starving to death after my long run") and real disclosures they missed ("I made myself sick after dinner", "I throw up after I eat", "my knee never stops hurting"). Each became a test before I changed the patterns, and an eating disclosure that mentions pain now gets the eating reply rather than the stop. Plans also get a one-line note to see a professional first when the profile lists an injury or condition (#54), computed from the profile so it changes when the profile does.
+
+### 6 November 2026, Google Health Coach in Section 1 (issue #13)
+
+**Before asking:** Google's coach is the closest new competitor, so the motivation section had to name it, with a primary source for each claim and no growth in the word count.
+
+**Asked:** what Google's own pages say about Google Health Coach, and for an independent check of every claim and price in Section 1.
+
+**Got:** Google's support article: the coach is built with Gemini, gives personalized weekly fitness plans, and needs a Fitbit or Pixel Watch. The check confirmed the two studies and the prices, and found one wrong phrase: the adherence review lists personal characteristics, not individual circumstances.
+
+**Did with it:** added Google to the competitor sentence and the reference list, fixed the phrase and a dangling "Their", and shortened the last paragraph so the proposal stays at 2,000 words. The store page gave no readable text, so the citation is the support article.
+
+### 6 November 2026, Future's price in Section 1 (issue #13)
+
+**Before asking:** the review of Section 1 found Future's $149 figure only in an old Future blog post and a competitor's review. I wanted the price taken from Future's own site.
+
+**Asked:** what Future's homepage states as its price today.
+
+**Got:** "$50 first month, then $199/month", with no $149 or annual rate on the page.
+
+**Did with it:** changed the range to $199 per month in Section 1 and the combined file; the word count did not change.
+
+### 6 November 2026, final proposal pass (issue #13)
+
+**Before asking:** three teammates had read the proposal. Mohammad approved, Farnaz left five suggestions, and Shubham expanded his responsibilities and changed how pro access is described. I kept his added responsibilities, restored the agreed pro tier (set by an admin, or by Stripe test mode if built), took Farnaz's points, and set one rule for the cuts: only my Section 2, never a fact.
+
+**Asked:** for the SensAI and Future prices from their own pages, a check of the chat code's fallback, and an independent review of the whole proposal against its sources, the handout and the 2,000-word cap.
+
+**Got:** SensAI's App Store listing at $6.99 a month and Future's site at $199 a month; the chat code shows a fixed message when the model is down, not a cached reply; and four review findings: Groq sends a token-wait header as well as Retry-After, Section 3's review rule contradicted the 3 November decision, the SensAI title was off, and Section 2 no longer said where verified plans go.
+
+**Did with it:** made each change in its own commit naming the section's owner, cut repetition in Section 2 to stay under the cap, and rebuilt the combined file from the sections. The proposal ends at 1,985 words.
