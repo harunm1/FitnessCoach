@@ -1,11 +1,15 @@
-# Accounts: verified sign-in (Issue #14, Milestone 1)
+# Accounts: sign-in and access tiers (Issue #14, Milestones 1–3)
 
 Milestone 1 provides email/password registration, email verification, sign-in,
 password recovery, a protected account page and sign-out. New accounts are FREE.
-Trial activation, tier-specific feature permissions, admin bootstrap and Stripe
-billing belong to the following milestones.
+Milestone 2 adds a one-time seven-day trial, server-side permission helpers and
+operator-only admin setup. Milestone 3 adds Stripe test-mode subscriptions; see
+[BILLING.md](BILLING.md) for configuration and manual payment verification.
 
 ## Local setup
+
+For the complete ordered PowerShell/Bash setup and terminal layout, start with
+[LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md).
 
 1. Install dependencies with `npm install` and start PostgreSQL with
    `docker compose up -d`.
@@ -32,7 +36,7 @@ billing belong to the following milestones.
    `SMTP_USER` and `SMTP_PASSWORD` together and choose `SMTP_PORT` and
    `SMTP_SECURE` according to that service. Restart Next.js after changing `.env`.
 
-5. Apply the committed migrations with `npm run db:migrate`, then run `npm run dev`.
+5. Apply existing migrations with `npx prisma migrate deploy`, then run `npm run dev`.
 6. Open `/sign-up`, create an account using a password of 12–128 characters, and
    follow its verification email. Then sign in at `/sign-in` and open `/account`.
 
@@ -57,6 +61,79 @@ Register a new account for Milestone 1. The existing exercise seed is unchanged.
   `/verify-email` or `/forgot-password`; verification remains required.
 - Configure trusted origins through `BETTER_AUTH_URL`. When deploying behind a
   proxy, ensure it sets the client-IP header used by Better Auth correctly.
+
+## Change password while signed in
+
+On `/account`, select **Change password**. Enter your current password, a new
+12–128 character password and its confirmation. The dialog validates confirmation
+and the server validates the current password. A successful change keeps the
+current session through a new cookie and revokes other sessions. Cancel, Escape
+or a backdrop click clears the entered fields. An expired session requires sign-in.
+
+If you cannot authenticate, use **Forgot password** on `/sign-in`. That flow sends
+an email reset link and revokes all existing sessions after the reset. See
+[ACCOUNTS_TESTING.md](ACCOUNTS_TESTING.md) for positive and negative checks.
+
+## Access tiers and the free trial
+
+| Effective tier | Access                                      |
+| -------------- | ------------------------------------------- |
+| FREE           | Quiz, rule-based default plans and tracking |
+| TRIAL          | FREE features and coach until trial expiry  |
+| PRO            | FREE features and coach until paid expiry   |
+| ADMIN          | All of the above and app content management |
+
+On `/account`, an eligible verified FREE user can select **Start free trial**.
+The trial starts at that server request and lasts exactly seven 24-hour periods.
+No card is collected and nothing is charged. Signup alone does not start it.
+
+Activation is one conditional database update scoped to the session's user ID.
+Concurrent or repeated requests cannot extend the expiry. `trialEndsAt` is retained
+after expiry, including when the stored tier later becomes FREE, to prevent reuse.
+An expired TRIAL account has effective FREE access immediately; no scheduled job
+or database rewrite is required. A legacy TRIAL account without an expiry also
+has effective FREE access and cannot start another trial.
+
+The account page reports permissions; quiz, tracking, coach and content-management
+screens remain owned by their respective feature areas. Each feature must enforce
+its permission before reading data or doing work:
+
+```ts
+// Inside a protected Server Component:
+const { user } = await requirePageAccess("coach");
+
+// Inside each protected Server Action:
+const { user } = await requirePermission("manage-content");
+// Scope subsequent queries to user.id where the data belongs to that user.
+```
+
+Import these helpers from `@/lib/auth/access`. They validate the verified session,
+read the current tier from PostgreSQL and check expiry on every call. They do not
+trust a browser-supplied tier or an old session snapshot. Signed-out callers go to
+sign-in; denied pages go to the account page, while denied actions throw
+`AccessDeniedError`. Route handlers should explicitly return 401/403 as appropriate
+before streaming or reading protected data. Hiding a button is not authorization.
+
+### Admin setup
+
+Register and verify the intended admin account using the normal signup flow.
+Then an operator with access to the server's environment can run:
+
+```bash
+npx tsx scripts/create-admin.ts --email admin@your-domain.com --confirm
+```
+
+This grants ADMIN only to the selected existing, verified password account. It
+does not create users, set passwords or change trial dates. It is safe to repeat.
+There is no public admin signup or promotion endpoint. The exercise/demo seed is
+unchanged; its demo user is not an admin credential account. Protect database and
+server access, since the operator command deliberately bypasses app permissions.
+
+Stripe checkout, signed webhooks and paid-tier reconciliation preserve trial dates
+and ADMIN access. PRO requires a current active billing record and a future
+verified paid-through date; setting the user tier alone does not grant paid access.
+At paid expiry, access falls back to an original unexpired trial or FREE. See
+[BILLING.md](BILLING.md) for the subscription policy and setup.
 
 ## Automated checks
 
@@ -108,3 +185,9 @@ auth state stay ignored. Stop the test database with
 GitHub Actions supplies an isolated PostgreSQL 16 service, applies the migrations,
 and runs the same checks plus Chromium browser tests. SMTP is captured by the
 separate test inbox, not by any application route.
+
+Milestone 2 tests cover the expiry boundary, all four tiers, stale session tiers,
+forged activation input, concurrent activation, one-time use and admin bootstrap.
+Browser tests activate a trial and verify expiry and tier changes with the same
+session. PRO/ADMIN assignments in these tests are isolated database fixtures, not
+payment or public promotion endpoints.
