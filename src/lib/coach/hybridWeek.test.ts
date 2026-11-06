@@ -50,6 +50,10 @@ describe("splitDays", () => {
     [3, "GENERAL_FITNESS", "RUNNING", 1, 2],
     [5, "FAT_LOSS", "RUNNING", 2, 3],
     [7, "GENERAL_FITNESS", "RUNNING", 2, 5],
+    [2, "STRENGTH", "BOTH", 1, 1],
+    [2, "MUSCLE", "BOTH", 1, 1],
+    [1, "FAT_LOSS", "BOTH", 0, 1],
+    [1, "STRENGTH", "BOTH", 1, 0],
   ] as const)(
     "%i days, %s, %s: %i strength and %i run",
     (days, goal, mode, strengthDays, runDays) => {
@@ -69,6 +73,11 @@ describe("splitDays", () => {
           const s = splitDays(days, goal, mode);
           expect(s.runDays).toBeLessThanOrEqual(5);
           expect(s.strengthDays + s.runDays).toBe(days);
+          // A hybrid week of two or more days always has at least one of each.
+          if (mode === "BOTH" && days >= 2) {
+            expect(s.strengthDays).toBeGreaterThanOrEqual(1);
+            expect(s.runDays).toBeGreaterThanOrEqual(1);
+          }
         }
   });
 });
