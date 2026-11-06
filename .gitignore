@@ -45,3 +45,8 @@ next-env.d.ts
 
 # Prisma Client, regenerated on install
 /src/generated/prisma
+
+# Browser test output and authentication state
+/playwright-report/
+/test-results/
+/playwright/.auth/
