@@ -12,7 +12,13 @@
 export type Guard =
   | { action: "ALLOW" }
   | {
-      action: "PAIN_STOP" | "PAIN_GUIDANCE" | "NO_DIAGNOSIS" | "OFF_TOPIC";
+      action:
+        | "PAIN_STOP"
+        | "PAIN_GUIDANCE"
+        | "NO_DIAGNOSIS"
+        | "EATING_SUPPORT"
+        | "MINDSET_REFRAME"
+        | "OFF_TOPIC";
       reply: string;
     };
 
@@ -28,6 +34,14 @@ export const REPLIES = {
   // A pain report that also asks for a diagnosis or a drug: stop first, then decline.
   PAIN_STOP_NO_DIAGNOSIS:
     "Stop that exercise for today. Pain is different from effort, and I can't diagnose injuries or advise on medication; a physiotherapist or doctor can look at it before you load it again. I can swap in a movement that doesn't use that area.",
+  // Body image and eating (Jörke et al., CHI 2026, arXiv 2510.05449, Table 2): no
+  // numbers, no diet advice, and the NEDIC helpline (nedic.ca, checked 6 Nov 2026).
+  EATING_SUPPORT:
+    "That sounds really hard, and you deserve support with it. I can't help with restricting food or making up for eating, but you don't have to deal with this alone: the National Eating Disorder Information Centre (NEDIC) has a free, confidential helpline at 1-866-633-4220 and live chat at nedic.ca. I'm still here for your training whenever you want.",
+  // Negative mindsets (same source): don't validate guilt or low self-worth as
+  // motivation; reframe toward what the user can do, and leave the plan alone.
+  MINDSET_REFRAME:
+    "You don't have to earn your training or make up for anything, and a missed session or a hard day doesn't change what you're worth. Your plan stays as it is: pick one session you'd like to do this week, and we'll build from there.",
   OFF_TOPIC:
     "I'm your training coach, so I can help with your plan, exercises, running and recovery. What would you like to work on?",
 } as const;
@@ -43,7 +57,15 @@ const NEGATED_PAIN =
 const DIAGNOSIS =
   /\b(diagnos\w*|do i have|is it (a )?(torn|tear|broken|fracture|sprain|strain)|what injury|tendinitis|tendonitis|herniat\w*|ibuprofen|advil|painkillers?|medication|meds|dosage)\b/i;
 const TRAINING =
-  /\b(workout|exercise|train(ing)?|plan|set|sets|reps?|weight|lift\w*|squat\w*|bench|deadlift\w*|press|curl\w*|row\w*|run\w*|jog\w*|pace|km|mile\w*|marathon|sprint\w*|interval\w*|tempo|cardio|stretch\w*|warm[- ]?up|cool[- ]?down|rest|recover\w*|sleep|protein|eat\w*|diet|calori\w*|muscle\w*|gym|form|knee|back|shoulder|hip|ankle|leg\w*|arm\w*|chest|core|abs|sore\w*|tired|fatigue|strength|endurance|body|goal\w*|week|day|session)\b/i;
+  /\b(workout|exercise|train(ing)?|plan|set|sets|reps?|weight|lift\w*|squat\w*|bench|deadlift\w*|press|curl\w*|row\w*|run\w*|jog\w*|pace|km|mile\w*|marathon|sprint\w*|interval\w*|tempo|cardio|stretch\w*|warm[- ]?up|cool[- ]?down|rest|recover\w*|sleep|protein|eat\w*|diet|calori\w*|muscle\w*|gym|form|knee|back|shoulder|hip|ankle|leg\w*|arm\w*|chest|core|abs|sore\w*|tired|fatigue|strength|endurance|body|goal\w*|week|day|session|fat|lose|loss)\b/i;
+
+// Narrow on purpose: a fat-loss goal ("lose fat", "cut calories", "lose weight") is
+// ordinary coaching, and "I'm starving after my run" is hunger. These match
+// restriction, purging and food as something earned.
+const EATING =
+  /\b(starv(e|ed|es|ing) (myself|to)|purg(e|ed|es|ing)|make myself (sick|throw up)|skip(ping)? meals? to punish|earn (my )?(food|meals?|breakfast|lunch|dinner)|don'?t deserve to eat|(not|n'?t) allowed to eat)\b/i;
+// Guilt or low self-worth as the reason to train.
+const MINDSET = /\b(hate my body|disgusting|punish(ing)? myself|worthless)\b/i;
 
 // "How do I avoid knee pain when squatting?" asks how to train safely. It is only a
 // report when the user says something hurts them now ("my knee hurts", "I felt a
@@ -64,6 +86,12 @@ export function checkUserMessage(text: string): Guard {
     return diagnosis
       ? { action: "PAIN_STOP", reply: REPLIES.PAIN_STOP_NO_DIAGNOSIS }
       : { action: "PAIN_STOP", reply: REPLIES.PAIN_STOP };
+  }
+  if (EATING.test(message)) {
+    return { action: "EATING_SUPPORT", reply: REPLIES.EATING_SUPPORT };
+  }
+  if (MINDSET.test(message)) {
+    return { action: "MINDSET_REFRAME", reply: REPLIES.MINDSET_REFRAME };
   }
   if (diagnosis) {
     return { action: "NO_DIAGNOSIS", reply: REPLIES.NO_DIAGNOSIS };
