@@ -8,7 +8,7 @@ Initially, we defined the problem simply. A user takes a quiz about their goals 
 
 Our research on free-tier limits pointed to Groq, and the team tested both providers to confirm it. We wrote down how we would judge the results, then asked Groq and Gemini to create plans for the same ten user profiles. In the first round, both produced plans that passed our verifier. The real difference was reliability: on its own, each provider failed some requests because of free-tier limits or server errors.
 
-AI helped us build this test, and we checked its answers. It assumed Groq reports how long to wait in a standard `Retry-After` header, but Groq's actual responses use a different header, so our retry logic reads that one. AI also suggested sending only six exercises per muscle group to fit Groq's token limit. We tried it and rejected it, because the coach should see every exercise the user can do; grouping names by muscle made them all fit.
+AI helped us build this test, and we checked its answers. It assumed the standard `Retry-After` header was enough, but Groq also reports token waits in `x-ratelimit-reset-tokens`, so our retry logic reads both. AI also suggested sending only six exercises per muscle group to fit Groq's token limit. We tried it and rejected it, because the coach should see every exercise the user can do; grouping names by muscle made them all fit.
 
 ### 4.3 How the Design Changed
 
