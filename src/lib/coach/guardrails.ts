@@ -3,6 +3,8 @@
 //   - pain (not effort) stops the exercise and points to a professional; a question
 //     about avoiding pain gets general safe-training guidance instead (D13)
 //   - the coach does not diagnose or advise on medication
+//   - disordered eating gets a supportive reply and the NEDIC helpline; guilt or low
+//     self-worth as motivation gets a reframe and the plan stays as it is
 //   - requests outside training get a short redirect
 //   - text the user types is only ever the user message; it never changes the
 //     system prompt, so "ignore your instructions" changes nothing here
@@ -37,7 +39,7 @@ export const REPLIES = {
   // Body image and eating (Jörke et al., CHI 2026, arXiv 2510.05449, Table 2): no
   // numbers, no diet advice, and the NEDIC helpline (nedic.ca, checked 6 Nov 2026).
   EATING_SUPPORT:
-    "That sounds really hard, and you deserve support with it. I can't help with restricting food or making up for eating, but you don't have to deal with this alone: the National Eating Disorder Information Centre (NEDIC) has a free, confidential helpline at 1-866-633-4220 and live chat at nedic.ca. I'm still here for your training whenever you want.",
+    "That sounds really hard, and you deserve support with it. I can't help with restricting food or making up for eating, but you don't have to deal with this alone: the National Eating Disorder Information Centre (NEDIC) has a toll-free helpline at 1-866-633-4220 and live chat at nedic.ca. I'm still here for your training whenever you want.",
   // Negative mindsets (same source): don't validate guilt or low self-worth as
   // motivation; reframe toward what the user can do, and leave the plan alone.
   MINDSET_REFRAME:
@@ -47,25 +49,31 @@ export const REPLIES = {
 } as const;
 
 // Pain words. Effort words (sore, burn, tired, pump) are deliberately absent:
-// soreness after training is expected and should not stop a session.
+// soreness after training is expected and should not stop a session. "Sharp" counts
+// only next to a pain word, so "I feel sharp today" is not a report.
 const PAIN =
-  /\b(pain|painful|hurts?|hurting|sharp|stabbing|shooting|throbbing|pinch(ed|ing)?|numb(ness)?|tingl(e|ing)|popped|pop(ping)? sound|swollen|swelling)\b/i;
+  /\b(pain|painful|hurts?|hurting|aches?|aching|killing me|sharp (pain|twinge|ache)|stabbing|shooting|throbbing|pinch(es|ed|ing)?|numb(ness)?|tingl(e|ing)|popped|pop(ping)? sound|snapped|(something|a) snap|rolled my|tweaked|swollen|swelling)\b/i;
 // "no pain", "not painful", "doesn't hurt" are reassurance, not a report. Only the
 // negated phrase is removed, so "no pain on the warm-up but my knee hurts" still reports.
+// Not when the words between are stop/way: "never stops hurting", "no way this pain
+// is normal" are reports. "Without pain" is left to the question rule.
 const NEGATED_PAIN =
-  /\b(no|not|without|never|doesn'?t|didn'?t|isn'?t|wasn'?t)\b(\s+\w+){0,2}\s+(pain|painful|hurt|hurts|hurting)\b/gi;
+  /\b(no|not|never|doesn'?t|didn'?t|isn'?t|wasn'?t)\b(\s+(?!(stop|stops|stopped|way)\b)\w+){0,2}\s+(pain|painful|hurt|hurts|hurting)\b/gi;
 const DIAGNOSIS =
-  /\b(diagnos\w*|do i have|is it (a )?(torn|tear|broken|fracture|sprain|strain)|what injury|tendinitis|tendonitis|herniat\w*|ibuprofen|advil|painkillers?|medication|meds|dosage)\b/i;
+  /\b(diagnos\w*|do i have|is it (a )?(torn|tear|broken|fracture|sprain|strain)|what injury|tendinitis|tendonitis|herniat\w*|ibuprofen|advil|painkillers?|pills?|medication|meds|dosage)\b/i;
 const TRAINING =
-  /\b(workout|exercise|train(ing)?|plan|set|sets|reps?|weight|lift\w*|squat\w*|bench|deadlift\w*|press|curl\w*|row\w*|run\w*|jog\w*|pace|km|mile\w*|marathon|sprint\w*|interval\w*|tempo|cardio|stretch\w*|warm[- ]?up|cool[- ]?down|rest|recover\w*|sleep|protein|eat\w*|diet|calori\w*|muscle\w*|gym|form|knee|back|shoulder|hip|ankle|leg\w*|arm\w*|chest|core|abs|sore\w*|tired|fatigue|strength|endurance|body|goal\w*|week|day|session|fat|lose|loss)\b/i;
+  /\b(workout|exercise|train(ing)?|plan|set|sets|reps?|weight|lift\w*|squat\w*|bench|deadlift\w*|press|curl\w*|row\w*|run\w*|jog\w*|pace|km|mile\w*|marathon|sprint\w*|interval\w*|tempo|cardio|stretch\w*|warm[- ]?up|cool[- ]?down|rest|recover\w*|sleep|protein|eat\w*|diet|calori\w*|muscle\w*|gym|form|knee|back|shoulder|hip|ankle|leg\w*|arm\w*|chest|core|abs|sore\w*|tired|fatigue|strength|endurance|body|goal\w*|week|day|session|fat|lose|loss|gain\w*|heavy)\b/i;
 
 // Narrow on purpose: a fat-loss goal ("lose fat", "cut calories", "lose weight") is
 // ordinary coaching, and "I'm starving after my run" is hunger. These match
-// restriction, purging and food as something earned.
+// restriction, purging, vomiting after eating, and food as something earned or not
+// deserved.
 const EATING =
-  /\b(starv(e|ed|es|ing) (myself|to)|purg(e|ed|es|ing)|make myself (sick|throw up)|skip(ping)? meals? to punish|earn (my )?(food|meals?|breakfast|lunch|dinner)|don'?t deserve to eat|(not|n'?t) allowed to eat)\b/i;
-// Guilt or low self-worth as the reason to train.
-const MINDSET = /\b(hate my body|disgusting|punish(ing)? myself|worthless)\b/i;
+  /\b(starv(e|ed|es|ing) myself|starv(e|ed|es|ing) to (lose|drop|get thin|be thin)|purg(e|ed|es|ing) (after|when|so|food|meals?|breakfast|lunch|dinner)|(make|made|making) myself (sick|throw up|vomit)|throw(ing)? up after (i eat|eating|meals?|breakfast|lunch|dinner)|skip(s|ped|ping)? (meals?|breakfast|lunch|dinner) to punish|earn(s|ed|ing)? (my )?(food|meals?|breakfast|lunch|dinner)|(do not|don'?t|didn'?t) deserve (to eat|food))\b/i;
+// Guilt or low self-worth as the reason to train, said about the user themselves, so
+// "disgusting weather" or "worthless old shoes" are not caught.
+const MINDSET =
+  /\b(hate (my (fat )?body|myself|how i look)|punish(ing)? (myself|my body)|(i'?m|i am|i feel|i look|my body (is|looks))\s+(so\s+)?(a\s+)?(disgusting|worthless|failure|gross))\b/i;
 
 // "How do I avoid knee pain when squatting?" asks how to train safely. It is only a
 // report when the user says something hurts them now ("my knee hurts", "I felt a
@@ -81,14 +89,16 @@ export function checkUserMessage(text: string): Guard {
   const pain = PAIN.test(affirmed);
   const report = pain && PAIN_REPORT.test(affirmed);
   const diagnosis = DIAGNOSIS.test(message);
-  // A report always wins, also over a diagnosis or medication question (D13).
+  // An eating disclosure comes first, even when it mentions pain ("I purge after meals
+  // and my throat hurts"): stopping an exercise is not the help that message needs.
+  if (EATING.test(message)) {
+    return { action: "EATING_SUPPORT", reply: REPLIES.EATING_SUPPORT };
+  }
+  // A pain report wins over everything else, a diagnosis or medication question too (D13).
   if (report) {
     return diagnosis
       ? { action: "PAIN_STOP", reply: REPLIES.PAIN_STOP_NO_DIAGNOSIS }
       : { action: "PAIN_STOP", reply: REPLIES.PAIN_STOP };
-  }
-  if (EATING.test(message)) {
-    return { action: "EATING_SUPPORT", reply: REPLIES.EATING_SUPPORT };
   }
   if (MINDSET.test(message)) {
     return { action: "MINDSET_REFRAME", reply: REPLIES.MINDSET_REFRAME };

@@ -145,8 +145,72 @@ describe("checkUserMessage", () => {
     "my goal is to lose weight and keep my strength",
     "I skipped breakfast, should I still train?",
     "I'm starving after my long run, what should I eat?",
-  ])("lets fat-loss goals through: %s", (text) => {
+    "I'm starving to death after my long run, what should I eat?",
+    "I'm starving to get to dinner after leg day",
+    "disgusting weather for a run today, should I go to the gym instead?",
+    "this protein shake tastes disgusting, any alternatives?",
+    "my old running shoes are worthless now, what should I buy?",
+    "I purged my old workout logs, can you rebuild my plan?",
+    "I'm not allowed to eat before my blood test tomorrow morning, should I train?",
+    "I feel sharp today, can I add weight?",
+    "should I train to failure on the last set?",
+  ])("lets fat-loss goals and ordinary training talk through: %s", (text) => {
     expect(checkUserMessage(text).action).toBe("ALLOW");
+  });
+
+  it.each([
+    "I starved myself all week and my stomach hurts",
+    "I purge after meals and my throat hurts",
+    "I do not deserve to eat today",
+    "I dont deserve food after missing the gym",
+    "I earned my dinner with that run",
+    "I skipped meals to punish myself",
+    "I skip lunch to punish myself",
+    "I made myself sick after dinner",
+    "I throw up after I eat so the calories don't count",
+  ])("gives eating support for more wordings, even beside pain: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("EATING_SUPPORT");
+  });
+
+  it.each([
+    "I hate my fat body",
+    "I hate myself for missing the run",
+    "I need to punish my body for eating cake",
+    "I hate how I look",
+    "I'm a failure, I missed three sessions",
+  ])("reframes more self-worth wordings: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("MINDSET_REFRAME");
+  });
+
+  it.each([
+    "My knee never stops hurting after squats",
+    "it doesn't stop hurting when I run",
+    "I can't squat without pain anymore",
+    "There's no way this pain is normal, my shin",
+    "my lower back aches when I deadlift",
+    "my shoulder is killing me after bench",
+    "I rolled my ankle on the run",
+    "felt something snap in my calf",
+  ])("stops on pain reports the patterns used to miss: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("PAIN_STOP");
+  });
+
+  it("sends weight-loss pills to the no-medication reply", () => {
+    expect(
+      checkUserMessage("are weight loss pills ok with my plan?").action,
+    ).toBe("NO_DIAGNOSIS");
+  });
+
+  it("does not call no pain no gain off-topic", () => {
+    expect(
+      checkUserMessage("no pain no gain, let's go heavy today").action,
+    ).toBe("ALLOW");
+  });
+
+  it("states only what nedic.ca says: toll-free number and live chat", () => {
+    expect(REPLIES.EATING_SUPPORT).not.toMatch(/free, confidential/);
+    expect(REPLIES.EATING_SUPPORT).toMatch(/toll-free/);
+    expect(REPLIES.EATING_SUPPORT).toMatch(/live chat/);
   });
 });
 
