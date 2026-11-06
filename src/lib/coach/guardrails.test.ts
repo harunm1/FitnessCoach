@@ -38,6 +38,29 @@ describe("checkUserMessage", () => {
   });
 
   it.each([
+    "my back doesn't hurt but my knee is swollen and throbbing",
+    "no pain on the warm-up but my knee hurts on heavy sets",
+    "didn't hurt yesterday, today my back hurts a lot",
+    "it never hurt before but now my knee hurts",
+    "how can I train without pain, my knee hurts",
+  ])("a negated phrase elsewhere does not cancel a report: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("PAIN_STOP");
+  });
+
+  it.each([
+    "I felt a sharp pain in my knee, should I take ibuprofen?",
+    "my shoulder hurts, do I have tendinitis?",
+  ])(
+    "stops and declines to diagnose when a report comes with a medical question: %s",
+    (text) => {
+      expect(checkUserMessage(text)).toEqual({
+        action: "PAIN_STOP",
+        reply: REPLIES.PAIN_STOP_NO_DIAGNOSIS,
+      });
+    },
+  );
+
+  it.each([
     "my legs are really sore from yesterday's session",
     "the last set burned but there was no pain",
     "squats felt hard but it doesn't hurt",
