@@ -20,7 +20,7 @@ describe("buildRunningPlan", () => {
   }
 
   it("never exceeds the weekly cap, for any history and any number of days", () => {
-    for (let lastWeekKm = 1; lastWeekKm <= 60; lastWeekKm += 0.7) {
+    for (let lastWeekKm = 0.1; lastWeekKm <= 60; lastWeekKm += 0.3) {
       for (let runDaysPerWeek = 1; runDaysPerWeek <= 7; runDaysPerWeek++) {
         const profile: RunProfile = {
           runDaysPerWeek,

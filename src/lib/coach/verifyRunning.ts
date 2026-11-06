@@ -28,9 +28,12 @@ export const STARTING_WEEK_KM: Record<ActivityLevel, number> = {
 
 export function weeklyCapKm(profile: RunProfile): number {
   if (profile.lastWeekKm && profile.lastWeekKm > 0) {
-    // Rounded down, so the cap never exceeds 10%.
-    return (
-      Math.floor(profile.lastWeekKm * (1 + RUN_LIMITS.weeklyIncrease) * 10) / 10
+    // Rounded down, so the cap never exceeds 10%; but never below one shortest run,
+    // or a user who logged a short jog could be given no valid week at all.
+    return Math.max(
+      RUN_LIMITS.distanceKm.min,
+      Math.floor(profile.lastWeekKm * (1 + RUN_LIMITS.weeklyIncrease) * 10) /
+        10,
     );
   }
   return STARTING_WEEK_KM[profile.activityLevel];
