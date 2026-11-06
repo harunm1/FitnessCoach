@@ -91,3 +91,13 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** shorter rows and sentences, and a count of the whole proposal at about 1,990 words with pipes and table rules removed.
 
 **Did with it:** kept the cuts that only removed words and put back three that dropped substance (that each record belongs to a user, the activity-level field, and runs as well as sets in the logging row). Brought in the Section 2 changes already on `main` from the 3 November design review (Better Auth citation, pilot on a deployed preview, sentence-at-a-time streaming), and changed the CI replay of ten coach profiles to future tense, since it is still in review.
+
+### 6 November 2026, cross-section fixes on the final proposal (issues #4, #13)
+
+**Before asking:** I listed what a grader would trip on when reading the four sections as one file: relative links that are dead outside the repository, Section 3 giving dates without naming its stages, Section 1's subscription model against Section 4's note that payments are out of scope, and three citation formats where the instructor asked for one. My rule: one commit per section, owner named, no rewording beyond the listed fix, and every word added offset in my own Section 2.
+
+**Asked:** for the smallest wording for each fix, one merged APA reference list, and a recount with references included.
+
+**Got:** absolute GitHub links, a one-sentence list of the four stages, a one-clause fix in Section 1, and a merged list of five references.
+
+**Did with it:** checked every link target on `main` and both journal DOIs against Crossref before committing. The merged list saved fewer words than expected and the stages sentence pushed the total to 2,015, so I cut Section 2's demo-path sentence, which repeated Section 3 word for word. The proposal ends at about 1,990 words.
