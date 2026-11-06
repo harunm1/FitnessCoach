@@ -8,6 +8,8 @@ describe("planSafetyNote", () => {
     "type 2 diabetes",
     "  lower back  ",
     "high blood pressure",
+    "no cartilage left in my right knee",
+    "none, except asthma",
   ])("adds the note when the profile lists something: %s", (injuries) => {
     expect(planSafetyNote({ injuries })).toBe(PLAN_SAFETY_NOTE);
   });
@@ -23,6 +25,13 @@ describe("planSafetyNote", () => {
     "N/A",
     "nothing",
     "-",
+    "no injuries",
+    "none currently",
+    "nil",
+    "None!",
+    "na",
+    "no injuries or conditions",
+    "nothing to report",
   ])("adds nothing when the profile lists nothing: %s", (injuries) => {
     expect(planSafetyNote({ injuries })).toBeNull();
   });
