@@ -111,8 +111,45 @@ describe("verifyRunningPlan", () => {
       },
       profile,
     );
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.problems).toHaveLength(3);
+    expect(result).toEqual({
+      ok: false,
+      problems: [
+        "plan has 5 run days; the user asked for 4",
+        "plan totals 24 km; last week was 20 km, so this week is at most 22 km",
+        "plan has 2 long runs; one a week at most",
+      ],
+    });
+  });
+
+  it("rejects more run days than the user asked for", () => {
+    const result = verifyRunningPlan(
+      {
+        name: "Extra day",
+        days: [
+          day("EASY", 4),
+          day("EASY", 4),
+          day("EASY", 4),
+          day("EASY", 3),
+          day("LONG", 5),
+        ],
+      },
+      profile,
+    );
+    expect(result).toEqual({
+      ok: false,
+      problems: ["plan has 5 run days; the user asked for 4"],
+    });
+  });
+
+  it("rejects more than one long run", () => {
+    const result = verifyRunningPlan(
+      { name: "Two long", days: [day("LONG", 8), day("LONG", 8)] },
+      profile,
+    );
+    expect(result).toEqual({
+      ok: false,
+      problems: ["plan has 2 long runs; one a week at most"],
+    });
   });
 
   it("explains the first-week limit when nothing is logged", () => {
