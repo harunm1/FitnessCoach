@@ -8,7 +8,7 @@ The course health check on 18 November and final report on 6 December anchor our
 
 ### 3.2 Responsibilities
 
-Nabeegh owns foundation (schema, seed, CI) and the AI coach, including running plans. Shubham owns accounts, access tiers, session authentication, coach request limits, event storage and optional Stripe billing. Mohammad owns quiz, body map and session screens. Farnaz owns workout history, streaks, the heatmap, progress photos and cloud storage. Running is built alongside lifting.
+Nabeegh owns the architecture, research and coach evaluation, foundation (schema, seed, CI) and the AI coach, including running plans. Shubham owns accounts, access tiers, session authentication, coach request limits, event storage and optional Stripe billing. Mohammad owns quiz, body map and session screens. Farnaz owns workout history, streaks, the heatmap, progress photos and cloud storage. Running is built alongside lifting.
 
 ### 3.3 Integration and Dependencies
 
