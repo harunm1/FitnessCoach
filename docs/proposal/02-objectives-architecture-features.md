@@ -64,7 +64,7 @@ TypeScript throughout; Next.js, Tailwind CSS and shadcn/ui as in 2.2; PostgreSQL
 
 We commit to two:
 
-1. **Authentication and authorization.** Better Auth sign-in; four tiers checked on the server in every Server Action and route handler: free (quiz, rule-based plan, logging), trial (coach chat until it ends), pro (coach chat; set by an admin, or by Stripe test mode if built), admin (edits the library).
+1. **Authentication and authorization.** Better Auth sign-in; four tiers checked on the server in every Server Action and route handler: free (quiz, rule-based plan, logging), trial (coach chat until it ends), pro (coach chat while verified paid access lasts), admin (edits the library).
 2. **Integration with an external AI API.** Groq, with Gemini as fallback, writes strength plans and answers chat behind the verifier; plans land in the session screen's tables.
 
 One planned extension, reported only if finished: **real-time** coach replies streamed a sentence at a time, each checked before it is shown.

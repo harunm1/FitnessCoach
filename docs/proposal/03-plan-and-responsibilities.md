@@ -8,13 +8,13 @@ The course health check on 18 November and final report on 6 December anchor our
 
 ### 3.2 Responsibilities
 
-Nabeegh owns foundation (schema, seed, CI) and the AI coach, including running plans. Shubham owns authentication and access tiers. Mohammad owns quiz, body map and session screens. Farnaz owns workout history, progress photos and cloud storage. Running is built alongside lifting.
+Nabeegh owns foundation (schema, seed, CI) and the AI coach, including running plans. Shubham owns accounts, access tiers, session authentication, coach request limits, event storage and optional Stripe billing. Mohammad owns quiz, body map and session screens. Farnaz owns workout history, progress photos and cloud storage. Running is built alongside lifting.
 
 ### 3.3 Integration and Dependencies
 
 Every Tuesday at 7 p.m., each member reports what they built, blockers and next steps. Questions, decisions and blockers stay on related GitHub issues; Discord handles scheduling. Team brainstorming, informed by our [research](https://github.com/harunm1/FitnessCoach/blob/main/docs/RESEARCH.md) and [coach evaluations](https://github.com/harunm1/FitnessCoach/blob/main/docs/COACH_EVAL.md), settles design.
 
-The shared Prisma schema, the workout-plan JSON and authentication are the critical path: quiz, sessions and progress cannot start until they merge, so they are agreed and built first. Each task has an issue, branch and PR with `Closes #n`, covering one feature or fix for review in one sitting. Code and proposal PRs need one teammate approval; proposal/documentation PRs request all teammates. No teammate receives more than three small, separate PRs daily. Branches merge weekly so the app runs together. Meeting/admin notes may go directly to unprotected `main`. CI runs formatting, lint, TypeScript checks, tests and build.
+The shared Prisma schema, workout-plan JSON and authentication are the critical path: signed-in quiz, session and progress integration depends on them. Each task has an issue, branch and PR with `Closes #n`, covering one feature or fix for review in one sitting. Code and proposal PRs need one teammate approval; proposal/documentation PRs request all teammates. No teammate receives more than three small, separate PRs daily. Branches merge weekly so the app runs together. Meeting/admin notes may go directly to unprotected `main`. CI runs formatting, lint, TypeScript checks, tests and build.
 
 ### 3.4 Risks and Scope
 
