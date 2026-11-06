@@ -3,6 +3,7 @@
 // longer lives in package.json.
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
+import { cliDatabaseUrl } from "./src/lib/deploy/release";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -11,6 +12,7 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Direct URL when one is set (hosted Neon, D15), else DATABASE_URL (local Docker).
+    url: cliDatabaseUrl(process.env),
   },
 });
