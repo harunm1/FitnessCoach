@@ -59,11 +59,18 @@ Lands with the skeleton; until then only `docs/` exists.
 
 ## Local Development
 
+Start with the [complete local setup guide](docs/LOCAL_DEVELOPMENT.md) for Node 22,
+PostgreSQL, authentication secrets, Mailpit, Stripe and the separate terminals.
+The [acceptance checklist](docs/ACCOUNTS_TESTING.md) documents expected results for
+all three accounts milestones. The commands below are a database/app overview;
+configure authentication and mail before testing signup.
+
 Prerequisites: Node.js, npm, and Docker Desktop with Docker Compose available.
 Start Docker Desktop before running the Docker commands. When using WSL, enable
 Docker Desktop integration for your distribution.
 
-Install dependencies and copy the environment template:
+Install dependencies and copy the environment template **only for a fresh setup**
+(preserve an existing `.env`):
 
 ```bash
 npm install
@@ -95,7 +102,7 @@ Wait until the `postgres` service reports `healthy`, then apply migrations, seed
 the exercise dataset and demo user, and start the application:
 
 ```bash
-npm run db:migrate
+npx prisma migrate deploy
 npm run db:seed
 npm run dev
 ```
@@ -113,13 +120,17 @@ all local PostgreSQL data; run migrations and seeding again after starting it:
 docker compose down -v
 ```
 
-### Verified accounts
+### Accounts and access tiers
 
 For signup, email verification, login, password recovery and account setup, see
 [the accounts guide](docs/ACCOUNTS.md). Add the Better Auth and SMTP values from
 `.env.example` to your existing `.env`, generate your own secret, and apply the
-new migration before using `/sign-up`. The guide also explains isolated database
-and browser tests.
+new migration before using `/sign-up`. On `/account`, eligible users can start a
+one-time seven-day trial without a card. The guide explains server-side access
+checks, admin setup, and isolated database and browser tests. For Milestone 3
+Stripe test-mode Checkout, the billing portal and webhook setup, follow
+[the billing guide](docs/BILLING.md). Stripe settings are optional for free/trial
+access.
 
 ## How we work
 
