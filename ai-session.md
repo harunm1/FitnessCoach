@@ -100,4 +100,4 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Got:** absolute GitHub links, a one-sentence list of the four stages, a one-clause fix in Section 1, and a merged list of five references.
 
-**Did with it:** checked every link target on `main` and both journal DOIs against Crossref before committing. The merged list saved fewer words than expected and the stages sentence pushed the total to 2,015, so I cut Section 2's demo-path sentence, which repeated Section 3 word for word. The proposal ends at about 1,990 words.
+**Did with it:** checked every link target on `main` and both journal DOIs against Crossref before committing. The merged list saved fewer words than expected and the stages sentence pushed the total to 2,015, so I cut Section 2's demo-path sentence, which restated Section 3's core path and freeze date, and shortened the Figure 1 caption to the dashed lines only. After an independent review I also made three Section 2 claims match the code: the model picks by name from our library, the per-call log is planned, and only the strength part of the schema is on `main`. The proposal ends at about 1,990 words.
