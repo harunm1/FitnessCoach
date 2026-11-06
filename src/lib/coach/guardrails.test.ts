@@ -256,6 +256,11 @@ describe("crisis and red-flag messages", () => {
     "I've been hurting myself",
     "I took too many pills on purpose",
     "I'm going to take all my pills",
+    "I have no reason to live",
+    "no reason to live",
+    "there's nothing left to live for",
+    "I swallowed a whole bottle of pills",
+    "I took a handful of pills",
   ])("gives the crisis reply: %s", (text) => {
     expect(checkUserMessage(text)).toEqual({
       action: "CRISIS",
@@ -299,6 +304,8 @@ describe("crisis and red-flag messages", () => {
     "couldn't catch my breath for ten minutes",
     "really struggled to breathe",
     "I can not breathe",
+    "tight chest during run",
+    "tightening chest on the hill",
   ])("stops exercise on a red-flag symptom: %s", (text) => {
     expect(checkUserMessage(text)).toEqual({
       action: "RED_FLAG",
@@ -332,6 +339,12 @@ describe("crisis and red-flag messages", () => {
     "pass out the water bottles after the run",
     "out of breath after sprints, normal?",
     "I ran 5 kms today",
+    "knees collapsing inward on squats",
+    "knee collapse on the way up from a squat",
+    "how do I stop my knees collapsing in the squat?",
+    "I'm going to burn myself out on cardio",
+    "don't burn myself out this training week",
+    "cut myself shaving before the gym",
   ])("lets effort and ordinary training talk through: %s", (text) => {
     expect(checkUserMessage(text).action).toBe("ALLOW");
   });
@@ -347,6 +360,12 @@ describe("crisis and red-flag messages", () => {
     "I don’t know why but my knee hurts",
   ])("still stops on a pain report: %s", (text) => {
     expect(checkUserMessage(text).action).toBe("PAIN_STOP");
+  });
+
+  it("does not treat a training scrape as a crisis", () => {
+    expect(
+      checkUserMessage("I cut myself on the barbell knurling").action,
+    ).not.toBe("CRISIS");
   });
 
   it("gives guidance, not a stop, for a question about avoiding pain", () => {

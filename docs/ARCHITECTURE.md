@@ -40,7 +40,7 @@ A plan that fails is regenerated once with the problems listed, then the user ge
 
 **The coach sees the whole library.** Every exercise the user can do (their equipment, nothing that works a reported injury) goes into the prompt by name, grouped by muscle; nothing is cut for length (D7). The model answers with names, code maps them to ids, and the verifier checks the ids.
 
-**Safety rules are code, not prompt.** If the user reports pain (not effort), the coach stops the exercise and suggests a professional. It does not diagnose. The rules are in `src/lib/coach/guardrails.ts` (#43): every user message is checked before a model call and every reply before it is shown; a reply that diagnoses or names a dose is replaced; off-topic requests get a one-line redirect; user text only ever goes in as the user message.
+**Safety rules are code, not prompt.** If the user reports pain (not effort), the coach stops the exercise and suggests a professional. It does not diagnose. The rules are in `src/lib/coach/guardrails.ts` (#43): each user message is to be checked before a model call and each reply before it is shown, once the chat code (#53) and the coach route (#11) call them; a crisis message gets a fixed reply with 9-8-8 and 911, a red-flag symptom (chest pain, fainting, trouble breathing) a fixed stop-and-seek-care reply, and disordered eating the NEDIC helpline; a reply that diagnoses or names a dose is replaced; off-topic requests get a one-line redirect; user text only ever goes in as the user message.
 
 **Form feedback questions are bounded:** where it is felt, at which point in the rep, the weight against usual. The answers pick a fix from the exercise's library entry (cues, common mistakes), so the advice traces to text we wrote.
 

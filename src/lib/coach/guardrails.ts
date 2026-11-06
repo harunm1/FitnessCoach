@@ -11,8 +11,9 @@
 //   - requests outside training get a short redirect
 //   - text the user types is only ever the user message; it never changes the
 //     system prompt, so "ignore your instructions" changes nothing here
-// checkUserMessage runs before every model call; checkCoachReply runs on every reply
-// before it is saved or shown. Each rule has fixed-input tests (guardrails.test.ts).
+// checkUserMessage is for every user message before a model call, and checkCoachReply
+// for every reply before it is saved or shown; the chat code (#53) and the coach route
+// (#11) wire them in, and until then nothing in the app calls them. Each rule has fixed-input tests (guardrails.test.ts).
 
 export type Guard =
   | { action: "ALLOW" }
@@ -102,13 +103,14 @@ const PAIN_REPORT =
 // killing me", "suicide sprints", "end it with planks", "cut myself some slack",
 // "don't want to hurt myself on deadlifts", "5 kms".
 const CRISIS =
-  /\b(suicid(e|al)(?! (sprints?|runs?|drills?|shuttles?))|kill(ing)? myself|(?<!\d\s?)kms|unalive|end(ing)? my (own )?life|take my (own )?life|end(ing)? it all|ending things|(thinking about|thinking of|think about|want to|going to|gonna|plan(ning)? to) end(ing)? it(?! (with|on|after|early|at|by|there|here|now)\b)|(do ?n'?t|do not) (want|wanna)( to)? (be alive|live(?! (in|with|without|near|at|on|by|until|till)\b)|be here anymore|wake up|exist)|(want|wanna|going to|gonna) (to )?die|wish i (was|were)( not|n'?t) (alive|here|born)|wish i (was|were) dead|(rather|better off) (be )?dead|(no|don'?t see the|what'?s the) point (in|of) (living|life|going on)|(life|living) (is ?n'?t|is not) worth|can'?t go on(?! (a|the|with|my|today|this|that|runs?|holiday|vacation)\b)|(nobody|no one) would (miss|care)|stop living|self[- ]?harm\w*|(?<!(n'?t|not|never) )(want|going|plan(ning)?) to (hurt|harm) myself|(cut|cutting|burn(ing)?) myself(?! (some|a|off|short|slack)\b)|(hurt(ing)?|harm(ing)?|cut(ting)?) myself on purpose|been (hurting|harming) myself(?! (with|on|by|doing|lifting|running)\b)|(too many|all (of )?my|a bunch of) (pills|meds)|overdos\w*)\b/i;
+  /\b(suicid(e|al)(?! (sprints?|runs?|drills?|shuttles?))|kill(ing)? myself|(?<!\d\s?)kms|unalive|end(ing)? my (own )?life|take my (own )?life|end(ing)? it all|ending things|(thinking about|thinking of|think about|want to|going to|gonna|plan(ning)? to) end(ing)? it(?! (with|on|after|early|at|by|there|here|now)\b)|(do ?n'?t|do not) (want|wanna)( to)? (be alive|live(?! (in|with|without|near|at|on|by|until|till)\b)|be here anymore|wake up|exist)|(want|wanna|going to|gonna) (to )?die|wish i (was|were)( not|n'?t) (alive|here|born)|wish i (was|were) dead|(rather|better off) (be )?dead|(no|don'?t see the|what'?s the) point (in|of) (living|life|going on)|(life|living) (is ?n'?t|is not) worth|can'?t go on(?! (a|the|with|my|today|this|that|runs?|holiday|vacation)\b)|(nobody|no one) would (miss|care)|stop living|self[- ]?harm\w*|(?<!(n'?t|not|never) )(want|going|plan(ning)?) to (hurt|harm) myself|(cut|cutting|burn(ing)?) myself(?! (some|a|off|short|slack|out|on|shaving|while|by accident)\b)|(hurt(ing)?|harm(ing)?|cut(ting)?) myself on purpose|been (hurting|harming) myself(?! (with|on|by|doing|lifting|running)\b)|(too many|all (of )?my|a bunch of) (pills|meds)|(swallow\w*|took|taken|take|downed) (a |the )?(whole |entire )?(bottle|pack\w*|box|handful) of (pills|meds|tablets)|no reason to (live|go on|keep going)|nothing (left )?to live for|overdos\w*)\b/i;
 // Red-flag symptoms during or after exercise. "My chest is sore from bench" is
-// soreness and stays with the effort rule; a racing heart after a sprint, "faint
+// soreness and stays with the effort rule; collapsing counts only when the user
+// collapsed, so the form cue "knees collapsing inward" is not a symptom; a racing heart after a sprint, "faint
 // praise" and "pass out the water bottles" are not symptoms. Any shortness of breath
 // counts, on the safe side of "severe".
 const RED_FLAG =
-  /\b(chest (pain|pains|tightness|pressure)|chest (got|gets|is|was|feels|felt|feeling) (tight|painful|heavy)|chest (hurts?|hurting|aches?|aching|is killing me)|chest tighten\w*|(pain|pressure|tightness|ache|heaviness) in my chest|faint(ed|ing)|(feel|felt|feeling|feels|went|got|getting|nearly|almost|about to) faint|passed out|pass out(?! (the|a|some|these|those|them|water)\b)|blacked out|collaps\w*|(could ?n'?t|can'?t|could not|cannot|can not) (breathe|catch my breath)|trouble breathing|struggl\w* to breathe|short(ness)? of breath|irregular(ly)? heart ?(beat|rhythm)|heart ?beat (felt|feels|was|is|went) irregular|heart (was |is )?(beating |pounding )?irregular(ly)?|palpitations?|heart\w* (felt like it was |was |is |keeps? )?(skipp\w*|flutter\w*)|skipped (a )?beats?)\b/i;
+  /\b(chest (pain|pains|tightness|pressure)|chest (got|gets|is|was|feels|felt|feeling) (tight|painful|heavy)|chest (hurts?|hurting|aches?|aching|is killing me)|chest tighten\w*|tight(ening)? chest|(pain|pressure|tightness|ache|heaviness) in my chest|faint(ed|ing)|(feel|felt|feeling|feels|went|got|getting|nearly|almost|about to) faint|passed out|pass out(?! (the|a|some|these|those|them|water)\b)|blacked out|(i|i've|i have|i had|and|then) (just |nearly |almost )?collapsed|(could ?n'?t|can'?t|could not|cannot|can not) (breathe|catch my breath)|trouble breathing|struggl\w* to breathe|short(ness)? of breath|irregular(ly)? heart ?(beat|rhythm)|heart ?beat (felt|feels|was|is|went) irregular|heart (was |is )?(beating |pounding )?irregular(ly)?|palpitations?|heart\w* (felt like it was |was |is |keeps? )?(skipp\w*|flutter\w*)|skipped (a )?beats?)\b/i;
 
 export function checkUserMessage(text: string): Guard {
   // Phone keyboards send curly apostrophes (U+2019 in "don't"); every pattern uses
