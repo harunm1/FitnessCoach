@@ -56,9 +56,9 @@ ece1724_group18_project_proposal.md   final proposal (submitted on Quercus)
 ## Local Development
 
 Start with the [complete local setup guide](docs/LOCAL_DEVELOPMENT.md) for Node 22,
-PostgreSQL, authentication secrets, Mailpit, Stripe and the separate terminals.
+PostgreSQL, authentication secrets, Mailpit and the separate terminals.
 The [acceptance checklist](docs/ACCOUNTS_TESTING.md) documents expected results for
-all three accounts milestones. The commands below are a database/app overview;
+the sign-in and access-tier milestones. The commands below are a database/app overview;
 configure authentication and mail before testing signup.
 
 Prerequisites: Node.js, npm, and Docker Desktop with Docker Compose available.
@@ -123,10 +123,8 @@ For signup, email verification, login, password recovery and account setup, see
 `.env.example` to your existing `.env`, generate your own secret, and apply the
 new migration before using `/sign-up`. On `/account`, eligible users can start a
 one-time seven-day trial without a card. The guide explains server-side access
-checks, admin setup, and isolated database and browser tests. For Milestone 3
-Stripe test-mode Checkout, the billing portal and webhook setup, follow
-[the billing guide](docs/BILLING.md). Stripe settings are optional for free/trial
-access.
+checks, admin setup, and isolated database and browser tests. Stripe test-mode
+billing is kept in a separate follow-up PR.
 
 ### Coach keys
 

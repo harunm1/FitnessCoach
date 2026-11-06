@@ -52,7 +52,6 @@ describe("server access guards", () => {
   it("rechecks permissions after a tier changes without requiring a new login", async () => {
     findUnique.mockResolvedValueOnce({
       tier: "PRO",
-      billing: { status: "active", paidUntil: new Date(Date.now() + 86400000) },
       trialEndsAt: null,
       emailVerified: true,
     });
