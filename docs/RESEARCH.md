@@ -21,9 +21,11 @@ None is documented as asking follow-up questions about where a movement is felt.
 
 **D1, Next.js.** Server Actions suit forms only our app calls; route handlers suit anything outside callers need, such as webhooks and streaming. A separate API is worth it when other clients call it ([dev.to](https://dev.to/myogeshchavan97/nextjs-server-actions-vs-api-routes-dont-build-your-app-until-you-read-this-4kb9)).
 
-**D4, LLM provider.** Groq's free tier needs no card and allows about 1,000 requests a day on its larger models ([eesel](https://eesel.ai/blog/groq-pricing)). Gemini's free tier is Flash-only with reported limits near 20 requests a day, and free-tier prompts can be used to improve Google's products ([agentdeals](https://agentdeals.dev/gemini-api-pricing-changes)). Groq first, Gemini as fallback, no names or photos sent.
+**D4, LLM provider.** Groq's free tier needs no card and allows about 1,000 requests a day on its larger models ([eesel](https://eesel.ai/blog/groq-pricing)). Gemini's free tier is Flash-only with reported limits near 20 requests a day, and free-tier prompts can be used to improve Google's products ([agentdeals](https://agentdeals.dev/gemini-api-pricing-changes)). Groq first, Gemini as fallback, no names or photos sent. Checked 30 October against our own keys: Groq's chat models are now OpenAI's open-weight gpt-oss-120b and gpt-oss-20b and Qwen's qwen3.8-27b, and it no longer serves Llama, so the Llama 3.1 70B result cited in #22 does not carry over directly. Gemini's free key lists the 2.5, 3 and 3.5 Flash models. Both providers ran on the same test profiles (#19). Decided 30 October (#7, eval in COACH_EVAL.md).
 
 **Auth.** Better Auth has a Prisma adapter and a Next.js handler; Prisma's own guide only guards pages in the browser, so we check the session and tier on the server ([Prisma](https://prisma.io/docs/guides/betterauth-nextjs)).
+
+**Auth, the alternatives (checked 30 October).** Auth0 is a managed service: the user store sits on Auth0's side and the free tier ends at 7,500 monthly active users, after which it bills per user ([pkgpulse](https://www.pkgpulse.com/guides/lucia-auth-v3-vs-better-auth-vs-stack-auth-self-hosted-2026)); Auth.js (NextAuth) is the older self-hosted library and defaults to JWT sessions, which cannot be revoked before expiry without a server-side blocklist ([nexty.dev](https://nexty.dev/blogs/nextjs-boilerplate-better-auth-drizzle)); Better Auth is self-hosted, TypeScript-native, keeps users and sessions in our PostgreSQL through a Prisma adapter, and ships rate limiting and CSRF protection ([Better Stack](https://betterstack.com/community/guides/scaling-nodejs/better-auth-vs-nextauth-authjs-vs-autho/), [OpenReplay](https://blog.openreplay.com/betterauth-explained-rapid-developer-adoption/)). Our tiers come from Stripe and must sit next to the user row, so the user store has to be ours; that, and database sessions we can end on the server, is why Better Auth over Auth0, not only that the course recommends it.
 
 ## 3. Plan: shortcuts for the advanced features
 
@@ -45,8 +47,10 @@ The AI SDK is on v7 and retries a failed call twice by default ([codercops](http
 
 Hevy's API needs a Hevy Pro subscription and a personal API key tied to one account, so it suits syncing one user's own workouts, not supplying our app's exercise data ([Serval docs](https://docs.serval.com/sections/integrations/hevy)).
 
-## For the next meeting
+## Photo storage
 
-- Groq first, or Gemini?
-- Scope: gym only, or gym and running? Running plans are distance and pace progressions built by rules, so they reuse the plan, logging and verifier with little new code. Pilates has no open dataset and would need its library written by hand.
-- Who imports free-exercise-db and adds form cues for the exercises the coach uses most?
+Progress photos go in a private Cloudflare R2 bucket, as Farnaz proposed in #16, S3-compatible, with only the object key in the database (D3 in `ARCHITECTURE.md`). The R2 free tier covers 10 GB-month of Standard storage, 1 million Class A and 10 million Class B operations a month, and no egress fees ([Cloudflare R2 pricing](https://developers.cloudflare.com/r2/pricing/), checked 6 Nov 2026). DigitalOcean Spaces, the first choice, has no free tier: $5 a month from the start ([Spaces pricing](https://docs.digitalocean.com/products/spaces/details/pricing/), checked 6 Nov 2026). Enabling R2 goes through a checkout step ([R2 get started](https://developers.cloudflare.com/r2/get-started/), checked 6 Nov 2026); Farnaz reports it may ask for a payment method (#16). Photos build against a local folder first, so the feature does not wait on the account.
+
+## Questions from the early meetings
+
+Settled: provider (#7), scope (#12), exercise library owner (#8, cues open).
