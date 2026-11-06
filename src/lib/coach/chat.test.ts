@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  EMPTY_REPLY,
+  MAX_HISTORY_MESSAGES,
+  MAX_MESSAGE_CHARS,
+  TOO_LONG_REPLY,
   UNAVAILABLE_REPLY,
   buildCoachSystemPrompt,
   coachReply,
@@ -62,6 +66,43 @@ describe("coachReply", () => {
     const model = vi.fn<ChatModel>().mockRejectedValue(new Error("429"));
     const turn = await coachReply(model, ctx, [], "what pace for my easy run?");
     expect(turn).toEqual({ reply: UNAVAILABLE_REPLY, source: "UNAVAILABLE" });
+  });
+
+  // ENGINEERING_PRACTICES.md item 5: user text sent to the coach is length-capped.
+  it("asks for a shorter message over 1,000 characters, without calling the model", async () => {
+    expect(MAX_MESSAGE_CHARS).toBe(1000);
+    const model = vi.fn<ChatModel>();
+    const turn = await coachReply(model, ctx, [], "how to squat ".repeat(100));
+    expect(turn).toEqual({ reply: TOO_LONG_REPLY, source: "GUARDRAIL" });
+    expect(model).not.toHaveBeenCalled();
+  });
+
+  it("answers an empty message without calling the model", async () => {
+    const model = vi.fn<ChatModel>();
+    const turn = await coachReply(model, ctx, [], "   \t ");
+    expect(turn).toEqual({ reply: EMPTY_REPLY, source: "GUARDRAIL" });
+    expect(model).not.toHaveBeenCalled();
+  });
+
+  it("sends only the last 12 history messages, each capped, in order", async () => {
+    expect(MAX_HISTORY_MESSAGES).toBe(12);
+    const model = vi.fn<ChatModel>().mockResolvedValue("Keep the pace easy.");
+    const history: ChatMessage[] = Array.from({ length: 30 }, (_, i) => ({
+      role: i % 2 ? "assistant" : "user",
+      content: `${i} ` + "x".repeat(5000),
+    }));
+    await coachReply(model, ctx, history, "what pace for my easy run?");
+    const messages = model.mock.calls[0][0] as ChatMessage[];
+    // system prompt, 12 history messages, the new user message
+    expect(messages).toHaveLength(14);
+    expect(messages[1].content.startsWith("18 ")).toBe(true);
+    expect(messages[12].content.startsWith("29 ")).toBe(true);
+    for (const m of messages.slice(1, -1))
+      expect(m.content.length).toBeLessThanOrEqual(1000);
+    expect(messages.at(-1)).toEqual({
+      role: "user",
+      content: "what pace for my easy run?",
+    });
   });
 });
 

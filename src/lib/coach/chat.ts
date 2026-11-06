@@ -1,7 +1,8 @@
 // One coach chat turn (#11). The order is fixed in code, the same way the plan path
 // is (docs/ARCHITECTURE.md, The coach):
-//   1. the user's message goes through checkUserMessage; a pain, diagnosis, eating,
-//      self-worth or off-topic message gets its fixed reply and no model call is made
+//   1. an empty or over-long message gets a fixed reply; otherwise the message goes
+//      through checkUserMessage, and a crisis, red-flag, pain, diagnosis, eating,
+//      self-worth or off-topic message gets its fixed reply with no model call
 //   2. the model sees a system prompt built here from the user's own plan and
 //      profile, then the conversation, then the new message as a user message
 //   3. the reply goes through checkCoachReply before anyone sees it
@@ -33,6 +34,18 @@ export type CoachContext = {
   // Today's or the next session, as short lines such as "Bench press 3 x 10".
   sessionLines: string[];
 };
+
+// What the user types is capped before any rule or model sees it
+// (ENGINEERING_PRACTICES.md, item 5): a long message slows the guardrail patterns and
+// inflates the prompt. 1,000 characters is several paragraphs, far more than a chat
+// question needs; older turns past the last 12 messages are dropped.
+export const MAX_MESSAGE_CHARS = 1000;
+export const MAX_HISTORY_MESSAGES = 12;
+
+export const TOO_LONG_REPLY =
+  "That message is too long for the coach. Please keep it under 1,000 characters and ask one thing at a time.";
+export const EMPTY_REPLY =
+  "Ask me anything about your plan, today's session, running or recovery.";
 
 // Bump when the wording changes, so logged replies can be grouped by prompt.
 export const CHAT_PROMPT_VERSION = "chat-v1";
@@ -69,7 +82,17 @@ export async function coachReply(
   history: ChatMessage[],
   userText: string,
 ): Promise<CoachTurn> {
-  const guard = checkUserMessage(userText);
+  const text = userText.trim();
+  if (text === "") return { reply: EMPTY_REPLY, source: "GUARDRAIL" };
+  if (text.length > MAX_MESSAGE_CHARS) {
+    return { reply: TOO_LONG_REPLY, source: "GUARDRAIL" };
+  }
+  const recent = history.slice(-MAX_HISTORY_MESSAGES).map((m) => ({
+    ...m,
+    content: m.content.slice(0, MAX_MESSAGE_CHARS),
+  }));
+
+  const guard = checkUserMessage(text);
   if (guard.action !== "ALLOW") {
     return { reply: guard.reply, source: "GUARDRAIL" };
   }
@@ -77,7 +100,7 @@ export async function coachReply(
   let reply: string;
   try {
     reply = await model(
-      buildChatMessages(buildCoachSystemPrompt(ctx), history, userText),
+      buildChatMessages(buildCoachSystemPrompt(ctx), recent, text),
     );
   } catch {
     return { reply: UNAVAILABLE_REPLY, source: "UNAVAILABLE" };
