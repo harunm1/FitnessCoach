@@ -12,4 +12,4 @@ AI helped us build this test, and we checked its answers. It assumed Groq report
 
 ### 4.3 How the Design Changed
 
-Instead of choosing one provider, we now chain them as described in Section 2, and in our test the chain produced ten verified plans out of ten. Running is included from the start, progress photos meet the cloud storage requirement, and Stripe payments moved out of scope.
+Instead of choosing one provider, we now chain them as described in Section 2, and in our test the chain produced ten verified plans out of ten. Running is included from the start, progress photos meet the cloud storage requirement, and Stripe test mode became a stretch.
