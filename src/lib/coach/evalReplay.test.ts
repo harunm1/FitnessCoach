@@ -72,4 +72,16 @@ describe("coach eval replay (30 October, Groq then Gemini)", () => {
     expect(rows).toHaveLength(10);
     expect(rows.filter((r) => r.firstReplyPassed)).toHaveLength(9);
   });
+
+  // docs/COACH_EVAL.md, Replay in CI: current code passes all ten first replies.
+  it("passes 10 of 10 first replies through the current code", async () => {
+    const attempts = await Promise.all(
+      rows.map(async (row) => {
+        const { profile } = EVAL_PROFILES.find((p) => p.id === row.id)!;
+        return (await generatePlan(replay(row.calls), profile, library))
+          .attempts;
+      }),
+    );
+    expect(attempts).toEqual(Array(10).fill(1));
+  });
 });
