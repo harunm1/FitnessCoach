@@ -1,10 +1,10 @@
-# Accounts: sign-in and access tiers (Issue #14, Milestones 1–2)
+# Accounts: sign-in and access tiers (Issue #14, Milestones 1–3)
 
 Milestone 1 provides email/password registration, email verification, sign-in,
 password recovery, a protected account page and sign-out. New accounts are FREE.
 Milestone 2 adds a one-time seven-day trial, server-side permission helpers and
-operator-only admin setup. Stripe subscriptions are a separate follow-up PR;
-this branch has no payment dependency, billing tables or purchase controls.
+operator-only admin setup. Milestone 3 adds Stripe test-mode subscriptions; see
+[BILLING.md](BILLING.md) for configuration and manual payment verification.
 
 ## Local setup
 
@@ -76,12 +76,12 @@ an email reset link and revokes all existing sessions after the reset. See
 
 ## Access tiers and the free trial
 
-| Effective tier | Access                                          |
-| -------------- | ----------------------------------------------- |
-| FREE           | Quiz, rule-based default plans and tracking     |
-| TRIAL          | FREE features and coach until trial expiry      |
-| PRO            | FREE features and coach; server-controlled tier |
-| ADMIN          | All of the above and app content management     |
+| Effective tier | Access                                      |
+| -------------- | ------------------------------------------- |
+| FREE           | Quiz, rule-based default plans and tracking |
+| TRIAL          | FREE features and coach until trial expiry  |
+| PRO            | FREE features and coach until paid expiry   |
+| ADMIN          | All of the above and app content management |
 
 On `/account`, an eligible verified FREE user can select **Start free trial**.
 The trial starts at that server request and lasts exactly seven 24-hour periods.
@@ -129,11 +129,11 @@ There is no public admin signup or promotion endpoint. The exercise/demo seed is
 unchanged; its demo user is not an admin credential account. Protect database and
 server access, since the operator command deliberately bypasses app permissions.
 
-Before billing is integrated, PRO is a server-controlled database tier used by
-operator-managed accounts and isolated test fixtures. There is no public PRO
-promotion endpoint; signup and profile updates cannot set tiers. ADMIN is granted
-only through the operator command above. The separate billing PR adds verified
-paid deadlines and changes PRO checks to require a current billing record.
+Stripe checkout, signed webhooks and paid-tier reconciliation preserve trial dates
+and ADMIN access. PRO requires a current active billing record and a future
+verified paid-through date; setting the user tier alone does not grant paid access.
+At paid expiry, access falls back to an original unexpired trial or FREE. See
+[BILLING.md](BILLING.md) for the subscription policy and setup.
 
 ## Automated checks
 

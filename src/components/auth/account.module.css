@@ -1296,6 +1296,29 @@
   }
 }
 
+.billingPrice {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 1rem 0;
+}
+
+.billingButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.billingButtons button {
+  min-height: 44px;
+}
+
+@media (max-width: 540px) {
+  .billingButtons {
+    flex-direction: column;
+  }
+}
+
 .secondaryButton {
   min-height: 44px;
   padding: 10px 16px;
@@ -1313,4 +1336,54 @@
 .secondaryButton:disabled {
   cursor: wait;
   opacity: 0.65;
+}
+
+.billingPlans {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  border: 0;
+  padding: 0;
+  margin: 20px 0;
+  min-width: 0;
+}
+.billingPlans legend {
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.billingOption {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px 12px;
+  cursor: pointer;
+  min-width: 0;
+}
+.billingOption:has(input:checked) {
+  border-color: var(--text);
+  background: var(--subtle);
+}
+.billingOption input {
+  accent-color: var(--text);
+  margin-top: 4px;
+}
+.billingOption strong,
+.billingOption small {
+  display: block;
+}
+.billingOption small {
+  margin-top: 5px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.billingPlans:disabled .billingOption {
+  opacity: 0.65;
+  cursor: wait;
+}
+@media (max-width: 540px) {
+  .billingPlans {
+    grid-template-columns: 1fr;
+  }
 }
