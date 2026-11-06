@@ -81,3 +81,13 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** a module layout that keeps each rule in its own file, and test ideas, including a loop over every history from 1 to 60 km and every week from 1 to 7 days, which caught two weeks that went over the cap.
 
 **Did with it:** reviewed each module against the rules above and ran the tests, typecheck and lint before each pull request (#45, #47, #48, #49, #53, #54). Saving a week once to a real PostgreSQL (PGlite with all migrations) showed that in a two- or three-run week the long run came out shorter than the easy run; the unit tests had passed because none checked it. I changed the shares and added a test that the long run is the longest for two to five run days. I checked the Groq free-tier limits cited in Section 2 against Groq's own rate-limits page.
+
+### 5 November 2026, hosting choice and deploy config (issue #57)
+
+**Before asking:** D5 already said we deploy for the demo. I set the conditions: free tiers with no card, a hosted PostgreSQL that does not expire before the presentation, `prisma migrate deploy` on release rather than by hand, every variable in `.env.example` with no secrets committed, and no accounts created until the config was reviewed. The course accepts a local demo, so this is for integration and the pilot.
+
+**Asked:** to compare Vercel with Neon, Railway and Render against each provider's own pricing and docs pages as of today, and how Prisma 7 should connect to Neon from Vercel.
+
+**Got:** Render's free PostgreSQL is deleted 30 days after creation and its web service sleeps after 15 minutes; Railway gives a 30-day $5 trial, then $1 a month; Vercel Hobby is free with a 300-second function limit and Neon Free needs no card. Neon's Prisma guide uses the pooled string for the app and a direct string for the CLI. A suggestion to migrate only on production builds, so a pull request preview never applies an unmerged migration to the shared database.
+
+**Did with it:** recorded the choice and the options it beat as D15 with the sources and the date checked; wrote the two rules (which URL the CLI uses, which steps a build runs) as a small module with six tests written first and seen failing; added `vercel.json`, the build script, the `.env.example` entry and the README Deploy steps. CI already runs `npm run build`. Creating the accounts, seeding Neon and checking the demo path on the live URL are the steps left to me.

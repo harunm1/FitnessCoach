@@ -113,6 +113,51 @@ all local PostgreSQL data; run migrations and seeding again after starting it:
 docker compose down -v
 ```
 
+## Deploy
+
+The hosted preview runs on Vercel (Hobby) with PostgreSQL on Neon (Free); why is
+decision D15 in `docs/ARCHITECTURE.md`. `vercel.json` sets the build command to
+`scripts/vercel-build.ts`: production deployments run `prisma migrate deploy`, then
+`next build`; pull request previews only build, so an unmerged migration never touches
+the shared database.
+
+One-time setup:
+
+1. Create a Neon account at neon.com and a project named `fitnesscoach`. From
+   **Connect**, copy two connection strings: the pooled one (host contains `-pooler`)
+   and the direct one (connection pooling turned off).
+2. Apply the migrations and seed the hosted database from your machine, using the
+   direct string:
+
+   ```bash
+   DATABASE_URL="<direct string>" npx prisma migrate deploy
+   DATABASE_URL="<direct string>" npx prisma db seed
+   ```
+
+   In PowerShell, set it first with `$env:DATABASE_URL="<direct string>"`, run both
+   commands, then `Remove-Item Env:DATABASE_URL`.
+
+3. Create a Vercel account at vercel.com (Hobby), choose **Add New > Project** and
+   import `harunm1/FitnessCoach`. If GitHub asks the repository owner to approve the
+   Vercel app, Mohammad approves it. Keep the detected Next.js preset; `vercel.json`
+   supplies the build command.
+4. Before the first deploy, add these under **Settings > Environment Variables**, for
+   Production and Preview:
+
+   | Name                    | Value                    |
+   | ----------------------- | ------------------------ |
+   | `DATABASE_URL`          | Neon pooled string       |
+   | `DATABASE_URL_UNPOOLED` | Neon direct string       |
+   | `COACH_PROVIDER`        | `groq`                   |
+   | `GROQ_API_KEY`          | from console.groq.com    |
+   | `GEMINI_API_KEY`        | from aistudio.google.com |
+
+5. Deploy. Each push to `main` redeploys production and applies any new migration;
+   each pull request gets its own preview URL against the same database.
+
+After a schema change merges, the next production deployment migrates. Seed again only
+when the seed itself changes; it upserts, so re-running is safe.
+
 ## How we work
 
 - Tasks live on the [project board](https://github.com/users/nabeegh-khan/projects/3): Backlog, Ready, In progress, In review, Done.
