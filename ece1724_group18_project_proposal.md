@@ -4,7 +4,7 @@ Many people struggle to maintain consistent exercise routines, even after beginn
 
 Our primary users are individuals seeking accessible, personalized fitness coaching without the expense of a dedicated human personal trainer. This includes beginners who need guidance when learning exercises and experienced individuals who want recommendations that account for their feedback. These users need more than workout plans; they need an interactive system that can respond to their experiences and help them make informed training decisions. The app is intended to provide this support between sessions, grounding exercise guidance in its library rather than requiring users to wait for their next appointment.
 
-Several existing applications address aspects of this problem. SensAI offers an AI-powered conversational coach, Google Health Coach builds Gemini-based weekly plans but requires a Fitbit or Pixel Watch (Google, 2026), Fitbod generates strength-training sessions, and JuggernautAI adjusts powerlifting programs based on training feedback. Future provides access to human coaches through messaging. Our competitor review did not identify an application that combines strength training and running within a single personalized plan while also allowing users to indicate where they feel a movement through an interactive body map. Competitor pricing also varies considerably, from $6.99 per month for SensAI to $199 per month for Future. FitnessCoach is intended to use a free trial followed by a low-cost subscription (Stripe test mode in this build), placing it within the range of AI coaching apps and well below the cost of a human coach.
+Several existing applications address aspects of this problem. SensAI offers an AI-powered conversational coach, Google Health Coach builds Gemini-based weekly plans but requires a Fitbit or Pixel Watch (Google, 2026), Fitbod generates strength-training sessions, and JuggernautAI adjusts powerlifting programs based on training feedback. Future provides access to human coaches through messaging. Our competitor review did not identify an application that combines strength training and running within a single personalized plan while also allowing users to indicate where they feel a movement through an interactive body map. Competitor pricing also varies considerably, from $6.99 per month for SensAI (SensAI, 2026) to $199 per month for Future (Future, 2026). FitnessCoach is intended to use a free trial followed by a low-cost subscription (Stripe test mode as a stretch goal), placing it within the range of AI coaching apps and well below the cost of a human coach.
 
 FitnessCoach will combine personalized strength and running programs with an interactive body map for reporting where a movement is felt. This feedback tailors later coaching to each user's goals, preferences and experience.
 
@@ -18,7 +18,7 @@ The technical objective is a trustworthy coach: code checks every plan before it
 
 ### 2.2 Architecture and data flow
 
-![Component diagram of the frontend, backend, AI coach, data stores and services](https://raw.githubusercontent.com/harunm1/FitnessCoach/main/docs/img/architecture.png)
+![FitnessCoach components](https://raw.githubusercontent.com/harunm1/FitnessCoach/main/docs/img/architecture.png)
 
 _Figure 1. Dashed lines: fallback provider, seeding and CI._
 
@@ -60,7 +60,7 @@ A failure degrades one capability, never the whole app: without a model, users s
 | Dropped connection while logging | The entry stays on screen, marked unsaved, with a retry; a retry never stores a set or run twice                             |
 | Dropped connection during chat   | The server saves the finished reply; reopening the chat loads it                                                             |
 | Bad input                        | Zod on the form and in the Server Action; plain errors, no stack trace                                                       |
-| Model slow, rate-limited or down | 30-second timeout, a short retry, the other provider, then the rule-based plan; chat shows a cached reply                    |
+| Model slow, rate-limited or down | 30-second timeout, a short retry, the other provider, then the rule-based plan; chat shows a fixed fallback message          |
 | Malformed or unsafe plan         | Schema check, then the verifier (ids, equipment, injuries, ranges, duplicates, day count); one regeneration listing problems |
 | Out-of-scope or unsafe chat      | Rules in code: reported pain stops the exercise and suggests a professional; no diagnosis                                    |
 
@@ -68,20 +68,20 @@ Every model call will be logged with provider, prompt version, latency and outco
 
 ### 2.6 How the required technologies are used
 
-TypeScript throughout; Next.js, Tailwind CSS and shadcn/ui as in 2.2; PostgreSQL through Prisma migrations and the seeded library; cloud storage as the private photo bucket in 2.3.
+TypeScript, Next.js, Tailwind CSS and shadcn/ui (2.2); PostgreSQL through Prisma (2.3); cloud storage as the photo bucket (2.3).
 
 ### 2.7 Advanced features
 
 We commit to two:
 
-1. **Authentication and authorization.** Better Auth sign-in; four tiers checked on the server in every Server Action and route handler: free (quiz, rule-based plan, logging), trial (coach chat until it ends), pro (coach chat while verified paid access lasts), admin (edits the library).
-2. **Integration with an external AI API.** Groq, with Gemini as fallback, writes strength plans and answers chat behind the verifier; plans land in the session screen's tables.
+1. **Authentication and authorization.** Better Auth sign-in; four tiers checked on the server in every Server Action and route handler: free (quiz, rule-based plan, logging), trial (coach chat until it ends), pro (coach chat; set by an admin, or by Stripe test mode if built), admin (edits the library).
+2. **Integration with an external AI API.** Groq, with Gemini as fallback, writes strength plans and answers chat behind the verifier; verified plans are saved as the user's `Plan`.
 
 One planned extension, reported only if finished: **real-time** coach replies streamed a sentence at a time, each checked before it is shown.
 
 ### 2.8 Scope and feasibility
 
-On `main`: the Next.js skeleton, strength schema and first migration, seeded library, CI, plan generation with the verifier, and provider fallback. Each owner's area builds against the shared schema and merges weekly. Voice and camera form checks are out of scope; Stripe test-mode upgrades to pro are a stretch off the demo path.
+On `main`: the Next.js skeleton, strength schema and first migration, seeded library, CI, plan generation with the verifier, and provider fallback. Each owner's area builds against the shared schema and merges weekly. Voice and camera form checks are out of scope.
 
 ## 3. Plan and Responsibilities
 
@@ -93,17 +93,17 @@ The course health check on 18 November and final report on 6 December anchor our
 
 ### 3.2 Responsibilities
 
-Nabeegh owns foundation (schema, seed, CI) and the AI coach, including running plans. Shubham owns accounts, access tiers, backend integration and optional Stripe billing. Mohammad owns quiz, body map and session screens. Farnaz owns workout history, progress photos and cloud storage. Running is built alongside lifting.
+Nabeegh owns foundation (schema, seed, CI) and the AI coach, including running plans. Shubham owns accounts, access tiers, session authentication, coach request limits, event storage and optional Stripe billing. Mohammad owns quiz, body map and session screens. Farnaz owns workout history, streaks, the heatmap, progress photos and cloud storage. Running is built alongside lifting.
 
 ### 3.3 Integration and Dependencies
 
 Every Tuesday at 7 p.m., each member reports what they built, blockers and next steps. Questions, decisions and blockers stay on related GitHub issues; Discord handles scheduling. Team brainstorming, informed by our [research](https://github.com/harunm1/FitnessCoach/blob/main/docs/RESEARCH.md) and [coach evaluations](https://github.com/harunm1/FitnessCoach/blob/main/docs/COACH_EVAL.md), settles design.
 
-The shared Prisma schema, workout-plan JSON and authentication are the critical path: signed-in quiz, session and progress integration depends on them. Each task has an issue, branch and PR with `Closes #n`, covering one feature or fix for review in one sitting. Code and proposal PRs need one teammate approval; proposal/documentation PRs request all teammates. No teammate receives more than three small, separate PRs daily. Branches merge weekly so the app runs together. Meeting/admin notes may go directly to unprotected `main`. CI runs formatting, lint, TypeScript checks, tests and build.
+The shared Prisma schema, workout-plan JSON and authentication are the critical path: signed-in quiz, session and progress integration depends on them. Each task has an issue, branch and PR with `Closes #n`, covering one feature or fix for review in one sitting. Code PRs need one teammate approval; documentation merges without review when conflict-free. No teammate receives more than three small, separate PRs daily. Branches merge weekly so the app runs together. CI runs formatting, lint, TypeScript checks, tests and build.
 
 ### 3.4 Risks and Scope
 
-We use the app ourselves as each piece lands. LLM failures trigger Groq retries, then Gemini; if both fail, a rule-based plan and cached coach reply keep the demo live. A recording is the last resort. We discuss schema changes and retain a stable demo if integration or feature work slips.
+We use the app ourselves as each piece lands. LLM failures trigger Groq retries, then Gemini; if both fail, a rule-based plan and a fixed coach message keep the demo live. A recording is the last resort. We discuss schema changes and retain a stable demo if integration or feature work slips.
 
 ## 4. Initial Team Reasoning and AI-Assisted Exploration
 
@@ -115,7 +115,7 @@ Initially, we defined the problem simply. A user takes a quiz about their goals 
 
 Our research on free-tier limits pointed to Groq, and the team tested both providers to confirm it. We wrote down how we would judge the results, then asked Groq and Gemini to create plans for the same ten user profiles. In the first round, both produced plans that passed our verifier. The real difference was reliability: on its own, each provider failed some requests because of free-tier limits or server errors.
 
-AI helped us build this test, and we checked its answers. It assumed Groq reports how long to wait in a standard `Retry-After` header, but Groq's actual responses use a different header, so our retry logic reads that one. AI also suggested sending only six exercises per muscle group to fit Groq's token limit. We tried it and rejected it, because the coach should see every exercise the user can do; grouping names by muscle made them all fit.
+AI helped us build this test, and we checked its answers. It assumed the standard `Retry-After` header was enough, but Groq also reports token waits in `x-ratelimit-reset-tokens`, so our retry logic reads both. AI also suggested sending only six exercises per muscle group to fit Groq's token limit. We tried it and rejected it, because the coach should see every exercise the user can do; grouping names by muscle made them all fit.
 
 ### 4.3 How the Design Changed
 
@@ -127,11 +127,15 @@ Instead of choosing one provider, we now chain them as described in Section 2, a
 
 Better Auth. (2026). _Prisma_ [Documentation]. https://www.better-auth.com/docs/adapters/prisma
 
+Future. (2026). _Future: Custom, 1-on-1 personal training_. https://future.co/
+
 Gabay, M., & Oravițan, M. (2022). The factors affecting adherence to physical activity in fitness facility settings: A narrative review. _Timișoara Physical Education and Rehabilitation Journal, 15_(29), 46–61. https://doi.org/10.2478/tperj-2022-0013
 
 Google. (2026). _What is new with the redesigned Google Health app_ [Documentation]. Google Health Help Center. https://support.google.com/googlehealth/answer/17068213
 
 Groq. (2026). _Rate limits_ [Documentation]. GroqCloud. https://console.groq.com/docs/rate-limits
+
+SensAI. (2026). _SensAI: Workout planner_ [Mobile app]. App Store. https://apps.apple.com/us/app/id6738963099
 
 Sperandei, S., Vieira, M. C., & Reis, A. C. (2016). Adherence to physical activity in an unsupervised setting: Explanatory variables for high attrition rates among fitness center members. _Journal of Science and Medicine in Sport, 19_(11), 916–920. https://doi.org/10.1016/j.jsams.2015.12.522
 
