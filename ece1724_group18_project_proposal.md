@@ -26,7 +26,7 @@ We use Option A, Next.js full-stack with the App Router: no outside client calls
 
 In the AI coach the model proposes and code decides: only a plan that passes the verifier is saved.
 
-**UI and UX.** Mobile-first for mid-workout use: large touch targets, a visible rest timer, and loading and error states on every route.
+**UI and UX.** Mobile-first: large touch targets, a rest timer, and loading and error states on every route.
 
 ### 2.3 Database and cloud storage
 
@@ -64,7 +64,7 @@ A failure degrades one capability, never the whole app: without a model, users s
 | Malformed or unsafe plan         | Schema check, then the verifier (ids, equipment, injuries, ranges, duplicates, day count); one regeneration listing problems |
 | Out-of-scope or unsafe chat      | Rules in code: reported pain stops the exercise and suggests a professional; no diagnosis                                    |
 
-Every model call will be logged with provider, prompt version, latency and outcome. Vitest unit tests mock the network; CI runs format, lint, types, tests and build on every pull request, and will replay ten fixed coach profiles. From mid-November we pilot the demo path on a deployed preview and log what breaks as issues labelled `pilot`.
+Every model call is logged (provider, prompt version, latency, outcome). Vitest unit tests mock the network; CI runs format, lint, types, tests and build on every pull request, and will replay ten fixed coach profiles. From mid-November we pilot the demo path on a deployed preview.
 
 ### 2.6 How the required technologies are used
 
@@ -81,7 +81,7 @@ One planned extension, reported only if finished: **real-time** coach replies st
 
 ### 2.8 Scope and feasibility
 
-On `main`: the Next.js skeleton, strength schema and first migration, seeded library, CI, plan generation with the verifier, and provider fallback. Each owner's area builds against the shared schema and merges weekly. Voice and camera form checks are out of scope.
+On `main`: the Next.js skeleton, strength schema and first migration, seeded library, CI, plan generation with the verifier, and provider fallback. Each owner's area builds against the shared schema and merges weekly.
 
 ## 3. Plan and Responsibilities
 
@@ -93,7 +93,7 @@ The course health check on 18 November and final report on 6 December anchor our
 
 ### 3.2 Responsibilities
 
-Nabeegh owns foundation (schema, seed, CI) and the AI coach, including running plans. Shubham owns accounts, access tiers, session authentication, coach request limits, event storage and optional Stripe billing. Mohammad owns quiz, body map and session screens. Farnaz owns workout history, streaks, the heatmap, progress photos and cloud storage. Running is built alongside lifting.
+Nabeegh owns the architecture, research and coach evaluation, foundation (schema, seed, CI) and the AI coach, including running plans. Shubham owns accounts, access tiers, session authentication, coach request limits, event storage and optional Stripe billing. Mohammad owns quiz, body map and session screens. Farnaz owns workout history, streaks, the heatmap, progress photos and cloud storage. Running is built alongside lifting.
 
 ### 3.3 Integration and Dependencies
 
