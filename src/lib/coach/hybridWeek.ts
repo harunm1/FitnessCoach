@@ -44,6 +44,9 @@ export function splitDays(
   // At most five run days; anything beyond becomes strength in a hybrid week.
   if (mode !== "GYM" && days - strengthDays > 5) strengthDays = days - 5;
   if (mode === "BOTH" && days === 1) strengthDays = goal === "FAT_LOSS" ? 0 : 1;
+  // A hybrid week of two or more days keeps at least one day of each kind.
+  if (mode === "BOTH" && days >= 2)
+    strengthDays = Math.min(days - 1, Math.max(1, strengthDays));
   return { strengthDays, runDays: days - strengthDays };
 }
 
