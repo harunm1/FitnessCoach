@@ -101,3 +101,13 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** R2's free tier of 10 GB-month of Standard storage, 1 million Class A and 10 million Class B operations a month and free egress; Spaces at $5 a month with no free tier; and a teammate's report that the checkout step enabling R2 may ask for a payment method.
 
 **Did with it:** rechecked the R2 page on 6 November before committing, changed D3 and the diagram node to R2, and added a short storage section to the research doc. R2's get-started page shows the checkout step but does not mention a payment method, so the doc attributes that to the teammate's report. The README keeps its generic "S3-compatible bucket" wording, which stays true. I also closed the research doc's stale questions against the issues that settled them and pointed the plan's eval link at `main`.
+
+### 6 November 2026, crisis and red-flag guardrails (issue #43)
+
+**Before asking:** I set both rules and wrote both replies myself. Any message about not wanting to be alive, suicide, self-harm or ending one's life gets a fixed reply pointing to 9-8-8 (call or text, any time) and 911, with no model call, before every other rule; I checked 9-8-8 on the Public Health Agency of Canada and CRTC pages. Chest pain or tightness, fainting, severe shortness of breath or an irregular heartbeat during exercise gets "stop exercising now" and medical attention, checked next, before pain. Effort talk ("this workout is killing me", "I'm dying after that run") and soreness ("my chest is sore from bench") must pass.
+
+**Asked:** for the matching patterns and for test phrases in both directions.
+
+**Got:** patterns and phrases. Running them showed that "I don't want to hurt myself on heavy deadlifts" was read as a pain report, because "don't" was missing from the words that cancel a pain phrase, and that "this workout is killing me" was read as pain.
+
+**Did with it:** wrote the failing tests first, then the patterns, and added "don't" to the negations and narrowed "killing me" to a body part ("my shoulder is killing me"). An independent review checked the patterns and the 9-8-8 details before the push.
