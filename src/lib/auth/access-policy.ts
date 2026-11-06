@@ -5,16 +5,31 @@ export const TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 export type Permission =
   "quiz" | "default-plan" | "tracking" | "coach" | "manage-content";
 
-export type AccountTier = { tier: Tier; trialEndsAt: Date | null };
+export type AccountTier = {
+  tier: Tier;
+  trialEndsAt: Date | null;
+  billing?: { status: string | null; paidUntil: Date | null } | null;
+};
 
 // Recompute on every protected request. Expiry never depends on a scheduled job.
 export function resolveAccess(account: AccountTier, now = new Date()) {
-  const activeTrial =
-    account.tier === "TRIAL" &&
+  const trialRemaining =
     account.trialEndsAt !== null &&
     account.trialEndsAt.getTime() > now.getTime();
+  const paid =
+    account.tier === "PRO" &&
+    account.billing?.status === "active" &&
+    account.billing.paidUntil !== null &&
+    account.billing.paidUntil.getTime() > now.getTime();
   const effectiveTier: Tier =
-    account.tier === "TRIAL" && !activeTrial ? "FREE" : account.tier;
+    account.tier === "ADMIN"
+      ? "ADMIN"
+      : paid
+        ? "PRO"
+        : ["TRIAL", "PRO"].includes(account.tier) && trialRemaining
+          ? "TRIAL"
+          : "FREE";
+  const activeTrial = effectiveTier === "TRIAL";
   const permissions: Permission[] = ["quiz", "default-plan", "tracking"];
   if (["TRIAL", "PRO", "ADMIN"].includes(effectiveTier))
     permissions.push("coach");

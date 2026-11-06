@@ -37,8 +37,18 @@ describe("account permissions", () => {
     ).toBe(false);
   });
 
-  it("uses the server-controlled PRO tier without granting content access", () => {
-    const access = resolveAccess({ tier: "PRO", trialEndsAt: now }, now);
+  it("keeps paid PRO access regardless of an old trial date", () => {
+    const access = resolveAccess(
+      {
+        tier: "PRO",
+        trialEndsAt: now,
+        billing: {
+          status: "active",
+          paidUntil: new Date(now.getTime() + 1000),
+        },
+      },
+      now,
+    );
     expect(access.effectiveTier).toBe("PRO");
     expect(access.permissions).toContain("coach");
     expect(access.permissions).not.toContain("manage-content");
@@ -51,4 +61,21 @@ describe("account permissions", () => {
     expect(access.permissions).toContain("manage-content");
     expect(access.canStartTrial).toBe(false);
   });
+});
+
+it.each([
+  null,
+  { status: "active", paidUntil: now },
+  { status: "past_due", paidUntil: new Date(now.getTime() + 1000) },
+])("denies unverified or expired paid access", (billing) => {
+  expect(
+    resolveAccess({ tier: "PRO", trialEndsAt: null, billing }, now)
+      .effectiveTier,
+  ).toBe("FREE");
+  expect(
+    resolveAccess(
+      { tier: "PRO", trialEndsAt: new Date(now.getTime() + 1000), billing },
+      now,
+    ).effectiveTier,
+  ).toBe("TRIAL");
 });
