@@ -23,4 +23,5 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
-      - run: npm run build
+      # The Vercel build script; outside Vercel (no VERCEL_ENV) it runs next build only.
+      - run: npx tsx scripts/vercel-build.ts

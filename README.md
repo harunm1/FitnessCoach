@@ -118,16 +118,20 @@ docker compose down -v
 The hosted preview runs on Vercel (Hobby) with PostgreSQL on Neon (Free); why is
 decision D15 in `docs/ARCHITECTURE.md`. `vercel.json` sets the build command to
 `scripts/vercel-build.ts`: production deployments run `prisma migrate deploy`, then
-`next build`; pull request previews only build, so an unmerged migration never touches
-the shared database.
+`next build`; pull request previews only build. Previews use their own Neon branch, so
+a pull request never reads or changes the production database.
 
 One-time setup:
 
-1. Create a Neon account at neon.com and a project named `fitnesscoach`. From
-   **Connect**, copy two connection strings: the pooled one (host contains `-pooler`)
-   and the direct one (connection pooling turned off).
-2. Apply the migrations and seed the hosted database from your machine, using the
-   direct string:
+1. Create a Neon account at neon.com and a project named `fitnesscoach` in **AWS US
+   East (N. Virginia)**, the region Vercel runs functions in by default (`iad1`). From
+   **Connect**, copy two connection strings for the `main` branch: the pooled one (host
+   contains `-pooler`) and the direct one (connection pooling turned off). Append
+   `?connect_timeout=15` to the direct string (or `&connect_timeout=15` if it already
+   has a `?`), so the Prisma CLI waits for a suspended database to wake instead of
+   failing with P1001.
+2. Apply the migrations and seed the `main` branch from your machine, using the direct
+   string:
 
    ```bash
    DATABASE_URL="<direct string>" npx prisma migrate deploy
@@ -137,26 +141,37 @@ One-time setup:
    In PowerShell, set it first with `$env:DATABASE_URL="<direct string>"`, run both
    commands, then `Remove-Item Env:DATABASE_URL`.
 
-3. Create a Vercel account at vercel.com (Hobby), choose **Add New > Project** and
+3. In Neon, create a branch named `preview` from `main`; it starts with the same schema
+   and seed data. Copy its pooled and direct strings the same way, with
+   `connect_timeout=15` on the direct one.
+4. Create a Vercel account at vercel.com (Hobby), choose **Add New > Project** and
    import `harunm1/FitnessCoach`. If GitHub asks the repository owner to approve the
    Vercel app, Mohammad approves it. Keep the detected Next.js preset; `vercel.json`
-   supplies the build command.
-4. Before the first deploy, add these under **Settings > Environment Variables**, for
-   Production and Preview:
+   supplies the build command. The Vercel project belongs to Nabeegh's Hobby account;
+   keep the repository public, because Vercel's Hobby commit-author check applies to
+   private repositories, so teammates' commits to the public repository still deploy.
+5. Before the first deploy, add these under **Settings > Environment Variables**:
 
-   | Name                    | Value                    |
-   | ----------------------- | ------------------------ |
-   | `DATABASE_URL`          | Neon pooled string       |
-   | `DATABASE_URL_UNPOOLED` | Neon direct string       |
-   | `COACH_PROVIDER`        | `groq`                   |
-   | `GROQ_API_KEY`          | from console.groq.com    |
-   | `GEMINI_API_KEY`        | from aistudio.google.com |
+   | Name                    | Environment         | Value                        |
+   | ----------------------- | ------------------- | ---------------------------- |
+   | `DATABASE_URL`          | Production          | Neon `main` pooled string    |
+   | `DATABASE_URL_UNPOOLED` | Production          | Neon `main` direct string    |
+   | `DATABASE_URL`          | Preview             | Neon `preview` pooled string |
+   | `DATABASE_URL_UNPOOLED` | Preview             | Neon `preview` direct string |
+   | `COACH_PROVIDER`        | Production, Preview | `groq`                       |
+   | `GROQ_API_KEY`          | Production, Preview | from console.groq.com        |
+   | `GEMINI_API_KEY`        | Production, Preview | from aistudio.google.com     |
 
-5. Deploy. Each push to `main` redeploys production and applies any new migration;
-   each pull request gets its own preview URL against the same database.
+6. Deploy. Each push to `main` redeploys production and applies any new migration to
+   the Neon `main` branch; each pull request gets its own preview URL against the
+   `preview` branch.
 
-After a schema change merges, the next production deployment migrates. Seed again only
-when the seed itself changes; it upserts, so re-running is safe.
+After a schema change merges, the next production deployment migrates `main`. Migrations
+run before the new build goes live, so the running version briefly meets the new schema:
+keep migrations additive (new tables and nullable columns), and drop or rename in a later
+change. To bring `preview` up to date, run step 2's `migrate deploy` with its direct
+string, or reset the branch from `main` in Neon. Seed again only when the seed itself
+changes; it upserts, so re-running is safe.
 
 ## How we work
 

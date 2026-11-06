@@ -91,3 +91,13 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** Render's free PostgreSQL is deleted 30 days after creation and its web service sleeps after 15 minutes; Railway gives a 30-day $5 trial, then $1 a month; Vercel Hobby is free with a 300-second function limit and Neon Free needs no card. Neon's Prisma guide uses the pooled string for the app and a direct string for the CLI. A suggestion to migrate only on production builds, so a pull request preview never applies an unmerged migration to the shared database.
 
 **Did with it:** recorded the choice and the options it beat as D15 with the sources and the date checked; wrote the two rules (which URL the CLI uses, which steps a build runs) as a small module with six tests written first and seen failing; added `vercel.json`, the build script, the `.env.example` entry and the README Deploy steps. CI already runs `npm run build`. Creating the accounts, seeding Neon and checking the demo path on the live URL are the steps left to me.
+
+### 5 November 2026, deploy review fixes (issue #57, PR #61)
+
+**Before asking:** an independent review of #61 found that previews would share the production database. I listed the fixes I wanted: a separate Neon branch for previews with Preview-scoped variables, a connection timeout for a database waking from suspend, the Neon region next to Vercel's functions, the release script run in CI, a pinned Node version, and a note on who owns the Vercel project.
+
+**Asked:** to check each fix against Prisma's Vercel guide, Neon's Prisma guide and Vercel's Git, function and Node.js docs, and to apply them.
+
+**Got:** Prisma's guide says a pull request with a migration would change the production schema and recommends a second database scoped to Preview; Neon's guide gives `connect_timeout=15` for P1001 on wake; Vercel's default function region is `iad1`; Node 22.x is still offered; Vercel's Hobby commit-author check applies to private repositories in organizations, not to our public repository.
+
+**Did with it:** updated the README Deploy steps and the D15 cost, switched CI to run `scripts/vercel-build.ts`, and added `engines` to `package.json`, then reran lint, typecheck, tests and the format check.
