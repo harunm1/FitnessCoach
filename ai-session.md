@@ -110,4 +110,6 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Got:** patterns and phrases. Running them showed that "I don't want to hurt myself on heavy deadlifts" was read as a pain report, because "don't" was missing from the words that cancel a pain phrase, and that "this workout is killing me" was read as pain.
 
-**Did with it:** wrote the failing tests first, then the patterns, and added "don't" to the negations and narrowed "killing me" to a body part ("my shoulder is killing me"). An independent review checked the patterns and the 9-8-8 details before the push.
+**Did with it:** ran the new tests against the old code first (20 failed), then wrote the patterns, added "don't" to the negations and narrowed "killing me" to a body part ("my shoulder is killing me").
+
+An independent review then confirmed the 9-8-8 details on the CRTC, Public Health Agency of Canada and 988.ca pages, and found the first patterns too narrow. Missed were "I want to die", "I've been cutting myself", "I took too many pills on purpose" (which got the no-medication reply), "my chest hurts during runs", "I collapsed after the set" and every message typed with a phone's curly apostrophe. It also found training talk caught by mistake: "suicide sprints", "I want to end it with planks", "cut myself some slack", "faint praise". Each became a test, failing first, before I widened or narrowed the patterns. Any mention of shortness of breath counts as a red flag, which is on the safe side of my "severe".
