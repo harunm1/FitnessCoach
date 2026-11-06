@@ -81,3 +81,13 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** a module layout that keeps each rule in its own file, and test ideas, including a loop over every history from 1 to 60 km and every week from 1 to 7 days, which caught two weeks that went over the cap.
 
 **Did with it:** reviewed each module against the rules above and ran the tests, typecheck and lint before each pull request (#45, #47, #48, #49, #53, #54). Saving a week once to a real PostgreSQL (PGlite with all migrations) showed that in a two- or three-run week the long run came out shorter than the easy run; the unit tests had passed because none checked it. I changed the shares and added a test that the long run is the longest for two to five run days. I checked the Groq free-tier limits cited in Section 2 against Groq's own rate-limits page.
+
+### 6 November 2026, review before merging the coach pull requests (issues #11, #19, #34, #41, #43, #46)
+
+**Before asking:** my rule for my own pull requests is three days for the team to review, then an independent review of each diff against its issue, the tests and `docs/ENGINEERING_PRACTICES.md` before merging. I decided which findings block a merge: a safety rule that can be bypassed, a promise in the code or the issue that the code does not keep, and data the database can get wrong.
+
+**Asked:** for a review of each pull request by a reviewer that had not seen the work, with inputs that try to break each rule, and for the edge cases to turn into tests.
+
+**Got:** five blocking findings, each with a reproducing input. A pain report was cancelled by a negated phrase elsewhere in the message ("no pain on the warm-up but my knee hurts"), and a pain report with a medication question got the no-diagnosis reply instead of the stop. Typed injury text went into the system prompt unfenced. A user who logged under 1 km got a rule-based running week its own verifier rejects. Three saves at once left three active plans on PostgreSQL. Log records did not name the provider and model, which #41 asks for.
+
+**Did with it:** wrote a failing test for each finding, then the fix, on its own branch (#48, #53, #45, #54, #49). Ran the concurrent-save case against PostgreSQL 16 in Docker before and after the row lock: three active plans without it, one with it. Checked the claim about which eval run hit which matching fault against the result files, and corrected `docs/COACH_EVAL.md` (#55): the copied group label was in run 3 and the calf-raise near miss in run 2b, not run 1. Findings that do not block a merge are listed on each pull request.
