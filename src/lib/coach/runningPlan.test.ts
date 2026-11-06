@@ -156,4 +156,14 @@ describe("weeklyCapKm", () => {
   it("uses the starting volume when nothing is logged", () => {
     expect(weeklyCapKm(base)).toBe(STARTING_WEEK_KM.LIGHT);
   });
+
+  // Pinned as literals so a change to the first-week load shows up as a failing test.
+  it.each([
+    ["SEDENTARY", 6],
+    ["LIGHT", 10],
+    ["ACTIVE", 15],
+    ["PHYSICAL_JOB", 10],
+  ] as const)("starts a new %s runner at %s km", (activityLevel, km) => {
+    expect(weeklyCapKm({ ...base, activityLevel, lastWeekKm: null })).toBe(km);
+  });
 });
