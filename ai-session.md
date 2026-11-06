@@ -151,3 +151,13 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** "$50 first month, then $199/month", with no $149 or annual rate on the page.
 
 **Did with it:** changed the range to $199 per month in Section 1 and the combined file; the word count did not change.
+
+### 6 November 2026, final proposal pass (issue #13)
+
+**Before asking:** three teammates had read the proposal. Mohammad approved, Farnaz left five suggestions, and Shubham expanded his responsibilities and changed how pro access is described. I kept his added responsibilities, restored the agreed pro tier (set by an admin, or by Stripe test mode if built), took Farnaz's points, and set one rule for the cuts: only my Section 2, never a fact.
+
+**Asked:** for the SensAI and Future prices from their own pages, a check of the chat code's fallback, and an independent review of the whole proposal against its sources, the handout and the 2,000-word cap.
+
+**Got:** SensAI's App Store listing at $6.99 a month and Future's site at $199 a month; the chat code shows a fixed message when the model is down, not a cached reply; and four review findings: Groq sends a token-wait header as well as Retry-After, Section 3's review rule contradicted the 3 November decision, the SensAI title was off, and Section 2 no longer said where verified plans go.
+
+**Did with it:** made each change in its own commit naming the section's owner, cut repetition in Section 2 to stay under the cap, and rebuilt the combined file from the sections. The proposal ends at 1,985 words.
