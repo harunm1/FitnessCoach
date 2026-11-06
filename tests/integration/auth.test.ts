@@ -314,4 +314,104 @@ describe("Better Auth with PostgreSQL", () => {
     expect(last!.status).toBe(429);
     expect(await db.rateLimit.count()).toBeGreaterThan(0);
   });
+  it("requires a session and the correct current password before changing credentials", async () => {
+    await signup();
+    await verify();
+    const cookie = cookies(await login());
+    const body = {
+      currentPassword: password,
+      newPassword: "Changed-password-test-123!",
+      revokeOtherSessions: true,
+    };
+    expect((await post("/change-password", body)).status).toBe(401);
+    const wrong = await post(
+      "/change-password",
+      { ...body, currentPassword: "Wrong-current-password-123!" },
+      cookie,
+    );
+    expect(wrong.status).toBe(400);
+    expect((await wrong.json()).code).toBe("INVALID_PASSWORD");
+    expect(
+      (
+        await post(
+          "/change-password",
+          { ...body, newPassword: "short" },
+          cookie,
+        )
+      ).status,
+    ).toBe(400);
+    expect((await login()).status).toBe(200);
+  });
+  it("changes only the session owner's password and revokes other sessions while issuing a current cookie", async () => {
+    await signup();
+    await verify();
+    const currentCookie = cookies(await login());
+    const otherCookie = cookies(await login());
+    const owner = await db.user.findUniqueOrThrow({ where: { email } });
+    const credential = await db.account.findFirstOrThrow({
+      where: { userId: owner.id, providerId: "credential" },
+    });
+    const victim = await db.user.create({
+      data: {
+        name: "Untouched Athlete",
+        email: `${prefix}-change-victim@example.test`,
+        accounts: {
+          create: {
+            providerId: "credential",
+            accountId: randomUUID(),
+            password: credential.password,
+          },
+        },
+      },
+    });
+    const newPassword = "Changed-password-test-456!";
+    const response = await post(
+      "/change-password",
+      {
+        currentPassword: password,
+        newPassword,
+        revokeOtherSessions: true,
+        userId: victim.id,
+      },
+      currentCookie,
+    );
+    expect(response.status).toBe(200);
+    expect(await session(currentCookie)).toBeNull();
+    expect(await session(otherCookie)).toBeNull();
+    expect((await session(cookies(response))).user.id).toBe(owner.id);
+    expect(await db.session.count({ where: { userId: owner.id } })).toBe(1);
+    expect(
+      (await db.account.findFirstOrThrow({ where: { userId: victim.id } }))
+        .password,
+    ).toBe(credential.password);
+    expect((await login()).status).toBe(401);
+    expect((await login(newPassword)).status).toBe(200);
+    expect(
+      emails.filter((message) => message.subject.startsWith("Reset")),
+    ).toHaveLength(0);
+  });
+  it("rejects a session that expires before the password change", async () => {
+    await signup();
+    await verify();
+    const cookie = cookies(await login());
+    const owner = await db.user.findUniqueOrThrow({ where: { email } });
+    await db.session.updateMany({
+      where: { userId: owner.id },
+      data: { expiresAt: new Date(0) },
+    });
+    expect(
+      (
+        await post(
+          "/change-password",
+          {
+            currentPassword: password,
+            newPassword: "Expired-change-password-test-123!",
+            revokeOtherSessions: true,
+          },
+          cookie,
+        )
+      ).status,
+    ).toBe(401);
+    expect((await login()).status).toBe(200);
+  });
 });
