@@ -13,4 +13,3 @@ FitnessCoach will combine personalized strength and running programs with an int
 1. Sperandei, S., Vieira, M. C., & Reis, A. C. (2016). Adherence to physical activity in an unsupervised setting: Explanatory variables for high attrition rates among fitness center members. _Journal of Science and Medicine in Sport, 19_(11), 916–920. https://doi.org/10.1016/j.jsams.2015.12.522
 
 2. Gabay, M., & Oravițan, M. (2022). The factors affecting adherence to physical activity in fitness facility settings: A narrative review. _Timișoara Physical Education and Rehabilitation Journal, 15_(29), 46–61. https://doi.org/10.2478/tperj-2022-0013
-
