@@ -22,6 +22,8 @@ export type CoachRecord = {
   attempt: number;
   latencyMs: number;
   outcome: CoachOutcome;
+  provider?: string; // who answered; absent when no provider replied
+  model?: string;
   providerEvents: ProviderEvent[]; // retries and switches during this call
   problems?: string[];
   raw?: unknown; // the model's reply as parsed, kept beside the plan we saved
@@ -30,7 +32,7 @@ export type CoachRecord = {
 
 export type CoachSink = (record: CoachRecord) => void | Promise<void>;
 
-// Collects provider retries and switches between calls; pass `onEvent` to
+// Collects provider retries, switches and the serving model between calls; pass `onEvent` to
 // coachModel's options and `take()` empties the list into the next record.
 export function providerEventCollector() {
   let events: ProviderEvent[] = [];

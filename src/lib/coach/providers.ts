@@ -172,9 +172,10 @@ export function geminiModel(apiKey: string, model = GEMINI_MODEL): PlanModel {
 
 export type ProviderEvent = {
   provider: string;
-  action: "retry" | "fallback";
+  action: "retry" | "fallback" | "served";
   status?: number;
   waitMs?: number;
+  model?: string; // on "served": the model that answered
 };
 
 export type RetryOptions = {
@@ -241,6 +242,20 @@ export function withFallback(
   };
 }
 
+// Reports the provider and model that answered, so a log record can name them (#41).
+export function servedBy(
+  model: PlanModel,
+  provider: string,
+  modelName: string,
+  onEvent?: (event: ProviderEvent) => void,
+): PlanModel {
+  return async (prompt) => {
+    const reply = await model(prompt);
+    onEvent?.({ provider, action: "served", model: modelName });
+    return reply;
+  };
+}
+
 function requireKey(env: Env, name: string): string {
   const key = env[name];
   if (!key) {
@@ -261,13 +276,21 @@ export function coachModel(
     throw new Error(`COACH_PROVIDER must be groq or gemini, not "${lead}"`);
   }
   // GROQ_MODEL and GEMINI_MODEL override the defaults, so a model swap is a setting.
-  const build = (name: "groq" | "gemini", key: string) =>
-    withRetry(
+  const build = (name: "groq" | "gemini", key: string) => {
+    const id =
       name === "groq"
-        ? groqModel(key, env.GROQ_MODEL || GROQ_MODEL)
-        : geminiModel(key, env.GEMINI_MODEL || GEMINI_MODEL),
-      options,
+        ? env.GROQ_MODEL || GROQ_MODEL
+        : env.GEMINI_MODEL || GEMINI_MODEL;
+    return servedBy(
+      withRetry(
+        name === "groq" ? groqModel(key, id) : geminiModel(key, id),
+        options,
+      ),
+      name === "groq" ? "Groq" : "Gemini",
+      id,
+      options.onEvent,
     );
+  };
   const other = lead === "groq" ? "gemini" : "groq";
   const keyName = (name: string) => `${name.toUpperCase()}_API_KEY`;
   const primary = build(lead, requireKey(env, keyName(lead)));

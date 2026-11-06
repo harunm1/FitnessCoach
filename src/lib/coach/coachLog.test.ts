@@ -6,7 +6,7 @@ import {
   type CoachRecord,
 } from "./coachLog";
 import { generatePlan, type PlanModel } from "./generatePlan";
-import { ProviderError, withFallback, withRetry } from "./providers";
+import { ProviderError, servedBy, withFallback, withRetry } from "./providers";
 import type { LibraryExercise, VerifyProfile } from "./verify";
 
 const library: LibraryExercise[] = ["bench", "squat"].map((id, i) => ({
@@ -99,7 +99,7 @@ describe("coach log", () => {
     const gemini = vi.fn<PlanModel>().mockResolvedValue(good);
     const model = withFallback(
       withRetry(groq, { retries: 0, onEvent: collector.onEvent }),
-      gemini,
+      servedBy(gemini, "Gemini", "gemini-test", collector.onEvent),
       collector.onEvent,
     );
     const records: CoachRecord[] = [];
@@ -111,6 +111,8 @@ describe("coach log", () => {
     });
     expect(records[0]).toMatchObject({
       outcome: "switched",
+      provider: "Gemini",
+      model: "gemini-test",
       providerEvents: [{ provider: "Groq", action: "fallback", status: 429 }],
     });
   });

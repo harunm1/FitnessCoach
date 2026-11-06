@@ -142,7 +142,7 @@ export async function generatePlan(
       continue;
     }
     const latencyMs = now() - started;
-    const providerEvents = takeProviderEvents();
+    const { served, providerEvents } = splitServed(takeProviderEvents());
     const result = verifyPlan(namesToIds(raw, usable), profile, byId);
     if (result.ok) {
       await writeRecord(log, {
@@ -151,6 +151,7 @@ export async function generatePlan(
         latencyMs,
         outcome: okOutcome(attempt, providerEvents),
         providerEvents,
+        ...served,
         raw,
       });
       return { plan: result.plan, source: "COACH", attempts: attempt };
@@ -162,6 +163,7 @@ export async function generatePlan(
       latencyMs,
       outcome: "rejected",
       providerEvents,
+      ...served,
       problems,
       raw,
     });
@@ -179,6 +181,15 @@ export async function generatePlan(
     plan: buildDefaultPlan(profile, library),
     source: "DEFAULT",
     attempts: MAX_ATTEMPTS,
+  };
+}
+
+// The "served" event names the provider and model; the rest stay as the call's events.
+function splitServed(events: ProviderEvent[]) {
+  const last = events.filter((e) => e.action === "served").at(-1);
+  return {
+    served: last ? { provider: last.provider, model: last.model } : {},
+    providerEvents: events.filter((e) => e.action !== "served"),
   };
 }
 
