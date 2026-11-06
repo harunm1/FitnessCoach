@@ -4,11 +4,15 @@
 
 Better Auth. (2026). _Prisma_ [Documentation]. https://www.better-auth.com/docs/adapters/prisma
 
+Future. (2026). _Future: Custom, 1-on-1 personal training_. https://future.co/
+
 Gabay, M., & Oravițan, M. (2022). The factors affecting adherence to physical activity in fitness facility settings: A narrative review. _Timișoara Physical Education and Rehabilitation Journal, 15_(29), 46–61. https://doi.org/10.2478/tperj-2022-0013
 
 Google. (2026). _What is new with the redesigned Google Health app_ [Documentation]. Google Health Help Center. https://support.google.com/googlehealth/answer/17068213
 
 Groq. (2026). _Rate limits_ [Documentation]. GroqCloud. https://console.groq.com/docs/rate-limits
+
+SensAI. (2026). _SensAI: Workout planner_ [Mobile app]. App Store. https://apps.apple.com/us/app/id6738963099
 
 Sperandei, S., Vieira, M. C., & Reis, A. C. (2016). Adherence to physical activity in an unsupervised setting: Explanatory variables for high attrition rates among fitness center members. _Journal of Science and Medicine in Sport, 19_(11), 916–920. https://doi.org/10.1016/j.jsams.2015.12.522
 
