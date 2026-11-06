@@ -25,6 +25,9 @@ export const REPLIES = {
     "General guidance, not medical advice: warm the area up for a few minutes first, keep to a range of motion that feels comfortable, start lighter and add weight slowly, and follow the form cues on the exercise. If something actually hurts, stop that exercise and have a physiotherapist look at it.",
   NO_DIAGNOSIS:
     "I can't diagnose injuries or advise on medication. A physiotherapist or doctor can. I can help you adjust your plan around it in the meantime.",
+  // A pain report that also asks for a diagnosis or a drug: stop first, then decline.
+  PAIN_STOP_NO_DIAGNOSIS:
+    "Stop that exercise for today. Pain is different from effort, and I can't diagnose injuries or advise on medication; a physiotherapist or doctor can look at it before you load it again. I can swap in a movement that doesn't use that area.",
   OFF_TOPIC:
     "I'm your training coach, so I can help with your plan, exercises, running and recovery. What would you like to work on?",
 } as const;
@@ -33,9 +36,10 @@ export const REPLIES = {
 // soreness after training is expected and should not stop a session.
 const PAIN =
   /\b(pain|painful|hurts?|hurting|sharp|stabbing|shooting|throbbing|pinch(ed|ing)?|numb(ness)?|tingl(e|ing)|popped|pop(ping)? sound|swollen|swelling)\b/i;
-// "no pain", "not painful", "doesn't hurt" are reassurance, not a report.
+// "no pain", "not painful", "doesn't hurt" are reassurance, not a report. Only the
+// negated phrase is removed, so "no pain on the warm-up but my knee hurts" still reports.
 const NEGATED_PAIN =
-  /\b(no|not|without|never|doesn'?t|didn'?t|isn'?t|wasn'?t)\b(\s+\w+){0,2}\s+(pain|painful|hurt|hurts|hurting)\b/i;
+  /\b(no|not|without|never|doesn'?t|didn'?t|isn'?t|wasn'?t)\b(\s+\w+){0,2}\s+(pain|painful|hurt|hurts|hurting)\b/gi;
 const DIAGNOSIS =
   /\b(diagnos\w*|do i have|is it (a )?(torn|tear|broken|fracture|sprain|strain)|what injury|tendinitis|tendonitis|herniat\w*|ibuprofen|advil|painkillers?|medication|meds|dosage)\b/i;
 const TRAINING =
@@ -51,11 +55,21 @@ const PAIN_REPORT =
 
 export function checkUserMessage(text: string): Guard {
   const message = text.trim();
-  if (DIAGNOSIS.test(message)) {
+  const affirmed = message.replace(NEGATED_PAIN, " ");
+  const pain = PAIN.test(affirmed);
+  const report = pain && PAIN_REPORT.test(affirmed);
+  const diagnosis = DIAGNOSIS.test(message);
+  // A report always wins, also over a diagnosis or medication question (D13).
+  if (report) {
+    return diagnosis
+      ? { action: "PAIN_STOP", reply: REPLIES.PAIN_STOP_NO_DIAGNOSIS }
+      : { action: "PAIN_STOP", reply: REPLIES.PAIN_STOP };
+  }
+  if (diagnosis) {
     return { action: "NO_DIAGNOSIS", reply: REPLIES.NO_DIAGNOSIS };
   }
-  if (PAIN.test(message) && !NEGATED_PAIN.test(message)) {
-    if (PAIN_QUESTION.test(message) && !PAIN_REPORT.test(message)) {
+  if (pain) {
+    if (PAIN_QUESTION.test(affirmed)) {
       return { action: "PAIN_GUIDANCE", reply: REPLIES.PAIN_GUIDANCE };
     }
     return { action: "PAIN_STOP", reply: REPLIES.PAIN_STOP };
