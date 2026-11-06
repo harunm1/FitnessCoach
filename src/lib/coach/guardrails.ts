@@ -1,5 +1,8 @@
 // Coach guardrails (#43). The safety rules live here in TypeScript, not in the prompt,
 // so no message can talk the model out of them (docs/ARCHITECTURE.md, The coach):
+//   - checked first: not wanting to be alive, suicide or self-harm gets the crisis
+//     reply (9-8-8, 911); then chest pain, fainting, trouble breathing or an
+//     irregular heartbeat gets "stop exercising now" and medical attention
 //   - pain (not effort) stops the exercise and points to a professional; a question
 //     about avoiding pain gets general safe-training guidance instead (D13)
 //   - the coach does not diagnose or advise on medication
@@ -15,6 +18,8 @@ export type Guard =
   | { action: "ALLOW" }
   | {
       action:
+        | "CRISIS"
+        | "RED_FLAG"
         | "PAIN_STOP"
         | "PAIN_GUIDANCE"
         | "NO_DIAGNOSIS"
@@ -25,6 +30,15 @@ export type Guard =
     };
 
 export const REPLIES = {
+  // Mental health (Jörke et al., CHI 2026, arXiv 2510.05449, Table 2). 9-8-8 Suicide
+  // Crisis Helpline: call or text, 24/7, English and French (Public Health Agency of
+  // Canada and CRTC pages, 988.ca; checked 6 Nov 2026).
+  CRISIS:
+    "I'm really sorry you're feeling this way. I'm a training coach, so I'm not the right support for this, but you don't have to go through it alone. You can call or text 9-8-8 any time, day or night, to reach the Suicide Crisis Helpline in Canada. If you're in immediate danger, call 911.",
+  // Red-flag symptoms during or after exercise: chest pain or tightness, fainting,
+  // severe shortness of breath, irregular heartbeat. Stop, then medical attention.
+  RED_FLAG:
+    "Stop exercising now. Chest pain, fainting or trouble breathing during exercise need medical attention: call 911 if it's severe or doesn't settle quickly, otherwise see a doctor before training again.",
   PAIN_STOP:
     "Stop that exercise for today. Pain is different from effort, and it's worth having a physiotherapist or doctor look at it before you load it again. I can swap in a movement that doesn't use that area.",
   // A question about avoiding pain, not a report of it (D13): general, safe
@@ -52,13 +66,13 @@ export const REPLIES = {
 // soreness after training is expected and should not stop a session. "Sharp" counts
 // only next to a pain word, so "I feel sharp today" is not a report.
 const PAIN =
-  /\b(pain|painful|hurts?|hurting|aches?|aching|killing me|sharp (pain|twinge|ache)|stabbing|shooting|throbbing|pinch(es|ed|ing)?|numb(ness)?|tingl(e|ing)|popped|pop(ping)? sound|snapped|(something|a) snap|rolled my|tweaked|swollen|swelling)\b/i;
+  /\b(pain|painful|hurts?|hurting|aches?|aching|(my \w+( \w+)? (is|are) killing me)|sharp (pain|twinge|ache)|stabbing|shooting|throbbing|pinch(es|ed|ing)?|numb(ness)?|tingl(e|ing)|popped|pop(ping)? sound|snapped|(something|a) snap|rolled my|tweaked|swollen|swelling)\b/i;
 // "no pain", "not painful", "doesn't hurt" are reassurance, not a report. Only the
 // negated phrase is removed, so "no pain on the warm-up but my knee hurts" still reports.
 // Not when the words between are stop/way: "never stops hurting", "no way this pain
 // is normal" are reports. "Without pain" is left to the question rule.
 const NEGATED_PAIN =
-  /\b(no|not|never|doesn'?t|didn'?t|isn'?t|wasn'?t)\b(\s+(?!(stop|stops|stopped|way)\b)\w+){0,2}\s+(pain|painful|hurt|hurts|hurting)\b/gi;
+  /\b(no|not|never|don'?t|doesn'?t|didn'?t|isn'?t|wasn'?t)\b(\s+(?!(stop|stops|stopped|way)\b)\w+){0,2}\s+(pain|painful|hurt|hurts|hurting)\b/gi;
 const DIAGNOSIS =
   /\b(diagnos\w*|do i have|is it (a )?(torn|tear|broken|fracture|sprain|strain)|what injury|tendinitis|tendonitis|herniat\w*|ibuprofen|advil|painkillers?|pills?|medication|meds|dosage)\b/i;
 const TRAINING =
@@ -83,8 +97,25 @@ const PAIN_QUESTION =
 const PAIN_REPORT =
   /\b(my|i've|i have|i had|i felt|i feel|i'm feeling|it|that|this)\b(\s+\w+){0,3}\s+(hurts?|hurting|is painful|pain(ful)?|aches?|aching|popped|numb|swollen|tingl\w*)\b|\b(i felt|i feel|i have|i've got|i got|getting)\b(\s+\w+){0,3}\s+(pain|sharp|stabbing|shooting)\b/i;
 
+// Not wanting to be alive, suicide, self-harm or ending one's life. Checked before
+// every other rule. "Don't want to hurt myself on deadlifts" is caution, not harm, so
+// a negation right before "want to hurt myself" is excluded; "this workout is killing
+// me" and "I'm dying after that run" are effort.
+const CRISIS =
+  /\b(suicid\w*|kill(ing)? myself|end(ing)? my (own )?life|end(ing)? it all|(thinking about|think about|want to|going to|gonna|plan(ning)? to) end(ing)? it|(do ?n'?t|do not|don't) want to (be alive|live|be here|wake up)|wish i (was|were) dead|better off dead|self[- ]?harm\w*|(?<!(n'?t|not|never) )(want|going|plan(ning)?) to (hurt|harm|cut) myself|(hurting|harming|cutting) myself on purpose)\b/i;
+// Red-flag symptoms during or after exercise. "My chest is sore from bench" is
+// soreness and stays with the effort rule; a racing heart after a sprint is expected.
+const RED_FLAG =
+  /\b(chest (pain|pains|tightness|pressure)|chest (got|gets|is|was|feels|felt) (tight|painful)|tight(ness)? in my chest|(nearly |almost )?faint(ed|ing)?|passed out|pass out|blacked out|(could ?n'?t|can'?t|could not|cannot) breathe|trouble breathing|struggling to breathe|short(ness)? of breath|irregular(ly)? heart ?beat|heart ?beat (was |is )?irregular|heart (was |is )?(beating )?irregular(ly)?|palpitations?|heart (is |was )?(skipping|fluttering))\b/i;
+
 export function checkUserMessage(text: string): Guard {
   const message = text.trim();
+  if (CRISIS.test(message)) {
+    return { action: "CRISIS", reply: REPLIES.CRISIS };
+  }
+  if (RED_FLAG.test(message)) {
+    return { action: "RED_FLAG", reply: REPLIES.RED_FLAG };
+  }
   const affirmed = message.replace(NEGATED_PAIN, " ");
   const pain = PAIN.test(affirmed);
   const report = pain && PAIN_REPORT.test(affirmed);

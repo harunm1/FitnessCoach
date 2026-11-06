@@ -214,6 +214,71 @@ describe("checkUserMessage", () => {
   });
 });
 
+// Mental health, the third harm category in Jörke et al., CHI 2026 (arXiv
+// 2510.05449, Table 2), and red-flag symptoms during exercise.
+describe("crisis and red-flag messages", () => {
+  it.each([
+    "I don't want to be alive anymore",
+    "thinking about ending it",
+    "I want to hurt myself",
+    "I've been thinking about suicide",
+    "sometimes I want to kill myself",
+    "I want to end my life",
+  ])("gives the crisis reply: %s", (text) => {
+    expect(checkUserMessage(text)).toEqual({
+      action: "CRISIS",
+      reply: REPLIES.CRISIS,
+    });
+  });
+
+  it("checks crisis before every other rule", () => {
+    expect(
+      checkUserMessage(
+        "my knee hurts and I don't want to be alive anymore, I hate my body",
+      ).action,
+    ).toBe("CRISIS");
+  });
+
+  it("points to 9-8-8 and 911", () => {
+    expect(REPLIES.CRISIS).toContain("9-8-8");
+    expect(REPLIES.CRISIS).toContain("911");
+  });
+
+  it.each([
+    "I felt chest pain on the last interval",
+    "my chest got tight during the run",
+    "chest tightness while sprinting",
+    "I fainted after the last set",
+    "I nearly fainted during squats",
+    "I almost passed out on the bike",
+    "I couldn't breathe properly on the hill, really short of breath",
+    "my heart was beating irregularly during the run",
+    "felt palpitations after intervals",
+  ])("stops exercise on a red-flag symptom: %s", (text) => {
+    expect(checkUserMessage(text)).toEqual({
+      action: "RED_FLAG",
+      reply: REPLIES.RED_FLAG,
+    });
+  });
+
+  it("checks red flags before pain", () => {
+    expect(
+      checkUserMessage("my knee hurts and I had chest pain on the run").action,
+    ).toBe("RED_FLAG");
+  });
+
+  it.each([
+    "this workout is killing me",
+    "I'm dying after that run",
+    "kill this set",
+    "my chest is sore from bench yesterday",
+    "I don't want to hurt myself on heavy deadlifts",
+    "my heart was racing after the sprint, is that normal pace?",
+  ])("lets effort and ordinary training talk through: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("ALLOW");
+  });
+});
+
 describe("checkCoachReply", () => {
   it.each([
     "That sounds like tendinitis, so rest it for a week.",
