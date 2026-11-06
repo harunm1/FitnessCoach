@@ -34,6 +34,12 @@ export default defineConfig({
         SMTP_FROM: "FitnessCoach <noreply@example.test>",
         SMTP_USER: "",
         SMTP_PASSWORD: "",
+        // Browser fixtures must never inherit a developer's Stripe sandbox keys.
+        STRIPE_SECRET_KEY: "",
+        STRIPE_PRICE_ID: "",
+        STRIPE_MONTHLY_PRICE_ID: "",
+        STRIPE_YEARLY_PRICE_ID: "",
+        STRIPE_WEBHOOK_SECRET: "",
         NEXT_TELEMETRY_DISABLED: "1",
       },
     },

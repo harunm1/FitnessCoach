@@ -41,6 +41,7 @@ model User {
 
   sessions Session[]
   accounts Account[]
+  billing  BillingAccount?
 
   profile       Profile?
   plans         Plan[]
@@ -361,4 +362,27 @@ model RateLimit {
   key         String @unique
   count       Int
   lastRequest BigInt
+}
+
+// Stripe test-mode data. Trial dates remain on User as the one-time-use marker.
+model BillingAccount {
+  userId                  String    @id
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeCustomerId        String?   @unique
+  stripeSubscriptionId    String?   @unique
+  stripeCheckoutSessionId String?   @unique
+  checkoutAttempt         Int       @default(0)
+  status                  String?
+  stripePriceId           String?
+  paidUntil               DateTime?
+  cancelAtPeriodEnd       Boolean   @default(false)
+  lastSyncedAt            DateTime?
+  updatedAt               DateTime  @updatedAt
+}
+
+// Stored only after successful processing, in the same transaction as tier updates.
+model StripeWebhookEvent {
+  id          String   @id
+  type        String
+  processedAt DateTime @default(now())
 }
