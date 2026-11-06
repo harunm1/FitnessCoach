@@ -92,6 +92,16 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Did with it:** checked every line against `main` before committing. Three lines were wrong and I changed them. The draft said payments were out of scope, but Stripe test mode is a stretch in #14. It named Cloudflare R2, but the storage decision on `main` does not. It said the app plans without any key, but the code requires the first provider's key. I also corrected the status line: sign-in is on its branch, not in an open pull request.
 
+### 6 November 2026, photo storage on Cloudflare R2 and settled questions (issues #16, #7, #12, #8)
+
+**Before asking:** the architecture doc named DigitalOcean Spaces for progress photos, but Spaces has no free tier, and Farnaz proposed R2 in #16. I wanted the decision changed only if the pricing pages backed it, and the research doc's open questions closed where an issue had already settled them.
+
+**Asked:** what R2's and Spaces' pricing pages say today, and whether enabling R2 needs a payment method.
+
+**Got:** R2's free tier of 10 GB-month of Standard storage, 1 million Class A and 10 million Class B operations a month and free egress; Spaces at $5 a month with no free tier; and a teammate's report that the checkout step enabling R2 may ask for a payment method.
+
+**Did with it:** rechecked the R2 page on 6 November before committing, changed D3 and the diagram node to R2, and added a short storage section to the research doc. R2's get-started page shows the checkout step but does not mention a payment method, so the doc attributes that to the teammate's report. The README keeps its generic "S3-compatible bucket" wording, which stays true. I also closed the research doc's stale questions against the issues that settled them and pointed the plan's eval link at `main`.
+
 ### 6 November 2026, review before merging the coach pull requests (issues #11, #19, #34, #41, #43, #46)
 
 **Before asking:** my rule for my own pull requests is three days for the team to review, then an independent review of each diff against its issue, the tests and `docs/ENGINEERING_PRACTICES.md` before merging. I decided which findings block a merge: a safety rule that can be bypassed, a promise in the code or the issue that the code does not keep, and data the database can get wrong.
