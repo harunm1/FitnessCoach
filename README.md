@@ -127,6 +127,7 @@ checks, admin setup, and isolated database and browser tests. For Milestone 3
 Stripe test-mode Checkout, the billing portal and webhook setup, follow
 [the billing guide](docs/BILLING.md). Stripe settings are optional for free/trial
 access.
+
 ### Coach keys
 
 The coach reads its keys from `.env` (never committed). `COACH_PROVIDER` picks the provider that goes first (`groq` by default), and its key is required. If the other provider's key is also set, it becomes the fallback. `GROQ_MODEL` and `GEMINI_MODEL` override the default models.

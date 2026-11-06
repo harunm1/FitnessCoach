@@ -75,6 +75,7 @@ I worked on accounts, access tiers and Stripe test-mode billing, which meant the
 **Got:** an explanation of the Checkout and webhook flow. The main points were to verify payment on the server before granting PRO, refresh the account status after Checkout, and keep trial dates and ADMIN access intact. The review also brought up duplicate Checkout requests, cancellation, renewal and failed payments.
 
 **Did with it:** I configured the Stripe sandbox and wrote down the monthly and yearly requirements. When I tested a payment locally, the displayed tier didn't update, so I asked for a fix, automatic status refresh and clearer startup instructions. I used AI to help run checks and sandbox scenarios for purchase, cancellation and renewal. At the milestone review, 94 unit tests passed, along with formatting, lint and TypeScript checks. This is test-mode billing only, and connecting it to the quiz/session and coach screens is separate integration work.
+
 ### 27 October 2026, provider research before meeting 2 (issues #7, #22)
 
 **Before asking:** the architecture doc said Groq first, Gemini as fallback, on free-tier limits and data use. I wanted that checked against current pricing pages and against any evidence that an open-weight model is good enough for short structured output, so the meeting could decide on facts.
