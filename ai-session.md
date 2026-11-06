@@ -121,3 +121,13 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** a draft README with a dated status line, an owners table, the stack and layout, and the two subsections.
 
 **Did with it:** checked every line against `main` before committing. Three lines were wrong and I changed them. The draft said payments were out of scope, but Stripe test mode is a stretch in #14. It named Cloudflare R2, but the storage decision on `main` does not. It said the app plans without any key, but the code requires the first provider's key. I also corrected the status line: sign-in is on its branch, not in an open pull request.
+
+### 6 November 2026, Google Health Coach in Section 1 (issue #13)
+
+**Before asking:** Google's coach is the closest new competitor, so the motivation section had to name it, with a primary source for each claim and no growth in the word count.
+
+**Asked:** what Google's own pages say about Google Health Coach, and for an independent check of every claim and price in Section 1.
+
+**Got:** Google's support article: the coach is built with Gemini, gives personalized weekly fitness plans, and needs a Fitbit or Pixel Watch. The check confirmed the two studies and the prices, and found one wrong phrase: the adherence review lists personal characteristics, not individual circumstances.
+
+**Did with it:** added Google to the competitor sentence and the reference list, fixed the phrase and a dangling "Their", and shortened the last paragraph so the proposal stays at 2,000 words. The store page gave no readable text, so the citation is the support article.
