@@ -39,8 +39,8 @@ Running is built alongside lifting.
 
 - The shared Prisma schema and workout-plan JSON are agreed first; quiz, sessions and progress depend on schema and authentication.
 - Every Tuesday at 7 p.m., each member reports what they built, blockers and next steps. Questions, decisions and blockers stay on the related GitHub issue; Discord handles scheduling.
-- Team brainstorming settles design, informed by [RESEARCH.md](RESEARCH.md) and [COACH_EVAL.md](https://github.com/harunm1/FitnessCoach/blob/nabeegh/19-coach-eval/docs/COACH_EVAL.md).
-- One issue per task, one branch per issue, one feature or fix per PR with `Closes #n`, so review fits in one sitting. Code and proposal PRs need one teammate approval; proposal/documentation PRs request all teammates. Reviewers get three days; after that the author notes it on the PR and squash-merges. Meeting/admin notes may go directly to unprotected `main`.
+- Team brainstorming settles design, informed by [RESEARCH.md](RESEARCH.md) and [COACH_EVAL.md](https://github.com/harunm1/FitnessCoach/blob/main/docs/COACH_EVAL.md).
+- One issue per task, one branch per issue, one feature or fix per PR with `Closes #n`, so review fits in one sitting. Code PRs need one teammate approval. Documentation, proposal sections included, merges without review when there are no conflicts (meeting 3, 3 Nov): edits are committed directly, one commit per change naming the section owner, with one short note. Code reviewers get three days; after that the author notes it on the PR and squash-merges. Meeting/admin notes may go directly to unprotected `main`.
 - Branches merge weekly so the app runs together. Send no teammate more than three small, separate PRs daily. Squash and merge by default; use a merge commit for branches with multiple authors so their commits retain attribution.
 - CI runs formatting, lint, TypeScript checks, tests and build. We use the app ourselves as each piece lands.
 - Checkpoints: 15 Nov (core path), 21 Nov (integration review), 23 Nov (demo-feature freeze), 24–26 Nov (slides, rehearsals and live-demo tests). Development and polishing continue to the 6 Dec final report.
