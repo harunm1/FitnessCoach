@@ -34,12 +34,12 @@ Server Components read through Prisma, Server Actions write, and every query is 
 
 ### 2.4 Key design decisions
 
-| Decision                                      | Why it fits FitnessCoach                                                                                                                                   | Trade-off                                                               |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| The model picks exercise ids from our library | No invented exercises, none the user cannot do                                                                                                             | A long prompt: about one plan a minute on Groq's free tier (Groq, 2026) |
-| Running by rule, strength by the model        | Running progression is arithmetic; strength choice benefits from a model                                                                                   | Less varied running plans                                               |
-| Better Auth, not Auth0                        | Users and sessions stay in our database beside the tier (Better Auth, 2026)                                                                                | We run authentication ourselves                                         |
-| Groq first, Gemini as fallback                | In our [test](https://github.com/harunm1/FitnessCoach/blob/main/docs/COACH_EVAL.md) each free tier failed within ten requests; the chain served ten of ten | Two keys to manage                                                      |
+| Decision                               | Why it fits FitnessCoach                                                                                                                                   | Trade-off                                                               |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| The model picks only from our library  | No invented exercises, none the user cannot do                                                                                                             | A long prompt: about one plan a minute on Groq's free tier (Groq, 2026) |
+| Running by rule, strength by the model | Running progression is arithmetic; strength choice benefits from a model                                                                                   | Less varied running plans                                               |
+| Better Auth, not Auth0                 | Users and sessions stay in our database beside the tier (Better Auth, 2026)                                                                                | We run authentication ourselves                                         |
+| Groq first, Gemini as fallback         | In our [test](https://github.com/harunm1/FitnessCoach/blob/main/docs/COACH_EVAL.md) each free tier failed within ten requests; the chain served ten of ten | Two keys to manage                                                      |
 
 ### 2.5 Failure handling, error states and testing
 
@@ -54,7 +54,7 @@ A failure degrades one capability, never the whole app: without a model, users s
 | Malformed or unsafe plan         | Schema check, then the verifier (ids exist, equipment owned, injuries avoided, ranges, no duplicates, day count); one regeneration listing problems |
 | Out-of-scope or unsafe chat      | Rules in code: reported pain stops the exercise and suggests a professional; no diagnosis                                                           |
 
-Every model call is logged with provider, prompt version, latency and outcome. Vitest unit tests mock the network; CI runs format, lint, types, tests and build on every pull request, and will replay ten fixed coach profiles. From mid-November we pilot the demo path on a deployed preview and log what breaks as issues labelled `pilot`.
+Every model call will be logged with provider, prompt version, latency and outcome. Vitest unit tests mock the network; CI runs format, lint, types, tests and build on every pull request, and will replay ten fixed coach profiles. From mid-November we pilot the demo path on a deployed preview and log what breaks as issues labelled `pilot`.
 
 ### 2.6 How the required technologies are used
 
@@ -71,4 +71,4 @@ One planned extension, reported only if finished: **real-time** coach replies st
 
 ### 2.8 Scope and feasibility
 
-On `main`: the Next.js skeleton, Prisma schema and first migration, seeded library, CI, plan generation with the verifier, and provider fallback. Each area (accounts; quiz and session; progress and photos; coach) builds against the shared schema and merges weekly. Voice, camera form checks and payments are out of scope.
+On `main`: the Next.js skeleton, strength schema and first migration, seeded library, CI, plan generation with the verifier, and provider fallback. Each area (accounts; quiz and session; progress and photos; coach) builds against the shared schema and merges weekly. Voice, camera form checks and payments are out of scope.
