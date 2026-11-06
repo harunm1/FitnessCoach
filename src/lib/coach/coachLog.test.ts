@@ -117,6 +117,31 @@ describe("coach log", () => {
     });
   });
 
+  it("names the provider and model when a reply came back but was not JSON", async () => {
+    const collector = providerEventCollector();
+    const groq = vi
+      .fn<PlanModel>()
+      .mockRejectedValue(new Error("Groq reply was not valid JSON"));
+    const records: CoachRecord[] = [];
+    await generatePlan(
+      servedBy(groq, "Groq", "groq-test", collector.onEvent),
+      profile,
+      library,
+      {
+        log: (r) => {
+          records.push(r);
+        },
+        takeProviderEvents: collector.take,
+      },
+    );
+    expect(records[0]).toMatchObject({
+      outcome: "error",
+      provider: "Groq",
+      model: "groq-test",
+      providerEvents: [],
+    });
+  });
+
   it("never lets a failing sink break the request", async () => {
     await expect(
       writeRecord(

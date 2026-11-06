@@ -243,16 +243,25 @@ export function withFallback(
 }
 
 // Reports the provider and model that answered, so a log record can name them (#41).
+// A reply that arrived but would not parse also counts as answered: those are the
+// records most worth tracing. A ProviderError means no reply, so nothing is reported.
 export function servedBy(
   model: PlanModel,
   provider: string,
   modelName: string,
   onEvent?: (event: ProviderEvent) => void,
 ): PlanModel {
-  return async (prompt) => {
-    const reply = await model(prompt);
+  const served = () =>
     onEvent?.({ provider, action: "served", model: modelName });
-    return reply;
+  return async (prompt) => {
+    try {
+      const reply = await model(prompt);
+      served();
+      return reply;
+    } catch (e) {
+      if (!(e instanceof ProviderError)) served();
+      throw e;
+    }
   };
 }
 

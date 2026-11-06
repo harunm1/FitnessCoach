@@ -131,12 +131,14 @@ export async function generatePlan(
     } catch (e) {
       // A failed call or unparseable reply counts as a failed attempt.
       problems = ["the reply was not valid JSON for the plan shape"];
+      const { served, providerEvents } = splitServed(takeProviderEvents());
       await writeRecord(log, {
         ...base,
         attempt,
         latencyMs: now() - started,
         outcome: "error",
-        providerEvents: takeProviderEvents(),
+        ...served,
+        providerEvents,
         error: e instanceof Error ? e.message : String(e),
       });
       continue;
