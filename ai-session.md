@@ -101,3 +101,13 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** absolute GitHub links, a one-sentence list of the four stages, a one-clause fix in Section 1, and a merged list of five references.
 
 **Did with it:** checked every link target on `main` and both journal DOIs against Crossref before committing. The merged list saved fewer words than expected and the stages sentence pushed the total to 2,015, so I cut Section 2's demo-path sentence, which restated Section 3's core path and freeze date, and shortened the Figure 1 caption to the dashed lines only. After an independent review I also made three Section 2 claims match the code: the model picks by name from our library, the per-call log is planned, and only the strength part of the schema is on `main`. The proposal ends at about 1,990 words.
+
+### 6 November 2026, Stripe scope in the proposal (issues #13, #14)
+
+**Before asking:** I traced where "payments are out of scope" came from. It entered my own Section 2 during a word trim on 3 November, and no meeting decided it. The 27 October meeting kept Stripe off the core demo path, to be shown if ready by the freeze, and #14 still includes Stripe test mode. I fixed the four tiers first (free: quiz, rule-based plan, logging; trial: coach until the trial ends; pro: coach, set by an admin or by Stripe test mode if built; admin: the library) and checked the architecture doc already agreed.
+
+**Asked:** for wording that restores Stripe as a stretch in Sections 1 and 2 without adding to the word count.
+
+**Got:** the two sentences, and cuts elsewhere in Section 2 that repeat Section 3 or the failure table.
+
+**Did with it:** kept the edits to my section and one clause in Section 1, each in its own commit with the meeting cited. The proposal stays at about 1,990 words. Section 4 still says Stripe payments moved out of scope, so I asked its author to choose the wording rather than change it myself.
