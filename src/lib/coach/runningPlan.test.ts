@@ -136,3 +136,24 @@ describe("verifyRunningPlan", () => {
     expect(result.ok).toBe(false);
   });
 });
+
+describe("weeklyCapKm", () => {
+  const base: RunProfile = {
+    runDaysPerWeek: 3,
+    activityLevel: "LIGHT",
+    lastWeekKm: null,
+    easyPaceSecPerKm: null,
+  };
+  it.each([
+    [0.1, 1],
+    [0.9, 1],
+    [1, 1.1],
+    [20, 22],
+  ])("after %s km logged allows %s km", (lastWeekKm, cap) => {
+    expect(weeklyCapKm({ ...base, lastWeekKm })).toBe(cap);
+  });
+
+  it("uses the starting volume when nothing is logged", () => {
+    expect(weeklyCapKm(base)).toBe(STARTING_WEEK_KM.LIGHT);
+  });
+});
