@@ -121,3 +121,33 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** a draft README with a dated status line, an owners table, the stack and layout, and the two subsections.
 
 **Did with it:** checked every line against `main` before committing. Three lines were wrong and I changed them. The draft said payments were out of scope, but Stripe test mode is a stretch in #14. It named Cloudflare R2, but the storage decision on `main` does not. It said the app plans without any key, but the code requires the first provider's key. I also corrected the status line: sign-in is on its branch, not in an open pull request.
+
+### 6 November 2026, photo storage on Cloudflare R2 and settled questions (issues #16, #7, #12, #8)
+
+**Before asking:** the architecture doc named DigitalOcean Spaces for progress photos, but Spaces has no free tier, and Farnaz proposed R2 in #16. I wanted the decision changed only if the pricing pages backed it, and the research doc's open questions closed where an issue had already settled them.
+
+**Asked:** what R2's and Spaces' pricing pages say today, and whether enabling R2 needs a payment method.
+
+**Got:** R2's free tier of 10 GB-month of Standard storage, 1 million Class A and 10 million Class B operations a month and free egress; Spaces at $5 a month with no free tier; and a teammate's report that the checkout step enabling R2 may ask for a payment method.
+
+**Did with it:** rechecked the R2 page on 6 November before committing, changed D3 and the diagram node to R2, and added a short storage section to the research doc. R2's get-started page shows the checkout step but does not mention a payment method, so the doc attributes that to the teammate's report. The README keeps its generic "S3-compatible bucket" wording, which stays true. I also closed the research doc's stale questions against the issues that settled them and pointed the plan's eval link at `main`.
+
+### 6 November 2026, Google Health Coach in Section 1 (issue #13)
+
+**Before asking:** Google's coach is the closest new competitor, so the motivation section had to name it, with a primary source for each claim and no growth in the word count.
+
+**Asked:** what Google's own pages say about Google Health Coach, and for an independent check of every claim and price in Section 1.
+
+**Got:** Google's support article: the coach is built with Gemini, gives personalized weekly fitness plans, and needs a Fitbit or Pixel Watch. The check confirmed the two studies and the prices, and found one wrong phrase: the adherence review lists personal characteristics, not individual circumstances.
+
+**Did with it:** added Google to the competitor sentence and the reference list, fixed the phrase and a dangling "Their", and shortened the last paragraph so the proposal stays at 2,000 words. The store page gave no readable text, so the citation is the support article.
+
+### 6 November 2026, Future's price in Section 1 (issue #13)
+
+**Before asking:** the review of Section 1 found Future's $149 figure only in an old Future blog post and a competitor's review. I wanted the price taken from Future's own site.
+
+**Asked:** what Future's homepage states as its price today.
+
+**Got:** "$50 first month, then $199/month", with no $149 or annual rate on the page.
+
+**Did with it:** changed the range to $199 per month in Section 1 and the combined file; the word count did not change.
