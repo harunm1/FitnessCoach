@@ -1,28 +1,25 @@
 # FitnessCoach
 
-A web app that turns a short quiz into a gym plan the user can trust, with an AI coach that explains each exercise and answers questions when a movement feels wrong.
+A web app that turns a short quiz into a weekly gym, running or hybrid plan the user can trust, with an AI coach that explains each exercise and answers questions about the user's own plan.
 
 Team project for ECE1724 Advanced Web Development, University of Toronto, Fall 2026.
 
-**Status:** proposal drafting; tooling merged; schema and coach logic on feature branches. Proposal due **Sunday 8 November**, section drafts by Sunday 1 November. Architecture and plan in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/PLAN.md](docs/PLAN.md); research behind the choices in [docs/RESEARCH.md](docs/RESEARCH.md); meeting notes in [docs/meetings/](docs/meetings/).
+**Status (6 November):** proposal finalising on the `docs/final-proposal` branch (#62), due Sunday 8 November. On `main`: the Next.js skeleton, Prisma schema and first migration, the seeded exercise library, CI, and the coach's plan generation with the verifier and Groq-to-Gemini fallback. Running plans, coach chat, guardrails, coach logging, the deployed preview and the session screen are in open pull requests; sign-in is on its branch (#14). Core path working end to end by Sunday 15 November; demo-feature freeze Monday 23 November.
+
+Architecture and decisions: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Plan and dates: [docs/PLAN.md](docs/PLAN.md). Research behind the choices: [docs/RESEARCH.md](docs/RESEARCH.md). Coach evaluation, Groq against Gemini: [docs/COACH_EVAL.md](docs/COACH_EVAL.md). Meeting notes: [docs/meetings/](docs/meetings/).
 
 ## Who does what
 
-| Area                                                               | Owner                  | Issue |
-| ------------------------------------------------------------------ | ---------------------- | ----- |
-| Proposal 1, Motivation (about 350 words)                           | Mohammad               | #3    |
-| Proposal 2, Objectives, architecture, features (about 900 words)   | Nabeegh                | #4    |
-| Proposal 3, Plan and responsibilities (about 300 words)            | Shubham, with everyone | #5    |
-| Proposal 4, Initial reasoning and AI exploration (about 300 words) | Farnaz                 | #6    |
-| Foundation: schema, seed, CI                                       | Nabeegh                | #2    |
-| AI coach, including running plans                                  | Nabeegh                | #11   |
-| Quiz, body map, today's session                                    | Mohammad               | #15   |
-| Progress and photos (cloud upload and download)                    | Farnaz                 | #16   |
-| Accounts: sign-in, tiers, Stripe test mode                         | Shubham                | #14   |
+| Area                                               | Owner    | Issue |
+| -------------------------------------------------- | -------- | ----- |
+| Foundation: schema, seed, CI (done)                | Nabeegh  | #2    |
+| AI coach, including running plans                  | Nabeegh  | #11   |
+| Quiz, body map, today's session                    | Mohammad | #15   |
+| Progress and photos (cloud upload and download)    | Farnaz   | #16   |
+| Accounts: sign-in, access tiers, Stripe test mode  | Shubham  | #14   |
+| Proposal (one Markdown file, every member submits) | Everyone | #13   |
 
-The proposal is one Markdown file, 2,000 words at most; each owner commits their own section, and every member submits the same file on Quercus (#13).
-
-**Demo path:** sign-in, quiz, plan, logged workout, coach. Everything else adds to it and must not break it. Core path working end to end by Sunday 15 November; demo-feature freeze Monday 23 November.
+**Demo path:** sign-in, quiz, plan, logged workout, one coach exchange. Everything else adds to it and must not break it. Stripe test mode is a stretch off the demo path, shown if ready by the freeze.
 
 ## Team
 
@@ -40,22 +37,21 @@ The proposal is one Markdown file, 2,000 words at most; each owner commits their
 | App      | Next.js App Router, TypeScript (Server Components, Server Actions, route handlers) |
 | UI       | Tailwind CSS, shadcn/ui, mobile-first                                              |
 | Data     | PostgreSQL with Prisma                                                             |
-| Files    | Private S3-compatible bucket; provider chosen in #16                               |
+| Files    | Private S3-compatible bucket (D3, #16)                                             |
 | Auth     | Better Auth                                                                        |
-| AI       | Groq first, Gemini as fallback (D4); both tested on the same profiles (#7)         |
-| Payments | Stripe in test mode                                                                |
+| AI       | Groq first, Gemini as fallback, rule-based plan if both fail (D4, D6)              |
+| Payments | Stripe in test mode, a stretch off the demo path (#14)                             |
 
 ## Repository layout
 
 ```
-src/app/          pages and route handlers
-src/components/   UI components
-src/lib/          auth, database client, AI client, storage client
-prisma/           schema and migrations
-docs/             architecture, plan, research, meetings
+src/app/          pages; Server Actions and route handlers as they land
+src/lib/coach/    plan generation, providers, verifier, rule-based fallback
+src/lib/          database client, auth and storage clients as they land
+prisma/           schema, migrations and seed
+docs/             architecture, plan, research, coach evaluation, meetings, proposal section drafts
+ece1724_group18_project_proposal.md   final proposal (submitted on Quercus)
 ```
-
-Lands with the skeleton; until then only `docs/` exists.
 
 ## Local Development
 
@@ -111,6 +107,28 @@ all local PostgreSQL data; run migrations and seeding again after starting it:
 
 ```bash
 docker compose down -v
+```
+
+### Coach keys
+
+The coach reads its keys from `.env` (never committed). `COACH_PROVIDER` picks the provider that goes first (`groq` by default), and its key is required. If the other provider's key is also set, it becomes the fallback. `GROQ_MODEL` and `GEMINI_MODEL` override the default models.
+
+```dotenv
+COACH_PROVIDER="groq"
+GROQ_API_KEY=""     # console.groq.com/keys
+GEMINI_API_KEY=""   # aistudio.google.com/apikey
+```
+
+### Checks
+
+The same checks CI runs on every pull request:
+
+```bash
+npm run format:check
+npm run lint
+npm run typecheck
+npm test
+npm run build
 ```
 
 ## How we work
