@@ -40,7 +40,7 @@ Reads go through Prisma's typed client from Server Components; writes go through
 | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | The model picks exercise ids from our library | It cannot invent an exercise or prescribe one the user cannot do                                                                      | The library fills the prompt: one plan a minute per account on Groq's free tier (Groq, 2026) |
 | Running by rule; strength by the model        | Running progressions are arithmetic; strength choices benefit from the model                                                          | Less variety in running plans                                                                |
-| Better Auth, not Auth0                        | Users and sessions stay in our PostgreSQL beside the tier                                                                             | We run authentication ourselves                                                              |
+| Better Auth, not Auth0                        | Users and sessions stay in our PostgreSQL beside the tier (Better Auth, 2026)                                                         | We run authentication ourselves                                                              |
 | Groq first, Gemini as fallback                | In our test ([COACH_EVAL.md](../COACH_EVAL.md)) each free tier failed within ten requests; the chain served ten verified plans of ten | Two keys to manage                                                                           |
 
 ### 2.5 Failure handling, error states and testing
@@ -56,7 +56,7 @@ A failure degrades one capability, never the whole app: without a model provider
 | Malformed or unsafe plan         | Schema check, then the verifier (ids exist, equipment owned, injuries avoided, ranges, no duplicates, day count); one regeneration with the problems listed |
 | Out-of-scope or unsafe chat      | Rules in code, not the prompt: reported pain stops the exercise and suggests a professional; the coach does not diagnose                                    |
 
-Every model call is logged with provider, prompt version, latency and outcome. Testing runs from the first commit: Vitest unit tests with the network mocked, CI (format, lint, types, tests, build) on every pull request, and ten fixed coach profiles replayed in CI. From mid-November we use the app at the gym and log what breaks.
+Every model call is logged with provider, prompt version, latency and outcome. Testing runs from the first commit: Vitest unit tests with the network mocked, CI (format, lint, types, tests, build) on every pull request, and ten fixed coach profiles replayed in CI. From mid-November we pilot the demo path on a deployed preview and log what breaks as issues labelled `pilot`.
 
 ### 2.6 How the required technologies are used
 
@@ -74,13 +74,15 @@ We commit to two:
 1. **Authentication and authorization.** Better Auth sign-in, with four tiers checked on the server in every Server Action and route handler: free (plans and logging), trial, pro (adds the coach chat), admin (edits the exercise library).
 2. **Integration with an external AI API.** The coach writes strength plans and answers chat through Groq with Gemini as fallback, behind the verifier; its plans land in the tables the session screen reads.
 
-One planned extension, reported as finished only if it is: **real-time** coach replies streamed token by token.
+One planned extension, reported as finished only if it is: **real-time** coach replies streamed a sentence at a time, each sentence checked before it is shown.
 
 ### 2.8 Scope and feasibility
 
-We have started: the Next.js skeleton, the Prisma schema and first migration, the seeded library, CI, and plan generation with the verifier are on `main`, and the provider layer is in review with 32 tests. Each area (accounts; quiz and session; progress and photos; coach) builds against the shared schema and merges weekly. Voice, camera form checks and payments are out of scope. Demo features freeze on 23 November; the demo path is sign-in, quiz, plan, a logged workout and one coach exchange.
+We have started: the Next.js skeleton, the Prisma schema and first migration, the seeded library, CI, plan generation with the verifier, and the provider layer with retries and fallback are on `main`. Each area (accounts; quiz and session; progress and photos; coach) builds against the shared schema and merges weekly. Voice, camera form checks and payments are out of scope. Demo features freeze on 23 November; the demo path is sign-in, quiz, plan, a logged workout and one coach exchange.
 
 ### References
+
+Better Auth. (2026). _Prisma_ [Documentation]. https://www.better-auth.com/docs/adapters/prisma
 
 Groq. (2026). _Rate limits_ [Documentation]. GroqCloud. https://console.groq.com/docs/rate-limits
 

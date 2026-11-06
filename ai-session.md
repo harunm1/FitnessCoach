@@ -71,3 +71,13 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** both recommend exponential backoff with jitter on 429 and 5xx and no retry on 400-class errors; Gemini puts `retryDelay` in the 429 body and Groq sends `x-ratelimit-reset-tokens` rather than `Retry-After` on a tokens-per-minute limit (found by reading the headers, not from the AI, which had assumed `Retry-After`); names grouped by muscle cost about 40% fewer tokens than one `id (muscles)` line per exercise.
 
 **Did with it:** wrote `withRetry` and `withFallback` with fourteen more tests, then reran the eval. Round 2 found three real faults the AI's first version had not predicted: the model returns near misses of library names ("Standing Calf Raise" for "Standing Calf Raises"), copies the group label into the name, and writes a plank as 60 reps. Each got a code or prompt fix and a test, and the production chain then served 10 of 10 plans with no rule-based fallback while absorbing nine Groq rate limits. Gemini 3.5 Flash's free tier ran out at 20 requests during the run, so the fallback is Flash-Lite. Results and the trade-offs table are in `docs/COACH_EVAL.md`.
+
+### 3 November 2026, running weeks, hybrid split, guardrails, logging and chat (issues #34, #41, #43, #46, #11)
+
+**Before asking:** I set the rules the code had to follow. Runners keep strength days for injury prevention. A strength or muscle goal leans to strength days, and fat loss or a race leans to runs. A week grows at most 10% over last week's logged distance. Pain, not soreness, stops an exercise, and the coach never diagnoses. Every model call leaves a record we can read back for the final report.
+
+**Asked:** for help structuring those rules as small TypeScript modules behind the existing verifier, and for edge cases the tests should cover.
+
+**Got:** a module layout that keeps each rule in its own file, and test ideas, including a loop over every history from 1 to 60 km and every week from 1 to 7 days, which caught two weeks that went over the cap.
+
+**Did with it:** reviewed each module against the rules above and ran the tests, typecheck and lint before each pull request (#45, #47, #48, #49, #53, #54). Saving a week once to a real PostgreSQL (PGlite with all migrations) showed that in a two- or three-run week the long run came out shorter than the easy run; the unit tests had passed because none checked it. I changed the shares and added a test that the long run is the longest for two to five run days. I checked the Groq free-tier limits cited in Section 2 against Groq's own rate-limits page.

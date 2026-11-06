@@ -4,7 +4,7 @@ Proposed for the next team meeting, not agreed. Each one is chosen for how Fitne
 
 1. **Small commits every week.** A few small commits a week per person rather than one large push before a checkpoint. The course reads contribution from the Git history, and problems with environment variables or Prisma migrations on the hosted database show up the week they are introduced.
 
-2. **Core path first.** Sign-in, quiz, plan and a logged workout working end to end by the 14 November checkpoint, before photos, Stripe or Redux. Those stay planned in [PLAN.md](PLAN.md) but are not built in parallel with the core.
+2. **Core path first.** Sign-in, quiz, plan and a logged workout working end to end by the 15 November checkpoint, before photos, Stripe or Redux. Those stay planned in [PLAN.md](PLAN.md) but are not built in parallel with the core.
 
 3. **One schema per boundary.** A Zod schema for every Server Action input, route handler body and the coach's plan JSON; Prisma types for what is stored. The coach is asked for structured output against the same plan schema, so a malformed reply is rejected before it reaches the verifier, the UI or the database.
 
