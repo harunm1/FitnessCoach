@@ -10,6 +10,10 @@
 //     with the problems listed, then uses the rule-based plan.
 // Trade-offs and measurements: docs/COACH_EVAL.md, round 2.
 import type { PlanModel } from "./generatePlan";
+import type { ChatMessage } from "./guardrails";
+
+// The chat side of the coach: given the conversation, return the reply text.
+export type ChatModel = (messages: ChatMessage[]) => Promise<string>;
 
 export const GROQ_MODEL = "openai/gpt-oss-120b";
 export const GEMINI_MODEL = "gemini-3.5-flash";
@@ -170,6 +174,55 @@ export function geminiModel(apiKey: string, model = GEMINI_MODEL): PlanModel {
   };
 }
 
+function replyText(provider: string, text: unknown): string {
+  if (typeof text !== "string" || text.trim() === "") {
+    throw new Error(`${provider} reply had no text`);
+  }
+  return text.trim();
+}
+
+// Chat replies are plain text, so no JSON mode. The system prompt stays the first
+// message (Groq) or the systemInstruction (Gemini); user text is never merged into it.
+export function groqChat(apiKey: string, model = GROQ_MODEL): ChatModel {
+  return async (messages) => {
+    const data = (await postJson(
+      "Groq",
+      GROQ_URL,
+      { Authorization: `Bearer ${apiKey}` },
+      { model, messages, reasoning_effort: "low" },
+    )) as { choices?: { message?: { content?: unknown } }[] };
+    return replyText("Groq", data.choices?.[0]?.message?.content);
+  };
+}
+
+export function geminiChat(apiKey: string, model = GEMINI_MODEL): ChatModel {
+  return async (messages) => {
+    const system = messages.find((m) => m.role === "system");
+    const data = (await postJson(
+      "Gemini",
+      geminiUrl(model),
+      { "x-goog-api-key": apiKey },
+      {
+        ...(system && {
+          systemInstruction: { parts: [{ text: system.content }] },
+        }),
+        contents: messages
+          .filter((m) => m.role !== "system")
+          .map((m) => ({
+            role: m.role === "assistant" ? "model" : "user",
+            parts: [{ text: m.content }],
+          })),
+      },
+    )) as {
+      candidates?: {
+        content?: { parts?: { text?: unknown; thought?: boolean }[] };
+      }[];
+    };
+    const parts = data.candidates?.[0]?.content?.parts ?? [];
+    return replyText("Gemini", parts.find((p) => !p.thought)?.text);
+  };
+}
+
 export type ProviderEvent = {
   provider: string;
   action: "retry" | "fallback" | "served";
@@ -192,8 +245,8 @@ const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 // troubleshooting guide recommends for 429 and 503. A Retry-After from the provider
 // wins when it is short; when it is longer than maxDelayMs the error is passed on, so
 // the user isn't left waiting while the other provider is free.
-export function withRetry(
-  model: PlanModel,
+export function withRetry<A, R>(
+  model: (input: A) => Promise<R>,
   {
     retries = 2,
     baseDelayMs = 1_000,
@@ -201,11 +254,11 @@ export function withRetry(
     sleep = wait,
     onEvent,
   }: RetryOptions = {},
-): PlanModel {
-  return async (prompt) => {
+): (input: A) => Promise<R> {
+  return async (input) => {
     for (let attempt = 0; ; attempt++) {
       try {
-        return await model(prompt);
+        return await model(input);
       } catch (e) {
         if (!(e instanceof ProviderError) || !e.retryable || attempt >= retries)
           throw e;
@@ -226,18 +279,18 @@ export function withRetry(
 
 // Tries the second provider when the first fails at the transport level. A reply
 // that isn't valid JSON is not a provider outage, so it goes back to generatePlan.
-export function withFallback(
-  primary: PlanModel,
-  fallback: PlanModel,
+export function withFallback<A, R>(
+  primary: (input: A) => Promise<R>,
+  fallback: (input: A) => Promise<R>,
   onEvent?: (event: ProviderEvent) => void,
-): PlanModel {
-  return async (prompt) => {
+): (input: A) => Promise<R> {
+  return async (input) => {
     try {
-      return await primary(prompt);
+      return await primary(input);
     } catch (e) {
       if (!(e instanceof ProviderError)) throw e;
       onEvent?.({ provider: e.provider, action: "fallback", status: e.status });
-      return fallback(prompt);
+      return fallback(input);
     }
   };
 }
@@ -245,17 +298,17 @@ export function withFallback(
 // Reports the provider and model that answered, so a log record can name them (#41).
 // A reply that arrived but would not parse also counts as answered: those are the
 // records most worth tracing. A ProviderError means no reply, so nothing is reported.
-export function servedBy(
-  model: PlanModel,
+export function servedBy<A, R>(
+  model: (input: A) => Promise<R>,
   provider: string,
   modelName: string,
   onEvent?: (event: ProviderEvent) => void,
-): PlanModel {
+): (input: A) => Promise<R> {
   const served = () =>
     onEvent?.({ provider, action: "served", model: modelName });
-  return async (prompt) => {
+  return async (input) => {
     try {
-      const reply = await model(prompt);
+      const reply = await model(input);
       served();
       return reply;
     } catch (e) {
@@ -273,13 +326,19 @@ function requireKey(env: Env, name: string): string {
   return key;
 }
 
-// Builds the coach's model from the environment: the provider named by COACH_PROVIDER
-// (Groq by default, D4 in docs/ARCHITECTURE.md) with retries, then the other provider
-// with retries when its key is also set.
-export function coachModel(
-  env: Env = process.env,
-  options: RetryOptions = {},
-): PlanModel {
+type Makers<M> = {
+  groq: (key: string, model?: string) => M;
+  gemini: (key: string, model?: string) => M;
+};
+
+// The provider named by COACH_PROVIDER (Groq by default, D4 in docs/ARCHITECTURE.md)
+// with retries, then the other provider with retries when its key is also set. Used
+// for both plans and chat, so the two always follow the same order.
+function chain<A, R>(
+  env: Env,
+  options: RetryOptions,
+  makers: Makers<(input: A) => Promise<R>>,
+): (input: A) => Promise<R> {
   const lead = (env.COACH_PROVIDER ?? "groq").trim().toLowerCase();
   if (lead !== "groq" && lead !== "gemini") {
     throw new Error(`COACH_PROVIDER must be groq or gemini, not "${lead}"`);
@@ -292,7 +351,7 @@ export function coachModel(
         : env.GEMINI_MODEL || GEMINI_MODEL;
     return servedBy(
       withRetry(
-        name === "groq" ? groqModel(key, id) : geminiModel(key, id),
+        name === "groq" ? makers.groq(key, id) : makers.gemini(key, id),
         options,
       ),
       name === "groq" ? "Groq" : "Gemini",
@@ -307,4 +366,18 @@ export function coachModel(
   return otherKey
     ? withFallback(primary, build(other, otherKey), options.onEvent)
     : primary;
+}
+
+export function coachModel(
+  env: Env = process.env,
+  options: RetryOptions = {},
+): PlanModel {
+  return chain(env, options, { groq: groqModel, gemini: geminiModel });
+}
+
+export function coachChatModel(
+  env: Env = process.env,
+  options: RetryOptions = {},
+): ChatModel {
+  return chain(env, options, { groq: groqChat, gemini: geminiChat });
 }
