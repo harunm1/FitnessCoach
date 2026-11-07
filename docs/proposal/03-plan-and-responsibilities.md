@@ -14,7 +14,7 @@ Nabeegh owns the architecture, research and coach evaluation, foundation (schema
 
 Every Tuesday at 7 p.m., each member reports what they built, blockers and next steps. Questions, decisions and blockers stay on related GitHub issues; Discord handles scheduling. Team brainstorming, informed by our [research](https://github.com/harunm1/FitnessCoach/blob/main/docs/RESEARCH.md) and [coach evaluations](https://github.com/harunm1/FitnessCoach/blob/main/docs/COACH_EVAL.md), settles design.
 
-The shared Prisma schema, workout-plan JSON and authentication are the critical path: signed-in quiz, session and progress integration depends on them. Each task has an issue, branch and PR with `Closes #n`, covering one feature or fix for review in one sitting. Code PRs need one teammate approval; documentation merges without review when conflict-free. No teammate receives more than three small, separate PRs daily. Branches merge weekly so the app runs together. CI runs formatting, lint, TypeScript checks, tests and build.
+The shared Prisma schema, workout-plan JSON and authentication are the critical path: signed-in quiz, session and progress integration depends on them. Each task has an issue, branch and PR with `Closes #n`, covering one feature or fix for review in one sitting. Code PRs need one teammate approval, or merge after three days without review; documentation merges without review when conflict-free. No teammate receives more than three small, separate PRs daily. Branches merge weekly so the app runs together. CI runs formatting, lint, TypeScript checks, tests and build.
 
 ### 3.4 Risks and Scope
 
