@@ -190,3 +190,41 @@ describe("coachReply safety screen (D15)", () => {
     expect(turn).toEqual({ reply: "Keep it easy today.", source: "COACH" });
   });
 });
+
+describe("coachReply over-long messages", () => {
+  it("still gives the crisis reply when a long message holds crisis wording", async () => {
+    const model = vi.fn<ChatModel>();
+    const text =
+      "I don't know how to say this. ".repeat(40) + "I want to end it all.";
+    expect(text.length).toBeGreaterThan(1000);
+    const turn = await coachReply(model, ctx, [], text);
+    expect(turn).toEqual({ reply: REPLIES.CRISIS, source: "GUARDRAIL" });
+    expect(model).not.toHaveBeenCalled();
+  });
+
+  it("still gives the red-flag reply when a long message starts with a symptom", async () => {
+    const model = vi.fn<ChatModel>();
+    const text =
+      "I had chest pain on the last interval. " + "and then ".repeat(150);
+    const turn = await coachReply(model, ctx, [], text);
+    expect(turn).toEqual({ reply: REPLIES.RED_FLAG, source: "GUARDRAIL" });
+  });
+
+  it("accepts exactly 1,000 characters and refuses 1,001", async () => {
+    const model = vi.fn<ChatModel>().mockResolvedValue("Fine.");
+    const ok = await coachReply(
+      model,
+      ctx,
+      [],
+      "squat ".repeat(167).slice(0, 1000),
+    );
+    expect(ok.source).toBe("COACH");
+    const long = await coachReply(
+      model,
+      ctx,
+      [],
+      "squat ".repeat(167).slice(0, 1001) + "x",
+    );
+    expect(long).toEqual({ reply: TOO_LONG_REPLY, source: "GUARDRAIL" });
+  });
+});

@@ -394,10 +394,16 @@ describe("chat providers", () => {
         }),
       );
     vi.stubGlobal("fetch", fn);
+    const onEvent = vi.fn();
     const chat = coachChatModel(
       { GROQ_API_KEY: KEY, GEMINI_API_KEY: KEY },
-      { retries: 0 },
+      { retries: 0, onEvent },
     );
     expect(await chat(messages)).toBe("From Gemini.");
+    // Chat reports which provider served the reply, the same way plans do.
+    expect(onEvent.mock.calls.map((c) => c[0])).toEqual([
+      { provider: "Groq", action: "fallback", status: 429 },
+      { provider: "Gemini", action: "served", model: GEMINI_MODEL },
+    ]);
   });
 });

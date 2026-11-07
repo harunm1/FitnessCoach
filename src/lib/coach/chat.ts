@@ -43,8 +43,10 @@ export type CoachContext = {
 export const MAX_MESSAGE_CHARS = 1000;
 export const MAX_HISTORY_MESSAGES = 12;
 
+const SAFETY_ACTIONS = new Set(["CRISIS", "RED_FLAG", "CHECK_IN"]);
+
 export const TOO_LONG_REPLY =
-  "That message is too long for the coach. Please keep it under 1,000 characters and ask one thing at a time.";
+  "That message is too long for the coach. Please keep it to 1,000 characters or fewer and ask one thing at a time.";
 export const EMPTY_REPLY =
   "Ask me anything about your plan, today's session, running or recovery.";
 
@@ -88,7 +90,14 @@ export async function coachReply(
   const text = userText.trim();
   if (text === "") return { reply: EMPTY_REPLY, source: "GUARDRAIL" };
   if (text.length > MAX_MESSAGE_CHARS) {
-    return { reply: TOO_LONG_REPLY, source: "GUARDRAIL" };
+    // Too long to answer, but never too long to screen: the start and the end are
+    // checked (a bounded input), so a long message that ends in crisis wording or
+    // starts with a symptom still gets the safety reply.
+    const ends = `${text.slice(0, MAX_MESSAGE_CHARS)} … ${text.slice(-MAX_MESSAGE_CHARS)}`;
+    const safety = await screenUserMessage(ends, classify);
+    return SAFETY_ACTIONS.has(safety.action) && safety.action !== "ALLOW"
+      ? { reply: safety.reply, source: "GUARDRAIL" }
+      : { reply: TOO_LONG_REPLY, source: "GUARDRAIL" };
   }
   const recent = history.slice(-MAX_HISTORY_MESSAGES).map((m) => ({
     ...m,
