@@ -42,6 +42,28 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Did with it:** wrote `generatePlan.ts`, `defaultPlan.ts` and three tests (pass first time, retry with the problems in the prompt, fallback that passes the verifier). Nine tests pass in total.
 
+## Mohammad
+
+### 31 October 2026, onboarding quiz validation edge cases
+
+**Before asking:** the quiz schema already constrained training days to 1–7, goal and level to Prisma enums, equipment to the supported exercise-library values, and injury notes to 500 characters. The existing tests covered a valid form payload, missing equipment, and an out-of-range schedule, but not the boundaries or malformed values.
+
+**Asked:** what edge cases should be added to `schema.test.ts` based on the current quiz schema.
+
+**Got:** suggestions to test both valid day-count boundaries, invalid fractional and non-numeric day counts, unknown goal and level values, unsupported equipment, and injury notes at and over the length limit.
+
+**Did with it:** checked each suggestion against the schema instead of treating the list as requirements, added the applicable cases, and ran the focused Vitest file. An initial test run exposed that Vitest did not resolve the schema's `@/` alias, so I changed that import to a relative path. The focused tests passed (11/11), and the full suite passed (12/12).
+
+### 1 November 2026, rest timer UI
+
+**Before asking:** the rest timer countdown worked, but its state changes were subtle and users could think the button did nothing.
+
+**Asked:** how to make the timer's running, paused, and completed states clearer and more visually noticeable.
+
+**Got:** suggestions to give the countdown stronger visual emphasis and display a clear status label as it changes state.
+
+**Did with it:** updated the timer to highlight while running and show explicit “Resting”, “Paused”, and “Rest complete” states; verified in the browser that clicking Start rest changes the button to Pause timer and the countdown decreases. Styled the UI with Tailwind utility classes. No shadcn/ui components were used.
+
 ### 27 October 2026, provider research before meeting 2 (issues #7, #22)
 
 **Before asking:** the architecture doc said Groq first, Gemini as fallback, on free-tier limits and data use. I wanted that checked against current pricing pages and against any evidence that an open-weight model is good enough for short structured output, so the meeting could decide on facts.
