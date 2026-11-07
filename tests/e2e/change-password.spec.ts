@@ -178,6 +178,7 @@ test("the password dialog traps focus and clears sensitive fields on cancel", as
     await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
     await expect(dialog).not.toBeVisible();
     await trigger.click();
+    await expect(dialog).toBeVisible();
     await page.mouse.click(5, 5);
     await expect(dialog).not.toBeVisible();
   });
