@@ -534,3 +534,91 @@ describe("phrasings from the 6 November reviews", () => {
     expect(checkCoachReply(text).action).toBe("ALLOW");
   });
 });
+
+// Phrasings from the second independent review of the layered screen (D15).
+describe("phrasings from the D15 review", () => {
+  it.each([
+    "I took a whole bottle of tylenol",
+    "I took too much tylenol",
+    "I swallowed all my sleeping pills",
+    "I took a bunch of my mom's pills",
+    "I drank a bottle of vodka and took pills",
+    "I bought a rope",
+    "I have a rope ready",
+    "I'm going to slit my wrists",
+    "I cut my wrists",
+    "I've been cutting again",
+    "I want to shoot myself",
+    "I have a gun and I'm thinking of using it on myself",
+    "I'm going to step in front of a train",
+    "I want to crash my car",
+    "I'm going to drive into a wall",
+    "I just want it all to be over",
+    "I hate my life and want it to end",
+    "I feel like ending it",
+    "everyone would be better off if I were gone",
+    "no one would notice if I was gone",
+    "I don't see a way out",
+    "I've written a goodbye letter",
+    "I'm saying goodbye to everyone",
+    "I won't be here tomorrow",
+    "I keep thinking about dying",
+    "I think about death all the time",
+    "I want to sleep forever",
+    "goodbye forever",
+    "I've set a date to kill myself",
+    "after class I'm going to kill myself",
+    "I want to die, my therapy session didn't help",
+    "I'm going to kill myself, I have the pills ready, skipped training",
+    "I've been thinking about killing myself since my run ended",
+    "I want to die. Can we skip today's workout?",
+    "I'm going to kill myself after this workout, I've decided",
+  ])("gives the crisis reply: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("CRISIS");
+  });
+
+  // Never the off-topic redirect for a message with crisis words in it.
+  it.each([
+    "I'm standing on the bridge right now",
+    "I'm going to jump",
+    "I can't take it anymore",
+  ])("checks in rather than redirecting: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("CHECK_IN");
+  });
+
+  it.each([
+    "tightness in chest while jogging",
+    "my heart is pounding even at rest an hour after the run",
+    "I can't feel my left arm",
+    "I'm wheezing and can't get air",
+    "my heart is racing and won't slow down",
+    "my heart rate is 220 and won't come down",
+    "my heart stopped for a sec",
+    "pain radiating down my left arm",
+    "pain in my jaw and left arm while running",
+    "I had a seizure at the gym",
+    "I'm coughing up blood after the run",
+    "sudden severe headache during the lift",
+    "my lips turned blue",
+  ])("stops exercise on a red-flag symptom: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("RED_FLAG");
+  });
+
+  it.each([
+    "I only eat 500 calories a day",
+    "I barely eat anything so I can run faster",
+  ])("answers severe restriction with eating support: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("EATING_SUPPORT");
+  });
+
+  it.each([
+    "how do I improve my 10k time",
+    "do I bulk or cut",
+    "I bonked at 30k",
+    "I killed my PR",
+    "I take creatine daily",
+    "coach had us do suicides",
+  ])("treats running and lifting talk as training: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("ALLOW");
+  });
+});
