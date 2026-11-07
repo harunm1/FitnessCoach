@@ -1,8 +1,9 @@
 // One coach chat turn (#11). The order is fixed in code, the same way the plan path
 // is (docs/ARCHITECTURE.md, The coach):
 //   1. an empty or over-long message gets a fixed reply; otherwise the message goes
-//      through checkUserMessage, and a crisis, red-flag, pain, diagnosis, eating,
-//      self-worth or off-topic message gets its fixed reply with no model call
+//      through the safety screen (a model check that can only raise the response,
+//      then the word list, D15), and a crisis, red-flag, check-in, pain, diagnosis,
+//      eating, self-worth or off-topic message gets its fixed reply with no chat call
 //   2. the model sees a system prompt built here from the user's own plan and
 //      profile, then the conversation, then the new message as a user message
 //   3. the reply goes through checkCoachReply before anyone sees it
@@ -11,10 +12,10 @@
 import {
   buildChatMessages,
   checkCoachReply,
-  checkUserMessage,
   type ChatMessage,
 } from "./guardrails";
 import type { ChatModel } from "./providers";
+import { screenUserMessage, type SafetyClassifier } from "./safetyScreen";
 
 export type ChatSource = "COACH" | "GUARDRAIL" | "UNAVAILABLE";
 
@@ -81,6 +82,8 @@ export async function coachReply(
   ctx: CoachContext,
   history: ChatMessage[],
   userText: string,
+  // The model safety check (D15); without it the word list decides alone.
+  classify?: SafetyClassifier,
 ): Promise<CoachTurn> {
   const text = userText.trim();
   if (text === "") return { reply: EMPTY_REPLY, source: "GUARDRAIL" };
@@ -92,7 +95,7 @@ export async function coachReply(
     content: m.content.slice(0, MAX_MESSAGE_CHARS),
   }));
 
-  const guard = checkUserMessage(text);
+  const guard = await screenUserMessage(text, classify);
   if (guard.action !== "ALLOW") {
     return { reply: guard.reply, source: "GUARDRAIL" };
   }
