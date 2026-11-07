@@ -4,7 +4,7 @@ A web app that turns a short quiz into a weekly gym, running or hybrid plan the 
 
 Team project for ECE1724 Advanced Web Development, University of Toronto, Fall 2026.
 
-**Status (6 November):** proposal finalising on the `docs/final-proposal` branch (#62), due Sunday 8 November. On `main`: the Next.js skeleton, Prisma schema and first migration, the seeded exercise library, CI, and the coach's plan generation with the verifier and Groq-to-Gemini fallback. Running plans, coach chat, guardrails, coach logging, the deployed preview and the session screen are in open pull requests; sign-in is on its branch (#14). Core path working end to end by Sunday 15 November; demo-feature freeze Monday 23 November.
+**Status (6 November):** proposal final on `main` (#13), due Sunday 8 November. On `main`: the Next.js skeleton, the Prisma schema for strength and running with its migrations, the seeded exercise library, CI with a replay of recorded coach replies, the coach's plan generation with the verifier and Groq-to-Gemini fallback, rule-based running and hybrid weeks, saving a week as the active plan, and coach-call records (not yet stored). Coach chat, the guardrails and safety screen, streamed replies, the deployed preview and the session screen are in open pull requests; sign-in is in review (#67). Core path working end to end by Sunday 15 November; demo-feature freeze Monday 23 November.
 
 Architecture and decisions: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Plan and dates: [docs/PLAN.md](docs/PLAN.md). Research behind the choices: [docs/RESEARCH.md](docs/RESEARCH.md). Coach evaluation, Groq against Gemini: [docs/COACH_EVAL.md](docs/COACH_EVAL.md). Meeting notes: [docs/meetings/](docs/meetings/).
 
