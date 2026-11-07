@@ -8,6 +8,7 @@ import {
   GROQ_MODEL,
   groqModel,
   ProviderError,
+  type ProviderEvent,
   retryAfterMs,
   withFallback,
   withRetry,
@@ -124,6 +125,18 @@ describe("coachModel", () => {
     expect(sent(geminiFetch).url).toContain(
       "generativelanguage.googleapis.com",
     );
+  });
+
+  it("reports which provider and model served the reply (#41)", async () => {
+    mockFetch(200, groqReply("{}"));
+    const events: ProviderEvent[] = [];
+    await coachModel(
+      { GROQ_API_KEY: KEY, GROQ_MODEL: "openai/gpt-oss-20b" },
+      { onEvent: (e) => events.push(e) },
+    )("x");
+    expect(events).toEqual([
+      { provider: "Groq", action: "served", model: "openai/gpt-oss-20b" },
+    ]);
   });
 
   it("names the missing key and rejects an unknown provider", () => {
@@ -309,6 +322,7 @@ describe("withFallback and coachModel with both keys", () => {
       { provider: "Groq", action: "retry", status: 429, waitMs: 1000 },
       { provider: "Groq", action: "retry", status: 429, waitMs: 1000 },
       { provider: "Groq", action: "fallback", status: 429 },
+      { provider: "Gemini", action: "served", model: GEMINI_MODEL },
     ]);
   });
 
