@@ -33,6 +33,9 @@ During team formation, we shared backgrounds and preferences and divided work ar
 | Progress                 | workout history, progress photos and cloud storage | Farnaz   |
 
 Core path: sign in → quiz → workout plan → logged workout → one coach exchange, by 15 November.
+
+**Status, 6 November:** the proposal is final on `main`. Schema and CI are in place; running and hybrid weeks, saving the active plan, coach-call records and the CI coach replay merged today. Sign-in, due by 8 November, will miss that date: it is in review (#67, review due Monday 9 November) and lands after that review, ahead of the 15 November core path. Coach chat and its safety checks stay in review until their safety screen passes an independent review.
+
 Running is built alongside lifting.
 
 ## Integration
@@ -40,7 +43,7 @@ Running is built alongside lifting.
 - The shared Prisma schema and workout-plan JSON are agreed first; quiz, sessions and progress depend on schema and authentication.
 - Every Tuesday at 7 p.m., each member reports what they built, blockers and next steps. Questions, decisions and blockers stay on the related GitHub issue; Discord handles scheduling.
 - Team brainstorming settles design, informed by [RESEARCH.md](RESEARCH.md) and [COACH_EVAL.md](https://github.com/harunm1/FitnessCoach/blob/main/docs/COACH_EVAL.md).
-- One issue per task, one branch per issue, one feature or fix per PR with `Closes #n`, so review fits in one sitting. Code PRs need one teammate approval. Documentation, proposal sections included, merges without review when there are no conflicts (meeting 3, 3 Nov): edits are committed directly, one commit per change naming the section owner, with one short note. Code reviewers get three days; after that the author notes it on the PR and squash-merges. Meeting/admin notes may go directly to unprotected `main`.
+- One issue per task, one branch per issue, one feature or fix per PR with `Closes #n`, so review fits in one sitting. Code PRs need one teammate approval. Documentation, proposal sections included, merges without review when there are no conflicts (meeting 3, 3 Nov): edits are committed directly, one commit per change naming the section owner, with one short note. Code reviewers get three days; after that the author notes it on the PR and squash-merges. `main` is protected: ruleset 26246501 requires a pull request, one approval and the CI `check`, so a direct push or a merge without approval needs the ruleset's bypass.
 - Branches merge weekly so the app runs together. Send no teammate more than three small, separate PRs daily. Squash and merge by default; use a merge commit for branches with multiple authors so their commits retain attribution.
 - CI runs formatting, lint, TypeScript checks, tests and build. We use the app ourselves as each piece lands.
 - Checkpoints: 15 Nov (core path), 21 Nov (integration review), 23 Nov (demo-feature freeze), 24–26 Nov (slides, rehearsals and live-demo tests). Development and polishing continue to the 6 Dec final report.
