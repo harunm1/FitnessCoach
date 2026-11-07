@@ -3,6 +3,8 @@
 //   - checked first: not wanting to be alive, suicide or self-harm gets the crisis
 //     reply (9-8-8, 911); then chest pain, fainting, trouble breathing or an
 //     irregular heartbeat gets "stop exercising now" and medical attention
+//   - exaggeration in training talk ("I'm gonna die on this run") and distress with no
+//     training context get a short check-in that still names 9-8-8 (distress.ts)
 //   - pain (not effort) stops the exercise and points to a professional; a question
 //     about avoiding pain gets general safe-training guidance instead (D13)
 //   - the coach does not diagnose or advise on medication
@@ -13,7 +15,11 @@
 //     system prompt, so "ignore your instructions" changes nothing here
 // checkUserMessage is for every user message before a model call, and checkCoachReply
 // for every reply before it is saved or shown; the chat code (#53) and the coach route
-// (#11) wire them in, and until then nothing in the app calls them. Each rule has fixed-input tests (guardrails.test.ts).
+// (#11) wire them in, and until then nothing in the app calls them. These word lists
+// are the deterministic floor; safetyScreen.ts runs a model safety check first that can
+// only raise the response (D15). Each rule has fixed-input tests (guardrails.test.ts).
+
+import { needsCheckIn, withoutExaggeration } from "./distress";
 
 export type Guard =
   | { action: "ALLOW" }
@@ -21,6 +27,7 @@ export type Guard =
       action:
         | "CRISIS"
         | "RED_FLAG"
+        | "CHECK_IN"
         | "PAIN_STOP"
         | "PAIN_GUIDANCE"
         | "NO_DIAGNOSIS"
@@ -40,6 +47,11 @@ export const REPLIES = {
   // severe shortness of breath, irregular heartbeat. Stop, then medical attention.
   RED_FLAG:
     "Stop exercising now. Chest pain, fainting or trouble breathing during exercise need medical attention: call 911 if it's severe or doesn't settle quickly, otherwise see a doctor before training again.",
+  // Exaggeration in training talk ("I'm gonna die on this run") or distress with no
+  // training context ("I feel so hopeless"): a short check-in that still names the
+  // crisis line, so a real crisis worded casually is not brushed off (D15).
+  CHECK_IN:
+    "That sounds like a lot. If you're having a really hard time or thinking about hurting yourself, call or text 9-8-8 any time, or 911 if you're in danger. If you meant the workout is brutal, tell me which part and we'll ease it.",
   PAIN_STOP:
     "Stop that exercise for today. Pain is different from effort, and it's worth having a physiotherapist or doctor look at it before you load it again. I can swap in a movement that doesn't use that area.",
   // A question about avoiding pain, not a report of it (D13): general, safe
@@ -77,7 +89,7 @@ const NEGATED_PAIN =
 const DIAGNOSIS =
   /\b(diagnos\w*|do i have|is it (a )?(torn|tear|broken|fracture|sprain|strain)|what injury|tendinitis|tendonitis|herniat\w*|ibuprofen|advil|painkillers?|pills?|medication|meds|dosage)\b/i;
 const TRAINING =
-  /\b(workout|exercise|train(ing)?|plan|set|sets|reps?|weight|lift\w*|squat\w*|plank\w*|bench|deadlift\w*|press|curl\w*|row\w*|run\w*|ran|jog\w*|pace|kms?|mile\w*|marathon|sprint\w*|interval\w*|tempo|cardio|stretch\w*|warm[- ]?up|cool[- ]?down|rest|recover\w*|sleep|protein|eat\w*|diet|calori\w*|muscle\w*|gym|form|knee|back|shoulder|hip|ankle|leg\w*|arm\w*|chest|core|abs|sore\w*|tired|fatigue|strength|endurance|body|goal\w*|week|day|session|fat|lose|loss|gain\w*|heavy)\b/i;
+  /\b(workout|exercise|train(ing)?|plan|set|sets|reps?|weight|lift\w*|squat\w*|plank\w*|bench|deadlift\w*|press|curl\w*|row\w*|run\w*|ran|jog\w*|pace|kms?|mile\w*|marathon|sprint\w*|interval\w*|tempo|cardio|stretch\w*|warm[- ]?up|cool[- ]?down|rest|recover\w*|sleep|protein|eat\w*|diet|calori\w*|muscle\w*|gym|form|knees?|back|shoulders?|hips?|ankles?|hill\w*|burpee\w*|winded|dizz\w*|light-?headed|leg\w*|arm\w*|chest|core|abs|sore\w*|tired|fatigue|strength|endurance|body|goal\w*|week|day|session|fat|lose|loss|gain\w*|heavy)\b/i;
 
 // Narrow on purpose: a fat-loss goal ("lose fat", "cut calories", "lose weight") is
 // ordinary coaching, and "I'm starving after my run" is hunger. These match
@@ -103,24 +115,27 @@ const PAIN_REPORT =
 // killing me", "suicide sprints", "end it with planks", "cut myself some slack",
 // "don't want to hurt myself on deadlifts", "5 kms".
 const CRISIS =
-  /\b(suicid(e|al)(?! (sprints?|runs?|drills?|shuttles?))|kill(ing)? myself|(?<!\d\s?)kms|unalive|end(ing)? my (own )?life|take my (own )?life|end(ing)? it all|ending things|(thinking about|thinking of|think about|want to|going to|gonna|plan(ning)? to) end(ing)? it(?! (with|on|after|early|at|by|there|here|now)\b)|(do ?n'?t|do not) (want|wanna)( to)? (be alive|live(?! (in|with|without|near|at|on|by|until|till)\b)|be here anymore|wake up|exist)|(want|wanna|going to|gonna) (to )?die|wish i (was|were)( not|n'?t) (alive|here|born)|wish i (was|were) dead|(rather|better off) (be )?dead|(no|don'?t see the|what'?s the) point (in|of) (living|life|going on)|(life|living) (is ?n'?t|is not) worth|can'?t go on(?! (a|the|with|my|today|this|that|runs?|holiday|vacation)\b)|(nobody|no one) would (miss|care)|stop living|self[- ]?harm\w*|(?<!(n'?t|not|never) )(want|going|plan(ning)?) to (hurt|harm) myself|(cut|cutting|burn(ing)?) myself(?! (some|a|off|short|slack|out|on|shaving|while|by accident)\b)|(hurt(ing)?|harm(ing)?|cut(ting)?) myself on purpose|been (hurting|harming) myself(?! (with|on|by|doing|lifting|running)\b)|(too many|all (of )?my|a bunch of) (pills|meds)|(swallow\w*|took|taken|take|downed) (a |the )?(whole |entire )?(bottle|pack\w*|box|handful) of (pills|meds|tablets)|no reason to (live|go on|keep going)|nothing (left )?to live for|overdos\w*)\b/i;
+  /\b(suicid(e|al)(?! (sprints?|runs?|drills?|shuttles?))|kill(ing)? myself|(?<!\d\s?)kms|unalive|end(ing)? my (own )?life|take my (own )?life(?! to (the|a|another) (next )?level| back)|end(ing)? it all|ending things(?! (on|with|at|early|there|here|off)\b)|(thinking about|thinking of|think about|want to|going to|gonna|plan(ning)? to) end(ing)? it(?! (with|on|after|early|at|by|there|here|now)\b)|(do ?n'?t|do not) (want|wanna)( to)? (be alive|live(?! (in|with|without|near|at|on|by|until|till)\b)|be here anymore|wake up|exist)|(want|wanna|going to|gonna) (to )?die|wish i (was|were)( not|n'?t) (alive|here|born)|wish i (was|were) dead|(rather|better off) (be )?dead|(no|don'?t see the|what'?s the) point (in|of) (living|life|going on)|(life|living) (is ?n'?t|is not) worth|can'?t go on(?! (a|an|the|with|my|today|this|that|another|runs?|holiday|vacation)\b)|(nobody|no one) would (miss|care)|stop living(?! (in|on|like|off|with|for)\b)|self[- ]?harm\w*|(?<!(n'?t|not|never) )(want|going|plan(ning)?) to (hurt|harm) myself|(cut|cutting|burn(ing)?) myself(?! (some|a|off|short|slack|out|on|shaving|while|by accident)\b)|(hurt(ing)?|harm(ing)?|cut(ting)?) myself on purpose|been (hurting|harming) myself(?! (with|on|by|doing|lifting|running)\b)|(too many|all (of )?my|a bunch of) (pills|meds)|(swallow\w*|took|taken|take|downed) (a |the )?(whole |entire )?(bottle|pack\w*|box|handful) of (pills|meds|tablets)|no reason to (live|go on|keep going)|nothing (left )?to live for|hang(ing)? myself|(jump|jumping) (off|in front of) (a |the )?(bridge|building|roof|train|cliff|balcony)|(took|taken|swallowed|swallow|downed) (\d{2,}|a bunch of|a lot of|loads of|a handful of) (\w+ )?(pills|tablets|meds|tylenol|advil|ibuprofen|acetaminophen|aspirin)|od'd|want (it all|everything) to (end|stop)|done with (life|living)|stop existing|can'?t keep living|feel(ing)? like dying|never wake up|never been born|better off without me|(thinking|think|thought) about not being here|(keep|kept|been) (hurting|harming|cutting|burning|hitting) myself(?! (with|on|by|doing|lifting|running|in)\b)|burn(ed|t) myself with|hit(ting)? myself (when|because|until|as)|scratch(ing)? myself (until|till|so)|overdos\w*)\b/i;
 // Red-flag symptoms during or after exercise. "My chest is sore from bench" is
 // soreness and stays with the effort rule; collapsing counts only when the user
 // collapsed, so the form cue "knees collapsing inward" is not a symptom; a racing heart after a sprint, "faint
 // praise" and "pass out the water bottles" are not symptoms. Any shortness of breath
 // counts, on the safe side of "severe".
 const RED_FLAG =
-  /\b(chest (pain|pains|tightness|pressure)|chest (got|gets|is|was|feels|felt|feeling) (tight|painful|heavy)|chest (hurts?|hurting|aches?|aching|is killing me)|chest tighten\w*|tight(ening)? chest|(pain|pressure|tightness|ache|heaviness) in my chest|faint(ed|ing)|(feel|felt|feeling|feels|went|got|getting|nearly|almost|about to) faint|passed out|pass out(?! (the|a|some|these|those|them|water)\b)|blacked out|(i|i've|i have|i had|and|then) (just |nearly |almost )?collapsed|(could ?n'?t|can'?t|could not|cannot|can not) (breathe|catch my breath)|trouble breathing|struggl\w* to breathe|short(ness)? of breath|irregular(ly)? heart ?(beat|rhythm)|heart ?beat (felt|feels|was|is|went) irregular|heart (was |is )?(beating |pounding )?irregular(ly)?|palpitations?|heart\w* (felt like it was |was |is |keeps? )?(skipp\w*|flutter\w*)|skipped (a )?beats?)\b/i;
+  /\b(chest (pain|pains|tightness|pressure)|chest (got|gets|is|was|feels|felt|feeling) (tight|painful|heavy)|chest (hurts?|hurting|aches?|aching|is killing me)|chest tighten\w*|tight(ening)? chest|(pain|pressure|tightness|ache|heaviness) in my chest|faint(ed|ing)|(feel|felt|feeling|feels|went|got|getting|nearly|almost|about to) faint|passed out|pass out(?! (the|a|some|these|those|them|water)\b)|blacked out|(?<!\b(knees?|arch(es)?|ankles?|hips?|form|back|legs?)( (nearly|almost|kept|keep|keeps|were|was|are|is|started|start|kind of))? )collaps(ed|ing)\b|chest (is|feels|was|felt|got|gets|getting|feeling)( \w+){0,2} (tight|heavy|painful|crushing)|chest tight\b|tight (feeling )?in (my|the) chest|(squeez|crush)\w* (feeling |sensation )?in (my|the) chest|chest discomfort|pain in (my |the )?chest|chest (started|starting|began|begins) (hurting|to hurt|aching|to ache)|left arm (is |went |feels |felt )?(numb|tingl\w*)|los(t|e|ing) consciousness|went black|(vision|everything) went (black|dark)|arrhythmia\w*|heart ?beat (feels|felt|is|was) (off|weird|strange|wrong)|heart rate (is |was )?all over the place|heart (is |was )?(racing|pounding)\b.*\b(dizzy|light-?headed|faint)|(dizzy|light-?headed)\b.*\b(heart|chest)|(can'?t|couldn'?t|could not|cannot|can not) get enough air|labou?red breathing|breathing (is |was )?(really |very )?labou?red|(breathless|short of breath) at rest|(could ?n'?t|can'?t|could not|cannot|can not) (breathe|catch my breath)|trouble breathing|struggl\w* to breathe|short(ness)? of breath|irregular(ly)? heart ?(beat|rhythm)|heart ?beat (felt|feels|was|is|went) irregular|heart (was |is )?(beating |pounding )?irregular(ly)?|palpitations?|heart\w* (felt like it was |was |is |keeps? )?(skipp\w*|flutter\w*)|skipped (a )?beats?)\b/i;
 
 export function checkUserMessage(text: string): Guard {
   // Phone keyboards send curly apostrophes (U+2019 in "don't"); every pattern uses
   // straight ones.
   const message = text.trim().replace(/[‘’ʼ]/g, "'");
-  if (CRISIS.test(message)) {
+  if (CRISIS.test(withoutExaggeration(message))) {
     return { action: "CRISIS", reply: REPLIES.CRISIS };
   }
   if (RED_FLAG.test(message)) {
     return { action: "RED_FLAG", reply: REPLIES.RED_FLAG };
+  }
+  if (needsCheckIn(message)) {
+    return { action: "CHECK_IN", reply: REPLIES.CHECK_IN };
   }
   const affirmed = message.replace(NEGATED_PAIN, " ");
   const pain = PAIN.test(affirmed);
@@ -165,10 +180,10 @@ export function checkUserMessage(text: string): Guard {
 // A model can still slip into diagnosis or dosing. Replies that do are replaced,
 // not edited, so nothing half-safe reaches the user.
 const REPLY_DIAGNOSIS =
-  /\b(you (probably |likely |might |may )?have (a |an )?(torn|tear|sprain|strain|fracture|tendinitis|tendonitis|herniated|bursitis)|(this|that|it) (is|sounds like|could be) (a |an )?(torn|tear|sprain|strain|fracture|tendinitis|tendonitis|herniat\w*|bursitis)|take \d+\s?mg|ibuprofen|advil|naproxen|acetaminophen)\b/i;
+  /\b(you (probably |likely |might |may )?have (a |an )?(torn|tear|sprain|strain|fracture|tendinitis|tendonitis|herniated|bursitis)|(this|that|it) (is|sounds like|could be) (a |an )?(torn|tear|sprain|strain|fracture|tendinitis|tendonitis|herniat\w*|bursitis)|(probably|likely|possibly|might be|may be|could be|sounds like|looks like|seems like|consistent with|(you|you've|may|might|could|probably|likely) (have|got)) (a |an )?(\w+ )?(torn|tear|sprain|strain|fracture|tendinitis|tendonitis|tendinopathy|herniat\w*|bursitis|shin splints|runner's knee|jumper's knee|plantar fasciitis|stress fracture|(pulled|torn|strained) (muscle|hamstring|calf|quad|groin))|take (one|two|three|four|\d+) (tylenol|advil|ibuprofen|aspirin|aleve|pills?|tablets?|capsules?)|tylenol|aspirin|aleve|take \d+\s?mg|ibuprofen|advil|naproxen|acetaminophen)\b/i;
 
 export function checkCoachReply(text: string): Guard {
-  return REPLY_DIAGNOSIS.test(text)
+  return REPLY_DIAGNOSIS.test(text.replace(/[‘’ʼ]/g, "'"))
     ? { action: "NO_DIAGNOSIS", reply: REPLIES.NO_DIAGNOSIS }
     : { action: "ALLOW" };
 }
