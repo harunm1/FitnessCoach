@@ -63,21 +63,40 @@ enum Level {
   EXPERT
 }
 
+// What the user trains for: the gym, running or both (meeting 2, #12, #34).
+enum TrainingMode {
+  GYM
+  RUNNING
+  BOTH
+}
+
+// How active the user's day is outside training; with occupation it sets volume and
+// rest days in the plan (#33, #34).
+enum ActivityLevel {
+  SEDENTARY // desk job or study
+  LIGHT
+  ACTIVE
+  PHYSICAL_JOB // on their feet or lifting at work
+}
+
 // One profile per user: the quiz answers the coach is grounded on.
 // One-to-one, so the foreign key lives here and is unique (L3 p61, L6 p37 on where
 // the foreign key goes).
 model Profile {
-  id          Int      @id @default(autoincrement())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  goal        Goal
-  level       Level
-  daysPerWeek Int
+  id            Int           @id @default(autoincrement())
+  userId        String        @unique
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal          Goal
+  level         Level
+  trainingMode  TrainingMode  @default(GYM)
+  daysPerWeek   Int
   // Equipment names from the exercise library ("barbell", "dumbbell", "body only"...),
   // so the verifier can check a plan against what the user actually has.
-  equipment   String[]
-  injuries    String?
-  updatedAt   DateTime @updatedAt
+  equipment     String[]
+  injuries      String?
+  occupation    String? // free text from the quiz, e.g. "nurse, 12-hour shifts"
+  activityLevel ActivityLevel @default(LIGHT)
+  updatedAt     DateTime      @updatedAt
 }
 
 // Seeded from free-exercise-db (public domain, docs/RESEARCH.md). The coach picks
@@ -99,6 +118,7 @@ model Exercise {
 
   planExercises PlanExercise[]
   setLogs       SetLog[]
+  messages      Message[]
 }
 
 // ---------------------------------------------------------------------------
@@ -123,14 +143,32 @@ model Plan {
   workouts Workout[]
 }
 
+// A strength day holds exercise slots; a run day holds one PlanRun; a rest day holds
+// neither. Running days are built by rule, not by the model (#34).
+enum DayKind {
+  STRENGTH
+  RUN
+  REST
+}
+
+enum RunType {
+  EASY
+  TEMPO
+  INTERVALS
+  HILLS
+  LONG
+}
+
 model PlanDay {
-  id       Int    @id @default(autoincrement())
+  id       Int     @id @default(autoincrement())
   planId   Int
-  plan     Plan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+  plan     Plan    @relation(fields: [planId], references: [id], onDelete: Cascade)
   dayIndex Int // 0-based position in the week
   name     String // "Push", "Lower body"...
+  kind     DayKind @default(STRENGTH)
 
   exercises PlanExercise[]
+  run       PlanRun?
   workouts  Workout[]
 
   @@unique([planId, dayIndex])
@@ -153,6 +191,17 @@ model PlanExercise {
   @@unique([planDayId, order])
 }
 
+// The run on a run day. Distance and pace come from the running builder; the
+// verifier caps the week-on-week increase in total distance (#34).
+model PlanRun {
+  id                 Int     @id @default(autoincrement())
+  planDayId          Int     @unique
+  planDay            PlanDay @relation(fields: [planDayId], references: [id], onDelete: Cascade)
+  type               RunType
+  distanceKm         Decimal @db.Decimal(5, 2)
+  targetPaceSecPerKm Int? // null for an easy run done by feel
+}
+
 // ---------------------------------------------------------------------------
 // Workouts and logging
 // ---------------------------------------------------------------------------
@@ -172,6 +221,7 @@ model Workout {
   notes      String?
 
   sets SetLog[]
+  run  RunLog?
 }
 
 model SetLog {
@@ -186,7 +236,21 @@ model SetLog {
   rpe        Int? // rate of perceived exertion, 1 to 10
   loggedAt   DateTime @default(now())
 
+  // One row per set, so saving the same set again after a dropped connection updates
+  // it instead of logging it twice (#42).
   @@unique([workoutId, exerciseId, setNumber])
+}
+
+// One run per workout; the unique workoutId makes a repeated save idempotent (#42).
+model RunLog {
+  id          Int      @id @default(autoincrement())
+  workoutId   Int      @unique
+  workout     Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  type        RunType?
+  distanceKm  Decimal  @db.Decimal(5, 2)
+  durationSec Int
+  rpe         Int? // rate of perceived exertion, 1 to 10
+  loggedAt    DateTime @default(now())
 }
 
 // ---------------------------------------------------------------------------
@@ -217,6 +281,11 @@ model Message {
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   role           MessageRole
   content        String
+  // Set when the user opens the chat from the body map, so the next plan can account
+  // for where they felt a movement (proposal section 1; #15).
+  exerciseId     String?
+  exercise       Exercise?    @relation(fields: [exerciseId], references: [id], onDelete: SetNull)
+  bodyRegion     String?
   createdAt      DateTime     @default(now())
 
   @@index([conversationId, createdAt])

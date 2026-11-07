@@ -1,10 +1,25 @@
 # FitnessCoach
 
-A web app that turns a short quiz into a gym plan the user can trust, with an AI coach that explains each exercise and answers questions when a movement feels wrong.
+A web app that turns a short quiz into a weekly gym, running or hybrid plan the user can trust, with an AI coach that explains each exercise and answers questions about the user's own plan.
 
 Team project for ECE1724 Advanced Web Development, University of Toronto, Fall 2026.
 
-**Status:** idea agreed 12 October; proposal drafting; architecture and plan drafts in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/PLAN.md](docs/PLAN.md); research behind the choices in [docs/RESEARCH.md](docs/RESEARCH.md). Proposal due Sunday 8 November.
+**Status (6 November):** proposal final on `main` (#13), due Sunday 8 November. On `main`: the Next.js skeleton, the Prisma schema for strength and running with its migrations, the seeded exercise library, CI with a replay of recorded coach replies, the coach's plan generation with the verifier and Groq-to-Gemini fallback, rule-based running and hybrid weeks, saving a week as the active plan, and coach-call records (not yet stored). Coach chat, the guardrails and safety screen, streamed replies, the deployed preview and the session screen are in open pull requests; sign-in is in review (#67). Core path working end to end by Sunday 15 November; demo-feature freeze Monday 23 November.
+
+Architecture and decisions: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Plan and dates: [docs/PLAN.md](docs/PLAN.md). Research behind the choices: [docs/RESEARCH.md](docs/RESEARCH.md). Coach evaluation, Groq against Gemini: [docs/COACH_EVAL.md](docs/COACH_EVAL.md). Meeting notes: [docs/meetings/](docs/meetings/).
+
+## Who does what
+
+| Area                                               | Owner    | Issue |
+| -------------------------------------------------- | -------- | ----- |
+| Foundation: schema, seed, CI (done)                | Nabeegh  | #2    |
+| AI coach, including running plans                  | Nabeegh  | #11   |
+| Quiz, body map, today's session                    | Mohammad | #15   |
+| Progress and photos (cloud upload and download)    | Farnaz   | #16   |
+| Accounts: sign-in, access tiers, Stripe test mode  | Shubham  | #14   |
+| Proposal (one Markdown file, every member submits) | Everyone | #13   |
+
+**Demo path:** sign-in, quiz, plan, logged workout, one coach exchange. Everything else adds to it and must not break it. Stripe test mode is a stretch off the demo path, shown if ready by the freeze.
 
 ## Team
 
@@ -22,22 +37,21 @@ Team project for ECE1724 Advanced Web Development, University of Toronto, Fall 2
 | App      | Next.js App Router, TypeScript (Server Components, Server Actions, route handlers) |
 | UI       | Tailwind CSS, shadcn/ui, mobile-first                                              |
 | Data     | PostgreSQL with Prisma                                                             |
-| Files    | DigitalOcean Spaces, private bucket                                                |
+| Files    | Private S3-compatible bucket (D3, #16)                                             |
 | Auth     | Better Auth                                                                        |
-| AI       | Gemini API, Groq as fallback                                                       |
-| Payments | Stripe in test mode                                                                |
+| AI       | Groq first, Gemini as fallback, rule-based plan if both fail (D4, D6)              |
+| Payments | Stripe in test mode, a stretch off the demo path (#14)                             |
 
 ## Repository layout
 
 ```
-src/app/          pages and route handlers
-src/components/   UI components
-src/lib/          auth, database client, AI client, storage client
-prisma/           schema and migrations
-docs/             architecture, plan, research, meetings
+src/app/          pages; Server Actions and route handlers as they land
+src/lib/coach/    plan generation, providers, verifier, rule-based fallback
+src/lib/          database client, auth and storage clients as they land
+prisma/           schema, migrations and seed
+docs/             architecture, plan, research, coach evaluation, meetings, proposal section drafts
+ece1724_group18_project_proposal.md   final proposal (submitted on Quercus)
 ```
-
-Lands with the skeleton; until then only `docs/` exists.
 
 ## Local Development
 
@@ -95,13 +109,36 @@ all local PostgreSQL data; run migrations and seeding again after starting it:
 docker compose down -v
 ```
 
+### Coach keys
+
+The coach reads its keys from `.env` (never committed). `COACH_PROVIDER` picks the provider that goes first (`groq` by default), and its key is required. If the other provider's key is also set, it becomes the fallback. `GROQ_MODEL` and `GEMINI_MODEL` override the default models.
+
+```dotenv
+COACH_PROVIDER="groq"
+GROQ_API_KEY=""     # console.groq.com/keys
+GEMINI_API_KEY=""   # aistudio.google.com/apikey
+```
+
+### Checks
+
+The same checks CI runs on every pull request:
+
+```bash
+npm run format:check
+npm run lint
+npm run typecheck
+npm test
+npm run build
+```
+
 ## How we work
 
 - Tasks live on the [project board](https://github.com/users/nabeegh-khan/projects/3): Backlog, Ready, In progress, In review, Done.
 
 - One Issue per task, assigned to whoever takes it.
-- Code: one branch per Issue (`feature/`, `fix/`), a pull request with `Closes #<n>`, one teammate review, squash and merge.
-- Documentation goes straight to `main`.
+- Code: one short branch per Issue, named `name/issue-topic` (`farnaz/16-progress`), a pull request with `Closes #<n>`, one teammate review, squash and merge. Merge `main` into your branch every few days.
+- Reviews: a request gives three days. With no review by then, the author says so in a dated comment on the pull request and squash-merges (D14 in `docs/ARCHITECTURE.md`).
+- Documentation (`docs/`, README, meeting notes) goes straight to `main`, no pull request.
 - Commits: `<type>(<scope>): <summary>`, imperative, under 50 characters (`feat`, `fix`, `docs`, `chore`, `ci`).
 - Everyone commits their own work; the course reads contribution from the Git history.
 - Short meeting notes in `docs/meetings/`: decisions and next steps only. Decisions also go in the decisions table in `docs/ARCHITECTURE.md`. AI use logged in `ai-session.md`.

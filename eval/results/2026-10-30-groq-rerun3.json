@@ -1,0 +1,106 @@
+{
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "rows": [
+    {
+      "id": "bodyweight-2-days",
+      "offered": 39,
+      "source": "COACH",
+      "attempts": 1,
+      "firstReplyPassed": true,
+      "calls": [
+        {
+          "ms": 2621,
+          "reply": {
+            "name": "2-Day Weekly Strength Plan",
+            "days": [
+              {
+                "name": "Day 1",
+                "exercises": [
+                  {
+                    "exerciseId": "Incline_Push-Up",
+                    "sets": 4,
+                    "reps": 12,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Bodyweight_Squat",
+                    "sets": 4,
+                    "reps": 15,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Bench_Dips",
+                    "sets": 3,
+                    "reps": 10,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Bent-Knee_Hip_Raise",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Butt_Lift_Bridge",
+                    "sets": 3,
+                    "reps": 15,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Hyperextensions_With_No_Hyperextension_Bench",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 90
+                  }
+                ]
+              },
+              {
+                "name": "Day 2",
+                "exercises": [
+                  {
+                    "exerciseId": "Decline_Push-Up",
+                    "sets": 4,
+                    "reps": 10,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Bodyweight_Walking_Lunge",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 90
+                  },
+                  {
+                    "exerciseId": "Body_Tricep_Press",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Air_Bike",
+                    "sets": 3,
+                    "reps": 20,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Single_Leg_Glute_Bridge",
+                    "sets": 3,
+                    "reps": 12,
+                    "restSeconds": 60
+                  },
+                  {
+                    "exerciseId": "Inverted_Row",
+                    "sets": 4,
+                    "reps": 10,
+                    "restSeconds": 90
+                  }
+                ]
+              }
+            ]
+          },
+          "problems": []
+        }
+      ]
+    }
+  ]
+}

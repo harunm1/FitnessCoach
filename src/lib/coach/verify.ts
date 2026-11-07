@@ -11,6 +11,8 @@ import { LIMITS, planSchema, type PlanInput } from "./schema";
 
 export type LibraryExercise = {
   id: string;
+  name?: string; // shown to the model; the plan is stored by id
+  category?: string; // free-exercise-db category: strength, stretching, cardio...
   equipment: string | null;
   primaryMuscles: string[];
   secondaryMuscles: string[];
@@ -28,6 +30,23 @@ export type VerifyResult =
 
 // "body only" exercises need no equipment, so they fit everyone.
 const NO_EQUIPMENT = new Set([null, "body only"]);
+
+// The same rule the verifier applies, as a filter: the prompt offers exactly the
+// exercises a plan may contain, and the rule-based plan picks from the same set.
+export function fitsProfile(
+  exercise: LibraryExercise,
+  profile: VerifyProfile,
+): boolean {
+  const owned = new Set(profile.equipment.map((e) => e.toLowerCase()));
+  const avoid = new Set(profile.avoidMuscles.map((m) => m.toLowerCase()));
+  const hasKit =
+    NO_EQUIPMENT.has(exercise.equipment) ||
+    owned.has(exercise.equipment!.toLowerCase());
+  const safe = ![...exercise.primaryMuscles, ...exercise.secondaryMuscles].some(
+    (m) => avoid.has(m.toLowerCase()),
+  );
+  return hasKit && safe;
+}
 
 export function verifyPlan(
   raw: unknown,
@@ -58,7 +77,9 @@ export function verifyPlan(
   plan.days.forEach((day, dayIndex) => {
     const seen = new Set<string>();
     day.exercises.forEach((slot) => {
-      const where = `day ${dayIndex + 1} (${day.name}), ${slot.exerciseId}`;
+      // Problems name the exercise as the model saw it, so a retry can fix it.
+      const label = library.get(slot.exerciseId)?.name ?? slot.exerciseId;
+      const where = `day ${dayIndex + 1} (${day.name}), ${label}`;
       if (seen.has(slot.exerciseId)) {
         problems.push(`${where}: appears twice on the same day`);
       }

@@ -23,6 +23,7 @@ export default function SetLogForm({
 
   return (
     <form action={formAction} className="mt-4 flex flex-wrap items-end gap-2">
+      <input name="setNumber" type="hidden" value={nextSetNumber} />
       <label className="grid gap-1 text-[10px] font-semibold text-foreground/60">
         REPS
         <input
