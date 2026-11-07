@@ -408,3 +408,129 @@ describe("buildChatMessages", () => {
     });
   });
 });
+
+// Every phrasing the independent reviews of 6 Nov found missed or misread (D15).
+describe("phrasings from the 6 November reviews", () => {
+  it.each([
+    "I'm thinking about hanging myself",
+    "I bought a rope to hang myself",
+    "I'm going to jump off a bridge",
+    "I took 20 pills",
+    "I took 20 sleeping pills",
+    "I swallowed a bunch of tylenol",
+    "I OD'd yesterday",
+    "I feel hopeless and want it all to stop",
+    "I want it all to end",
+    "I want everything to end",
+    "I'm done with life",
+    "I want to stop existing",
+    "I can't keep living like this",
+    "I feel like dying",
+    "I want to sleep and never wake up",
+    "I wish I'd never been born",
+    "everyone would be better off without me",
+    "I've been thinking about not being here",
+    "I keep hurting myself",
+    "I burned myself with a lighter",
+    "I hit myself when I mess up",
+    "I scratch myself until I bleed",
+  ])("gives the crisis reply: %s", (text) => {
+    expect(checkUserMessage(text)).toEqual({
+      action: "CRISIS",
+      reply: REPLIES.CRISIS,
+    });
+  });
+
+  it.each([
+    "my chest is really tight",
+    "chest tight",
+    "tight in the chest",
+    "I get a tight feeling in my chest",
+    "there's a squeezing in my chest",
+    "I had chest discomfort",
+    "chest feels weird and tight",
+    "left arm numb and chest tight",
+    "pain in chest during run",
+    "my chest started hurting on the treadmill",
+    "collapsed during the race",
+    "collapsed at the finish line",
+    "I keep collapsing",
+    "I lost consciousness",
+    "went black for a second on the squat",
+    "I fell over and lost consciousness",
+    "arrhythmia during runs",
+    "heartbeat feels off",
+    "my heart rate is all over the place",
+    "heart is racing and I feel dizzy",
+    "I can't get enough air",
+    "my breathing is really labored",
+    "breathless at rest",
+  ])("stops exercise on a red-flag symptom: %s", (text) => {
+    expect(checkUserMessage(text)).toEqual({
+      action: "RED_FLAG",
+      reply: REPLIES.RED_FLAG,
+    });
+  });
+
+  // Exaggeration with training context, and distress with none, get a short check-in
+  // that still names 9-8-8 and 911, not the full crisis reply.
+  it.each([
+    "I'm going to die on this run",
+    "I'm gonna die on this run",
+    "if I do one more set I'm gonna die",
+    "I'm going to die doing 400s",
+    "I'm going to kill myself on this hill",
+    "gonna kill myself on the stairmaster today",
+    "leg day makes me want to die lol",
+    "kms lol this workout",
+    "I feel so hopeless",
+    "My life is pointless",
+    "I'm a burden to everyone",
+  ])("checks in: %s", (text) => {
+    expect(checkUserMessage(text)).toEqual({
+      action: "CHECK_IN",
+      reply: REPLIES.CHECK_IN,
+    });
+  });
+
+  it("names 9-8-8 and 911 in the check-in and keeps it short", () => {
+    expect(REPLIES.CHECK_IN).toContain("9-8-8");
+    expect(REPLIES.CHECK_IN).toContain("911");
+    expect(REPLIES.CHECK_IN.split(/\s+/).length).toBeLessThanOrEqual(60);
+  });
+
+  it.each([
+    "I can't go on another set",
+    "take my life to the next level with running",
+    "stop living in fear of squats",
+    "ending things on a high note with a heavy single",
+    "knees collapsing inward on squats",
+    "how do I stop my knees collapsing in the squat?",
+    "my knees nearly collapsed on the last rep",
+    "I feel hopeless about my deadlift numbers",
+    "felt light headed and dizzy after the run",
+  ])("does not give the crisis, red-flag or check-in reply: %s", (text) => {
+    expect(["CRISIS", "RED_FLAG", "CHECK_IN"]).not.toContain(
+      checkUserMessage(text).action,
+    );
+  });
+
+  it.each([
+    "take two tylenol",
+    "You may have a meniscus tear",
+    "You likely have shin splints",
+    "This sounds like runner's knee",
+    "It's probably a pulled muscle",
+    "You might have patellar tendinopathy",
+  ])("replaces a coach reply that diagnoses or doses: %s", (text) => {
+    expect(checkCoachReply(text).action).toBe("NO_DIAGNOSIS");
+  });
+
+  it.each([
+    "Keep your knees tracking over your toes on the way down.",
+    "Rest 90 seconds between sets and keep the last two reps clean.",
+    "If something hurts, stop that exercise and have a physiotherapist look at it.",
+  ])("still allows ordinary coaching: %s", (text) => {
+    expect(checkCoachReply(text).action).toBe("ALLOW");
+  });
+});

@@ -185,3 +185,13 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 **Got:** SensAI's App Store listing at $6.99 a month and Future's site at $199 a month; the chat code shows a fixed message when the model is down, not a cached reply; and four review findings: Groq sends a token-wait header as well as Retry-After, Section 3's review rule contradicted the 3 November decision, the SensAI title was off, and Section 2 no longer said where verified plans go.
 
 **Did with it:** made each change in its own commit naming the section's owner, cut repetition in Section 2 to stay under the cap, and rebuilt the combined file from the sections. The proposal ends at 1,985 words.
+
+### 6 November 2026, crisis screening in three layers (issue #43)
+
+**Before asking:** two independent reviews of the guardrails found crisis and cardiac wordings the word list missed, and common gym exaggeration getting the full crisis reply. I decided a longer word list would not catch up, and set the design: keep the word list as the deterministic floor; add a short check-in that still names 9-8-8 for exaggeration in training talk ("I'm gonna die on this run") and for distress with no training context; and run a model safety check first that can only raise the response, never lower it. Tests first, from every phrasing the reviews found.
+
+**Asked:** for Groq's current safety models and their status, the tests from the review phrasings, the three layers as separate small modules, and a fresh independent review before anything merges.
+
+**Got:** Groq serves `openai/gpt-oss-safeguard-20b` for bring-your-own-policy moderation, in preview (Groq content-moderation and model pages, 7 Nov); 67 new word-list cases and two new test files that failed first; `distress.ts` (check-in), `safetyScreen.ts` (layers, 3-second limit, model failure falls back to the word list) and `safetyModel.ts` (policy in Groq's recommended four sections, JSON output).
+
+**Did with it:** checked that every earlier case still passes, wrote the decision as D15 in `docs/ARCHITECTURE.md` with the option it beat, and kept the check-in wording short with 9-8-8 and 911 in it. Nothing in the app calls the screen yet; the chat code (#53) does next.
