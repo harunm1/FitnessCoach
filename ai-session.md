@@ -63,6 +63,7 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** suggestions to give the countdown stronger visual emphasis and display a clear status label as it changes state.
 
 **Did with it:** updated the timer to highlight while running and show explicit “Resting”, “Paused”, and “Rest complete” states; verified in the browser that clicking Start rest changes the button to Pause timer and the countdown decreases. Styled the UI with Tailwind utility classes. No shadcn/ui components were used.
+
 ### 27 October 2026, provider research before meeting 2 (issues #7, #22)
 
 **Before asking:** the architecture doc said Groq first, Gemini as fallback, on free-tier limits and data use. I wanted that checked against current pricing pages and against any evidence that an open-weight model is good enough for short structured output, so the meeting could decide on facts.

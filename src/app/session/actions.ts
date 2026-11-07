@@ -8,6 +8,7 @@ import {
   setLogSchema,
   type SetLogActionState,
 } from "@/lib/workout/setLogSchema";
+import { getSetLogOperation } from "@/lib/workout/setLogOperation";
 import {
   runMetricsSchema,
   type RunMetricsActionState,
@@ -83,6 +84,7 @@ export async function logSet(
   formData: FormData,
 ): Promise<SetLogActionState> {
   const parsed = setLogSchema.safeParse({
+    setNumber: formData.get("setNumber"),
     reps: formData.get("reps"),
     weightKg: formData.get("weightKg"),
   });
@@ -119,8 +121,6 @@ export async function logSet(
       },
       sets: {
         where: { exerciseId },
-        orderBy: { setNumber: "desc" },
-        take: 1,
         select: { setNumber: true },
       },
     },
@@ -134,22 +134,41 @@ export async function logSet(
     };
   }
 
-  const setNumber = (workout.sets[0]?.setNumber ?? 0) + 1;
-  if (setNumber > plannedExercise.sets) {
-    return { status: "error", message: "All planned sets are already logged." };
+  const operation = getSetLogOperation(
+    parsed.data.setNumber,
+    workout.sets.map((set) => set.setNumber),
+    plannedExercise.sets,
+  );
+  if (!operation) {
+    return {
+      status: "error",
+      message: "That set is out of date. Refresh the session and try again.",
+    };
   }
 
   try {
-    await prisma.setLog.create({
-      data: {
+    const weightKg =
+      parsed.data.weightKg === undefined
+        ? null
+        : new Prisma.Decimal(parsed.data.weightKg);
+    await prisma.setLog.upsert({
+      where: {
+        workoutId_exerciseId_setNumber: {
+          workoutId: workout.id,
+          exerciseId,
+          setNumber: parsed.data.setNumber,
+        },
+      },
+      create: {
         workoutId: workout.id,
         exerciseId,
-        setNumber,
+        setNumber: parsed.data.setNumber,
         reps: parsed.data.reps,
-        weightKg:
-          parsed.data.weightKg === undefined
-            ? null
-            : new Prisma.Decimal(parsed.data.weightKg),
+        weightKg,
+      },
+      update: {
+        reps: parsed.data.reps,
+        weightKg,
       },
     });
   } catch {

@@ -147,6 +147,12 @@ describe("generatePlan with a provider", () => {
         primaryMuscles: ["chest"],
         secondaryMuscles: [],
       },
+      {
+        id: "squat",
+        equipment: "body only",
+        primaryMuscles: ["quadriceps"],
+        secondaryMuscles: [],
+      },
     ];
     const result = await generatePlan(
       groqModel(KEY),

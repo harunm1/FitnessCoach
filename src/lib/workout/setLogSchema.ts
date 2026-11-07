@@ -14,6 +14,7 @@ const optionalWeightSchema = z.preprocess(
 );
 
 export const setLogSchema = z.object({
+  setNumber: z.coerce.number().int().min(1).max(6),
   reps: z.coerce.number().int().min(1).max(30),
   weightKg: optionalWeightSchema,
 });
