@@ -125,7 +125,6 @@ one-time seven-day trial without a card. The guide explains server-side access
 checks, admin setup, and isolated database and browser tests. Stripe test-mode
 billing is kept in a separate follow-up PR.
 
-
 ### Coach keys
 
 The coach reads its keys from `.env` (never committed). `COACH_PROVIDER` picks the provider that goes first (`groq` by default), and its key is required. If the other provider's key is also set, it becomes the fallback. `GROQ_MODEL` and `GEMINI_MODEL` override the default models.
