@@ -212,19 +212,21 @@ describe("coachReply over-long messages", () => {
 
   it("accepts exactly 1,000 characters and refuses 1,001", async () => {
     const model = vi.fn<ChatModel>().mockResolvedValue("Fine.");
-    const ok = await coachReply(
-      model,
-      ctx,
-      [],
-      "squat ".repeat(167).slice(0, 1000),
-    );
+    const thousand = "squat ".repeat(167).slice(0, 1000);
+    const thousandAndOne = "squat ".repeat(167).slice(0, 1001);
+    expect([thousand.length, thousandAndOne.length]).toEqual([1000, 1001]);
+    const ok = await coachReply(model, ctx, [], thousand);
     expect(ok.source).toBe("COACH");
-    const long = await coachReply(
-      model,
-      ctx,
-      [],
-      "squat ".repeat(167).slice(0, 1001) + "x",
-    );
+    const long = await coachReply(model, ctx, [], thousandAndOne);
     expect(long).toEqual({ reply: TOO_LONG_REPLY, source: "GUARDRAIL" });
+  });
+
+  it("gives the pain stop when a long message starts with a pain report", async () => {
+    const model = vi.fn<ChatModel>();
+    const text =
+      "Sharp pain in my knee on squats today. " + "and then ".repeat(150);
+    const turn = await coachReply(model, ctx, [], text);
+    expect(turn).toEqual({ reply: REPLIES.PAIN_STOP, source: "GUARDRAIL" });
+    expect(model).not.toHaveBeenCalled();
   });
 });
