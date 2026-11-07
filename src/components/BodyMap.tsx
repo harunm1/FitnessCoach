@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type KeyboardEvent } from "react";
+import ExerciseCoachChat from "@/components/ExerciseCoachChat";
 import {
   findExercisesForMuscle,
   type BodyMapExercise,
@@ -317,6 +318,10 @@ export default function BodyMap({ exercises }: BodyMapProps) {
                         </li>
                       ))}
                   </ol>
+                  <ExerciseCoachChat
+                    exerciseId={selectedExercise.id}
+                    muscle={selectedHotspot.id}
+                  />
                 </div>
               )}
             </>
