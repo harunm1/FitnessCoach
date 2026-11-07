@@ -1,8 +1,9 @@
 // Model safety check for one user message (D15): Groq's gpt-oss-safeguard-20b, our own written policy, JSON out.
-// Groq documents this model for bring-your-own-policy moderation and recommends a
-// policy of Instructions, Definitions, Criteria and Examples, about 400 to 600 tokens,
-// static text first and the user's message last (console.groq.com/docs/content-moderation
-// and the model page, checked 7 Nov 2026). The model is in preview, so the caller
+// Groq documents this model for bring-your-own-policy moderation
+// (console.groq.com/docs/content-moderation, checked 6 Nov 2026); its model page
+// recommends a policy of Instructions, Definitions, Criteria and Examples, about 400 to
+// 600 tokens, static text first and the user's message last
+// (console.groq.com/docs/model/openai/gpt-oss-safeguard-20b, checked 6 Nov 2026). The model is in preview, so the caller
 // treats any failure as "no reading" and the word list decides (safetyScreen.ts).
 import type { SafetyCategory, SafetyClassifier } from "./safetyScreen";
 
@@ -44,7 +45,7 @@ export function groqSafetyClassifier(
   apiKey: string,
   model = SAFETY_MODEL,
 ): SafetyClassifier {
-  return async (text) => {
+  return async (text, signal) => {
     const res = await fetch(GROQ_URL, {
       method: "POST",
       headers: {
@@ -60,7 +61,7 @@ export function groqSafetyClassifier(
         response_format: { type: "json_object" },
         reasoning_effort: "low",
       }),
-      signal: AbortSignal.timeout(5000),
+      signal: signal ?? AbortSignal.timeout(5000),
     });
     if (!res.ok) throw new Error(`safety check returned HTTP ${res.status}`);
     const body = (await res.json()) as {

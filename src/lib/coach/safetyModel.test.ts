@@ -71,3 +71,15 @@ describe("groqSafetyClassifier", () => {
     expect(SAFETY_POLICY).toMatch(/gonna die on this run/i);
   });
 });
+
+describe("groqSafetyClassifier cancellation", () => {
+  it("passes the caller's abort signal to the request", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(reply('{"category":"NONE"}'));
+    vi.stubGlobal("fetch", fetchMock);
+    const controller = new AbortController();
+    await groqSafetyClassifier("k")("text", controller.signal);
+    const signal = fetchMock.mock.calls[0][1].signal as AbortSignal;
+    controller.abort();
+    expect(signal.aborted).toBe(true);
+  });
+});

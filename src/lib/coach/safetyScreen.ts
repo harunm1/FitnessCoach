@@ -7,7 +7,11 @@
 import { REPLIES, checkUserMessage, type Guard } from "./guardrails";
 
 export type SafetyCategory = "CRISIS" | "MEDICAL" | "DISTRESS" | "NONE";
-export type SafetyClassifier = (text: string) => Promise<SafetyCategory>;
+// The signal aborts the request when the screen stops waiting.
+export type SafetyClassifier = (
+  text: string,
+  signal?: AbortSignal,
+) => Promise<SafetyCategory>;
 
 // Long enough for one short classification on Groq, short enough not to stall a chat
 // reply; past it the word list decides.
@@ -19,18 +23,42 @@ const FROM_MODEL: Record<Exclude<SafetyCategory, "NONE">, Guard> = {
   DISTRESS: { action: "CHECK_IN", reply: REPLIES.CHECK_IN },
 };
 
+// A floor reply that already gives specific help (eating support with NEDIC, a pain
+// stop, a reframe, no diagnosis) ranks with the check-in, so a distress reading never
+// replaces it; only a crisis or medical reading outranks it.
 function severity(guard: Guard): number {
-  if (guard.action === "CRISIS") return 3;
-  if (guard.action === "RED_FLAG") return 2;
-  if (guard.action === "CHECK_IN") return 1;
-  return 0;
+  switch (guard.action) {
+    case "CRISIS":
+      return 3;
+    case "RED_FLAG":
+      return 2;
+    case "CHECK_IN":
+    case "EATING_SUPPORT":
+    case "PAIN_STOP":
+    case "MINDSET_REFRAME":
+    case "NO_DIAGNOSIS":
+      return 1;
+    default:
+      return 0;
+  }
 }
 
-function withinTime<T>(work: Promise<T>, ms: number): Promise<T> {
+// Runs the classifier with a time limit; past it the request is aborted. A classifier
+// that throws at once is treated like one that fails later.
+function readWithinTime(
+  classify: SafetyClassifier,
+  text: string,
+  ms: number,
+): Promise<SafetyCategory> {
+  const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   const late = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error("safety check timed out")), ms);
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error("safety check timed out"));
+    }, ms);
   });
+  const work = Promise.resolve().then(() => classify(text, controller.signal));
   return Promise.race([work, late]).finally(() => clearTimeout(timer));
 }
 
@@ -40,7 +68,7 @@ export async function screenUserMessage(
   { timeoutMs = SAFETY_TIMEOUT_MS }: { timeoutMs?: number } = {},
 ): Promise<Guard> {
   if (!classify || text.trim() === "") return checkUserMessage(text);
-  const reading = withinTime(classify(text), timeoutMs).catch(
+  const reading = readWithinTime(classify, text, timeoutMs).catch(
     () => "NONE" as const,
   );
   const floor = checkUserMessage(text);

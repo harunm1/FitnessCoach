@@ -99,3 +99,74 @@ describe("screenUserMessage", () => {
     expect(classify).not.toHaveBeenCalled();
   });
 });
+
+describe("screenUserMessage keeps every floor reply the model does not outrank", () => {
+  it("keeps eating support when the model reads distress", async () => {
+    const guard = await screenUserMessage(
+      "I make myself throw up after big meals",
+      says("DISTRESS"),
+    );
+    expect(guard.action).toBe("EATING_SUPPORT");
+  });
+
+  it("keeps the pain stop when the model reads distress", async () => {
+    const guard = await screenUserMessage(
+      "sharp pain in my knee on squats",
+      says("DISTRESS"),
+    );
+    expect(guard.action).toBe("PAIN_STOP");
+  });
+
+  it("lets crisis and medical readings outrank them", async () => {
+    expect(
+      (
+        await screenUserMessage(
+          "sharp pain in my knee on squats",
+          says("CRISIS"),
+        )
+      ).action,
+    ).toBe("CRISIS");
+    expect(
+      (
+        await screenUserMessage(
+          "sharp pain in my knee on squats",
+          says("MEDICAL"),
+        )
+      ).action,
+    ).toBe("RED_FLAG");
+  });
+
+  it("falls back to the word list when the classifier throws at once", async () => {
+    const broken: SafetyClassifier = () => {
+      throw new Error("not async");
+    };
+    expect((await screenUserMessage("I want to die", broken)).action).toBe(
+      "CRISIS",
+    );
+  });
+
+  it("cancels the model request and leaves no timer behind", async () => {
+    vi.useFakeTimers();
+    try {
+      let aborted = false;
+      const slow: SafetyClassifier = (_text, signal) =>
+        new Promise((resolve) => {
+          signal?.addEventListener("abort", () => {
+            aborted = true;
+          });
+          setTimeout(() => resolve("NONE"), 60_000);
+        });
+      const pending = screenUserMessage("how many sets today?", slow, {
+        timeoutMs: 3000,
+      });
+      await vi.advanceTimersByTimeAsync(3000);
+      await pending;
+      expect(aborted).toBe(true);
+      vi.clearAllTimers();
+      await screenUserMessage("how many sets today?", says("NONE"));
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
