@@ -5,16 +5,16 @@ import RunMetricsForm from "@/components/RunMetricsForm";
 import SetLogForm from "@/components/SetLogForm";
 import { getNextPlanDayIndex } from "@/lib/workout/progression";
 import { finishWorkout, startOrResumeWorkout } from "./actions";
-
-const demoEmail = "demo@fitnesscoach.local";
+import { requireUser } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function SessionPage() {
+  const user = await requireUser();
   const plan = await prisma.plan.findFirst({
     where: {
       active: true,
-      user: { email: demoEmail },
+      userId: user.id,
     },
     orderBy: { createdAt: "desc" },
     include: {
@@ -40,7 +40,7 @@ export default async function SessionPage() {
   const activeWorkout = plan
     ? await prisma.workout.findFirst({
         where: {
-          user: { email: demoEmail },
+          userId: user.id,
           planId: plan.id,
           finishedAt: null,
         },
@@ -67,7 +67,7 @@ export default async function SessionPage() {
     plan && !activeWorkout
       ? await prisma.workout.count({
           where: {
-            user: { email: demoEmail },
+            userId: user.id,
             planId: plan.id,
             finishedAt: { not: null },
           },
