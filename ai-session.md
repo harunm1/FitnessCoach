@@ -195,3 +195,13 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** SensAI's App Store listing at $6.99 a month and Future's site at $199 a month; the chat code shows a fixed message when the model is down, not a cached reply; and four review findings: Groq sends a token-wait header as well as Retry-After, Section 3's review rule contradicted the 3 November decision, the SensAI title was off, and Section 2 no longer said where verified plans go.
 
 **Did with it:** made each change in its own commit naming the section's owner, cut repetition in Section 2 to stay under the cap, and rebuilt the combined file from the sections. The proposal ends at 1,985 words.
+
+### 8 November 2026, integration tests in CI (issue #79, step 1)
+
+**Before asking:** decision 4 of the 8 November design review asks for Server Actions tested against a real PostgreSQL in CI. I chose a PostgreSQL 16 service container in the existing CI job (the same major version as `docker-compose.yml`), a separate `test:integration` script so `npm test` stays offline, and onboarding as the first test because it is the core path's first write.
+
+**Asked:** for the CI service block, two Vitest configs (unit tests exclude `*.integration.test.ts`), and one test that runs the onboarding action twice for the demo user and checks the saved profile and the single active plan.
+
+**Got:** the configs and the test. Run first with a deliberately wrong day count, it failed against a local PostgreSQL 16 ("expected … to have a length of 3 but got 4"), so it reads the real database; with the right count it passes.
+
+**Did with it:** kept migrate and seed as CI steps of their own after the unit tests and build, so only the integration step sees the database; checked lint, typecheck, 164 unit tests, the integration test and the build locally.
