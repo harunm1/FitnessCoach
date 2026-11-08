@@ -200,8 +200,10 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Before asking:** decision 4 of the 8 November design review asks for Server Actions tested against a real PostgreSQL in CI. I chose a PostgreSQL 16 service container in the existing CI job (the same major version as `docker-compose.yml`), a separate `test:integration` script so `npm test` stays offline, and onboarding as the first test because it is the core path's first write.
 
-**Asked:** for the CI service block, two Vitest configs (unit tests exclude `*.integration.test.ts`), and one test that runs the onboarding action twice for the demo user and checks the saved profile and the single active plan.
+**Asked:** for the CI service block, two Vitest configs (unit tests exclude `*.integration.test.ts`), and one test that runs the onboarding action twice for the demo user, with different answers, and checks that the profile and the single active plan come from the second save.
 
 **Got:** the configs and the test. Run first with a deliberately wrong day count, it failed against a local PostgreSQL 16 ("expected … to have a length of 3 but got 4"), so it reads the real database; with the right count it passes.
 
-**Did with it:** kept migrate and seed as CI steps of their own after the unit tests and build, so only the integration step sees the database; checked lint, typecheck, 164 unit tests, the integration test and the build locally.
+**Did with it:** kept migrate and seed as CI steps of their own after the unit tests and build, so only the migrate, seed and integration steps get `DATABASE_URL`; checked lint, typecheck, 164 unit tests, the integration test and the build locally.
+
+A review of the PR found that the test sent the same answers twice and never checked the first save, so it could pass without showing that the second save deactivates the first plan, and that three comments overstated what withholding `DATABASE_URL` does. The test now saves different answers each time, checks both results, and checks that the first plan is inactive; the comments say what is true.

@@ -40,7 +40,8 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      # Only these steps see the database, so the unit tests above cannot reach it.
+      # Only these steps set DATABASE_URL, so the unit tests above have no connection
+      # string (src/lib/prisma.ts throws without one) and cannot depend on the database.
       - name: Migrate and seed the test database
         env:
           DATABASE_URL: postgresql://fitnesscoach:fitnesscoach@localhost:5432/fitnesscoach_test?schema=public
