@@ -141,6 +141,11 @@ model Plan {
 
   days     PlanDay[]
   workouts Workout[]
+
+  // Postgres does not index foreign keys on its own. The session screen and actions
+  // look up the user's newest active plan: where userId and active, order by
+  // createdAt (#76).
+  @@index([userId, active, createdAt])
 }
 
 // A strength day holds exercise slots; a run day holds one PlanRun; a rest day holds
@@ -222,6 +227,10 @@ model Workout {
 
   sets SetLog[]
   run  RunLog?
+
+  // The session screen and actions find the open workout and count finished ones:
+  // where userId, planId and finishedAt, order by startedAt (#76).
+  @@index([userId, planId, finishedAt, startedAt])
 }
 
 model SetLog {
