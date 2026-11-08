@@ -4,9 +4,9 @@ A web app that turns a short quiz into a weekly gym, running or hybrid plan the 
 
 Team project for ECE1724 Advanced Web Development, University of Toronto, Fall 2026.
 
-**Status (6 November):** proposal final on `main` (#13), due Sunday 8 November. On `main`: the Next.js skeleton, the Prisma schema for strength and running with its migrations, the seeded exercise library, CI with a replay of recorded coach replies, the coach's plan generation with the verifier and Groq-to-Gemini fallback, rule-based running and hybrid weeks, saving a week as the active plan, and coach-call records (not yet stored). Coach chat, the guardrails and safety screen, streamed replies, the deployed preview and the session screen are in open pull requests; sign-in is in review (#67). Core path working end to end by Sunday 15 November; demo-feature freeze Monday 23 November.
+**Status (8 November):** proposal final on `main` (#13). On `main`: the Next.js skeleton, the Prisma schema for strength and running with its migrations, the seeded exercise library, CI with a replay of recorded coach replies, the coach's plan generation with the verifier and Groq-to-Gemini fallback, rule-based running and hybrid weeks, saving a week as the active plan, coach-call records (not yet stored), and the session screen (#39). In open pull requests: coach chat (#53), guardrails (#48), streamed replies (#56), the deployed preview (#61), sign-in and Stripe test mode (#67, #68), the body map (#70), the strength-only starter plan (#73), root loading and error states (#74), the shadcn/ui components (#77) and the query indexes (#78). Core path working end to end by Sunday 15 November; demo-feature freeze Monday 23 November.
 
-Architecture and decisions: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Plan and dates: [docs/PLAN.md](docs/PLAN.md). Research behind the choices: [docs/RESEARCH.md](docs/RESEARCH.md). Coach evaluation, Groq against Gemini: [docs/COACH_EVAL.md](docs/COACH_EVAL.md). Meeting notes: [docs/meetings/](docs/meetings/).
+Architecture and decisions: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Plan and dates: [docs/PLAN.md](docs/PLAN.md). Research behind the choices: [docs/RESEARCH.md](docs/RESEARCH.md). Coach evaluation, Groq against Gemini: [docs/COACH_EVAL.md](docs/COACH_EVAL.md). Meeting notes: [docs/meetings/](docs/meetings/). Design reviews: [docs/design-reviews/](docs/design-reviews/). Paper notes, one per paper we cite: [docs/papers/](docs/papers/README.md).
 
 ## Who does what
 
@@ -20,6 +20,8 @@ Architecture and decisions: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Plan a
 | Proposal (one Markdown file, every member submits) | Everyone | #13   |
 
 **Demo path:** sign-in, quiz, plan, logged workout, one coach exchange. Everything else adds to it and must not break it. Stripe test mode is a stretch off the demo path, shown if ready by the freeze.
+
+**Scope:** lifting, strength training and running. The coach gives no nutrition advice (diet, calories, supplements or meals); a nutrition question gets a short out-of-scope reply that points to a registered dietitian (8 November [design review](docs/design-reviews/2026-11-08-review.md), decision 5; the reply lands with #43).
 
 ## Team
 
@@ -46,7 +48,7 @@ Architecture and decisions: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Plan a
 
 ```
 src/app/          pages; Server Actions and route handlers as they land
-src/lib/coach/    plan generation, providers, verifier, rule-based fallback
+src/lib/coach/    plan generation, verifier, rule-based fallback; providers.ts is the only module that calls a model API
 src/lib/          database client, auth and storage clients as they land
 prisma/           schema, migrations and seed
 docs/             architecture, plan, research, coach evaluation, meetings, proposal section drafts
@@ -120,6 +122,8 @@ GEMINI_API_KEY=""   # aistudio.google.com/apikey
 ```
 
 ### Checks
+
+Tests come in three layers (8 November design review, decision 4): unit tests for pure logic, with saved model replies instead of live calls; API mocking at the provider boundary, so timeouts, invalid JSON and rate limits are tested on purpose; and integration tests that run Server Actions against a real PostgreSQL in CI (#79, not in CI yet). Each owner tests their own slice.
 
 The same checks CI runs on every pull request:
 
