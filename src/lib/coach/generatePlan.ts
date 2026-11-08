@@ -8,7 +8,7 @@ import {
   type CoachOutcome,
   type CoachSink,
 } from "./coachLog";
-import { buildDefaultPlan } from "./defaultPlan";
+import { buildDefaultPlan, type CategorisedExercise } from "./defaultPlan";
 import type { ProviderEvent } from "./providers";
 import type { PlanInput } from "./schema";
 import {
@@ -115,7 +115,7 @@ export type GenerateOptions = {
 export async function generatePlan(
   model: PlanModel,
   profile: VerifyProfile,
-  library: LibraryExercise[],
+  library: CategorisedExercise[],
   { log, takeProviderEvents = () => [], now = Date.now }: GenerateOptions = {},
 ): Promise<GeneratedPlan> {
   const usable = library.filter((e) => fitsProfile(e, profile));

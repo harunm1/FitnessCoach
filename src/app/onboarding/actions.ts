@@ -49,6 +49,7 @@ export async function saveQuizProfile(
     const library = await prisma.exercise.findMany({
       select: {
         id: true,
+        category: true,
         equipment: true,
         primaryMuscles: true,
         secondaryMuscles: true,

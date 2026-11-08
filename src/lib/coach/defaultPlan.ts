@@ -8,6 +8,10 @@ import {
 } from "./verify";
 import type { PlanInput } from "./schema";
 
+// The starter plan needs each exercise's category to skip stretches (#15), so it is
+// required here: TypeScript then flags any caller that loads the library without it.
+export type CategorisedExercise = LibraryExercise & { category: string };
+
 // One split per number of training days; each day lists the muscle groups it covers.
 const SPLITS: Record<number, { name: string; muscles: string[] }[]> = {
   1: [
@@ -35,7 +39,7 @@ const SPLITS: Record<number, { name: string; muscles: string[] }[]> = {
 
 export function buildDefaultPlan(
   profile: VerifyProfile,
-  library: LibraryExercise[],
+  library: CategorisedExercise[],
 ): PlanInput {
   // More than three days repeats the three-day split, so 5 days is Push, Pull, Legs, Push, Pull.
   const base = SPLITS[Math.min(profile.daysPerWeek, 3)];
@@ -44,12 +48,9 @@ export function buildDefaultPlan(
     (_, i) => base[i % base.length],
   );
   // Strength exercises only: free-exercise-db lists stretches under the same muscles,
-  // and the dataset order puts some of them first (#15). An exercise loaded without
-  // its category is kept, so a caller that does not select it still gets a plan.
+  // and the dataset order puts some of them first (#15).
   const usable = library.filter(
-    (e) =>
-      (e.category === undefined || e.category === "strength") &&
-      fitsProfile(e, profile),
+    (e) => e.category === "strength" && fitsProfile(e, profile),
   );
 
   return {

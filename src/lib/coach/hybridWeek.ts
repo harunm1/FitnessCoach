@@ -3,9 +3,9 @@
 // this file turns those into a split, then fills each side with the existing
 // builders (buildDefaultPlan for strength, buildRunningPlan for runs), so every day
 // still passes its own verifier. Decision D9 in docs/ARCHITECTURE.md.
-import { buildDefaultPlan } from "./defaultPlan";
+import { buildDefaultPlan, type CategorisedExercise } from "./defaultPlan";
 import { buildRunningPlan } from "./runningPlan";
-import type { LibraryExercise, VerifyProfile } from "./verify";
+import type { VerifyProfile } from "./verify";
 import type { PlanDayInput, RunSessionInput } from "./schema";
 import type { RunProfile } from "./verifyRunning";
 
@@ -52,7 +52,7 @@ export function splitDays(
 
 export function buildHybridWeek(
   profile: HybridProfile,
-  library: LibraryExercise[],
+  library: CategorisedExercise[],
 ): { name: string; days: WeekDay[] } {
   const { strengthDays, runDays } = splitDays(
     profile.daysPerWeek,

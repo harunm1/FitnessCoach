@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import { buildHybridWeek, type HybridProfile } from "./hybridWeek";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { saveWeek, weekToPlanData } from "./saveWeek";
-import type { LibraryExercise } from "./verify";
+import type { CategorisedExercise } from "./defaultPlan";
 
-const library: LibraryExercise[] = [
+const library: CategorisedExercise[] = [
   "quadriceps",
   "chest",
   "middle back",
@@ -17,6 +17,7 @@ const library: LibraryExercise[] = [
   "biceps",
 ].map((m) => ({
   id: m.replace(" ", "_"),
+  category: "strength",
   equipment: "body only",
   primaryMuscles: [m],
   secondaryMuscles: [],

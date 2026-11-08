@@ -7,10 +7,12 @@ import {
 } from "./coachLog";
 import { generatePlan, type PlanModel } from "./generatePlan";
 import { ProviderError, servedBy, withFallback, withRetry } from "./providers";
-import type { LibraryExercise, VerifyProfile } from "./verify";
+import type { VerifyProfile } from "./verify";
+import type { CategorisedExercise } from "./defaultPlan";
 
-const library: LibraryExercise[] = ["bench", "squat"].map((id, i) => ({
+const library: CategorisedExercise[] = ["bench", "squat"].map((id, i) => ({
   id,
+  category: "strength",
   equipment: "barbell",
   primaryMuscles: [i === 0 ? "chest" : "quadriceps"],
   secondaryMuscles: [],

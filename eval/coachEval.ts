@@ -20,6 +20,7 @@ import {
   verifyPlan,
   type LibraryExercise,
 } from "../src/lib/coach/verify";
+import type { CategorisedExercise } from "../src/lib/coach/defaultPlan";
 
 const EXERCISES_URL =
   "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json";
@@ -52,7 +53,7 @@ async function main() {
     name: string;
     category: string;
   })[];
-  const library: LibraryExercise[] = all.map((e) => ({
+  const library: CategorisedExercise[] = all.map((e) => ({
     id: e.id,
     name: e.name,
     category: e.category,

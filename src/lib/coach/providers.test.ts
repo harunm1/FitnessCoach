@@ -13,7 +13,7 @@ import {
   withFallback,
   withRetry,
 } from "./providers";
-import type { LibraryExercise } from "./verify";
+import type { CategorisedExercise } from "./defaultPlan";
 
 const KEY = "test-key-not-real";
 const plan = { name: "P", days: [] };
@@ -153,15 +153,17 @@ describe("coachModel", () => {
 describe("generatePlan with a provider", () => {
   it("falls back to the rule-based plan when the provider keeps failing", async () => {
     const fetchMock = mockFetch(500, {});
-    const library: LibraryExercise[] = [
+    const library: CategorisedExercise[] = [
       {
         id: "pushup",
+        category: "strength",
         equipment: "body only",
         primaryMuscles: ["chest"],
         secondaryMuscles: [],
       },
       {
         id: "squat",
+        category: "strength",
         equipment: "body only",
         primaryMuscles: ["quadriceps"],
         secondaryMuscles: [],

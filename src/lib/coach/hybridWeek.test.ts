@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { buildHybridWeek, interleave, splitDays } from "./hybridWeek";
-import { verifyPlan, type LibraryExercise } from "./verify";
+import { verifyPlan } from "./verify";
 import { verifyRunningPlan } from "./verifyRunning";
 import type { HybridProfile } from "./hybridWeek";
+import type { CategorisedExercise } from "./defaultPlan";
 
 // One body-only exercise per muscle the starter splits ask for.
 const MUSCLES = [
@@ -17,8 +18,9 @@ const MUSCLES = [
   "lats",
   "biceps",
 ];
-const library: LibraryExercise[] = MUSCLES.map((m) => ({
+const library: CategorisedExercise[] = MUSCLES.map((m) => ({
   id: m.replace(" ", "_"),
+  category: "strength",
   equipment: "body only",
   primaryMuscles: [m],
   secondaryMuscles: [],

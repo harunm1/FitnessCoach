@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDefaultPlan } from "./defaultPlan";
+import { buildDefaultPlan, type CategorisedExercise } from "./defaultPlan";
 import type { LibraryExercise, VerifyProfile } from "./verify";
 
 const profile: VerifyProfile = {
@@ -8,21 +8,24 @@ const profile: VerifyProfile = {
   avoidMuscles: [],
 };
 
-const library: LibraryExercise[] = [
+const library: CategorisedExercise[] = [
   {
     id: "bench-press",
+    category: "strength",
     equipment: "barbell",
     primaryMuscles: ["chest"],
     secondaryMuscles: ["triceps"],
   },
   {
     id: "barbell-squat",
+    category: "strength",
     equipment: "barbell",
     primaryMuscles: ["quadriceps"],
     secondaryMuscles: ["glutes"],
   },
   {
     id: "barbell-row",
+    category: "strength",
     equipment: "barbell",
     primaryMuscles: ["middle back"],
     secondaryMuscles: ["biceps"],
@@ -64,11 +67,11 @@ function ex(
   equipment: string | null,
   primaryMuscles: string[],
   secondaryMuscles: string[],
-): LibraryExercise {
+): CategorisedExercise {
   return { id, category, equipment, primaryMuscles, secondaryMuscles };
 }
 
-const seeded: LibraryExercise[] = [
+const seeded: CategorisedExercise[] = [
   ex("90_90_Hamstring", "stretching", "body only", ["hamstrings"], ["calves"]),
   ex(
     "All_Fours_Quad_Stretch",
@@ -160,9 +163,23 @@ describe("buildDefaultPlan with the seeded library (#15)", () => {
     ]);
   });
 
-  it("keeps exercises without a category, so callers that do not load it still get a plan", () => {
+  it("never picks an exercise without a category, even from an untyped caller", () => {
     const uncategorised = seeded.map((e) => ({ ...e, category: undefined }));
 
-    expect(buildDefaultPlan(home, uncategorised).days).toHaveLength(3);
+    expect(() =>
+      buildDefaultPlan(home, uncategorised as unknown as CategorisedExercise[]),
+    ).toThrow("Not enough compatible exercises");
+  });
+
+  it("does not compile for a library loaded without category", () => {
+    const withoutCategory: LibraryExercise[] = seeded.map((e) => ({
+      id: e.id,
+      equipment: e.equipment,
+      primaryMuscles: e.primaryMuscles,
+      secondaryMuscles: e.secondaryMuscles,
+    }));
+
+    // @ts-expect-error category is required, so a caller that does not load it fails typecheck
+    expect(() => buildDefaultPlan(home, withoutCategory)).toThrow();
   });
 });
