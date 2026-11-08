@@ -7,7 +7,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  /* The CLI wrote var(--font-sans) here, a self-reference; Geist comes from layout.tsx. */
+  /* Geist comes from --font-geist-sans, set by next/font in layout.tsx. */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-geist-sans);

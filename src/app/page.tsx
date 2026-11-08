@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { cn } from "cn";
 
 // Landing page; the reference screen for the shadcn/ui components (D17 in docs/ARCHITECTURE.md).
 export default function Home() {
