@@ -51,6 +51,14 @@ Hevy's API needs a Hevy Pro subscription and a personal API key tied to one acco
 
 Progress photos go in a private Cloudflare R2 bucket, as Farnaz proposed in #16, S3-compatible, with only the object key in the database (D3 in `ARCHITECTURE.md`). The R2 free tier covers 10 GB-month of Standard storage, 1 million Class A and 10 million Class B operations a month, and no egress fees ([Cloudflare R2 pricing](https://developers.cloudflare.com/r2/pricing/), checked 6 Nov 2026). DigitalOcean Spaces, the first choice, has no free tier: $5 a month from the start ([Spaces pricing](https://docs.digitalocean.com/products/spaces/details/pricing/), checked 6 Nov 2026). Enabling R2 goes through a checkout step ([R2 get started](https://developers.cloudflare.com/r2/get-started/), checked 6 Nov 2026); Farnaz reports it may ask for a payment method (#16). Photos build against a local folder first, so the feature does not wait on the account.
 
+## UI components
+
+shadcn/ui, set up 8 November 2026 (#75, D17 in `ARCHITECTURE.md`). CLI version 4.23.0, the latest on npm that day (`npm view shadcn version`, checked 8 Nov 2026). `shadcn init --help` lists three component bases (`base`, `radix`, `aria`), and its `--defaults` flag means `--template=next --preset=base-nova`; we ran `shadcn init -b base -p nova`, the Base UI library with the Nova preset, the same choices as Assignment 4. Lecture 7 (setup slides) and Lecture 8 (`buttonVariants()` on a link) show the same `npx shadcn@latest init` flow. The [Next.js installation page](https://ui.shadcn.com/docs/installation/next) and the [`components.json` page](https://ui.shadcn.com/docs/components-json) (both checked 8 Nov 2026) say `tailwind.config` stays blank under Tailwind v4 and that `style` and `baseColor` cannot be changed after init.
+
+What init installed: `@base-ui/react`, `class-variance-authority`, `lucide-react`, `tw-animate-css`, `shadcn` (its `tailwind.css` is imported by `globals.css`) and `cn`, shadcn's own class-name merger that replaces `clsx` plus `tailwind-merge` (npm maintainer shadcn, repository `shadcn-ui/cn`, checked 8 Nov 2026). Components added: Button, Input, Label, Card. The base-nova registry's `form` item has no files (`shadcn view form`, checked 8 Nov 2026); its components list has Field instead, to be added with the first form that uses it.
+
+Two changes to what init wrote. It set `--font-sans: var(--font-sans)`, which refers to itself, so it points at the Geist font from `layout.tsx` again. It added `outline-ring/50` to every element, which would recolour the browser's focus outline on the existing screens, so that line is left out; the shadcn components draw their own focus ring. Background, foreground and primary keep the app's existing colours.
+
 ## Questions from the early meetings
 
 Settled: provider (#7), scope (#12), exercise library owner (#8, cues open).
