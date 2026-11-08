@@ -43,7 +43,14 @@ export function buildDefaultPlan(
     { length: profile.daysPerWeek },
     (_, i) => base[i % base.length],
   );
-  const usable = library.filter((e) => fitsProfile(e, profile));
+  // Strength exercises only: free-exercise-db lists stretches under the same muscles,
+  // and the dataset order puts some of them first (#15). An exercise loaded without
+  // its category is kept, so a caller that does not select it still gets a plan.
+  const usable = library.filter(
+    (e) =>
+      (e.category === undefined || e.category === "strength") &&
+      fitsProfile(e, profile),
+  );
 
   return {
     name: `${profile.daysPerWeek}-day starter plan`,
