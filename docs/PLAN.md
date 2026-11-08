@@ -34,6 +34,18 @@ During team formation, we shared backgrounds and preferences and divided work ar
 
 Core path: sign in → quiz → workout plan → logged workout → one coach exchange, by 15 November.
 
+### Due Sun 15 Nov (checkpoint 1)
+
+| Step                     | Owner               | Done when                                                                                                                                                                                   | Issue or PR       |
+| ------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| Sign in                  | Shubham             | a new user signs in and the quiz and session use that user, not the demo user                                                                                                               | #67, #50          |
+| Quiz                     | Mohammad            | quiz saves the profile, including training mode                                                                                                                                             | #39 (merged), #46 |
+| Workout plan             | Mohammad, Nabeegh   | onboarding saves a plan of strength exercises that fits the user's equipment and injuries                                                                                                   | #39 (merged), #73 |
+| Logged workout           | Mohammad            | sets and a run are logged against today's plan day and saved                                                                                                                                | #39 (merged)      |
+| One coach exchange       | Nabeegh             | the user asks the coach one question and gets a checked reply, saved to the conversation                                                                                                    | #48, #53, #63     |
+| Cloud storage            | Farnaz              | course requirement (cloud object storage linked to users or records): one progress photo uploads to the private R2 bucket (D3) and shows on the progress page; date to confirm at meeting 4 | #16               |
+| Loading and error states | everyone, per route | each route shows a loading state and an error state (proposal section 2)                                                                                                                    | #74, #15          |
+
 **Status, 6 November:** the proposal is final on `main`. Schema and CI are in place; running and hybrid weeks, saving the active plan, coach-call records and the CI coach replay merged today. Sign-in, due by 8 November, will miss that date: it is in review (#67, review due Monday 9 November) and lands after that review, ahead of the 15 November core path. Coach chat and its safety checks stay in review until their safety screen passes an independent review.
 
 Running is built alongside lifting.
