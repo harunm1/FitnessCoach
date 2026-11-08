@@ -195,3 +195,15 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** SensAI's App Store listing at $6.99 a month and Future's site at $199 a month; the chat code shows a fixed message when the model is down, not a cached reply; and four review findings: Groq sends a token-wait header as well as Retry-After, Section 3's review rule contradicted the 3 November decision, the SensAI title was off, and Section 2 no longer said where verified plans go.
 
 **Did with it:** made each change in its own commit naming the section's owner, cut repetition in Section 2 to stay under the cap, and rebuilt the combined file from the sections. The proposal ends at 1,985 words.
+
+## Farnaz
+
+### 8 November 2026, progress logic (issue #16)
+
+**Before asking:** I designed the progress page: two weekly streaks (active weeks and goal met), a body map of muscles worked, and a count of how many workouts used each muscle. Plan days have no dates, so streaks count workouts per week.
+
+**Asked:** to write the functions with tests for dates.ts, streaks.ts, muscles.ts, in the style of src/lib/workout/progression.ts.
+
+**Got:** dates.ts, streaks.ts and muscles.ts with 28 tests.
+
+**Did with it:** reviewed the code, ran tests, lint, typecheck and Prettier locally, and chose to leave runs out of the muscle-share total so the percentages describe strength work.
