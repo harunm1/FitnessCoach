@@ -12,6 +12,7 @@ export async function requireAccount() {
       tier: true,
       trialEndsAt: true,
       emailVerified: true,
+      billing: { select: { status: true, paidUntil: true } },
     },
   });
   if (!account?.emailVerified) redirect("/sign-in");
