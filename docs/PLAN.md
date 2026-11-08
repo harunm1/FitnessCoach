@@ -36,15 +36,21 @@ Core path: sign in → quiz → workout plan → logged workout → one coach ex
 
 ### Due Sun 15 Nov (checkpoint 1)
 
-| Step                     | Owner               | Done when                                                                                                                                                                                   | Issue or PR       |
-| ------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| Sign in                  | Shubham             | a new user signs in and the quiz and session use that user, not the demo user                                                                                                               | #67, #50          |
-| Quiz                     | Mohammad            | quiz saves the profile, including training mode                                                                                                                                             | #39 (merged), #46 |
-| Workout plan             | Mohammad, Nabeegh   | onboarding saves a plan of strength exercises that fits the user's equipment and injuries                                                                                                   | #39 (merged), #73 |
-| Logged workout           | Mohammad            | sets and a run are logged against today's plan day and saved                                                                                                                                | #39 (merged)      |
-| One coach exchange       | Nabeegh             | the user asks the coach one question and gets a checked reply, saved to the conversation                                                                                                    | #48, #53, #63     |
-| Cloud storage            | Farnaz              | course requirement (cloud object storage linked to users or records): one progress photo uploads to the private R2 bucket (D3) and shows on the progress page; date to confirm at meeting 4 | #16               |
-| Loading and error states | everyone, per route | each route shows a loading state and an error state (proposal section 2)                                                                                                                    | #74, #15          |
+The course's core technical requirements are mandatory for every project ([project handout](https://www.eecg.utoronto.ca/~cying/courses/ece1724-web/project/handout/)). By 15 Nov each one is either done on `main` or has an open PR that works end to end.
+
+| Course requirement                                   | How we meet it                                                                                                     | Owner               | State, 8 Nov                 | Issue or PR        |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------- | ---------------------------- | ------------------ |
+| Frontend: TypeScript, Next.js, Tailwind CSS          | Next.js 16 App Router, Tailwind 4                                                                                  | everyone            | done                         | #1                 |
+| Frontend: shadcn/ui or similar                       | shadcn/ui set up once, used by every screen                                                                        | Nabeegh             | not started                  | #75                |
+| Frontend: responsive design                          | every screen usable on a phone at the gym                                                                          | each screen's owner | to check per screen          | #15, #16, #63      |
+| Data: TypeScript server code, PostgreSQL             | Prisma 7 on PostgreSQL                                                                                             | Nabeegh             | done                         | #2, #44            |
+| Data: cloud storage linked to users or records       | progress photos upload to and download from a private Cloudflare R2 bucket, key stored with the user's record (D3) | Farnaz              | not started                  | #16                |
+| Architecture A: Next.js full stack                   | Server Components read, Server Actions write, one Route Handler for auth                                           | everyone            | done                         | ARCHITECTURE.md    |
+| Advanced feature 1: authentication and authorization | Better Auth sign-in, access tiers                                                                                  | Shubham             | in review                    | #67, #50           |
+| Advanced feature 2: external API (cloud AI)          | the coach: plans and chat through Groq with Gemini fallback, checked in code                                       | Nabeegh             | plans merged; chat in review | #11, #48, #53, #63 |
+| Loading and error states (proposal section 2)        | `loading.tsx` and `error.tsx` per route                                                                            | each route's owner  | root in review               | #74, #15           |
+
+**Core path working end to end by 15 Nov** (agreed at meeting 3): sign in (#67) → quiz (#39) → workout plan (#39, #73) → logged workout (#39) → one coach exchange (#63), with a progress photo stored in R2 (#16).
 
 **Status, 6 November:** the proposal is final on `main`. Schema and CI are in place; running and hybrid weeks, saving the active plan, coach-call records and the CI coach replay merged today. Sign-in, due by 8 November, will miss that date: it is in review (#67, review due Monday 9 November) and lands after that review, ahead of the 15 November core path. Coach chat and its safety checks stay in review until their safety screen passes an independent review.
 
