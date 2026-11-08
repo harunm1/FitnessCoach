@@ -195,3 +195,13 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** SensAI's App Store listing at $6.99 a month and Future's site at $199 a month; the chat code shows a fixed message when the model is down, not a cached reply; and four review findings: Groq sends a token-wait header as well as Retry-After, Section 3's review rule contradicted the 3 November decision, the SensAI title was off, and Section 2 no longer said where verified plans go.
 
 **Did with it:** made each change in its own commit naming the section's owner, cut repetition in Section 2 to stay under the cap, and rebuilt the combined file from the sections. The proposal ends at 1,985 words.
+
+### 8 November 2026, shadcn/ui in the foundation (issue #75)
+
+**Before asking:** the course requires shadcn/ui or a similar library, and `main` had none. I decided to set it up once in the foundation with the same choices as my Assignment 4 (Base UI, Nova preset), so the project and the assignment follow one convention, and to move only the root page onto the components so no teammate's screen changes under them.
+
+**Asked:** what the current shadcn CLI offers for an existing Next.js 16 and Tailwind 4 app, what `init` changes, and whether any of it alters the existing screens.
+
+**Got:** CLI 4.23.0 with `--base` (Base UI, Radix or React Aria) and `--preset`, whose default is base-nova; `init` wrote `components.json`, `src/lib/utils.ts` and the theme tokens in `globals.css`, and pulled in shadcn's own `cn` package in place of `clsx` and `tailwind-merge`. Two lines needed attention: a font variable that referred to itself, and a global focus-outline colour that would restyle the teammates' buttons and links.
+
+**Did with it:** checked the `cn` package's maintainer and repository before keeping it, fixed the font variable, left the outline colour out, and kept the app's background, foreground and primary colours so existing screens look the same; every border on those screens already names its colour, so the new default border colour does not reach them. Wrote the root page test first and saw it fail, then moved the page onto Card and `buttonVariants()` on the link, as in Lecture 8. Added a Vitest config so tests resolve the `@/` alias. Recorded the version and sources in `docs/RESEARCH.md` and decision D17 in `docs/ARCHITECTURE.md`. The issue also lists Form; the base-nova registry's `form` item is empty and Field replaces it, so it waits for the first form that uses it.
