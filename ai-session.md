@@ -195,3 +195,13 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** SensAI's App Store listing at $6.99 a month and Future's site at $199 a month; the chat code shows a fixed message when the model is down, not a cached reply; and four review findings: Groq sends a token-wait header as well as Retry-After, Section 3's review rule contradicted the 3 November decision, the SensAI title was off, and Section 2 no longer said where verified plans go.
 
 **Did with it:** made each change in its own commit naming the section's owner, cut repetition in Section 2 to stay under the cap, and rebuilt the combined file from the sections. The proposal ends at 1,985 words.
+
+### 8 November 2026, indexes from the session queries (issue #76)
+
+**Before asking:** the design review listed six indexes. I wanted each one tied to a query that runs on `main` today, not added in case it is needed, and a before-and-after query plan on realistic row counts, because on the seeded demo data every table is small enough that Postgres scans it whatever indexes exist.
+
+**Asked:** to list every Prisma read on `main` with its filter and sort, to capture the SQL Prisma actually sends for the session queries, and to check the current Prisma 7 and PostgreSQL docs on `@@index`, migrations and foreign-key indexing.
+
+**Got:** six reads on `Plan` and `Workout` from `src/app/session/`, all sequential scans at 5,000 users and 100,000 workouts; no query on `main` touches `Conversation` or `ProgressPhoto`, and `SetLog.exerciseId` and `PlanExercise.exerciseId` are only reached through unique constraints that already lead with `workoutId` or `planDayId`; the PostgreSQL 16 docs confirm a foreign key gets no index of its own.
+
+**Did with it:** added the two composite indexes the queries justify in one migration, kept the other four out until a pull request adds a query that needs them, and recorded `EXPLAIN ANALYZE` before and after in the pull request. Every session query now uses an index.
