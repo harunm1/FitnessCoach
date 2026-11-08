@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 // Landing page; the reference screen for the shadcn/ui components (D17 in docs/ARCHITECTURE.md).
 export default function Home() {
@@ -24,10 +25,7 @@ export default function Home() {
         <CardFooter className="justify-center">
           {/* A link styled as a button, as in Lecture 8: buttonVariants on next/link. */}
           <Link
-            className={buttonVariants({
-              size: "lg",
-              className: "min-h-11 px-5",
-            })}
+            className={cn(buttonVariants({ size: "lg" }), "h-11 px-5")}
             href="/onboarding"
           >
             Start your quiz

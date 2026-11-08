@@ -7,32 +7,47 @@ function render(): string {
   return renderToStaticMarkup(<Home />);
 }
 
-// Class list of the first <a> pointing at `href`, or null when there is none.
-function linkClasses(html: string, href: string): string[] | null {
-  const anchor = html.match(new RegExp(`<a[^>]*href="${href}"[^>]*>`));
-  const classAttr = anchor?.[0].match(/class="([^"]*)"/);
-  return classAttr ? classAttr[1].split(/\s+/) : null;
+// Every <a> in the markup as { href, text, classes }.
+function links(html: string) {
+  return [...html.matchAll(/<a([^>]*)>(.*?)<\/a>/g)].map(([, attrs, text]) => ({
+    href: attrs.match(/href="([^"]*)"/)?.[1] ?? null,
+    text: text.replace(/<[^>]*>/g, "").trim(),
+    classes: (attrs.match(/class="([^"]*)"/)?.[1] ?? "").split(/\s+/),
+  }));
 }
 
 describe("root page", () => {
-  it("keeps the product name, tagline and quiz call to action", () => {
-    const html = render();
-    expect(html).toContain("FORM");
-    expect(html).toContain(
-      "A fitness coach for a routine that fits your life.",
-    );
-    expect(html).toContain("Start your quiz");
+  it("has exactly one h1, naming the product", () => {
+    const headings = [...render().matchAll(/<h1[^>]*>(.*?)<\/h1>/g)];
+    expect(headings).toHaveLength(1);
+    expect(headings[0][1]).toBe("FORM");
   });
 
-  it("renders its content inside the shadcn Card", () => {
+  it("keeps the tagline", () => {
+    expect(render()).toContain(
+      "A fitness coach for a routine that fits your life.",
+    );
+  });
+
+  it("has one link, named Start your quiz, to /onboarding", () => {
+    const found = links(render());
+    expect(found).toHaveLength(1);
+    expect(found[0].href).toBe("/onboarding");
+    expect(found[0].text).toBe("Start your quiz");
+  });
+
+  it("renders inside the shadcn Card", () => {
     expect(render()).toContain('data-slot="card"');
   });
 
-  it("styles the quiz link with shadcn buttonVariants (default variant)", () => {
-    const classes = linkClasses(render(), "/onboarding");
-    expect(classes).not.toBeNull();
+  it("styles the link as the primary button with no conflicting padding or height", () => {
+    const { classes } = links(render())[0];
     expect(classes).toEqual(
       expect.arrayContaining(["bg-primary", "text-primary-foreground"]),
     );
+    const paddingX = classes.filter((c) => /^px-/.test(c));
+    const height = classes.filter((c) => /^h-\d/.test(c));
+    expect(paddingX).toHaveLength(1);
+    expect(height.length).toBeLessThanOrEqual(1);
   });
 });
