@@ -1,13 +1,13 @@
-// Integration tests (npm run test:integration): Server Actions against a migrated, seeded PostgreSQL (#79).
-import path from "node:path";
+import "dotenv/config";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  resolve: { alias: { "@": path.resolve(import.meta.dirname, "src") } },
+  resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   test: {
-    include: ["src/**/*.integration.test.ts"],
-    // The tests share one database, so files run one at a time.
+    include: ["tests/integration/**/*.test.ts"],
     fileParallelism: false,
     testTimeout: 30_000,
+    hookTimeout: 30_000,
   },
 });

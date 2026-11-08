@@ -1,10 +1,16 @@
-// Unit tests (npm test): offline, so integration tests that need PostgreSQL are excluded (#79).
-import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
-  resolve: { alias: { "@": path.resolve(import.meta.dirname, "src") } },
+  resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
+  // Markup tests use CSS modules; the Next.js build verifies Tailwind processing.
+  css: { postcss: { plugins: [] } },
   test: {
-    exclude: [...configDefaults.exclude, "**/*.integration.test.ts"],
+    exclude: [
+      ...configDefaults.exclude,
+      "tests/integration/**",
+      "tests/e2e/**",
+    ],
+    testTimeout: 15_000,
   },
 });

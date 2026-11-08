@@ -1,11 +1,26 @@
 // Integration test (#79): the onboarding Server Action saves a profile and one active plan
-// for the seeded demo user in a real, migrated PostgreSQL database.
-import { afterAll, describe, expect, it } from "vitest";
-import { prisma } from "@/lib/prisma";
-import { saveQuizProfile } from "./actions";
+// for the seeded demo user in the migrated, seeded _test PostgreSQL database.
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import type { PrismaClient } from "@/generated/prisma/client";
+import { testDatabaseURL } from "../helpers/database-url";
 
 const demoEmail = "demo@fitnesscoach.local";
 const idle = { status: "idle", message: "" } as const;
+
+let prisma: PrismaClient;
+let saveQuizProfile: typeof import("@/app/onboarding/actions").saveQuizProfile;
+
+beforeAll(async () => {
+  // The action uses the app's client, which reads DATABASE_URL when first imported.
+  // Point it at the guarded _test database before that import, never the dev one.
+  process.env.DATABASE_URL = testDatabaseURL();
+  ({ prisma } = await import("@/lib/prisma"));
+  ({ saveQuizProfile } = await import("@/app/onboarding/actions"));
+});
+
+afterAll(async () => {
+  await prisma?.$disconnect();
+});
 
 function quizForm(answers: {
   goal: string;
@@ -21,14 +36,6 @@ function quizForm(answers: {
   form.set("injuries", "");
   return form;
 }
-
-function activePlans(userId: string) {
-  return prisma.plan.findMany({ where: { userId, active: true } });
-}
-
-afterAll(async () => {
-  await prisma.$disconnect();
-});
 
 describe("saveQuizProfile against PostgreSQL", () => {
   it("saves the demo user's profile and replaces the active plan on a second save", async () => {
@@ -48,7 +55,9 @@ describe("saveQuizProfile against PostgreSQL", () => {
       }),
     );
     expect(first.status).toBe("success");
-    const [firstPlan] = await activePlans(userId);
+    const [firstPlan] = await prisma.plan.findMany({
+      where: { userId, active: true },
+    });
 
     const second = await saveQuizProfile(
       idle,

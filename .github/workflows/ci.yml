@@ -1,6 +1,7 @@
 # Runs on every push and pull request. A PR cannot be merged until this passes
 # once we make it a required check in branch protection (same setup as my AI-M repo).
-# The steps mirror the npm scripts, so what passes locally passes here.
+# The four steps mirror the npm scripts, so what passes locally passes here.
+
 name: CI
 
 on:
@@ -11,8 +12,6 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
-    # Integration tests run Server Actions against a real PostgreSQL 16 (#79), the
-    # same major version as docker-compose.yml. Unit tests (npm test) stay offline.
     services:
       postgres:
         image: postgres:16-alpine
@@ -27,28 +26,34 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://fitnesscoach:fitnesscoach@localhost:5432/fitnesscoach_test?schema=public
+      NEXT_TELEMETRY_DISABLED: 1
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      # npm ci installs exactly what package-lock.json says; npm install could drift.
       - run: npm ci
+      - run: npm run db:migrate:test
+      # The onboarding integration test (#79) needs the exercise library and demo user.
+      - name: Seed the test database
+        run: npx prisma db seed
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - run: npm run test:integration
       - run: npm run build
-      # Only these steps set DATABASE_URL, so the unit tests above have no connection
-      # string (src/lib/prisma.ts throws without one) and cannot depend on the database.
-      - name: Migrate and seed the test database
-        env:
-          DATABASE_URL: postgresql://fitnesscoach:fitnesscoach@localhost:5432/fitnesscoach_test?schema=public
-        run: |
-          npx prisma migrate deploy
-          npx prisma db seed
-      - name: Integration tests
-        env:
-          DATABASE_URL: postgresql://fitnesscoach:fitnesscoach@localhost:5432/fitnesscoach_test?schema=public
-        run: npm run test:integration
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-test-results
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 3
