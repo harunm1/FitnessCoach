@@ -36,8 +36,12 @@ describe("root page", () => {
     expect(found[0].text).toBe("Start your quiz");
   });
 
-  it("renders inside the shadcn Card", () => {
-    expect(render()).toContain('data-slot="card"');
+  it("puts the heading and the quiz link inside the shadcn Card", () => {
+    const html = render();
+    const card = html.indexOf('data-slot="card"');
+    expect(card).toBeGreaterThan(-1);
+    expect(html.indexOf("<h1")).toBeGreaterThan(card);
+    expect(html.indexOf('href="/onboarding"')).toBeGreaterThan(card);
   });
 
   it("styles the link as the primary button with no conflicting padding or height", () => {
@@ -49,5 +53,9 @@ describe("root page", () => {
     const height = classes.filter((c) => /^h-\d/.test(c));
     expect(paddingX).toHaveLength(1);
     expect(height.length).toBeLessThanOrEqual(1);
+  });
+
+  it("keeps a 44px touch target on the link (h-11, not the lg size's h-9)", () => {
+    expect(links(render())[0].classes).toContain("h-11");
   });
 });
