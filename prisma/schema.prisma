@@ -143,8 +143,8 @@ model Plan {
   workouts Workout[]
 
   // Postgres does not index foreign keys on its own. The session screen and actions
-  // look up the user's newest active plan: where userId and active, order by
-  // createdAt (#76).
+  // look up the user's newest active plan, and saveWeek deactivates the old one:
+  // where userId and active, order by createdAt (#76).
   @@index([userId, active, createdAt])
 }
 
@@ -229,7 +229,8 @@ model Workout {
   run  RunLog?
 
   // The session screen and actions find the open workout and count finished ones:
-  // where userId, planId and finishedAt, order by startedAt (#76).
+  // where userId, planId and finishedAt, order by startedAt (#76). The open-workout
+  // lookups by plan.active (no planId) use the userId prefix only.
   @@index([userId, planId, finishedAt, startedAt])
 }
 
