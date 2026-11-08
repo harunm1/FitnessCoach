@@ -13,6 +13,14 @@ export default function Home() {
       >
         Start your quiz
       </Link>
+      <div className="mt-4 flex gap-6 text-sm">
+        <Link className="underline underline-offset-4" href="/sign-up">
+          Create account
+        </Link>
+        <Link className="underline underline-offset-4" href="/sign-in">
+          Sign in
+        </Link>
+      </div>
     </main>
   );
 }
