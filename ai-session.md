@@ -202,6 +202,6 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Asked:** to list every Prisma read on `main` with its filter and sort, to capture the SQL Prisma actually sends for the session queries, and to check the current Prisma 7 and PostgreSQL docs on `@@index`, migrations and foreign-key indexing.
 
-**Got:** six reads on `Plan` and `Workout` from `src/app/session/`, all sequential scans at 5,000 users and 100,000 workouts; no query on `main` touches `Conversation` or `ProgressPhoto`, and `SetLog.exerciseId` and `PlanExercise.exerciseId` are only reached through unique constraints that already lead with `workoutId` or `planDayId`; the PostgreSQL 16 docs confirm a foreign key gets no index of its own.
+**Got:** nine reads on `Plan` and `Workout` in `src/app/session/` (six in `actions.ts`, three in `page.tsx`), all sequential scans at 5,000 users and 100,000 workouts; no query on `main` touches `Conversation` or `ProgressPhoto`, and `SetLog.exerciseId` and `PlanExercise.exerciseId` are only reached through unique constraints that already lead with `workoutId` or `planDayId`; the PostgreSQL 16 docs confirm a foreign key gets no index of its own.
 
 **Did with it:** added the two composite indexes the queries justify in one migration, kept the other four out until a pull request adds a query that needs them, and recorded `EXPLAIN ANALYZE` before and after in the pull request. Every session query now uses an index.
