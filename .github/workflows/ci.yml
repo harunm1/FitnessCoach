@@ -1,6 +1,6 @@
 # Runs on every push and pull request. A PR cannot be merged until this passes
 # once we make it a required check in branch protection (same setup as my AI-M repo).
-# The four steps mirror the npm scripts, so what passes locally passes here.
+# The steps mirror the npm scripts, so what passes locally passes here.
 name: CI
 
 on:
@@ -11,6 +11,22 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # Integration tests run Server Actions against a real PostgreSQL 16 (#79), the
+    # same major version as docker-compose.yml. Unit tests (npm test) stay offline.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: fitnesscoach
+          POSTGRES_PASSWORD: fitnesscoach
+          POSTGRES_DB: fitnesscoach_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fitnesscoach -d fitnesscoach_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,3 +40,14 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      # Only these steps see the database, so the unit tests above cannot reach it.
+      - name: Migrate and seed the test database
+        env:
+          DATABASE_URL: postgresql://fitnesscoach:fitnesscoach@localhost:5432/fitnesscoach_test?schema=public
+        run: |
+          npx prisma migrate deploy
+          npx prisma db seed
+      - name: Integration tests
+        env:
+          DATABASE_URL: postgresql://fitnesscoach:fitnesscoach@localhost:5432/fitnesscoach_test?schema=public
+        run: npm run test:integration
