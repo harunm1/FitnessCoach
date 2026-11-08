@@ -1,0 +1,10 @@
+// Unit tests (npm test): offline, so integration tests that need PostgreSQL are excluded (#79).
+import path from "node:path";
+import { configDefaults, defineConfig } from "vitest/config";
+
+export default defineConfig({
+  resolve: { alias: { "@": path.resolve(import.meta.dirname, "src") } },
+  test: {
+    exclude: [...configDefaults.exclude, "**/*.integration.test.ts"],
+  },
+});
