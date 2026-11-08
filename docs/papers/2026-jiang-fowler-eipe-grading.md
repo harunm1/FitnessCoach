@@ -6,12 +6,26 @@ Jiang, E., & Fowler, M. (2026). You Don't Need a Data Center to Explain in Plain
 
 ## Read
 
-**Not read yet.** The paper is open access (CC BY 4.0, per Crossref), but dl.acm.org refused automated access on 8 November 2026 (HTTP 403, then a bot-verification page in Chrome), and no arXiv or repository copy was found (arXiv search, OpenAlex). Not worked around. To do: download the PDF from the ACM page in a normal browser session and read it in full.
+Read in full (all 7 pages) by Nabeegh for CAIRO on 18 October 2026; full notes in `code-comprehension-agent/Papers/eipe-grading/notes/06-you-don-t-need-a-data-center-to-explain-in-plain-english-com.md`. Summary below from those notes.
 
 ## Feeds
 
 #22 (model choice for structured judgements), #7.
 
-## What #22 currently says, unverified
+## What they did
 
-Llama 3.1 70B showed no significant difference from o4-mini, the most accurate model tested, and did significantly better than GPT-4o. This comes from the abstract or an earlier summary, not the full text. #22 already notes that Groq no longer serves Llama, so the result does not carry over to our provider choice directly.
+Few-shot grading (yes/no correct) of 620 student explanations across 17 Explain-in-Plain-English questions from an intro Python course, against instructor labels; open models from 7B to 72B (Llama, Qwen, DeepSeek R1 variants, via a serverless provider) against OpenAI models.
+
+## Results
+
+- o4-mini most accurate at 87.3%. Llama 3.1 70B, Llama 3.3 70B and Qwen 2.5 72B reached about 86%; Llama 3.1 70B was not significantly different from o4-mini and beat GPT-4o. Qwen 3 32B reached 83.5%.
+- Smaller and non-instruct models broke the one-word answer format most often; all OpenAI models followed it.
+- Hosting a 70B model needs about 140 GB of memory (six to eight A10 GPUs, about $16 an hour on AWS); an 8B model fits one 24 GB GPU.
+
+## Limits
+
+One course and one grader's labels; latency not measured; random few-shot examples; no GPT-5 or code models tested.
+
+## What it means for FitnessCoach
+
+#22's summary is accurate. The transferable point is format compliance: smaller models break a strict output format more often, which is why our coach validates every reply against a schema in code. Groq no longer serves Llama, so the model result itself does not carry over (#19).
