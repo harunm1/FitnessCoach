@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { buildHybridWeek, type HybridProfile } from "./hybridWeek";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { saveWeek, weekToPlanData } from "./saveWeek";
-import type { CategorisedExercise } from "./defaultPlan";
+import type { CategorisedExercise } from "./verify";
 
 const library: CategorisedExercise[] = [
   "quadriceps",

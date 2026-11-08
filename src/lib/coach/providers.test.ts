@@ -13,7 +13,7 @@ import {
   withFallback,
   withRetry,
 } from "./providers";
-import type { CategorisedExercise } from "./defaultPlan";
+import type { CategorisedExercise } from "./verify";
 
 const KEY = "test-key-not-real";
 const plan = { name: "P", days: [] };

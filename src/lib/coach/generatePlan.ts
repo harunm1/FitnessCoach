@@ -8,7 +8,7 @@ import {
   type CoachOutcome,
   type CoachSink,
 } from "./coachLog";
-import { buildDefaultPlan, type CategorisedExercise } from "./defaultPlan";
+import { buildDefaultPlan } from "./defaultPlan";
 import type { ProviderEvent } from "./providers";
 import type { PlanInput } from "./schema";
 import {
@@ -16,6 +16,7 @@ import {
   verifyPlan,
   type LibraryExercise,
   type VerifyProfile,
+  type CategorisedExercise,
 } from "./verify";
 
 // What the coach needs from a model: given a prompt, return parsed JSON (or throw).

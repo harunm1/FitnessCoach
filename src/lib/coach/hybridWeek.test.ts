@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { buildHybridWeek, interleave, splitDays } from "./hybridWeek";
-import { verifyPlan } from "./verify";
+import { verifyPlan, type CategorisedExercise } from "./verify";
 import { verifyRunningPlan } from "./verifyRunning";
 import type { HybridProfile } from "./hybridWeek";
-import type { CategorisedExercise } from "./defaultPlan";
 
 // One body-only exercise per muscle the starter splits ask for.
 const MUSCLES = [

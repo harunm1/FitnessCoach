@@ -19,8 +19,8 @@ import {
   fitsProfile,
   verifyPlan,
   type LibraryExercise,
+  type CategorisedExercise,
 } from "../src/lib/coach/verify";
-import type { CategorisedExercise } from "../src/lib/coach/defaultPlan";
 
 const EXERCISES_URL =
   "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json";

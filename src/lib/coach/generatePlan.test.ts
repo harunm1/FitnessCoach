@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { generatePlan, type PlanModel } from "./generatePlan";
-import { verifyPlan, type VerifyProfile } from "./verify";
-import type { CategorisedExercise } from "./defaultPlan";
+import {
+  verifyPlan,
+  type VerifyProfile,
+  type CategorisedExercise,
+} from "./verify";
 
 const library: CategorisedExercise[] = [
   {

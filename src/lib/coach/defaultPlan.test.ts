@@ -1,6 +1,10 @@
-import { describe, expect, it } from "vitest";
-import { buildDefaultPlan, type CategorisedExercise } from "./defaultPlan";
-import type { LibraryExercise, VerifyProfile } from "./verify";
+import { describe, expect, expectTypeOf, it } from "vitest";
+import { buildDefaultPlan } from "./defaultPlan";
+import type {
+  LibraryExercise,
+  VerifyProfile,
+  CategorisedExercise,
+} from "./verify";
 
 const profile: VerifyProfile = {
   daysPerWeek: 1,
@@ -131,7 +135,7 @@ const seeded: CategorisedExercise[] = [
   ),
 ];
 
-describe("buildDefaultPlan with the seeded library (#15)", () => {
+describe("buildDefaultPlan with the seeded library (#71, found on #15)", () => {
   const home: VerifyProfile = {
     daysPerWeek: 3,
     equipment: ["dumbbell", "body only"],
@@ -171,15 +175,24 @@ describe("buildDefaultPlan with the seeded library (#15)", () => {
     ).toThrow("Not enough compatible exercises");
   });
 
-  it("does not compile for a library loaded without category", () => {
-    const withoutCategory: LibraryExercise[] = seeded.map((e) => ({
-      id: e.id,
-      equipment: e.equipment,
-      primaryMuscles: e.primaryMuscles,
-      secondaryMuscles: e.secondaryMuscles,
+  it("matches the category without regard to case", () => {
+    const capitalised = seeded.map((e) => ({
+      ...e,
+      category: e.category.toUpperCase(),
     }));
 
-    // @ts-expect-error category is required, so a caller that does not load it fails typecheck
-    expect(() => buildDefaultPlan(home, withoutCategory)).toThrow();
+    expect(buildDefaultPlan(home, capitalised)).toEqual(
+      buildDefaultPlan(home, seeded),
+    );
+  });
+
+  it("requires category in its input type", () => {
+    // Checked by npm run typecheck (CI), not at run time.
+    expectTypeOf<LibraryExercise[]>().not.toExtend<
+      Parameters<typeof buildDefaultPlan>[1]
+    >();
+    expectTypeOf<CategorisedExercise[]>().toExtend<
+      Parameters<typeof buildDefaultPlan>[1]
+    >();
   });
 });

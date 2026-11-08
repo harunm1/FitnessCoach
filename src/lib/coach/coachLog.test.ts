@@ -7,8 +7,7 @@ import {
 } from "./coachLog";
 import { generatePlan, type PlanModel } from "./generatePlan";
 import { ProviderError, servedBy, withFallback, withRetry } from "./providers";
-import type { VerifyProfile } from "./verify";
-import type { CategorisedExercise } from "./defaultPlan";
+import type { VerifyProfile, CategorisedExercise } from "./verify";
 
 const library: CategorisedExercise[] = ["bench", "squat"].map((id, i) => ({
   id,

@@ -8,8 +8,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { EVAL_PROFILES } from "./evalProfiles";
 import { generatePlan, type PlanModel } from "./generatePlan";
-import { verifyPlan } from "./verify";
-import type { CategorisedExercise } from "./defaultPlan";
+import { verifyPlan, type CategorisedExercise } from "./verify";
 
 type Row = {
   id: string;

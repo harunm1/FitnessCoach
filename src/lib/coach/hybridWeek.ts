@@ -3,9 +3,9 @@
 // this file turns those into a split, then fills each side with the existing
 // builders (buildDefaultPlan for strength, buildRunningPlan for runs), so every day
 // still passes its own verifier. Decision D9 in docs/ARCHITECTURE.md.
-import { buildDefaultPlan, type CategorisedExercise } from "./defaultPlan";
+import { buildDefaultPlan } from "./defaultPlan";
 import { buildRunningPlan } from "./runningPlan";
-import type { VerifyProfile } from "./verify";
+import type { VerifyProfile, CategorisedExercise } from "./verify";
 import type { PlanDayInput, RunSessionInput } from "./schema";
 import type { RunProfile } from "./verifyRunning";
 
