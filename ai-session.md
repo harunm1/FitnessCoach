@@ -195,3 +195,13 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** SensAI's App Store listing at $6.99 a month and Future's site at $199 a month; the chat code shows a fixed message when the model is down, not a cached reply; and four review findings: Groq sends a token-wait header as well as Retry-After, Section 3's review rule contradicted the 3 November decision, the SensAI title was off, and Section 2 no longer said where verified plans go.
 
 **Did with it:** made each change in its own commit naming the section's owner, cut repetition in Section 2 to stay under the cap, and rebuilt the combined file from the sections. The proposal ends at 1,985 words.
+
+### 8 November 2026, strength-only starter plan (issue #15)
+
+**Before asking:** Farnaz found that the rule-based starter plan gives a Legs day of three stretches for a dumbbell and body-weight user. My fix was to filter the library to the "strength" category inside `buildDefaultPlan`, which is also the coach's fallback. Onboarding loads the library without its category, so a strict filter would leave it with no exercises; I chose to keep exercises that arrive without a category and to ask for the category in onboarding's query instead.
+
+**Asked:** to reproduce her case on the seeded free-exercise-db data, and for an independent review of the change and its tests.
+
+**Got:** the same picks she reported (All Fours Quad Stretch, 90/90 Hamstring and Ankle On The Knee on Legs, Chair Lower Back Stretch on Pull), because the dataset lists those stretches before the first strength exercise for those four muscles. The independent review found nothing blocking; it flagged that onboarding still keeps every stretch until its query selects the category, a lint warning in my test, and that the coach's own plans are not checked for category either.
+
+**Did with it:** wrote a test from thirteen seeded records in dataset order, saw it fail, then added the filter and a test that a library without categories still gets a plan. The pull request refers to #15 rather than closing it, and the onboarding change is asked for on the issue.
