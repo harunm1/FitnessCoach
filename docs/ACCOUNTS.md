@@ -43,6 +43,39 @@ For the complete ordered PowerShell/Bash setup and terminal layout, start with
 The seeded exercise-demo user is not an email/password credential account.
 Register a new account for Milestone 1. The existing exercise seed is unchanged.
 
+## Migration name update
+
+Before merging, the auth migration was renamed from `20261103090000_add_better_auth`
+to `20261108090000_add_better_auth` so it follows the migrations already on `main`.
+The SQL and its checksum are unchanged. Fresh databases need no special step.
+
+If your local database already applied the old name, back it up first. In a
+PostgreSQL query console connected to that database, rename only its successful
+history record with the matching SQL checksum:
+
+```sql
+BEGIN;
+UPDATE "_prisma_migrations"
+SET migration_name = '20261108090000_add_better_auth'
+WHERE migration_name = '20261103090000_add_better_auth'
+  AND checksum = '43ba6f068534fb9e2a66ec299dd86977b0eabb630fb5be5efc4cdfbf03beadd1'
+  AND finished_at IS NOT NULL
+  AND rolled_back_at IS NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM "_prisma_migrations"
+    WHERE migration_name = '20261108090000_add_better_auth'
+  )
+RETURNING migration_name;
+COMMIT;
+```
+
+Proceed with `npx prisma migrate deploy` only after this returns one renamed row,
+or after confirming the new name was already recorded successfully. If neither
+is true, stop and inspect the history. Do not reapply the SQL, reset the database
+or delete its volume. This changes migration metadata only; accounts, sessions
+and fitness records stay in place. The separate billing PR documents its own
+migration rename.
+
 ## Server contracts
 
 - `/api/auth/[...all]` mounts Better Auth's Node.js handler.
