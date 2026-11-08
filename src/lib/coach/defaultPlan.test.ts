@@ -95,6 +95,15 @@ const seeded: CategorisedExercise[] = [
     ["triceps"],
     ["chest", "shoulders"],
   ),
+  // Plyometrics, ahead of the first strength quadriceps match: catches a filter that
+  // only drops stretches.
+  ex(
+    "Bench_Jump",
+    "plyometrics",
+    "body only",
+    ["quadriceps"],
+    ["calves", "glutes", "hamstrings"],
+  ),
   ex(
     "Bent_Over_Two-Dumbbell_Row",
     "strength",
@@ -149,7 +158,9 @@ describe("buildDefaultPlan with the seeded library (#71, found on #15)", () => {
     );
     const category = new Map(seeded.map((e) => [e.id, e.category]));
 
-    expect(picked.map((id) => category.get(id))).not.toContain("stretching");
+    expect(new Set(picked.map((id) => category.get(id)))).toEqual(
+      new Set(["strength"]),
+    );
     expect(plan.days[0]?.exercises.map((e) => e.exerciseId)).toEqual([
       "Around_The_Worlds",
       "Alternating_Deltoid_Raise",
