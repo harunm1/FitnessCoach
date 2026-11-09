@@ -23,8 +23,11 @@ test("an athlete completes the quiz and logs a session without touching another 
   const otherEmail = `${prefix}-second@example.test`;
   const exerciseIds = [`${prefix}-press`, `${prefix}-squat`];
   const pressName = `${prefix} press`;
+  const ip = `2001:db8:${randomUUID().slice(0, 4)}::1`;
   await db.connect();
   try {
+    // Keep signup and browser login in a rate-limit bucket separate from other tests.
+    await page.context().setExtraHTTPHeaders({ "x-forwarded-for": ip });
     for (const [index, id] of exerciseIds.entries()) {
       await db.query(
         `INSERT INTO "Exercise" (id, name, level, equipment, category, "primaryMuscles", "secondaryMuscles", instructions, images, cues, "commonMistakes")
@@ -40,7 +43,7 @@ test("an athlete completes the quiz and logs a session without touching another 
       const signup = await page.request.post("/api/auth/sign-up/email", {
         headers: {
           origin: "http://127.0.0.1:13100",
-          "x-forwarded-for": `2001:db8:${randomUUID().slice(0, 4)}::1`,
+          "x-forwarded-for": ip,
         },
         data: { name: "Quiz Athlete", email, password },
       });
@@ -88,7 +91,15 @@ test("an athlete completes the quiz and logs a session without touching another 
     await page.goto("/sign-in");
     await page.getByLabel("Email", { exact: true }).fill(ownEmail);
     await page.getByLabel("Password", { exact: true }).fill(password);
-    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    const [login] = await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === "/api/auth/sign-in/email" &&
+          response.request().method() === "POST",
+      ),
+      page.getByRole("button", { name: "Sign in", exact: true }).click(),
+    ]);
+    expect(login.status(), "Quiz fixture login should succeed").toBe(200);
     await expect(page).toHaveURL(/\/account$/);
     await page.goto(`/session?userId=${other.id}&planId=${privatePlan.id}`);
     await expect(
