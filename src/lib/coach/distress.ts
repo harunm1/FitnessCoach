@@ -52,11 +52,15 @@ export function withoutExaggeration(message: string): string {
 const STRONG_DISTRESS =
   /\b(i'?m (such )?a burden|(a|such a) burden to (everyone|everybody|my family|people)|can'?t (do|take) (this|it) anymore|want to disappear|nothing matters anymore|what'?s the point of anything)\b/i;
 
-/** True when the message should get the check-in rather than the full crisis reply. */
-export function needsCheckIn(message: string): boolean {
-  if (tiedExaggeration(message)) return true;
+/** Distress wording that gets the check-in before any other reply (it names 9-8-8). */
+export function distressCheckIn(message: string): boolean {
   if (STRONG_DISTRESS.test(message)) return true;
   return !EXERCISE_CONTEXT.test(message) && DISTRESS.test(message);
+}
+
+/** True when the message should get the check-in rather than the full crisis reply. */
+export function needsCheckIn(message: string): boolean {
+  return tiedExaggeration(message) || distressCheckIn(message);
 }
 
 /** True when a message the coach would redirect as off-topic carries crisis words. */

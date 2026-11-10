@@ -99,7 +99,7 @@ async function readModel(
   try {
     const category = await readWithinTime(
       classify,
-      text.slice(0, SAFETY_MODEL_INPUT_CHARS),
+      normalizeText(text).slice(0, SAFETY_MODEL_INPUT_CHARS),
       timeoutMs,
     );
     return KNOWN.includes(category) ? category : "UNAVAILABLE";

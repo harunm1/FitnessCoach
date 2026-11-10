@@ -71,9 +71,9 @@ A plan that fails is regenerated once with the problems listed, then the user ge
 
 D15 changes after the blind review of 10 November (#43):
 
-- **The model call bypasses `providers.ts`, by exception.** Practice 5 sends model calls through `providers.ts`. The safety check is a different model with no fallback provider and its own 3-second limit, and it runs before, and apart from, the coach's provider chain. It is bounded in the same spirit: it reads at most the first 4,000 characters, and the word list reads the whole message.
-- **A failed model reading is reported, not hidden.** `screenUserMessageWithReading` returns the model's category, `UNAVAILABLE` when it failed, timed out or gave an unknown label, or `NOT_CONFIGURED`. The caller logs `UNAVAILABLE`. Labels are read case-insensitively, and an empty API key is refused at start-up.
-- **Check-in scope.** "A burden to everyone" and "can't do this anymore" get the check-in even next to a training word. A pain report or an eating disclosure in the same message gets its own reply first. Leetspeak and look-alike letters are still left to the model.
+- **The model call bypasses `providers.ts`, by exception.** Practice 5 sends model calls through `providers.ts`. The safety check is a different model with no fallback provider and its own 3-second limit, and it runs before, and apart from, the coach's provider chain. It is bounded in the same spirit: one attempt with no retry, at most the first 4,000 characters of the normalized text, and the word list reads the whole message.
+- **A failed model reading is reported, not hidden.** `screenUserMessageWithReading` returns the model's category, `UNAVAILABLE` when it failed, timed out or gave an unknown label, or `NOT_CONFIGURED`. The caller is to log `UNAVAILABLE` once the chat route (#53, #11) wires the screen in. Labels are read case-insensitively, and an empty API key is refused when the classifier is built.
+- **Check-in scope.** "A burden to everyone" and "can't do this anymore" get the check-in even next to a training word. Distress wording keeps the check-in, which names 9-8-8, even beside a pain report or an eating disclosure. Session-tied exaggeration ("I'm gonna die on this run") gives way to the pain or eating reply. Leetspeak and look-alike letters are still left to the model.
 
 ## Testing
 

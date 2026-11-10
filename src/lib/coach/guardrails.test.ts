@@ -819,7 +819,6 @@ describe("phrasings from the 10 November blind review", () => {
   );
 
   it.each([
-    "I feel hopeless and I make myself throw up after dinner",
     "I haven't eaten in 3 days",
     "I haven't eaten in two days but I still want to run",
     "I use laxatives to lose weight",
@@ -855,12 +854,62 @@ describe("phrasings from the 10 November blind review", () => {
     expect(checkUserMessage(text).action).toBe("CHECK_IN");
   });
 
+  // Distress wording keeps the check-in (it names 9-8-8) even with a pain report or an
+  // eating disclosure; only session-tied exaggeration gives way (final review, 10 Nov).
+  it.each([
+    "I feel so hopeless and my knee hurts",
+    "I'm a burden to everyone and my back hurts",
+    "I can't take it anymore, my shoulder is killing me",
+    "nothing matters anymore, I binge every night",
+    "I feel hopeless and I make myself throw up after dinner",
+  ])("keeps the check-in for distress next to pain or eating: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("CHECK_IN");
+  });
+
+  it.each([
+    "ugh kms",
+    "lol kms",
+    "honestly kms",
+    "this is my last day on earth",
+    "today is my last day on earth",
+    "this is my last day on this planet",
+    "I'm standing on the bridge and I want to jump",
+    "I took pills for my headache and then 30 more",
+    "I won't be here tomorrow so please don't wait for me",
+  ])("gives the crisis reply (final review): %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("CRISIS");
+  });
+
+  it.each([
+    "did I break my PR",
+    "did I break 20 minutes on the 5k",
+    "is my form broken",
+    "is my streak broken",
+    "have I broken my 5k record",
+    "did I tear through that workout",
+    "is that a strain on your schedule",
+    "how many kms is a half marathon",
+    "I bought a rope for the cable machine",
+  ])("does not treat training talk as a diagnosis or crisis: %s", (text) => {
+    expect(["ALLOW", "OFF_TOPIC"]).toContain(checkUserMessage(text).action);
+  });
+
+  it("gives the red-flag reply when breathing hurts", () => {
+    expect(checkUserMessage("it hurts to breathe").action).toBe("RED_FLAG");
+  });
+
+  it("does not give the red-flag reply when fainting is denied", () => {
+    expect(
+      checkUserMessage("no dizziness or fainting on my run").action,
+    ).not.toBe("RED_FLAG");
+  });
+
   // About 64,000 to 256,000 characters each; the review measured 0.5 to 7 seconds for
-  // these before the patterns were bounded.
+  // these before the patterns were bounded. A budget, not a proof of linearity.
   const REPEATS = 16_000;
   const BUDGET_MS = 500;
 
-  it("screens a very long message in linear time", () => {
+  it("screens a very long message within a time budget", () => {
     const started = performance.now();
     checkUserMessage("heart is racing ".repeat(REPEATS));
     checkUserMessage("how much ".repeat(REPEATS));

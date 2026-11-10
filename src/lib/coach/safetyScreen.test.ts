@@ -231,7 +231,21 @@ describe("screenUserMessageWithReading", () => {
       return "NONE";
     };
     // Two characters per repeat, so twice the limit.
-    await screenUserMessageWithReading("x ".repeat(MODEL_LIMIT), record);
-    expect(seen.length).toBeLessThanOrEqual(MODEL_LIMIT);
+    const long = "x ".repeat(MODEL_LIMIT);
+    await screenUserMessageWithReading(long, record);
+    expect(seen).toBe(long.slice(0, MODEL_LIMIT));
+  });
+
+  it("reads the normalized text, so invisible padding cannot hide the message from the model", async () => {
+    let seen = "";
+    const record: SafetyClassifier = async (text) => {
+      seen = text;
+      return "NONE";
+    };
+    await screenUserMessageWithReading(
+      "​".repeat(MODEL_LIMIT) + "I feel like disappearing",
+      record,
+    );
+    expect(seen).toBe("I feel like disappearing");
   });
 });
