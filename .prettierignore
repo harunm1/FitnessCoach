@@ -8,3 +8,7 @@ package-lock.json
 next-env.d.ts
 src/generated
 prisma/migrations
+
+playwright-report
+test-results
+playwright/.auth
