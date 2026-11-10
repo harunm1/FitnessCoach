@@ -2,19 +2,9 @@
 // form docs/COACH_EVAL.md uses.
 //   npx tsx eval/consistencyReport.ts eval/results/<date>-groq-repeat.jsonl
 import { readFileSync } from "node:fs";
-import { consistency, type RepeatRun } from "../src/lib/coach/consistency";
+import { consistency } from "../src/lib/coach/consistency";
 import type { EvalRow } from "./evalProfile";
-
-// The first call is the one the user waits for, and the one the pass rate counts.
-function toRepeatRun(row: EvalRow): RepeatRun {
-  const first = row.calls[0];
-  const answered = first?.reply !== undefined;
-  return {
-    firstReplyPassed: row.firstReplyPassed,
-    reply: answered ? first.reply : null,
-    ms: answered ? first.ms : null,
-  };
-}
+import { firstCallAnswered, toRepeatRun } from "./repeatRow";
 
 const seconds = (ms: number) => `${(ms / 1000).toFixed(1)} s`;
 
@@ -24,7 +14,9 @@ function main() {
   const rows = readFileSync(file, "utf8")
     .trim()
     .split("\n")
-    .map((line) => JSON.parse(line) as EvalRow);
+    .map((line) => JSON.parse(line) as EvalRow)
+    // Runs whose first call failed in transport say nothing about the plans.
+    .filter((row) => firstCallAnswered(row.calls));
   const byProfile = Map.groupBy(rows, (r) => r.id);
   const models = [...new Set(rows.flatMap((r) => r.served))];
 

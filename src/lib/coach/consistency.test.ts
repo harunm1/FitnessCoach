@@ -127,7 +127,7 @@ describe("consistency", () => {
     expect(result.meanReps).toEqual({ min: 7.25, max: 9 });
   });
 
-  it("leaves overlap and spread empty with fewer than two readable plans", () => {
+  it("leaves overlap empty and reads spread from the one readable plan", () => {
     const result = consistency([run(), run({ reply: { not: "a plan" } })]);
 
     expect(result).toMatchObject({

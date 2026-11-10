@@ -6,7 +6,11 @@ import {
   namesToIds,
   type PlanModel,
 } from "../src/lib/coach/generatePlan";
-import { coachModel, type ProviderEvent } from "../src/lib/coach/providers";
+import {
+  coachModel,
+  type ProviderEvent,
+  type RetryOptions,
+} from "../src/lib/coach/providers";
 import {
   fitsProfile,
   verifyPlan,
@@ -43,7 +47,12 @@ export type EvalRow = {
 
 // "groq" or "gemini" sees only that provider's key, so nothing falls back; "chain"
 // is the production setup, Groq first with Gemini behind it.
-export async function setUpEval(mode: string): Promise<EvalContext> {
+// retry is passed to the providers' withRetry; repeat runs turn retries off so every
+// HTTP request is a paced, counted call.
+export async function setUpEval(
+  mode: string,
+  retry: Pick<RetryOptions, "retries"> = {},
+): Promise<EvalContext> {
   const env =
     mode === "chain"
       ? { ...process.env, COACH_PROVIDER: process.env.COACH_PROVIDER ?? "groq" }
@@ -55,7 +64,7 @@ export async function setUpEval(mode: string): Promise<EvalContext> {
           GEMINI_MODEL: process.env.GEMINI_MODEL,
         };
   const events: ProviderEvent[] = [];
-  const model = coachModel(env, { onEvent: (e) => events.push(e) });
+  const model = coachModel(env, { ...retry, onEvent: (e) => events.push(e) });
 
   // The whole library, as the seed stores it: nothing is capped or filtered here.
   const all = (await (

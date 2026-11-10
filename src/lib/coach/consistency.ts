@@ -1,7 +1,7 @@
 // How consistent the coach is when one eval profile is sent several times (#64).
 // Measures follow Lee (2026, arXiv 2604.19598): exact duplicates counted per profile,
 // alongside the verifier pass rate; structured fields are compared, not text
-// embeddings (docs/papers/2026-lee-repeated-generation-consistency.md).
+// embeddings (docs/papers/2026-lee-cross-model-consistency.md).
 
 import { z } from "zod";
 import { normaliseName } from "./generatePlan";

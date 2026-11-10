@@ -10,17 +10,8 @@ import {
   paced,
   pendingRuns,
   rateLimitedOut,
-  type RunKey,
 } from "./pacing";
-
-function doneRuns(file: string): RunKey[] {
-  if (!existsSync(file)) return [];
-  return readFileSync(file, "utf8")
-    .trim()
-    .split("\n")
-    .filter(Boolean)
-    .map((line) => JSON.parse(line) as RunKey);
-}
+import { firstCallAnswered, parseDoneRuns } from "./repeatRow";
 
 export async function runRepeats(
   mode: string,
@@ -38,10 +29,18 @@ export async function runRepeats(
   const budget = Number(
     process.env.EVAL_MAX_CALLS ?? dailyCallBudget(limits, TOKENS_PER_CALL),
   );
-  const ctx = await setUpEval(mode);
+  // Retries off: each HTTP request is one paced call against the budget, and a run
+  // whose first call fails in transport is left pending instead of retried in a burst.
+  const ctx = await setUpEval(mode, { retries: 0 });
   ctx.model = paced(ctx.model, gapMs);
 
-  const todo = pendingRuns(ids, repeat, doneRuns(file));
+  const done = existsSync(file)
+    ? parseDoneRuns(readFileSync(file, "utf8"))
+    : [];
+  const todo = pendingRuns(ids, repeat, done);
+  const resume = `npx tsx eval/coachEval.ts ${mode} repeat --repeat ${repeat} --file ${file}`;
+  // The budget is per session, not carried over: a second session on the same day
+  // can still meet the provider's daily cap, which the 429 stop below catches.
   console.log(
     `${todo.length} runs to do; ${gapMs} ms between calls, at most ${budget} calls this session`,
   );
@@ -50,7 +49,7 @@ export async function runRepeats(
     // A run can take two calls (a rejected plan is retried once).
     if (callsMade + 2 > budget) {
       console.log(
-        `stopping at the daily budget (${callsMade} calls); rerun to resume`,
+        `stopping at the budget (${callsMade} calls); resume: ${resume}`,
       );
       break;
     }
@@ -58,9 +57,15 @@ export async function runRepeats(
     callsMade += row.calls.length;
     if (rateLimitedOut(row.calls)) {
       console.log(
-        `${key.id} run ${key.run}: rate limited on every call; stopping, rerun to resume`,
+        `${key.id} run ${key.run}: refused with 429; stopping. Resume: ${resume}`,
       );
       break;
+    }
+    if (!firstCallAnswered(row.calls)) {
+      console.log(
+        `${key.id} run ${key.run}: first call failed (${row.calls[0]?.error}); left pending`,
+      );
+      continue;
     }
     const record = { run: key.run, at: new Date().toISOString(), ...row };
     appendFileSync(file, JSON.stringify(record) + "\n");

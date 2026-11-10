@@ -5,37 +5,33 @@
 //   npx tsx eval/coachEval.ts gemini round2 gym-3-days one profile, Gemini only
 //   npx tsx eval/coachEval.ts chain round2             Groq, then Gemini on failure
 //   npx tsx eval/coachEval.ts groq repeat --repeat 5   each profile five times (#64),
-//     paced under the free-tier limits in eval/pacing.ts; rerun the same command on
-//     a later day to resume (add --file <path> to continue an earlier day's file).
+//     paced under the free-tier limits in eval/pacing.ts. To resume after a daily cap,
+//     rerun with --file <that day's file>; the runner prints the exact command.
 // PAUSE_MS sets the wait between profiles in single runs (default 3000).
 import "dotenv/config";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { EVAL_PROFILES } from "../src/lib/coach/evalProfiles";
+import { parseArgs } from "./args";
 import { describeRow, evalProfile, setUpEval } from "./evalProfile";
 import { runRepeats } from "./repeatRun";
 
-function flag(name: string): string | undefined {
-  const i = process.argv.indexOf(name);
-  return i === -1 ? undefined : process.argv[i + 1];
-}
-
 async function main() {
-  const [mode = "groq", label = "run", onlyArg] = process.argv
-    .slice(2)
-    .filter(
-      (a, i, all) => !a.startsWith("--") && !all[i - 1]?.startsWith("--"),
-    );
-  const only = onlyArg?.split(",");
+  const {
+    mode,
+    label,
+    only,
+    repeat,
+    file: fileArg,
+  } = parseArgs(process.argv.slice(2));
   const ids = EVAL_PROFILES.map((p) => p.id).filter(
     (id) => !only || only.includes(id),
   );
   mkdirSync("eval/results", { recursive: true });
   const file =
-    flag("--file") ??
+    fileArg ??
     `eval/results/${new Date().toISOString().slice(0, 10)}-${mode}-${label}.jsonl`;
 
-  const repeat = flag("--repeat");
-  if (repeat) return runRepeats(mode, ids, Number(repeat), file);
+  if (repeat) return runRepeats(mode, ids, repeat, file);
 
   const pauseMs = Number(process.env.PAUSE_MS ?? 3000);
   const ctx = await setUpEval(mode);

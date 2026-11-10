@@ -47,22 +47,21 @@ describe("pendingRuns", () => {
 });
 
 describe("paced", () => {
-  it("waits out the gap since the previous call started, and not before the first", async () => {
+  it("spaces call starts by the gap, counting the time the last call took", async () => {
     let clock = 0;
     const waits: number[] = [];
     const sleep = async (ms: number) => {
       waits.push(ms);
       clock += ms;
     };
-    const call = paced(
-      async (x: number) => x * 2,
-      60_000,
-      () => clock,
-      sleep,
-    );
+    // Each call takes 10 s, so 50 s are left of a 60 s gap measured from its start.
+    const slowDouble = async (x: number) => {
+      clock += 10_000;
+      return x * 2;
+    };
+    const call = paced(slowDouble, 60_000, () => clock, sleep);
 
     const first = await call(1);
-    clock += 10_000; // the first reply took 10 s
     const second = await call(2);
 
     expect([first, second]).toEqual([2, 4]);

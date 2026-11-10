@@ -4,9 +4,11 @@ export type Limits = { rpm: number; rpd?: number; tpm?: number; tpd?: number };
 // Groq: openai/gpt-oss-120b base limits, console.groq.com/docs/rate-limits, checked
 // 10 Nov 2026 (the account's own figures are on its limits page).
 // Gemini: free-tier limits are per project and shown only in AI Studio; RPD resets at
-// midnight Pacific (ai.google.dev/gemini-api/docs/rate-limits, 10 Nov 2026). These
-// defaults are what round 2 ran without a 429 (15 s apart) and the 20-a-day cap
-// Gemini Flash hit then; override with EVAL_GAP_MS and EVAL_MAX_CALLS.
+// midnight Pacific (ai.google.dev/gemini-api/docs/rate-limits, 10 Nov 2026). The
+// defaults are cautious stand-ins: Flash-Lite (the fallback, GEMINI_MODEL) ran 15 s
+// apart in round 2 with no per-minute 429, and 20 a day is the cap gemini-3.5-flash
+// hit then (docs/COACH_EVAL.md). Set EVAL_GAP_MS and EVAL_MAX_CALLS from the
+// project's AI Studio limits page.
 export const PROVIDER_LIMITS: Record<"groq" | "gemini", Limits> = {
   groq: { rpm: 30, rpd: 1000, tpm: 8000, tpd: 200_000 },
   gemini: { rpm: 4, rpd: 20 },
