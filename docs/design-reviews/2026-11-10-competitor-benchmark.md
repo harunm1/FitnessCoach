@@ -39,7 +39,17 @@ Purpose: build what already works, beat it where users are hurt, and say so in t
 
 ## Open decision: domain names (FitnessCoach and CAIRO)
 
-Candidates to check at a registrar (availability not checked here; the session cannot reach a domain lookup): FitnessCoach: verifiedcoach.app, repcheck.app, safeset.app. CAIRO: cairo-code.app, askcairo.dev. Team decision for FitnessCoach; Dr. Emara's for CAIRO.
+Checked on 10 Nov 2026 (about 5:30pm Toronto) with an RDAP lookup (`https://rdap.org/domain/<name>`; 404 means no registration record). The note lists five candidates: three for FitnessCoach, two for CAIRO.
+
+| Project      | Domain            | RDAP result                                           |
+| ------------ | ----------------- | ----------------------------------------------------- |
+| FitnessCoach | verifiedcoach.app | 404, no registration record                           |
+| FitnessCoach | repcheck.app      | registered 25 May 2026 (GoDaddy), expires 25 May 2027 |
+| FitnessCoach | safeset.app       | registered 27 Jul 2020 (GoDaddy), expires 27 Jul 2030 |
+| CAIRO        | cairo-code.app    | 404, no registration record                           |
+| CAIRO        | askcairo.dev      | 404, no registration record                           |
+
+A 404 only says the name is unregistered; a registrar can still treat it as reserved or premium, so check the price at purchase. Team decision for FitnessCoach; Dr. Emara's for CAIRO.
 
 ## Priority against the Sun 15 Nov core path
 
