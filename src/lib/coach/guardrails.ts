@@ -10,6 +10,8 @@
 //   - the coach does not diagnose or advise on medication
 //   - disordered eating gets a supportive reply and the NEDIC helpline; guilt or low
 //     self-worth as motivation gets a reframe and the plan stays as it is
+//   - nutrition questions (diet, calories, supplements, meals) get a short reply
+//     pointing to a registered dietitian; scope is training, not food (8 Nov, #43)
 //   - requests outside training get a short redirect
 //   - text the user types is only ever the user message; it never changes the
 //     system prompt, so "ignore your instructions" changes nothing here
@@ -33,6 +35,7 @@ export type Guard =
         | "NO_DIAGNOSIS"
         | "EATING_SUPPORT"
         | "MINDSET_REFRAME"
+        | "NUTRITION_REDIRECT"
         | "OFF_TOPIC";
       reply: string;
     };
@@ -71,6 +74,10 @@ export const REPLIES = {
   // motivation; reframe toward what the user can do, and leave the plan alone.
   MINDSET_REFRAME:
     "You don't have to earn your training or make up for anything, and a missed session or a hard day doesn't change what you're worth. Your plan stays as it is: pick one session you'd like to do this week, and we'll build from there.",
+  // Nutrition is out of scope (8 November design review, decision 5, #43): no diet,
+  // calorie, supplement or meal advice, so the question never reaches the model.
+  NUTRITION_REDIRECT:
+    "I'm a training coach, so I don't give diet, calorie, supplement or meal advice. A registered dietitian can build that around you. I'm still here for your plan, your running and your recovery.",
   OFF_TOPIC:
     "I'm your training coach, so I can help with your plan, exercises, running and recovery. What would you like to work on?",
 } as const;
@@ -88,6 +95,30 @@ const NEGATED_PAIN =
   /\b(no|not|never|don'?t|doesn'?t|didn'?t|isn'?t|wasn'?t)\b(\s+(?!(stop|stops|stopped|way)\b)\w+){0,2}\s+(pain|painful|hurt|hurts|hurting)\b/gi;
 const DIAGNOSIS =
   /\b(diagnos\w*|do i have|is it (a )?(torn|tear|broken|fracture|sprain|strain)|what injury|tendinitis|tendonitis|herniat\w*|ibuprofen|advil|painkillers?|pills?|medication|meds|dosage)\b/i;
+// A question or request about what to eat, drink or take, or how much. Food in a goal
+// ("I want to lose fat") or in a training question ("I skipped breakfast, should I
+// still train?") is not matched: the pattern needs an ask about the food itself.
+const FOOD = String.raw`(calor\w*|kcal|macros?|carbs?|carbohydrates?|protein|supplements?|creatine|pre-?workout|whey|bcaas?|vitamins?|foods?|meals?|snacks?|diets?|keto|fasting|electrolytes?)`;
+const NUTRITION = new RegExp(
+  [
+    // "what should I eat", "what to drink", "what do I have for dinner"
+    String.raw`\bwhat\b[^.?!]{0,30}\b(eat|drink|have for (breakfast|lunch|dinner)|take (for|before|after))\b`,
+    // "should I cut calories", "can I take creatine", "do I need to track carbs"
+    String.raw`\b(should|can|could|do|would)\s+i\b[^.?!]{0,30}\b(eat|drink|take|cut|count|track|reduce|increase|add|avoid|limit|need)\b[^.?!]{0,30}\b${FOOD}\b`,
+    // "how much protein", "how many calories", "how much should I eat"
+    String.raw`\bhow (much|many)\b[^.?!]{0,30}\b(eat|${FOOD})\b`,
+    // "best supplements", "recommend a diet", "healthy snacks"
+    String.raw`\b(best|good|healthy|recommend\w*|suggest\w*)\b[^.?!]{0,30}\b(diets?|meals?|snacks?|supplements?|foods?|protein (shakes?|powder|bars?)|creatine|pre-?workout)\b`,
+    // "any alternatives to this protein shake"
+    String.raw`\b(protein (shakes?|powder|bars?)|supplements?|snacks?)\b[^.?!]{0,60}\b(alternatives?|instead|recommend\w*|suggest\w*|which)\b`,
+    // "give me a meal plan", "build a diet", "what my macros should be"
+    String.raw`\b(give|make|write|create|build|plan|need|want|calculate|set|help)\b[^.?!]{0,40}\b(meal (plans?|prep)|diet( plans?)?|macros?|calorie (target|goal|intake))\b`,
+    String.raw`\b(my )?(macros?|calories|calorie (target|intake))\b[^.?!]{0,20}\b(be|should)\b`,
+    // "is keto good for running", "is intermittent fasting worth it"
+    String.raw`\bis\b[^.?!]{0,20}\b(keto|fasting|a diet|the \w+ diet)\b`,
+  ].join("|"),
+  "i",
+);
 const TRAINING =
   /\b(workout|exercise|train(ing)?|plan|set|sets|reps?|weight|lift\w*|squat\w*|plank\w*|bench|deadlift\w*|press|curl\w*|row\w*|run\w*|ran|jog\w*|pace|kms?|mile\w*|marathon|sprint\w*|interval\w*|tempo|cardio|stretch\w*|warm[- ]?up|cool[- ]?down|rest|recover\w*|sleep|protein|eat\w*|diet|calori\w*|muscle\w*|gym|form|knees?|back|shoulders?|hips?|ankles?|hill\w*|burpee\w*|winded|\d+k|bulk\w*|cut|cutting|creatine|prs?|bonk\w*|race\w*|suicides|dizz\w*|light-?headed|leg\w*|arm\w*|chest|core|abs|sore\w*|tired|fatigue|strength|endurance|body|goal\w*|week|day|session|fat|lose|loss|gain\w*|heavy)\b/i;
 
@@ -168,6 +199,12 @@ export function checkUserMessage(text: string): Guard {
       return { action: "PAIN_GUIDANCE", reply: REPLIES.PAIN_GUIDANCE };
     }
     return { action: "PAIN_STOP", reply: REPLIES.PAIN_STOP };
+  }
+  // A diet, calorie, supplement or meal question is out of scope; it never reaches the
+  // model. Everything above ranks higher: crisis, red flags, an eating disclosure and
+  // pain all get their own reply first.
+  if (NUTRITION.test(message)) {
+    return { action: "NUTRITION_REDIRECT", reply: REPLIES.NUTRITION_REDIRECT };
   }
   // Short messages ("thanks", "ok") are conversation, not off-topic requests.
   const words = message.split(/\s+/).filter(Boolean).length;

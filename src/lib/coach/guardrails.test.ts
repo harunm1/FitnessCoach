@@ -140,15 +140,11 @@ describe("checkUserMessage", () => {
 
   it.each([
     "I want to lose fat before summer",
-    "should I cut calories on rest days?",
     "how fast can I lose weight safely",
     "my goal is to lose weight and keep my strength",
     "I skipped breakfast, should I still train?",
-    "I'm starving after my long run, what should I eat?",
-    "I'm starving to death after my long run, what should I eat?",
     "I'm starving to get to dinner after leg day",
     "disgusting weather for a run today, should I go to the gym instead?",
-    "this protein shake tastes disgusting, any alternatives?",
     "my old running shoes are worthless now, what should I buy?",
     "I purged my old workout logs, can you rebuild my plan?",
     "I'm not allowed to eat before my blood test tomorrow morning, should I train?",
@@ -156,6 +152,64 @@ describe("checkUserMessage", () => {
     "should I train to failure on the last set?",
   ])("lets fat-loss goals and ordinary training talk through: %s", (text) => {
     expect(checkUserMessage(text).action).toBe("ALLOW");
+  });
+
+  // Nutrition is out of scope since the 8 November design review (decision 5, #43): no
+  // diet, calorie, supplement or meal advice, and the question never reaches the model.
+  it.each([
+    "should I cut calories on rest days?",
+    "I'm starving after my long run, what should I eat?",
+    "I'm starving to death after my long run, what should I eat?",
+    "this protein shake tastes disgusting, any alternatives?",
+    "what should I eat before a morning run?",
+    "how much protein do I need to build muscle?",
+    "can I take creatine with my plan?",
+    "give me a meal plan for the week",
+    "what are the best supplements for strength?",
+    "how many calories should I eat on a rest day?",
+    "what should my macros be for fat loss?",
+    "is keto good for running?",
+  ])("redirects a nutrition question to a dietitian: %s", (text) => {
+    expect(checkUserMessage(text)).toEqual({
+      action: "NUTRITION_REDIRECT",
+      reply: REPLIES.NUTRITION_REDIRECT,
+    });
+  });
+
+  it("points a nutrition question to a registered dietitian and gives no advice", () => {
+    expect(REPLIES.NUTRITION_REDIRECT).toMatch(/registered dietitian/i);
+    expect(REPLIES.NUTRITION_REDIRECT).not.toMatch(/\d/);
+  });
+
+  it.each([
+    "I want to lose fat before summer",
+    "how fast can I lose weight safely",
+    "my goal is to lose weight and keep my strength",
+    "I skipped breakfast, should I still train?",
+    "I ate before my run and felt winded, should I slow the pace?",
+    "I take creatine daily",
+    "do I bulk or cut",
+    "I'm tired after dinner, should I move my workout earlier?",
+    "should I add weight to the last set?",
+    "how much rest should I take between sets?",
+  ])(
+    "leaves goals and training questions that mention food alone: %s",
+    (text) => {
+      expect(checkUserMessage(text).action).toBe("ALLOW");
+    },
+  );
+
+  it("answers disordered eating before a nutrition question", () => {
+    expect(
+      checkUserMessage("I only eat 500 calories a day, what should I eat?")
+        .action,
+    ).toBe("EATING_SUPPORT");
+  });
+
+  it("still stops on pain before a nutrition question", () => {
+    expect(
+      checkUserMessage("my knee hurts, what should I eat to heal it?").action,
+    ).toBe("PAIN_STOP");
   });
 
   it.each([
