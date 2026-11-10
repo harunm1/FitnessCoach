@@ -172,10 +172,25 @@ const CRISIS =
 const RED_FLAG =
   /\b(chest (pain|pains|tightness|pressure)|chest (got|gets|is|was|feels|felt|feeling) (tight|painful|heavy)|chest (hurts?|hurting|aches?|aching|is killing me)|chest tighten\w*|tight(ening)? chest|(pain|pressure|tightness|ache|heaviness) in (my |the )?chest|faint(ed|ing)|(feel|felt|feeling|feels|went|got|getting|nearly|almost|about to) faint|passed out|pass out(?! (the|a|some|these|those|them|water)\b)|blacked out|(?<!\b(knees?|arch(es)?|ankles?|hips?|form|back|legs?)( (nearly|almost|kept|keep|keeps|were|was|are|is|started|start|kind of))? )collaps(ed|ing)\b|chest (is|feels|was|felt|got|gets|getting|feeling)( \w+){0,2} (tight|heavy|painful|crushing)|chest tight\b|tight (feeling )?in (my|the) chest|(squeez|crush)\w* (feeling |sensation )?in (my|the) chest|chest discomfort|pain in (my |the )?chest|chest (started|starting|began|begins) (hurting|to hurt|aching|to ache)|left arm (is |went |feels |felt )?(numb|tingl\w*)|los(t|e|ing) consciousness|went black|(vision|everything) went (black|dark)|arrhythmia\w*|heart ?beat (feels|felt|is|was) (off|weird|strange|wrong)|heart rate (is |was )?all over the place|heart (is |was )?(racing|pounding)\b.*\b(dizzy|light-?headed|faint)|(dizzy|light-?headed)\b.*\b(heart|chest)|(can'?t|couldn'?t|could not|cannot|can not) get (enough )?air|wheez\w*\b.*\b(can'?t|cannot|couldn'?t) (breathe|get)|heart (is |was )?(pounding|racing)\b.*\b(at rest|won'?t (slow|settle|come) down|for (an|over an) hour)|heart rate (is |was |of )?(1[89]\d|2\d\d)\b|heart (stopped|stops)|can'?t feel my (left )?arm|(pain|ache|numb\w*|tingl\w*) (radiating )?(down|in|into) my (left arm|jaw)|(jaw|left arm) (pain|ache|is numb|went numb)|seizure|cough\w* (up )?blood|(lips|face) (turned|went|are|is|were) blue|(sudden|worst) (severe )?headache|labou?red breathing|breathing (is |was )?(really |very )?labou?red|(breathless|short of breath) at rest|(could ?n'?t|can'?t|could not|cannot|can not) (breathe|catch my breath)|trouble breathing|struggl\w* to breathe|short(ness)? of breath|irregular(ly)? heart ?(beat|rhythm)|heart ?beat (felt|feels|was|is|went) irregular|heart (was |is )?(beating |pounding )?irregular(ly)?|palpitations?|heart\w* (felt like it was |was |is |keeps? )?(skipp\w*|flutter\w*)|skipped (a )?beats?)\b/i;
 
+// Every pattern below is written for plain text: straight apostrophes, single spaces,
+// no invisible characters. Phone keyboards send curly apostrophes (U+2019 in "don't"),
+// a pasted message can carry line breaks or double spaces, and zero-width or
+// full-width characters would otherwise hide "chest pain" or "suicide" from the word
+// list (security review, 10 Nov). NFKC folds full-width letters to ASCII; format
+// characters (\p{Cf}, such as U+200B) are removed; any run of whitespace becomes one
+// space. Leetspeak and look-alike letters are not handled; the model check reads
+// meaning and covers some of that (safetyScreen.ts).
+export function normalizeText(text: string): string {
+  return text
+    .normalize("NFKC")
+    .replace(/\p{Cf}/gu, "")
+    .replace(/[‘’ʼ]/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function checkUserMessage(text: string): Guard {
-  // Phone keyboards send curly apostrophes (U+2019 in "don't"); every pattern uses
-  // straight ones.
-  const message = text.trim().replace(/[‘’ʼ]/g, "'");
+  const message = normalizeText(text);
   if (CRISIS.test(withoutExaggeration(message))) {
     return { action: "CRISIS", reply: REPLIES.CRISIS };
   }
@@ -236,10 +251,10 @@ export function checkUserMessage(text: string): Guard {
 // A model can still slip into diagnosis or dosing. Replies that do are replaced,
 // not edited, so nothing half-safe reaches the user.
 const REPLY_DIAGNOSIS =
-  /\b(you (probably |likely |might |may )?have (a |an )?(torn|tear|sprain|strain|fracture|tendinitis|tendonitis|herniated|bursitis)|(this|that|it) (is|sounds like|could be) (a |an )?(torn|tear|sprain|strain|fracture|tendinitis|tendonitis|herniat\w*|bursitis)|(probably|likely|possibly|might be|may be|could be|sounds like|looks like|seems like|consistent with|(you|you've|may|might|could|probably|likely) (have|got)) (a |an )?(\w+ )?(torn|tear|sprain|strain|fracture|tendinitis|tendonitis|tendinopathy|herniat\w*|bursitis|shin splints|runner's knee|jumper's knee|plantar fasciitis|stress fracture|(pulled|torn|strained) (muscle|hamstring|calf|quad|groin))|take (one|two|three|four|\d+) (tylenol|advil|ibuprofen|aspirin|aleve|pills?|tablets?|capsules?)|tylenol|aspirin|aleve|take \d+\s?mg|ibuprofen|advil|naproxen|acetaminophen)\b/i;
+  /\b(you (probably |likely |might |may )?have (a |an )?(torn|tear|sprain|strain|fracture|tendinitis|tendonitis|herniated|bursitis)|(this|that|it) (is|sounds like|could be) (a |an )?(torn|tear|sprain|strain|fracture|tendinitis|tendonitis|herniat\w*|bursitis)|(probably|likely|possibly|might be|may be|could be|sounds like|looks like|seems like|consistent with|(you|you've|may|might|could|probably|likely) (have|got)) (a |an )?(\w+ )?(torn|tear|sprain|strain|fracture|tendinitis|tendonitis|tendinopathy|herniat\w*|bursitis|shin splints|runner's knee|jumper's knee|plantar fasciitis|stress fracture|(pulled|torn|strained) (muscle|hamstring|calf|quad|groin))|take (one|two|three|four|\d+) (tylenol|advil|ibuprofen|aspirin|aleve|pills?|tablets?|capsules?)|tylenol|aspirin|aleve|take \d+\s?mg|ibuprofen|advil|naproxen|acetaminophen|paracetamol|motrin|diclofenac|voltaren|codeine|tramadol|\d+\s?mg|rotator cuff tear|(it|iliotibial) band syndrome|itbs)\b/i;
 
 export function checkCoachReply(text: string): Guard {
-  return REPLY_DIAGNOSIS.test(text.replace(/[‘’ʼ]/g, "'"))
+  return REPLY_DIAGNOSIS.test(normalizeText(text))
     ? { action: "NO_DIAGNOSIS", reply: REPLIES.NO_DIAGNOSIS }
     : { action: "ALLOW" };
 }
@@ -258,7 +273,16 @@ export function buildChatMessages(
 ): ChatMessage[] {
   return [
     { role: "system", content: systemPrompt },
-    ...history.filter((m) => m.role !== "system"),
+    // Only user and assistant turns, rebuilt as role and content alone: a stored row's
+    // id or user id never goes to a provider, and a "developer", "tool" or "system"
+    // role in history cannot carry instructions (security review, 10 Nov).
+    ...history
+      .filter(
+        (m) =>
+          (m.role === "user" || m.role === "assistant") &&
+          typeof m.content === "string",
+      )
+      .map((m) => ({ role: m.role, content: m.content })),
     { role: "user", content: userText },
   ];
 }
