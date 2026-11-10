@@ -397,20 +397,54 @@ export function coachChatModel(
 // provider; once text has been shown, switching would start a second, different reply.
 export type ChatStream = (messages: ChatMessage[]) => AsyncIterable<string>;
 
-async function* sseData(res: Response): AsyncIterable<string> {
+// Reads the data lines of a server-sent event body (#56 review, points 2 and 3).
+// - A read that fails after the headers (a dropped connection is a TypeError, a slow
+//   body hits the request timeout) becomes a ProviderError, so withStreamFallback can
+//   still switch providers while no text has been shown.
+// - When the consumer stops early (the reply check trips, or the caller stops reading),
+//   the generator's finally cancels the body, which aborts the upstream request, and
+//   releases the lock (MDN, ReadableStreamDefaultReader cancel() and releaseLock(),
+//   checked 10 Nov 2026). After a normal end the cancel is a no-op.
+async function readChunk(
+  provider: string,
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+) {
+  try {
+    return await reader.read();
+  } catch (e) {
+    const timedOut = (e as Error).name === "TimeoutError";
+    throw new ProviderError(
+      `${provider} stream ${timedOut ? "timed out" : "broke off"}`,
+      provider,
+      undefined,
+      undefined,
+      timedOut,
+    );
+  }
+}
+
+async function* sseData(
+  provider: string,
+  res: Response,
+): AsyncIterable<string> {
   const reader = res.body!.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    let end: number;
-    while ((end = buffer.indexOf("\n")) >= 0) {
-      const line = buffer.slice(0, end).trim();
-      buffer = buffer.slice(end + 1);
-      if (line.startsWith("data:")) yield line.slice(5).trim();
+  try {
+    for (;;) {
+      const { done, value } = await readChunk(provider, reader);
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let end: number;
+      while ((end = buffer.indexOf("\n")) >= 0) {
+        const line = buffer.slice(0, end).trim();
+        buffer = buffer.slice(end + 1);
+        if (line.startsWith("data:")) yield line.slice(5).trim();
+      }
     }
+  } finally {
+    await reader.cancel().catch(() => undefined);
+    reader.releaseLock();
   }
 }
 
@@ -458,7 +492,7 @@ export function groqChatStream(apiKey: string, model = GROQ_MODEL): ChatStream {
       { Authorization: `Bearer ${apiKey}` },
       { model, messages, reasoning_effort: "low", stream: true },
     );
-    for await (const data of sseData(res)) {
+    for await (const data of sseData("Groq", res)) {
       if (data === "[DONE]") return;
       const piece = (
         JSON.parse(data) as { choices?: { delta?: { content?: unknown } }[] }
@@ -490,7 +524,7 @@ export function geminiChatStream(
           })),
       },
     );
-    for await (const data of sseData(res)) {
+    for await (const data of sseData("Gemini", res)) {
       const parts =
         (
           JSON.parse(data) as {
