@@ -5,6 +5,7 @@
 
 /** @type {import("prettier").Config} */
 const config = {
+  endOfLine: "lf",
   plugins: ["prettier-plugin-tailwindcss"],
   // Tailwind v4 has no tailwind.config.js, so the plugin reads the theme from our CSS entry point.
   tailwindStylesheet: "./src/app/globals.css",

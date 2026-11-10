@@ -8,7 +8,12 @@ import { PrismaClient } from "@/generated/prisma/client";
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 function createClient() {
-  const connectionString = process.env.DATABASE_URL;
+  const isProductionBuild = process.env.NEXT_PHASE === "phase-production-build";
+  const connectionString =
+    process.env.DATABASE_URL ||
+    (isProductionBuild
+      ? "postgresql://build:build@localhost:5432/fitnesscoach?schema=public"
+      : undefined);
   if (!connectionString) {
     throw new Error("DATABASE_URL is not set; copy .env.example to .env");
   }

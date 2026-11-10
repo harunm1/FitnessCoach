@@ -12,7 +12,7 @@ FitnessCoach will combine personalized strength and running programs with an int
 
 ### 2.1 Objectives
 
-A short quiz produces a weekly gym, running or hybrid plan that fits the user's goal, equipment, schedule, injuries and daily life; the user logs sessions on their phone, and plan and progress update as they train. A coach chat answers questions about the user's own plan.
+A short quiz produces a weekly gym, running or hybrid plan that fits the user's goal, equipment, schedule, injuries and daily life; the user logs sessions on a phone, and plan and progress update as they train. A coach chat answers questions about the user's own plan.
 
 The technical objective is a trustworthy coach: code checks every plan before it is saved, and failures never lose data or leave an empty screen.
 
@@ -22,7 +22,7 @@ The technical objective is a trustworthy coach: code checks every plan before it
 
 _Figure 1. Dashed lines: fallback provider, seeding and CI._
 
-We use Option A, Next.js full-stack with the App Router: no outside client calls our backend. The React frontend (Tailwind CSS, shadcn/ui) reaches the backend three ways: Server Components load data before the page renders, Server Actions validated by Zod handle every form, and one route handler serves coach chat.
+We use Option A: Next.js full-stack with the App Router. The React frontend (Tailwind CSS, shadcn/ui) reaches the backend three ways: Server Components load data before render, Server Actions validated by Zod handle every form, and one route handler serves coach chat.
 
 In the AI coach the model proposes and code decides: only a plan that passes the verifier is saved.
 
@@ -64,7 +64,7 @@ A failure degrades one capability, never the whole app: without a model, users s
 | Malformed or unsafe plan         | Schema check, then the verifier (ids, equipment, injuries, ranges, duplicates, day count); one regeneration listing problems |
 | Out-of-scope or unsafe chat      | Rules in code: reported pain stops the exercise and suggests a professional; no diagnosis                                    |
 
-Every model call is logged (provider, prompt version, latency, outcome). Vitest unit tests mock the network; CI runs format, lint, types, tests and build on every pull request, and will replay ten fixed coach profiles. From mid-November we pilot the demo path on a deployed preview.
+Every model call will be logged (provider, prompt version, latency, outcome). Vitest unit tests mock the network; CI runs format, lint, types, tests and build on every pull request, and replays ten recorded coach profiles. From mid-November we pilot the demo path on a deployed preview.
 
 ### 2.6 How the required technologies are used
 
@@ -77,11 +77,11 @@ We commit to two:
 1. **Authentication and authorization.** Better Auth sign-in; four tiers checked on the server in every Server Action and route handler: free (quiz, rule-based plan, logging), trial (coach chat until it ends), pro (coach chat; set by an admin, or by Stripe test mode if built), admin (edits the library).
 2. **Integration with an external AI API.** Groq, with Gemini as fallback, writes strength plans and answers chat behind the verifier; verified plans are saved as the user's `Plan`.
 
-One planned extension, reported only if finished: **real-time** coach replies streamed a sentence at a time, each checked before it is shown.
+Planned extension, reported only if finished: **real-time** coach replies streamed a sentence at a time, each checked first.
 
 ### 2.8 Scope and feasibility
 
-On `main`: the Next.js skeleton, strength schema and first migration, seeded library, CI, plan generation with the verifier, and provider fallback. Each owner's area builds against the shared schema and merges weekly.
+On `main`: the Next.js skeleton, strength and running schema, seeded library, CI with coach replay, plan generation with the verifier and provider fallback, rule-based running and hybrid weeks, saving the active plan, and coach-call records (not yet stored).
 
 ## 3. Plan and Responsibilities
 
@@ -99,7 +99,7 @@ Nabeegh owns the architecture, research and coach evaluation, foundation (schema
 
 Every Tuesday at 7 p.m., each member reports what they built, blockers and next steps. Questions, decisions and blockers stay on related GitHub issues; Discord handles scheduling. Team brainstorming, informed by our [research](https://github.com/harunm1/FitnessCoach/blob/main/docs/RESEARCH.md) and [coach evaluations](https://github.com/harunm1/FitnessCoach/blob/main/docs/COACH_EVAL.md), settles design.
 
-The shared Prisma schema, workout-plan JSON and authentication are the critical path: signed-in quiz, session and progress integration depends on them. Each task has an issue, branch and PR with `Closes #n`, covering one feature or fix for review in one sitting. Code PRs need one teammate approval; documentation merges without review when conflict-free. No teammate receives more than three small, separate PRs daily. Branches merge weekly so the app runs together. CI runs formatting, lint, TypeScript checks, tests and build.
+The shared Prisma schema, workout-plan JSON and authentication are the critical path: signed-in quiz, session and progress integration depends on them. Each task has an issue, branch and PR with `Closes #n`, covering one feature or fix for review in one sitting. Code PRs need one teammate approval, or merge after three days without review; documentation merges without review when conflict-free. No teammate receives more than three small, separate PRs daily. Branches merge weekly so the app runs together. CI runs formatting, lint, TypeScript checks, tests and build.
 
 ### 3.4 Risks and Scope
 
