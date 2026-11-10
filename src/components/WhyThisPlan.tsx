@@ -1,23 +1,28 @@
 // "Why this plan" panel (#66): a server component that renders the rows from whyThisPlan().
-// Plain Tailwind (border, spacing) that maps one to one onto shadcn's Card when #77 lands.
+// Plain Tailwind (border, spacing). When #77 lands, swap the section's classes for Card's but
+// keep the section element and the h2/h3 headings: shadcn's CardTitle renders a div, not a heading.
 // Meaning is carried by headings and sentences, never by colour alone.
 import type { WhyRow } from "@/lib/coach/whyThisPlan";
 
 type WhyThisPlanProps = {
   rows: WhyRow[];
+  // Makes the heading id unique when more than one panel is on a page (for example a plan id).
+  idPrefix?: string;
 };
 
-const HEADING_ID = "why-this-plan-heading";
-
-export default function WhyThisPlan({ rows }: WhyThisPlanProps) {
+export default function WhyThisPlan({
+  rows,
+  idPrefix = "why-this-plan",
+}: WhyThisPlanProps) {
   if (rows.length === 0) return null;
+  const headingId = `${idPrefix}-heading`;
 
   return (
     <section
-      aria-labelledby={HEADING_ID}
+      aria-labelledby={headingId}
       className="border border-foreground/15 p-5"
     >
-      <h2 id={HEADING_ID} className="text-sm font-semibold">
+      <h2 id={headingId} className="text-sm font-semibold">
         Why this plan
       </h2>
       <div className="mt-4 grid gap-4">

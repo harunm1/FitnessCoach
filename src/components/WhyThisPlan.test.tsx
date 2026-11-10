@@ -57,6 +57,20 @@ describe("WhyThisPlan", () => {
     expect(html).toContain(`id="${id}"`);
   });
 
+  it("builds the heading id from the given prefix so two panels do not share an id", () => {
+    const first = renderToStaticMarkup(
+      <WhyThisPlan rows={rows} idPrefix="plan-1" />,
+    );
+    const second = renderToStaticMarkup(
+      <WhyThisPlan rows={rows} idPrefix="plan-2" />,
+    );
+
+    expect(first).toContain('aria-labelledby="plan-1-heading"');
+    expect(first).toContain('id="plan-1-heading"');
+    expect(second).toContain('id="plan-2-heading"');
+    expect(second).not.toContain("plan-1-heading");
+  });
+
   it("renders nothing when there are no rows", () => {
     expect(renderToStaticMarkup(<WhyThisPlan rows={[]} />)).toBe("");
   });
