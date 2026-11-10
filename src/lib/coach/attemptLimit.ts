@@ -8,6 +8,8 @@ const DAY_MS = MINUTES_PER_DAY * MINUTE_MS;
 
 // In memory, so it holds per server instance: across instances, the count of saved
 // messages in the database is the backstop. Each user keeps at most perDay times.
+// A user's entry stays after they go quiet (one short list per user who has sent);
+// fine at course scale, a sweep or an LRU cap if the user count grows.
 export function createAttemptLimiter(
   limits: AttemptLimits,
   now: () => number = Date.now,

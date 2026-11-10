@@ -430,4 +430,18 @@ describe("sendCoachMessage", () => {
     expect(sixth).toEqual({ status: "error", message: RATE_MINUTE_MESSAGE });
     expect(chatModel).toHaveBeenCalledTimes(5);
   });
+
+  it("does not use up the cap on messages refused before the model call", async () => {
+    for (const blank of ["", " ", "  ", "   ", "    ", "     "]) {
+      await sendCoachMessage(idle, form({ message: blank }));
+    }
+
+    const result = await sendCoachMessage(
+      idle,
+      form({ message: "How long should I rest?" }),
+    );
+
+    expect(result).toEqual({ status: "sent" });
+    expect(chatModel).toHaveBeenCalledTimes(1);
+  });
 });
