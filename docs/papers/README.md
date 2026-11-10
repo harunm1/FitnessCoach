@@ -12,6 +12,7 @@ One note per paper the project cites, written after reading it so nobody has to 
 | [Lai et al. 2025, evaluation strategies for LLM coaches](2025-lai-evaluation-strategies-scoping-review.md)  | Full text; search appendix and PRISMA checklists not opened      | #64, COACH_EVAL        |
 | [Ozolcer et al. 2025, OPE health coach](2025-ozolcer-ope-health-coach.md)                                   | All 9 pages                                                      | #64, #76               |
 | [Cheng et al. 2026, Think Fast, Talk Smart](2026-cheng-think-fast-talk-smart.md)                            | All 7 pages                                                      | #53, #76               |
+| [Coach personas synthesis (#80), eight papers](2026-coach-personas-synthesis.md)                            | 5 full texts via Lune (4 truncated); 3 abstract or excerpts      | #80, #84, final report |
 | [He et al. 2026, the AI recommendation paradox](2026-he-ai-recommendation-paradox-review.md)                | Main text and supplementary Appendices A–E; Appendix F not found | #48, #64, final report |
 | [Ipeirotis & Rizakos 2026, voice AI oral exams (CACM)](2026-ipeirotis-voice-ai-oral-assessments.md)         | All 34 pages (arXiv authors' version)                            | #22, #76, personas     |
 | [Jiang & Fowler 2026, EiPE grading (SIGCSE TS)](2026-jiang-fowler-eipe-grading.md)                          | **Not read**: open access but ACM blocked automated access       | #22                    |
