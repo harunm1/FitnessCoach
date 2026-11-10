@@ -3,7 +3,7 @@
 // PlanRun. The new plan becomes the user's only active plan, in one transaction that
 // locks the user's row, so neither a dropped connection nor two saves at once leave
 // two active plans or a plan without its days.
-import type { Prisma, PrismaClient } from "@/generated/prisma/client";
+import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import type { WeekDay } from "./hybridWeek";
 
 export type PlanSourceName = "COACH" | "DEFAULT";
@@ -54,7 +54,37 @@ export function weekToPlanData(
   };
 }
 
+// Prisma's code when Postgres aborts a transaction for a deadlock or write conflict.
+const ABORTED = "P2034";
+
+function wasAborted(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === ABORTED
+  );
+}
+
+// A quiz save (src/app/onboarding/actions.ts) that has deactivated the old plan holds
+// that row, then needs the User row for its insert, while saveWeek holds the User row
+// and waits for the old plan: a deadlock, which Postgres breaks by aborting saveWeek.
+// One retry, after the quiz save has committed, deactivates the quiz's plan and saves
+// this one, so the newer save wins. The transaction has no side effects outside the
+// database, so running it again is safe (#76).
 export async function saveWeek(
+  prisma: PrismaClient,
+  userId: string,
+  week: { name: string; days: WeekDay[] },
+  source: PlanSourceName,
+): Promise<{ planId: number }> {
+  try {
+    return await saveWeekOnce(prisma, userId, week, source);
+  } catch (error) {
+    if (!wasAborted(error)) throw error;
+    return saveWeekOnce(prisma, userId, week, source);
+  }
+}
+
+async function saveWeekOnce(
   prisma: PrismaClient,
   userId: string,
   week: { name: string; days: WeekDay[] },
