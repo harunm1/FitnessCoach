@@ -11,6 +11,7 @@ import {
   GROQ_MODEL,
   groqModel,
   ProviderError,
+  type ProviderEvent,
   retryAfterMs,
   withFallback,
   withRetry,
@@ -129,6 +130,18 @@ describe("coachModel", () => {
     );
   });
 
+  it("reports which provider and model served the reply (#41)", async () => {
+    mockFetch(200, groqReply("{}"));
+    const events: ProviderEvent[] = [];
+    await coachModel(
+      { GROQ_API_KEY: KEY, GROQ_MODEL: "openai/gpt-oss-20b" },
+      { onEvent: (e) => events.push(e) },
+    )("x");
+    expect(events).toEqual([
+      { provider: "Groq", action: "served", model: "openai/gpt-oss-20b" },
+    ]);
+  });
+
   it("names the missing key and rejects an unknown provider", () => {
     expect(() => coachModel({})).toThrow("GROQ_API_KEY is not set");
     expect(() => coachModel({ COACH_PROVIDER: "gemini" })).toThrow(
@@ -148,6 +161,12 @@ describe("generatePlan with a provider", () => {
         id: "pushup",
         equipment: "body only",
         primaryMuscles: ["chest"],
+        secondaryMuscles: [],
+      },
+      {
+        id: "squat",
+        equipment: "body only",
+        primaryMuscles: ["quadriceps"],
         secondaryMuscles: [],
       },
     ];
@@ -312,6 +331,7 @@ describe("withFallback and coachModel with both keys", () => {
       { provider: "Groq", action: "retry", status: 429, waitMs: 1000 },
       { provider: "Groq", action: "retry", status: 429, waitMs: 1000 },
       { provider: "Groq", action: "fallback", status: 429 },
+      { provider: "Gemini", action: "served", model: GEMINI_MODEL },
     ]);
   });
 
@@ -353,6 +373,27 @@ describe("chat providers", () => {
     expect(body.response_format).toBeUndefined();
   });
 
+  it("Gemini joins every non-thought text part of a multipart reply", async () => {
+    mockFetch(
+      200,
+      geminiReply([
+        { text: "thinking", thought: true },
+        { text: "Add 2 kg next set. " },
+        { text: "If the last rep slows down, stay at the same weight." },
+      ]),
+    );
+    expect(await geminiChat(KEY)(messages)).toBe(
+      "Add 2 kg next set. If the last rep slows down, stay at the same weight.",
+    );
+  });
+
+  it("Gemini reports no text when every part is a thought", async () => {
+    mockFetch(200, geminiReply([{ text: "thinking", thought: true }]));
+    await expect(geminiChat(KEY)(messages)).rejects.toThrow(
+      "Gemini reply had no text",
+    );
+  });
+
   it("Gemini moves the system prompt to systemInstruction and maps roles", async () => {
     const fetchMock = mockFetch(
       200,
@@ -380,10 +421,16 @@ describe("chat providers", () => {
         }),
       );
     vi.stubGlobal("fetch", fn);
+    const onEvent = vi.fn();
     const chat = coachChatModel(
       { GROQ_API_KEY: KEY, GEMINI_API_KEY: KEY },
-      { retries: 0 },
+      { retries: 0, onEvent },
     );
     expect(await chat(messages)).toBe("From Gemini.");
+    // Chat reports which provider served the reply, the same way plans do.
+    expect(onEvent.mock.calls.map((c) => c[0])).toEqual([
+      { provider: "Groq", action: "fallback", status: 429 },
+      { provider: "Gemini", action: "served", model: GEMINI_MODEL },
+    ]);
   });
 });

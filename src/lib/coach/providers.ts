@@ -195,6 +195,13 @@ export function groqChat(apiKey: string, model = GROQ_MODEL): ChatModel {
   };
 }
 
+function answerText(parts: { text?: unknown; thought?: boolean }[]): string {
+  return parts
+    .filter((p) => !p.thought && typeof p.text === "string")
+    .map((p) => p.text as string)
+    .join("");
+}
+
 export function geminiChat(apiKey: string, model = GEMINI_MODEL): ChatModel {
   return async (messages) => {
     const system = messages.find((m) => m.role === "system");
@@ -219,15 +226,19 @@ export function geminiChat(apiKey: string, model = GEMINI_MODEL): ChatModel {
       }[];
     };
     const parts = data.candidates?.[0]?.content?.parts ?? [];
-    return replyText("Gemini", parts.find((p) => !p.thought)?.text);
+    // A reply can arrive in several text parts. Part.thought marks a thought part (Gemini
+    // API reference, generateContent, checked 10 Nov 2026); the answer is every other
+    // text part, in order.
+    return replyText("Gemini", answerText(parts));
   };
 }
 
 export type ProviderEvent = {
   provider: string;
-  action: "retry" | "fallback";
+  action: "retry" | "fallback" | "served";
   status?: number;
   waitMs?: number;
+  model?: string; // on "served": the model that answered
 };
 
 export type RetryOptions = {
@@ -294,6 +305,29 @@ export function withFallback<A, R>(
   };
 }
 
+// Reports the provider and model that answered, so a log record can name them (#41).
+// A reply that arrived but would not parse also counts as answered: those are the
+// records most worth tracing. A ProviderError means no reply, so nothing is reported.
+export function servedBy<A, R>(
+  model: (input: A) => Promise<R>,
+  provider: string,
+  modelName: string,
+  onEvent?: (event: ProviderEvent) => void,
+): (input: A) => Promise<R> {
+  const served = () =>
+    onEvent?.({ provider, action: "served", model: modelName });
+  return async (input) => {
+    try {
+      const reply = await model(input);
+      served();
+      return reply;
+    } catch (e) {
+      if (!(e instanceof ProviderError)) served();
+      throw e;
+    }
+  };
+}
+
 function requireKey(env: Env, name: string): string {
   const key = env[name];
   if (!key) {
@@ -320,13 +354,21 @@ function chain<A, R>(
     throw new Error(`COACH_PROVIDER must be groq or gemini, not "${lead}"`);
   }
   // GROQ_MODEL and GEMINI_MODEL override the defaults, so a model swap is a setting.
-  const build = (name: "groq" | "gemini", key: string) =>
-    withRetry(
+  const build = (name: "groq" | "gemini", key: string) => {
+    const id =
       name === "groq"
-        ? makers.groq(key, env.GROQ_MODEL || GROQ_MODEL)
-        : makers.gemini(key, env.GEMINI_MODEL || GEMINI_MODEL),
-      options,
+        ? env.GROQ_MODEL || GROQ_MODEL
+        : env.GEMINI_MODEL || GEMINI_MODEL;
+    return servedBy(
+      withRetry(
+        name === "groq" ? makers.groq(key, id) : makers.gemini(key, id),
+        options,
+      ),
+      name === "groq" ? "Groq" : "Gemini",
+      id,
+      options.onEvent,
     );
+  };
   const other = lead === "groq" ? "gemini" : "groq";
   const keyName = (name: string) => `${name.toUpperCase()}_API_KEY`;
   const primary = build(lead, requireKey(env, keyName(lead)));

@@ -101,7 +101,12 @@ async function main() {
       source: result.source,
       attempts: result.attempts,
       firstReplyPassed: calls[0]?.problems?.length === 0,
-      events: [...events],
+      // "served" names who answered each call; kept apart so a non-empty events
+      // list still means a retry or a switch happened, as in the 30 October files.
+      served: events
+        .filter((e) => e.action === "served")
+        .map((e) => `${e.provider} ${e.model ?? ""}`.trim()),
+      events: events.filter((e) => e.action !== "served"),
       calls,
     };
     appendFileSync(file, JSON.stringify(row) + "\n");
@@ -113,8 +118,8 @@ async function main() {
               `${c.ms} ms${c.error ? ` (${c.error})` : c.problems?.length ? ` (${c.problems.join("; ")})` : ""}`,
           )
           .join(", ") +
-        (events.length
-          ? ` | ${events.map((e) => `${e.action} ${e.provider} ${e.status ?? ""}${e.waitMs ? ` ${e.waitMs} ms` : ""}`).join(", ")}`
+        (row.events.length
+          ? ` | ${row.events.map((e) => `${e.action} ${e.provider} ${e.status ?? ""}${e.waitMs ? ` ${e.waitMs} ms` : ""}`).join(", ")}`
           : ""),
     );
   }

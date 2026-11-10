@@ -1,7 +1,11 @@
 // One coach chat turn (#11). The order is fixed in code, the same way the plan path
 // is (docs/ARCHITECTURE.md, The coach):
-//   1. the user's message goes through checkUserMessage; a pain, diagnosis, eating,
-//      self-worth or off-topic message gets its fixed reply and no model call is made
+//   1. an empty or over-long message gets a fixed reply; otherwise the message goes
+//      through the safety screen (a model check that can only raise the response,
+//      then the word list, D15), and a crisis, red-flag, check-in, pain, diagnosis,
+//      eating, self-worth, nutrition or off-topic message gets its fixed reply with no
+//      chat call; a short follow-up to a training turn ("Can you explain that?") is not
+//      off-topic, but only that redirect is relaxed, every other check still runs
 //   2. the model sees a system prompt built here from the user's own plan and
 //      profile, then the conversation, then the new message as a user message
 //   3. the reply goes through checkCoachReply before anyone sees it
@@ -10,10 +14,12 @@
 import {
   buildChatMessages,
   checkCoachReply,
-  checkUserMessage,
+  mentionsTraining,
+  REPLIES,
   type ChatMessage,
 } from "./guardrails";
 import type { ChatModel, ChatStream } from "./providers";
+import { screenUserMessage, type SafetyClassifier } from "./safetyScreen";
 
 export type ChatSource = "COACH" | "GUARDRAIL" | "UNAVAILABLE";
 
@@ -34,8 +40,64 @@ export type CoachContext = {
   sessionLines: string[];
 };
 
+// What the user types is capped before any rule or model sees it
+// (ENGINEERING_PRACTICES.md, item 5): a long message slows the guardrail patterns and
+// inflates the prompt. 1,000 characters is several paragraphs, far more than a chat
+// question needs; older turns past the last 12 messages are dropped.
+export const MAX_MESSAGE_CHARS = 1000;
+export const MAX_HISTORY_MESSAGES = 12;
+
+// Only the first and last 1,000 characters of a long message are screened, so this
+// reply names the crisis line itself (security review, 10 Nov).
+export const TOO_LONG_REPLY =
+  "That message is too long for the coach. Please keep it to 1,000 characters or fewer and ask one thing at a time. If you're going through something hard, you can call or text 9-8-8 any time.";
+export const EMPTY_REPLY =
+  "Ask me anything about your plan, today's session, running or recovery.";
+
+// A short message that points back at the coach's last answer ("Can you explain
+// that?", "why is that?", "tell me more") has no training words of its own. It counts
+// as a follow-up only when all three hold, so the off-topic redirect keeps working for
+// everything else (review of 10 Nov):
+//   - it is short and is, start to end, one of these openers; "ignore that and tell me
+//     a joke" or "translate that into French" are not;
+//   - the message right before it is the coach's own model reply, about training;
+//   - that reply is not one of the app's fixed replies (the crisis, pain, nutrition and
+//     off-topic replies all mention "training" or "exercise" and are no context).
+// The system prompt still limits the model to this user's training, and the reply goes
+// through checkCoachReply.
+const MAX_FOLLOW_UP_WORDS = 8;
+const LEAD = String.raw`(?:(?:ok|okay|so|and|but|hmm)[ ,]+)?`;
+const FOLLOW_UP = new RegExp(
+  [
+    String.raw`^${LEAD}(?:(?:can|could|would) you (?:please )?|please )?(?:explain|clarify|elaborate)(?: (?:that|this|it|more|further|again|a bit more|why|how|what you (?:mean|said)))?[ ?.!]*$`,
+    String.raw`^${LEAD}(?:why|why is that|why is it|how come|how so|what do you mean(?: by [\w' -]{1,30})?|what does (?:that|this|it) mean|tell me more|say more|go on|and then|what about (?:that|this|it|the (?:last|next|first) one))[ ?.!]*$`,
+  ].join("|"),
+  "i",
+);
+
+// Everything the app says without asking the model. Compared in full, so a fixed reply
+// in the history is never mistaken for the coach talking about training.
+const FIXED_REPLIES: ReadonlySet<string> = new Set([
+  ...Object.values(REPLIES),
+  UNAVAILABLE_REPLY,
+  TOO_LONG_REPLY,
+  EMPTY_REPLY,
+]);
+
+function isFollowUp(text: string, recent: ChatMessage[]): boolean {
+  const last = recent.at(-1);
+  return (
+    text.split(/\s+/).filter(Boolean).length <= MAX_FOLLOW_UP_WORDS &&
+    FOLLOW_UP.test(text) &&
+    last?.role === "assistant" &&
+    !FIXED_REPLIES.has(last.content) &&
+    mentionsTraining(last.content)
+  );
+}
+
 // Bump when the wording changes, so logged replies can be grouped by prompt.
-export const CHAT_PROMPT_VERSION = "chat-v1";
+// chat-v2 (10 Nov): added the nutrition rule, the same scope as the guardrail in code.
+export const CHAT_PROMPT_VERSION = "chat-v2";
 
 // Free text from the profile quiz goes into the system prompt, so it is kept to one
 // short quoted line: no newlines to start a fake instruction, no quotes to close the
@@ -54,6 +116,7 @@ export function buildCoachSystemPrompt(ctx: CoachContext): string {
     "Answer only about this user's training, recovery and the session below. Keep replies under 120 words.",
     "Suggest exercise swaps only from movements the user's equipment allows, and say why in one line.",
     "Never diagnose, never name a medication or dose, and if the user reports pain, tell them to stop that exercise and see a professional.",
+    "Give no diet, calorie, supplement or meal advice: say it is outside what you coach and suggest a registered dietitian.",
     "",
     `Goal: ${ctx.goal}. Level: ${ctx.level}. Days a week: ${ctx.daysPerWeek}.`,
     `Equipment: ${ctx.equipment.map(asData).filter(Boolean).join(", ") || "body weight only"}.`,
@@ -68,16 +131,43 @@ export async function coachReply(
   ctx: CoachContext,
   history: ChatMessage[],
   userText: string,
+  // The model safety check (D15); without it the word list decides alone.
+  classify?: SafetyClassifier,
 ): Promise<CoachTurn> {
-  const guard = checkUserMessage(userText);
-  if (guard.action !== "ALLOW") {
+  const text = userText.trim();
+  if (text === "") return { reply: EMPTY_REPLY, source: "GUARDRAIL" };
+  if (text.length > MAX_MESSAGE_CHARS) {
+    // Too long to answer, but never too long to screen: the start and the end are
+    // checked (a bounded input), so a long message that ends in crisis wording or
+    // starts with a symptom or a pain report still gets that reply. Wording only in
+    // the middle of a long message is not seen; the length reply asks for less.
+    const ends = `${text.slice(0, MAX_MESSAGE_CHARS)} … ${text.slice(-MAX_MESSAGE_CHARS)}`;
+    const safety = await screenUserMessage(ends, classify);
+    return safety.action === "ALLOW" || safety.action === "OFF_TOPIC"
+      ? { reply: TOO_LONG_REPLY, source: "GUARDRAIL" }
+      : { reply: safety.reply, source: "GUARDRAIL" };
+  }
+  // Stored rows with no text are skipped; each turn is rebuilt as role and content.
+  const recent = history
+    .filter((m) => typeof m.content === "string")
+    .slice(-MAX_HISTORY_MESSAGES)
+    .map((m) => ({
+      role: m.role,
+      content: m.content.slice(0, MAX_MESSAGE_CHARS),
+    }));
+
+  const guard = await screenUserMessage(text, classify);
+  // Only the off-topic redirect is relaxed for an in-context follow-up; crisis,
+  // red-flag, pain, diagnosis, eating, self-worth and nutrition replies stand.
+  const followUp = guard.action === "OFF_TOPIC" && isFollowUp(text, recent);
+  if (guard.action !== "ALLOW" && !followUp) {
     return { reply: guard.reply, source: "GUARDRAIL" };
   }
 
   let reply: string;
   try {
     reply = await model(
-      buildChatMessages(buildCoachSystemPrompt(ctx), history, userText),
+      buildChatMessages(buildCoachSystemPrompt(ctx), recent, text),
     );
   } catch {
     return { reply: UNAVAILABLE_REPLY, source: "UNAVAILABLE" };
@@ -100,7 +190,7 @@ export async function* coachReplyStream(
   history: ChatMessage[],
   userText: string,
 ): AsyncGenerator<string> {
-  const guard = checkUserMessage(userText);
+  const guard = await screenUserMessage(userText);
   if (guard.action !== "ALLOW") {
     yield guard.reply;
     return;

@@ -144,6 +144,18 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 An independent review then confirmed the 9-8-8 details on the CRTC, Public Health Agency of Canada and 988.ca pages, and found the first patterns too narrow. Missed were "I want to die", "I've been cutting myself", "I took too many pills on purpose" (which got the no-medication reply), "my chest hurts during runs", "I collapsed after the set" and every message typed with a phone's curly apostrophe. It also found training talk caught by mistake: "suicide sprints", "I want to end it with planks", "cut myself some slack", "faint praise". Each became a test, failing first, before I widened or narrowed the patterns. Any mention of shortness of breath counts as a red flag, which is on the safe side of my "severe".
 
+### 6 November 2026, review before merging the coach pull requests (issues #11, #19, #34, #41, #43, #46)
+
+**Before asking:** my rule for my own pull requests is three days for the team to review, then an independent review of each diff against its issue, the tests and `docs/ENGINEERING_PRACTICES.md` before merging. I decided which findings block a merge: a safety rule that can be bypassed, a promise in the code or the issue that the code does not keep, and data the database can get wrong.
+
+**Asked:** for a review of each pull request by a reviewer that had not seen the work, with inputs that try to break each rule, and for the edge cases to turn into tests.
+
+**Got:** six blocking findings, each with a reproducing input. A pain report was cancelled by a negated phrase elsewhere in the message ("no pain on the warm-up but my knee hurts"), and a pain report with a medication question got the no-diagnosis reply instead of the stop. Typed injury text went into the system prompt unfenced. A user who logged under 1 km got a rule-based running week its own verifier rejects. Three saves at once left three active plans on PostgreSQL. Log records did not name the provider and model, which #41 asks for.
+
+**Did with it:** wrote a failing test for each finding, then the fix, on its own branch (#48, #53, #45, #54, #49). Ran the concurrent-save case against PostgreSQL 16 in Docker before and after the row lock: three active plans without it, one with it. Checked the claim about which eval run hit which matching fault against the result files, and corrected `docs/COACH_EVAL.md` (#55): the copied group label was in run 3 and the calf-raise near miss in run 2b; run 1's own faults were names not in the library and a plank written as 60 reps. Findings that do not block a merge are listed on each pull request.
+
+**Later the same day:** from my literature scan I added two things before #48 merges. I chose the triggers and the reply rules: fixed replies with no model call, narrow enough that a fat-loss goal never trips them, NEDIC for eating concerns, and the plan left unchanged on a guilt or self-worth message. I used AI to check the two papers and the NEDIC helpline against their own pages, and to suggest test phrases. The suggested phrases included hunger ("I'm starving after my run"), which my first pattern wrongly caught. A second independent review then tried both directions: it found ordinary messages the patterns caught ("disgusting weather for a run", "I'm starving to death after my long run") and real disclosures they missed ("I made myself sick after dinner", "I throw up after I eat", "my knee never stops hurting"). Each became a test before I changed the patterns, and an eating disclosure that mentions pain now gets the eating reply rather than the stop. Plans also get a one-line note to see a professional first when the profile lists an injury or condition (#54), computed from the profile so it changes when the profile does.
+
 ### 6 November 2026, Google Health Coach in Section 1 (issue #13)
 
 **Before asking:** Google's coach is the closest new competitor, so the motivation section had to name it, with a primary source for each claim and no growth in the word count.
@@ -173,3 +185,102 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 **Got:** SensAI's App Store listing at $6.99 a month and Future's site at $199 a month; the chat code shows a fixed message when the model is down, not a cached reply; and four review findings: Groq sends a token-wait header as well as Retry-After, Section 3's review rule contradicted the 3 November decision, the SensAI title was off, and Section 2 no longer said where verified plans go.
 
 **Did with it:** made each change in its own commit naming the section's owner, cut repetition in Section 2 to stay under the cap, and rebuilt the combined file from the sections. The proposal ends at 1,985 words.
+
+### 6 November 2026, crisis screening in three layers (issue #43)
+
+**Before asking:** two independent reviews of the guardrails found crisis and cardiac wordings the word list missed, and common gym exaggeration getting the full crisis reply. I decided a longer word list would not catch up, and set the design: keep the word list as the deterministic floor; add a short check-in that still names 9-8-8 for exaggeration in training talk ("I'm gonna die on this run") and for distress with no training context; and run a model safety check first that can only raise the response, never lower it. Tests first, from every phrasing the reviews found.
+
+**Asked:** for Groq's current safety models and their status, the tests from the review phrasings, the three layers as separate small modules, and a fresh independent review before anything merges.
+
+**Got:** Groq serves `openai/gpt-oss-safeguard-20b` for bring-your-own-policy moderation, in preview (Groq content-moderation and model pages, 6 Nov); 67 new word-list cases and two new test files that failed first; `distress.ts` (check-in), `safetyScreen.ts` (layers, 3-second limit, model failure falls back to the word list) and `safetyModel.ts` (policy in Groq's recommended four sections, JSON output).
+
+**Did with it:** checked that every earlier case still passes, wrote the decision as D15 in `docs/ARCHITECTURE.md` with the option it beat, and kept the check-in wording short with 9-8-8 and 911 in it. Nothing in the app calls the screen yet; the chat code (#53) does next. A second fresh review found more missed crisis and cardiac wordings, a distress reading from the model replacing the eating-support and pain-stop replies, and crisis messages softened to the check-in by any gym word. I kept the design and tightened it: a reply that already gives specific help now outranks a distress reading; exaggeration counts only when tied to the session and nothing states intent; any message with crisis words that would get the off-topic redirect gets the check-in; and every new wording became a test that failed first (64).
+
+### 10 November 2026, board and docs upkeep (issues #70, #73 to #77)
+
+**Before asking:** pull requests #70, #73, #74 and #77 were not on the project board, #75 and #76 still said In progress while they waited for review, #76, #77 and #78 had no enhancement label or assignee, and the Mohammad heading in this file sat above my entries from 27 October on. I decided the board, labels and section order myself and wanted only the mechanical edits done and checked.
+
+**Asked:** to put those four pull requests on the board and set #70, #73, #74, #75, #76 and #77 to In review, label #76, #77 and #78 as enhancement with me as assignee on #77 and #78, move Mohammad's two entries under his own heading without changing any text, and correct the README line about integration tests in CI.
+
+**Got:** the board, label and assignee changes through the GitHub CLI, confirmed by reading them back; the entries moved with every line of the file still present; and a CI file check showing that CI has run integration tests against PostgreSQL 16 on every pull request since #67, which is for accounts, trials and billing, not the quiz or session actions.
+
+**Did with it:** kept the board and label changes, committed the section order and the README line separately, and left the architecture document's "not in CI yet" line for its own edit. Tools: gh CLI, engineering:documentation, commit-commands:commit, and an independent review agent that checked the diff and the CI claim before the push.
+
+### 10 November 2026, "Why this plan" rows and panel (issue #66)
+
+**Before asking:** the verifier already decides every plan in code, and issue #66 asks that the user can see that decision. I decided on a pure function from the plan's source and its log records to the rows, a small server component that only renders them, and no new model call. The issue says "plan page", but main has no plan page and the log records are not stored yet, so I chose to build the function and the component without mounting them, and to say that in the pull request.
+
+**Asked:** for the function test first (one test per source state: model first try, model after regeneration, rule-based), the component, a check of the panel's wording and accessibility, and an independent review of every sentence the panel shows against the code.
+
+**Got:** the function, the component and 19 tests. The independent review found four sentences that were false for some inputs: the running line said "10% more than last week" for users with no logged runs, a failed call was reported as a reply that failed the checks, "checked before you saw it" did not hold for every rule-based plan, and "training days match" did not hold when the plan includes running. It also found that the log's "not valid JSON" text, attached to any failed call, would have reached the user. The wording a user would not read naturally was a smaller finding.
+
+**Did with it:** I added failing tests for each case, then reworded the panel to say only what holds for every log sequence and left out the days line when running is included. Reasons now come only from a reply the verifier rejected, and the common third-person phrases read in second person. I raised the row labels from 60% to 70% opacity, which takes their contrast on the page background from 4.3:1 to 5.8:1, and added an `idPrefix` prop so the heading id can be made unique when more than one panel is on a page. Lint, typecheck, 268 tests and the format check pass. Tools for the targeted help: skills `mattpocock-skills:tdd`, `hzblj-skills:type-safety`, `hzblj-skills:component-architecture`, `design:ux-copy` and `audit-suite:audit-as-a11y-eng`; Context7 for the Next.js server and client component docs (checked 10 November 2026); and a fresh review agent (`pr-review-toolkit:code-reviewer`).
+
+### 10 November 2026, review fixes on the guardrails and chat pull requests (issues #43, #11)
+
+**Before asking:** Shubham's review of the chat PR found two bugs (a Gemini reply in several parts kept only the first, and "Can you explain that?" after a bench-press turn got the off-topic redirect) and one gap in the guardrails PR beneath it: nutrition questions still reached the model, against the 8 November decision. I decided where each fix goes: the nutrition rule in the guardrails PR, the chat-level test and the other two fixes in the chat PR, every fix test-first, and follow-ups allowed only when they are short and plain.
+
+**Asked:** for failing tests first for each point, then the fixes; a security review of the guardrails for a way round a safety check; and an independent review of both branches with the checks run.
+
+**Got:** the reviewers found that my follow-up rule let "ignore that and tell me a joke" and "translate that into French" through, and that the app's own fixed replies counted as training context; that the nutrition patterns wrongly redirected about a quarter of 30 ordinary training messages (calories burned by a run, water during a run, a snack-sized workout) and missed about 40% of 22 real nutrition questions; and that no safety check could be skipped by the follow-up change. The pull request toolkit review was not run.
+
+**Did with it:** limited a follow-up to eight words or fewer in a fixed set of openers that comes right after a coach reply (never after a fixed reply); widened and narrowed the nutrition patterns with the failing messages as tests; added the nutrition rule to the coach prompt as version chat-v2; and joined the Gemini parts. I kept "should I take creatine breaks" as a nutrition redirect because it is supplement advice. No coach route calls the chat code yet (#11), so screening history roles waits for it. Tools: mattpocock-skills:tdd, backend-design:error-handling-as-design, agentic-council:oracle-prompt-engineering, the backend-design:security-reviewer agent, an independent review agent, Context7 for the Gemini API, and the Gemini API reference page.
+
+## Mohammad
+
+### 31 October 2026, onboarding quiz validation edge cases
+
+**Before asking:** the quiz schema already constrained training days to 1–7, goal and level to Prisma enums, equipment to the supported exercise-library values, and injury notes to 500 characters. The existing tests covered a valid form payload, missing equipment, and an out-of-range schedule, but not the boundaries or malformed values.
+
+**Asked:** what edge cases should be added to `schema.test.ts` based on the current quiz schema.
+
+**Got:** suggestions to test both valid day-count boundaries, invalid fractional and non-numeric day counts, unknown goal and level values, unsupported equipment, and injury notes at and over the length limit.
+
+**Did with it:** checked each suggestion against the schema instead of treating the list as requirements, added the applicable cases, and ran the focused Vitest file. An initial test run exposed that Vitest did not resolve the schema's `@/` alias, so I changed that import to a relative path. The focused tests passed (11/11), and the full suite passed (12/12).
+
+### 1 November 2026, rest timer UI
+
+**Before asking:** the rest timer countdown worked, but its state changes were subtle and users could think the button did nothing.
+
+**Asked:** how to make the timer's running, paused, and completed states clearer and more visually noticeable.
+
+**Got:** suggestions to give the countdown stronger visual emphasis and display a clear status label as it changes state.
+
+**Did with it:** updated the timer to highlight while running and show explicit “Resting”, “Paused”, and “Rest complete” states; verified in the browser that clicking Start rest changes the button to Pause timer and the countdown decreases. Styled the UI with Tailwind utility classes. No shadcn/ui components were used.
+
+## Shubham
+
+I worked on accounts, access tiers and Stripe test-mode billing, which meant the UI, the application code, the data models and the tests, plus the account policies and the Stripe and local service setup. I used AI mostly to talk through the flow before I built something, to understand parts I hadn't used before, to help me read errors, and to double-check things afterwards. Where it gave me a draft, I treated it as a starting point and went through it and changed it. The entries below are a few representative examples.
+
+### Verified accounts (issue #14, milestone 1)
+
+**Before asking:** I wanted email verification and password recovery in the first login release, with trials and Stripe coming later. We already had Prisma users and fitness relations, so I needed to understand how an auth library would work with that schema before I changed anything.
+
+**Asked:** how Better Auth could fit with our existing Prisma users and relations, and what I should check in the login flow. When the migration failed with P1000, I pasted the error and asked what connection settings or local services could cause it. I also asked why the verification emails showed up in Mailpit and not in a real inbox.
+
+**Got:** a walkthrough of how sessions, verification emails and reset emails fit together in the account flow. For P1000 it gave me things to check, and those checks showed that Docker accepted the credentials while a Windows PostgreSQL service was also running. For Mailpit, it explained that it only catches emails locally and doesn't send them to users.
+
+**Did with it:** I worked through the database and mail setup on my machine and used those checks to understand why the two services were clashing. I read through the account code and revised it, and when something broke I described what I was seeing and asked for help fixing it. I also asked for the backend, screens and tests to go in separate commits so they're easier to review. Mailpit is just for local testing, so real inbox delivery will need an SMTP provider.
+
+### Trials and access tiers (issue #14, milestone 2)
+
+**Before asking:** I'd already decided on a one-time seven-day trial that the user starts without a card. I also wanted the account screens to match FitnessCoach and work on mobile in both light and dark themes.
+
+**Asked:** how to stop repeated trial requests from extending access, and how expiry should affect permissions. I also explained the password flow I wanted for signed-in users: a dialog with current password, new password and confirmation, so they stay on their account page.
+
+**Got:** an explanation of how to approach it, with a rough draft to start from. A conditional database update stops a trial from being activated twice, the server checks expiry on every protected request, and the original trial date is kept so it can't be reused.
+
+**Did with it:** I checked the result against my trial policy. When I tested it, the password flow sent users away from their account, so I described the dialog behavior I wanted and had it corrected. For the UI, I gave feedback on each version, asked for a backup before the redesign, tried it, and decided to go back to the earlier design. Tests cover expiry, concurrent activation and forged input. Feature owners still need to use the shared guards in their own pages and actions.
+
+### Stripe test-mode subscriptions (issue #14, milestone 3)
+
+This entry records the separate billing work; the sign-in and tiers PR contains
+Milestones 1–2. The complete billing implementation is preserved on its own branch.
+
+**Before asking:** I took a backup before adding billing and set up a Stripe sandbox. I decided on monthly and yearly PRO subscriptions, kept separate from the cardless app trial.
+
+**Asked:** how Checkout, billing management and webhooks should work with our existing access tiers. I was also unsure about parts of the Stripe setup, so I asked for detailed instructions, and I asked for a review of cases I might be missing.
+
+**Got:** an explanation of the Checkout and webhook flow. The main points were to verify payment on the server before granting PRO, refresh the account status after Checkout, and keep trial dates and ADMIN access intact. The review also brought up duplicate Checkout requests, cancellation, renewal and failed payments.
+
+**Did with it:** I configured the Stripe sandbox and wrote down the monthly and yearly requirements. When I tested a payment locally, the displayed tier didn't update, so I asked for a fix, automatic status refresh and clearer startup instructions. I used AI to help run checks and sandbox scenarios for purchase, cancellation and renewal. At the milestone review, 94 unit tests passed, along with formatting, lint and TypeScript checks. This is test-mode billing only, and connecting it to the quiz/session and coach screens is separate integration work.
