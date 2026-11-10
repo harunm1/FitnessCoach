@@ -23,6 +23,12 @@ import {
   TIER_MESSAGE,
   TOO_LONG_MESSAGE,
 } from "./copy";
+import { COACH_LIMITS, coachAttempts } from "./limits";
+
+const RATE_MESSAGES = {
+  minute: RATE_MINUTE_MESSAGE,
+  day: RATE_DAY_MESSAGE,
+} as const;
 
 export type CoachActionState =
   | { status: "idle" }
@@ -36,11 +42,9 @@ export type CoachActionState =
 // ends of anything longer, so only a pasted wall of text is refused outright.
 const MAX_STORED_CHARS = 10_000;
 
-// Each message can cost two model calls (the safety check and the reply), so one
-// account cannot script the action in a loop (security review, 10 Nov). Counted
-// from saved messages, so a refused or unsaved send does not count.
-const PER_MINUTE = 5;
-const PER_DAY = 50;
+// The caps (limits.ts) are checked twice: against saved messages in the database,
+// which holds across server instances, and by the in-memory attempt limiter, taken
+// just before the model call, which also counts parallel and failed sends.
 const MINUTE_MS = 60_000;
 const DAY_MS = 24 * 60 * MINUTE_MS;
 
@@ -107,10 +111,15 @@ export async function sendCoachMessage(
   }
   const [context, conversation, lastMinute, lastDay] = loaded;
   if (!context) return { status: "error", message: NO_PROFILE_MESSAGE };
-  if (lastMinute >= PER_MINUTE) {
+  if (lastMinute >= COACH_LIMITS.perMinute) {
     return { status: "error", message: RATE_MINUTE_MESSAGE };
   }
-  if (lastDay >= PER_DAY) return { status: "error", message: RATE_DAY_MESSAGE };
+  if (lastDay >= COACH_LIMITS.perDay) {
+    return { status: "error", message: RATE_DAY_MESSAGE };
+  }
+  // Synchronous, so of several sends in flight only the first ones get through.
+  const refused = coachAttempts.take(userId);
+  if (refused) return { status: "error", message: RATE_MESSAGES[refused] };
 
   const history = (conversation?.messages ?? []).map((m) => ({
     role: m.role === "USER" ? ("user" as const) : ("assistant" as const),

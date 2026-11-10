@@ -119,6 +119,7 @@ vi.mock("@/lib/prisma", () => ({ prisma: db }));
 vi.mock("next/cache", () => ({ revalidatePath }));
 vi.mock("@/lib/coach/providers", () => ({ coachChatModel: () => chatModel }));
 import { sendCoachMessage, type CoachActionState } from "./actions";
+import { coachAttempts } from "./limits";
 
 const idle: CoachActionState = { status: "idle" };
 
@@ -130,6 +131,7 @@ function form(fields: Record<string, string>): FormData {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  coachAttempts.clear();
   db.conversations.length = 0;
   db.messages.length = 0;
   db.profileRow = {
@@ -392,5 +394,40 @@ describe("sendCoachMessage", () => {
     );
 
     expect(result).toEqual({ status: "sent" });
+  });
+
+  it("lets only five of six parallel sends reach the model", async () => {
+    const sends = ["a", "b", "c", "d", "e", "f"].map((q) =>
+      sendCoachMessage(
+        idle,
+        form({ message: `How many sets of squats, ${q}?` }),
+      ),
+    );
+
+    const results = await Promise.all(sends);
+
+    expect(chatModel).toHaveBeenCalledTimes(5);
+    expect(results).toContainEqual({
+      status: "error",
+      message: RATE_MINUTE_MESSAGE,
+    });
+  });
+
+  it("counts sends that failed after a model call against the cap", async () => {
+    chatModel.mockRejectedValue(new Error("groq returned HTTP 503"));
+    for (const q of ["a", "b", "c", "d", "e"]) {
+      await sendCoachMessage(
+        idle,
+        form({ message: `How many sets of squats, ${q}?` }),
+      );
+    }
+
+    const sixth = await sendCoachMessage(
+      idle,
+      form({ message: "How many sets of squats?" }),
+    );
+
+    expect(sixth).toEqual({ status: "error", message: RATE_MINUTE_MESSAGE });
+    expect(chatModel).toHaveBeenCalledTimes(5);
   });
 });
