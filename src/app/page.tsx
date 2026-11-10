@@ -23,14 +23,14 @@ export default function Home() {
           </CardDescription>
         </CardHeader>
         <CardFooter className="flex-col gap-4">
-          {/* A link styled as a button, as in Lecture 8: buttonVariants on next/link. */}
+          {/* buttonVariants does not merge Tailwind classes, so cn() lets h-11 and px-5 override the lg size's h-9 and px-2.5. */}
           <Link
             className={cn(buttonVariants({ size: "lg" }), "h-11 px-5")}
             href="/onboarding"
           >
             Start your quiz
           </Link>
-          {/* Account links from #67, kept beside the quiz link. */}
+          {/* Secondary actions; the quiz link above is the primary one. */}
           <div className="flex gap-6 text-sm">
             <Link className="underline underline-offset-4" href="/sign-up">
               Create account
