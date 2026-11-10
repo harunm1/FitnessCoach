@@ -391,3 +391,223 @@ export function coachChatModel(
 ): ChatModel {
   return chain(env, options, { groq: groqChat, gemini: geminiChat });
 }
+
+// Streamed chat (#11, the real-time feature). A stream yields text pieces as the
+// provider sends them. Only a failure before the first piece moves to the other
+// provider; once text has been shown, switching would start a second, different reply.
+export type ChatStream = (messages: ChatMessage[]) => AsyncIterable<string>;
+
+// Reads the data lines of a server-sent event body (#56 review, points 2 and 3).
+// - A read that fails after the headers (a dropped connection is a TypeError, a slow
+//   body hits the request timeout) becomes a ProviderError, so withStreamFallback can
+//   still switch providers while no text has been shown.
+// - When the consumer stops early (the reply check trips, or the caller stops reading),
+//   the generator's finally cancels the body, which aborts the upstream request, and
+//   releases the lock (MDN, ReadableStreamDefaultReader cancel() and releaseLock(),
+//   checked 10 Nov 2026). After a normal end the cancel is a no-op.
+async function readChunk(
+  provider: string,
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+) {
+  try {
+    return await reader.read();
+  } catch (e) {
+    const timedOut = e instanceof Error && e.name === "TimeoutError";
+    throw new ProviderError(
+      `${provider} stream ${timedOut ? "timed out" : "broke off"}`,
+      provider,
+      undefined,
+      undefined,
+      timedOut,
+    );
+  }
+}
+
+// One data line as JSON. A line that is not JSON, or an error object sent inside the
+// stream, is a provider failure like an HTTP error: withStreamFallback can switch while
+// nothing has been shown (verifier and silent-failure review, 10 Nov).
+function parseEvent(provider: string, data: string): Record<string, unknown> {
+  let event: unknown;
+  try {
+    event = JSON.parse(data);
+  } catch {
+    throw new ProviderError(`${provider} sent a malformed event`, provider);
+  }
+  if (typeof event !== "object" || event === null) {
+    throw new ProviderError(`${provider} sent a malformed event`, provider);
+  }
+  const error = (event as { error?: { code?: unknown } }).error;
+  if (error) {
+    const code = Number(error.code);
+    throw new ProviderError(
+      `${provider} stream error`,
+      provider,
+      Number.isInteger(code) ? code : undefined,
+    );
+  }
+  return event as Record<string, unknown>;
+}
+
+async function* sseData(
+  provider: string,
+  res: Response,
+): AsyncIterable<string> {
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  try {
+    for (;;) {
+      const { done, value } = await readChunk(provider, reader);
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let end: number;
+      while ((end = buffer.indexOf("\n")) >= 0) {
+        const line = buffer.slice(0, end).trim();
+        buffer = buffer.slice(end + 1);
+        if (line.startsWith("data:")) yield line.slice(5).trim();
+      }
+    }
+  } finally {
+    await reader.cancel().catch(() => undefined);
+    reader.releaseLock();
+  }
+}
+
+async function openStream(
+  provider: string,
+  url: string,
+  headers: Record<string, string>,
+  body: unknown,
+): Promise<Response> {
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...headers },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+  } catch (e) {
+    const timedOut = (e as Error).name === "TimeoutError";
+    throw new ProviderError(
+      `${provider} stream ${timedOut ? "timed out" : "failed"}`,
+      provider,
+      undefined,
+      undefined,
+      timedOut,
+    );
+  }
+  if (!res.ok || !res.body) {
+    const text = await res.text().catch(() => "");
+    throw new ProviderError(
+      `${provider} returned HTTP ${res.status}`,
+      provider,
+      res.status,
+      retryAfterMs(res, text),
+    );
+  }
+  return res;
+}
+
+export function groqChatStream(apiKey: string, model = GROQ_MODEL): ChatStream {
+  return async function* (messages) {
+    const res = await openStream(
+      "Groq",
+      GROQ_URL,
+      { Authorization: `Bearer ${apiKey}` },
+      { model, messages, reasoning_effort: "low", stream: true },
+    );
+    for await (const data of sseData("Groq", res)) {
+      if (data === "[DONE]") return;
+      const piece = (
+        parseEvent("Groq", data) as {
+          choices?: { delta?: { content?: unknown } }[];
+        }
+      ).choices?.[0]?.delta?.content;
+      if (typeof piece === "string" && piece) yield piece;
+    }
+    // Groq ends every complete stream with data: [DONE] (API reference, checked
+    // 10 Nov 2026); a body that closes without it was cut off.
+    throw new ProviderError("Groq stream ended before [DONE]", "Groq");
+  };
+}
+
+export function geminiChatStream(
+  apiKey: string,
+  model = GEMINI_MODEL,
+): ChatStream {
+  return async function* (messages) {
+    const system = messages.find((m) => m.role === "system");
+    const res = await openStream(
+      "Gemini",
+      `${geminiUrl(model).replace(":generateContent", ":streamGenerateContent")}?alt=sse`,
+      { "x-goog-api-key": apiKey },
+      {
+        ...(system && {
+          systemInstruction: { parts: [{ text: system.content }] },
+        }),
+        contents: messages
+          .filter((m) => m.role !== "system")
+          .map((m) => ({
+            role: m.role === "assistant" ? "model" : "user",
+            parts: [{ text: m.content }],
+          })),
+      },
+    );
+    for await (const data of sseData("Gemini", res)) {
+      const parts =
+        (
+          parseEvent("Gemini", data) as {
+            candidates?: {
+              content?: { parts?: { text?: unknown; thought?: boolean }[] };
+            }[];
+          }
+        ).candidates?.[0]?.content?.parts ?? [];
+      for (const p of parts) {
+        if (!p.thought && typeof p.text === "string" && p.text) yield p.text;
+      }
+    }
+  };
+}
+
+// Falls back only when the primary fails before yielding anything.
+export function withStreamFallback(
+  primary: ChatStream,
+  fallback: ChatStream,
+  onEvent?: (event: ProviderEvent) => void,
+): ChatStream {
+  return async function* (messages) {
+    let started = false;
+    try {
+      for await (const piece of primary(messages)) {
+        started = true;
+        yield piece;
+      }
+    } catch (e) {
+      if (started || !(e instanceof ProviderError)) throw e;
+      onEvent?.({ provider: e.provider, action: "fallback", status: e.status });
+      yield* fallback(messages);
+    }
+  };
+}
+
+export function coachChatStream(
+  env: Env = process.env,
+  onEvent?: (event: ProviderEvent) => void,
+): ChatStream {
+  const lead = (env.COACH_PROVIDER ?? "groq").trim().toLowerCase();
+  if (lead !== "groq" && lead !== "gemini") {
+    throw new Error(`COACH_PROVIDER must be groq or gemini, not "${lead}"`);
+  }
+  const make = (name: string, key: string) =>
+    name === "groq"
+      ? groqChatStream(key, env.GROQ_MODEL || GROQ_MODEL)
+      : geminiChatStream(key, env.GEMINI_MODEL || GEMINI_MODEL);
+  const other = lead === "groq" ? "gemini" : "groq";
+  const keyName = (name: string) => `${name.toUpperCase()}_API_KEY`;
+  const primary = make(lead, requireKey(env, keyName(lead)));
+  const otherKey = env[keyName(other)];
+  return otherKey
+    ? withStreamFallback(primary, make(other, otherKey), onEvent)
+    : primary;
+}

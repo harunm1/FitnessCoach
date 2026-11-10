@@ -18,7 +18,7 @@ import {
   REPLIES,
   type ChatMessage,
 } from "./guardrails";
-import type { ChatModel } from "./providers";
+import type { ChatModel, ChatStream } from "./providers";
 import { screenUserMessage, type SafetyClassifier } from "./safetyScreen";
 
 export type ChatSource = "COACH" | "GUARDRAIL" | "UNAVAILABLE";
@@ -126,16 +126,23 @@ export function buildCoachSystemPrompt(ctx: CoachContext): string {
   ].join("\n");
 }
 
-export async function coachReply(
-  model: ChatModel,
+// Everything before the model call, shared by the plain and the streamed turn (#56
+// review, point 1): either a fixed reply, or the messages the model may see. The
+// checks run in this order: empty, length (with the ends screened), the layered safety
+// screen, then the off-topic relaxation for a follow-up.
+type PreparedTurn = { fixed: CoachTurn } | { messages: ChatMessage[] };
+
+async function prepareTurn(
   ctx: CoachContext,
   history: ChatMessage[],
   userText: string,
-  // The model safety check (D15); without it the word list decides alone.
   classify?: SafetyClassifier,
-): Promise<CoachTurn> {
+): Promise<PreparedTurn> {
+  const fixed = (reply: string): PreparedTurn => ({
+    fixed: { reply, source: "GUARDRAIL" },
+  });
   const text = userText.trim();
-  if (text === "") return { reply: EMPTY_REPLY, source: "GUARDRAIL" };
+  if (text === "") return fixed(EMPTY_REPLY);
   if (text.length > MAX_MESSAGE_CHARS) {
     // Too long to answer, but never too long to screen: the start and the end are
     // checked (a bounded input), so a long message that ends in crisis wording or
@@ -144,8 +151,8 @@ export async function coachReply(
     const ends = `${text.slice(0, MAX_MESSAGE_CHARS)} … ${text.slice(-MAX_MESSAGE_CHARS)}`;
     const safety = await screenUserMessage(ends, classify);
     return safety.action === "ALLOW" || safety.action === "OFF_TOPIC"
-      ? { reply: TOO_LONG_REPLY, source: "GUARDRAIL" }
-      : { reply: safety.reply, source: "GUARDRAIL" };
+      ? fixed(TOO_LONG_REPLY)
+      : fixed(safety.reply);
   }
   // Stored rows with no text are skipped; each turn is rebuilt as role and content.
   const recent = history
@@ -160,15 +167,26 @@ export async function coachReply(
   // Only the off-topic redirect is relaxed for an in-context follow-up; crisis,
   // red-flag, pain, diagnosis, eating, self-worth and nutrition replies stand.
   const followUp = guard.action === "OFF_TOPIC" && isFollowUp(text, recent);
-  if (guard.action !== "ALLOW" && !followUp) {
-    return { reply: guard.reply, source: "GUARDRAIL" };
-  }
+  if (guard.action !== "ALLOW" && !followUp) return fixed(guard.reply);
+  return {
+    messages: buildChatMessages(buildCoachSystemPrompt(ctx), recent, text),
+  };
+}
+
+export async function coachReply(
+  model: ChatModel,
+  ctx: CoachContext,
+  history: ChatMessage[],
+  userText: string,
+  // The model safety check (D15); without it the word list decides alone.
+  classify?: SafetyClassifier,
+): Promise<CoachTurn> {
+  const turn = await prepareTurn(ctx, history, userText, classify);
+  if ("fixed" in turn) return turn.fixed;
 
   let reply: string;
   try {
-    reply = await model(
-      buildChatMessages(buildCoachSystemPrompt(ctx), recent, text),
-    );
+    reply = await model(turn.messages);
   } catch {
     return { reply: UNAVAILABLE_REPLY, source: "UNAVAILABLE" };
   }
@@ -177,4 +195,58 @@ export async function coachReply(
   return checked.action === "ALLOW"
     ? { reply, source: "COACH" }
     : { reply: checked.reply, source: "GUARDRAIL" };
+}
+
+// Streamed chat turn (#11, D10). Text is released a sentence at a time, and the reply
+// check runs on everything so far before each sentence goes out, so a diagnosis is
+// caught before the user reads it, not after. If the check trips, the stream stops
+// and the fixed reply follows; if the provider fails, the user sees the fixed
+// unavailable line.
+export async function* coachReplyStream(
+  stream: ChatStream,
+  ctx: CoachContext,
+  history: ChatMessage[],
+  userText: string,
+  classify?: SafetyClassifier,
+): AsyncGenerator<string> {
+  const turn = await prepareTurn(ctx, history, userText, classify);
+  if ("fixed" in turn) {
+    yield turn.fixed.reply;
+    return;
+  }
+  let sent = "";
+  let pending = "";
+  const release = function* (text: string) {
+    const checked = checkCoachReply(sent + text);
+    if (checked.action !== "ALLOW") throw new GuardrailStop(checked.reply);
+    sent += text;
+    yield text;
+  };
+  try {
+    for await (const piece of stream(turn.messages)) {
+      pending += piece;
+      // Release every complete sentence; keep the unfinished tail.
+      const cut = pending.search(/[.!?]\s(?=[^.!?]*$)/);
+      if (cut >= 0) {
+        yield* release(pending.slice(0, cut + 2));
+        pending = pending.slice(cut + 2);
+      }
+    }
+    if (pending.trim()) yield* release(pending);
+    // A stream that ends without any text (#56 review, point 4) is a failure the user
+    // should see, not a silent empty reply.
+    if (!sent.trim()) yield UNAVAILABLE_REPLY;
+  } catch (e) {
+    if (e instanceof GuardrailStop) {
+      yield (sent ? "\n\n" : "") + e.reply;
+      return;
+    }
+    yield sent ? "\n\n" + UNAVAILABLE_REPLY : UNAVAILABLE_REPLY;
+  }
+}
+
+class GuardrailStop extends Error {
+  constructor(readonly reply: string) {
+    super("guardrail");
+  }
 }
