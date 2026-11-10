@@ -199,6 +199,7 @@ Then run:
 
 ```bash
 npm run db:migrate:test
+DATABASE_URL="$TEST_DATABASE_URL" npx prisma db seed
 npm run format:check
 npm run lint
 npm run typecheck
