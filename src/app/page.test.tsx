@@ -1,4 +1,4 @@
-// Checks the root page is built from the shadcn/ui Card and button styles and still links to the quiz.
+// Checks the root page is built from the shadcn/ui Card and button styles, links to the quiz and keeps the account links beside it.
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import Home from "./page";
@@ -16,6 +16,13 @@ function links(html: string) {
   }));
 }
 
+// The quiz link, found by where it goes, so the account links can come after it.
+function quizLink() {
+  const link = links(render()).find((l) => l.href === "/onboarding");
+  if (!link) throw new Error("The root page has no link to /onboarding");
+  return link;
+}
+
 describe("root page", () => {
   it("has exactly one h1, naming the product", () => {
     const headings = [...render().matchAll(/<h1[^>]*>(.*?)<\/h1>/g)];
@@ -29,23 +36,37 @@ describe("root page", () => {
     );
   });
 
-  it("has one link, named Start your quiz, to /onboarding", () => {
-    const found = links(render());
-    expect(found).toHaveLength(1);
-    expect(found[0].href).toBe("/onboarding");
-    expect(found[0].text).toBe("Start your quiz");
+  it("links to the quiz first, then to Create account and Sign in", () => {
+    const found = links(render()).map(({ href, text }) => ({ href, text }));
+    expect(found).toEqual([
+      { href: "/onboarding", text: "Start your quiz" },
+      { href: "/sign-up", text: "Create account" },
+      { href: "/sign-in", text: "Sign in" },
+    ]);
   });
 
-  it("puts the heading and the quiz link inside the shadcn Card", () => {
+  it("puts the heading, the quiz link and the account links inside the shadcn Card", () => {
     const html = render();
     const card = html.indexOf('data-slot="card"');
     expect(card).toBeGreaterThan(-1);
     expect(html.indexOf("<h1")).toBeGreaterThan(card);
-    expect(html.indexOf('href="/onboarding"')).toBeGreaterThan(card);
+    for (const href of ["/onboarding", "/sign-up", "/sign-in"]) {
+      expect(html.indexOf(`href="${href}"`)).toBeGreaterThan(card);
+    }
+  });
+
+  it("styles only the quiz link as a button; the account links stay plain underlined text", () => {
+    const found = links(render());
+    const account = found.filter((l) => l.href !== "/onboarding");
+    expect(account).toHaveLength(2);
+    for (const { classes } of account) {
+      expect(classes).toContain("underline");
+      expect(classes).not.toContain("bg-primary");
+    }
   });
 
   it("styles the link as the primary button with no conflicting padding or height", () => {
-    const { classes } = links(render())[0];
+    const { classes } = quizLink();
     expect(classes).toEqual(
       expect.arrayContaining(["bg-primary", "text-primary-foreground"]),
     );
@@ -56,6 +77,6 @@ describe("root page", () => {
   });
 
   it("keeps a 44px touch target on the link (h-11, not the lg size's h-9)", () => {
-    expect(links(render())[0].classes).toContain("h-11");
+    expect(quizLink().classes).toContain("h-11");
   });
 });

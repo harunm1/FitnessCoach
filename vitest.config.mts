@@ -1,9 +1,17 @@
-// Vitest config: resolves the "@/*" import alias to src/, the same mapping as tsconfig.json paths.
+// Vitest config: resolves the "@/*" import alias to src/, keeps integration and e2e tests out of the unit run.
 import { fileURLToPath } from "node:url";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
-  resolve: {
-    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
+  resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
+  // Markup tests use CSS modules; the Next.js build verifies Tailwind processing.
+  css: { postcss: { plugins: [] } },
+  test: {
+    exclude: [
+      ...configDefaults.exclude,
+      "tests/integration/**",
+      "tests/e2e/**",
+    ],
+    testTimeout: 15_000,
   },
 });

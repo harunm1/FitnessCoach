@@ -18,7 +18,7 @@ flowchart LR
   N -->|Server Actions| DB[(PostgreSQL via Prisma)]
   N -->|signed URLs| S[(Cloudflare R2: private photos)]
   N -->|route handler, streamed| C[Coach]
-  C --> L[LLM API]
+  C -->|providers.ts only| L[LLM APIs: Groq, Gemini]
   C --> V[Verifier in code]
   V --> DB
 ```
@@ -44,6 +44,10 @@ A plan that fails is regenerated once with the problems listed, then the user ge
 
 **Form feedback questions are bounded:** where it is felt, at which point in the rep, the weight against usual. The answers pick a fix from the exercise's library entry (cues, common mistakes), so the advice traces to text we wrote.
 
+**AI only through `providers.ts`.** `src/lib/coach/providers.ts` is the one module that calls a model API (Groq first, Gemini as fallback, D4 and D6). No route handler, Server Action or component calls a provider directly. A new model path, such as the chat screen (#63) or the exercise chat (#70), goes through it and so gets the retries, timeouts, fallback and `coachLog` record. Coach modules pass typed data to each other, never raw model text. On `main` on 8 November, only `providers.ts` holds the provider URLs and keys. Core features (sign-in, quiz, rule-based plan, logging) work with no model key (8 November [design review](design-reviews/2026-11-08-review.md), decision 1, #76).
+
+**No nutrition advice.** Scope is lifting, strength training and running. The coach gives no diet, calorie, supplement or meal advice; a nutrition question gets a short out-of-scope reply pointing to a registered dietitian (decision 5, #43).
+
 **Text, not voice.** Voice adds speech-to-text, text-to-speech, microphone permissions and latency, and is not one of the course's advanced features. Streamed text replies are.
 
 ## Decisions
@@ -64,6 +68,18 @@ A plan that fails is regenerated once with the problems listed, then the user ge
 | D13 | A pain question gets safe programming guidance; a pain report stops the exercise (3 Nov design review, #48)                                       | A hard stop on every mention of pain frustrates a user asking how to train safely; neither path diagnoses                                                                                                                                                                                                                                                               | One more rule to test; the line between a question and a report is decided in code                                    |
 | D14 | Merge order: schema, then logic, then screens; the author merges after 72 hours without a review (3 Nov design review)                            | Ten stacked pull requests made coordination the bottleneck                                                                                                                                                                                                                                                                                                              | Some code merges having been read only by its author                                                                  |
 | D17 | shadcn/ui on Base UI, Nova preset, in `src/components/ui` (8 Nov, #75; [research](RESEARCH.md#ui-components))                                     | A course core requirement; the CLI default and Nabeegh's Assignment 4 setup. Beat Radix and React Aria, the other two bases. The root page is the example                                                                                                                                                                                                               | Style and base colour fixed at init; `rounded-*` grows, `dark:` needs `.dark`; screens move in their own PRs          |
+
+## Testing
+
+Three layers, each owner testing their own slice (8 November design review, decision 4):
+
+1. **Unit:** pure logic (the coach, progression, schemas) with model calls replaced by saved replies; runs offline in CI.
+2. **API mocking at the provider boundary:** `providers.ts` faked so timeouts, invalid JSON and rate limits are tested on purpose.
+3. **Integration:** Server Actions run against a real PostgreSQL in CI, covering tier checks, saving a week and logging a set (#79; not in CI yet).
+
+The CI pipeline is itself tested: a deliberately failing check must fail the run.
+
+Evidence for the design choices: one note per paper in [docs/papers](papers/README.md).
 
 ## Advanced features
 
