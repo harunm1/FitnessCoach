@@ -47,8 +47,10 @@ export type CoachContext = {
 export const MAX_MESSAGE_CHARS = 1000;
 export const MAX_HISTORY_MESSAGES = 12;
 
+// Only the first and last 1,000 characters of a long message are screened, so this
+// reply names the crisis line itself (security review, 10 Nov).
 export const TOO_LONG_REPLY =
-  "That message is too long for the coach. Please keep it to 1,000 characters or fewer and ask one thing at a time.";
+  "That message is too long for the coach. Please keep it to 1,000 characters or fewer and ask one thing at a time. If you're going through something hard, you can call or text 9-8-8 any time.";
 export const EMPTY_REPLY =
   "Ask me anything about your plan, today's session, running or recovery.";
 
@@ -145,10 +147,14 @@ export async function coachReply(
       ? { reply: TOO_LONG_REPLY, source: "GUARDRAIL" }
       : { reply: safety.reply, source: "GUARDRAIL" };
   }
-  const recent = history.slice(-MAX_HISTORY_MESSAGES).map((m) => ({
-    ...m,
-    content: m.content.slice(0, MAX_MESSAGE_CHARS),
-  }));
+  // Stored rows with no text are skipped; each turn is rebuilt as role and content.
+  const recent = history
+    .filter((m) => typeof m.content === "string")
+    .slice(-MAX_HISTORY_MESSAGES)
+    .map((m) => ({
+      role: m.role,
+      content: m.content.slice(0, MAX_MESSAGE_CHARS),
+    }));
 
   const guard = await screenUserMessage(text, classify);
   // Only the off-topic redirect is relaxed for an in-context follow-up; crisis,

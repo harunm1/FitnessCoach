@@ -409,3 +409,32 @@ describe("coachReply follow-ups", () => {
     expect(model).not.toHaveBeenCalled();
   });
 });
+
+// Security review, 10 Nov: the middle of a message over 2,000 characters is not
+// screened, so the length reply itself names the crisis line; and a stored history row
+// with no text does not break the turn.
+describe("coachReply hardening", () => {
+  it("names 9-8-8 in the length reply when crisis wording sits in the middle", async () => {
+    const model = vi.fn<ChatModel>();
+    const filler = "and then we did more sets ".repeat(60);
+    const turn = await coachReply(
+      model,
+      ctx,
+      [],
+      `${filler} I want to kill myself ${filler}`,
+    );
+    expect(turn.source).toBe("GUARDRAIL");
+    expect(turn.reply).toMatch(/9-8-8/);
+    expect(model).not.toHaveBeenCalled();
+  });
+
+  it("skips a history row with no text instead of failing", async () => {
+    const model = vi.fn<ChatModel>().mockResolvedValue("Sure.");
+    const history = [
+      { role: "assistant", content: null },
+      ...benchTurn,
+    ] as unknown as ChatMessage[];
+    const turn = await coachReply(model, ctx, history, "Can you explain that?");
+    expect(turn).toEqual({ reply: "Sure.", source: "COACH" });
+  });
+});
