@@ -37,9 +37,16 @@ const RACE_TIMEOUT_MS = 15_000;
 const PLANS_CREATED = 3;
 const WORKOUTS_CREATED = 2;
 
-// Postgres's message for a CHECK violation contains this text, e.g.
-// 'new row for relation "SetLog" violates check constraint "SetLog_rpe_range"'.
-const CHECK_VIOLATION = "violates check constraint";
+// Postgres names the violated constraint in its message, e.g.
+// 'new row for relation "SetLog" violates check constraint "SetLog_rpe_check"'.
+const checkViolation = (constraint: string) =>
+  `violates check constraint "${constraint}"`;
+
+// Deadlock detection runs in the backend whose deadlock_timeout expires first, and
+// that backend is the one aborted; PostgreSQL says the victim "should not be relied
+// upon" (16, 13.3.4). The deadlock tests pin it by setting the quiz save's timeout.
+const QUIZ_WAITS_LONGER = "10s";
+const QUIZ_GIVES_UP_FIRST = "50ms";
 
 const db = testDatabase();
 const prefix = `constraints-${randomUUID()}`;
@@ -107,25 +114,31 @@ function activePlans(userId: string) {
   });
 }
 
-async function lockWaiters(client: PrismaClient) {
+// The statements a race test waits on, as Prisma sends them (matched with LIKE).
+const PLAN_EXERCISE_INSERT = '%INSERT INTO "public"."PlanExercise"%';
+const PLAN_UPDATE = '%UPDATE "public"."Plan"%';
+
+async function lockWaiters(client: PrismaClient, statement: string) {
   const rows = await client.$queryRaw<{ waiting: bigint }[]>`
     SELECT count(*) AS waiting FROM pg_stat_activity
-    WHERE datname = current_database() AND wait_event_type = 'Lock'`;
+    WHERE datname = current_database() AND wait_event_type = 'Lock'
+      AND query LIKE ${statement}`;
   return Number(rows[0].waiting);
 }
 
-// Resolves once another connection to this database waits on a row lock, so a test
-// can release the transaction holding it at a known point instead of sleeping.
-async function waitForLockWaits(
+// Resolves once a connection to this database waits on a lock while running the given
+// statement, so a test can release the transaction holding that lock at a known point
+// instead of sleeping.
+async function waitForLockWait(
   client: PrismaClient,
-  waiters: number,
+  statement: string,
   attemptsLeft = LOCK_POLL_ATTEMPTS,
 ): Promise<void> {
-  if ((await lockWaiters(client)) >= waiters) return;
+  if ((await lockWaiters(client, statement)) > 0) return;
   if (attemptsLeft === 0)
-    throw new Error(`Fewer than ${waiters} connections waiting on a lock`);
+    throw new Error(`No connection waiting on a lock in ${statement}`);
   await new Promise((resolve) => setTimeout(resolve, LOCK_POLL_MS));
-  await waitForLockWaits(client, waiters, attemptsLeft - 1);
+  await waitForLockWait(client, statement, attemptsLeft - 1);
 }
 
 // A gate the test opens by hand: `opened` settles when `open` is called.
@@ -155,15 +168,23 @@ async function holdExerciseRow(exerciseId: string) {
   return { release: release.open, done };
 }
 
-// The statements of saveQuizProfile (src/app/onboarding/actions.ts) for a user who
-// already has a Profile, in order. `beforeInsert` lets a test pause between the
-// deactivation and the insert.
+// The statements of saveQuizProfile (src/app/onboarding/actions.ts:98-136) for a user
+// who already has a Profile, in order. A copy, so a change to that action does not
+// reach these tests. `beforeInsert` lets a test pause between the deactivation and
+// the insert; `deadlockTimeout` sets this transaction's deadlock_timeout.
 function quizSave(
   userId: string,
-  beforeInsert: () => Promise<void> = async () => {},
+  options: {
+    beforeInsert?: () => Promise<void>;
+    deadlockTimeout?: string;
+  } = {},
 ) {
   return db.$transaction(
     async (tx) => {
+      if (options.deadlockTimeout)
+        await tx.$executeRawUnsafe(
+          `SET LOCAL deadlock_timeout = '${options.deadlockTimeout}'`,
+        );
       await tx.profile.upsert({
         where: { userId },
         create: {
@@ -179,7 +200,7 @@ function quizSave(
         where: { userId, active: true },
         data: { active: false },
       });
-      await beforeInsert();
+      await options.beforeInsert?.();
       return tx.plan.create({
         data: { userId, name: "Quiz plan", source: "DEFAULT" },
         select: { id: true },
@@ -242,10 +263,11 @@ describe("one active plan per user", () => {
     );
   });
 
-  // Audit race 1b, coach save first. saveWeek locks the User row, deactivates the old
-  // plan and inserts its own; the quiz's UPDATE waits on the old plan's row lock. When
-  // saveWeek commits, that UPDATE re-checks only the old row, now inactive, and does
-  // not see the coach's new plan, so the quiz inserts a second active plan.
+  // Race from the #76 schema audit, coach save first. saveWeek locks the User row,
+  // deactivates the old plan and inserts its own; the quiz's UPDATE waits on the old
+  // plan's row lock. When saveWeek commits, that UPDATE re-checks only the old row,
+  // now inactive, and does not see the coach's new plan, so without the index the
+  // quiz inserts a second active plan.
   it("rejects the quiz save that runs into a coach save, and keeps the coach's plan", async () => {
     // Arrange
     const user = await quizTaker();
@@ -253,14 +275,19 @@ describe("one active plan per user", () => {
 
     // Act
     const coach = saveWeek(db, user.id, coachWeek, "COACH");
-    await waitForLockWaits(db, 1);
-    const quiz = quizSave(user.id);
-    await waitForLockWaits(db, 2);
-    exercise.release();
-    await exercise.done;
+    let quiz: Promise<{ id: number }> | undefined;
+    try {
+      await waitForLockWait(db, PLAN_EXERCISE_INSERT);
+      quiz = quizSave(user.id);
+      await waitForLockWait(db, PLAN_UPDATE);
+    } finally {
+      exercise.release();
+      await exercise.done;
+    }
     const [coachResult, quizResult] = await Promise.allSettled([coach, quiz]);
 
     // Assert
+    expect(coachResult.status).toBe("fulfilled");
     const coachPlanId =
       coachResult.status === "fulfilled" ? coachResult.value.planId : undefined;
     expect(await activePlans(user.id)).toEqual([{ id: coachPlanId }]);
@@ -272,27 +299,47 @@ describe("one active plan per user", () => {
 
   // The other order, quiz save first. The quiz holds the old plan's row lock and then
   // needs a key-share lock on the User row for its insert; saveWeek holds the User row
-  // and waits for the old plan. Postgres breaks the deadlock by aborting saveWeek,
-  // which waited first.
-  it("saves the coach's plan when a quiz save holding the old plan deadlocks with it", async () => {
-    // Arrange
+  // and waits for the old plan. Postgres aborts one of the two.
+  async function deadlock(quizDeadlockTimeout: string) {
     const user = await quizTaker();
     const quizMayInsert = gate();
     const quizDeactivated = gate();
-
-    // Act
-    const quiz = quizSave(user.id, async () => {
-      quizDeactivated.open();
-      await quizMayInsert.opened;
+    const quiz = quizSave(user.id, {
+      deadlockTimeout: quizDeadlockTimeout,
+      beforeInsert: async () => {
+        quizDeactivated.open();
+        await quizMayInsert.opened;
+      },
     });
     await quizDeactivated.opened;
     const coach = saveWeek(db, user.id, coachWeek, "COACH");
-    await waitForLockWaits(db, 1);
-    quizMayInsert.open();
+    try {
+      await waitForLockWait(db, PLAN_UPDATE);
+    } finally {
+      quizMayInsert.open();
+    }
     const [quizResult, coachResult] = await Promise.allSettled([quiz, coach]);
+    return { user, quizResult, coachResult };
+  }
 
-    // Assert
+  it("saves the coach's plan on a retry when the deadlock aborts saveWeek", async () => {
+    const { user, quizResult, coachResult } = await deadlock(QUIZ_WAITS_LONGER);
+
     expect(quizResult.status).toBe("fulfilled");
+    expect(coachResult.status).toBe("fulfilled");
+    const coachPlanId =
+      coachResult.status === "fulfilled" ? coachResult.value.planId : undefined;
+    expect(await activePlans(user.id)).toEqual([{ id: coachPlanId }]);
+  });
+
+  it("keeps the coach's plan when the deadlock aborts the quiz save", async () => {
+    const { user, quizResult, coachResult } =
+      await deadlock(QUIZ_GIVES_UP_FIRST);
+
+    expect(quizResult).toMatchObject({
+      status: "rejected",
+      reason: { code: "P2034" },
+    });
     expect(coachResult.status).toBe("fulfilled");
     const coachPlanId =
       coachResult.status === "fulfilled" ? coachResult.value.planId : undefined;
@@ -301,10 +348,10 @@ describe("one active plan per user", () => {
 });
 
 describe("one open workout per plan", () => {
-  // Audit race 2: startOrResumeWorkout (src/app/session/actions.ts) looks for an open
-  // workout on the plan, then creates one, outside a transaction. Two taps both see
-  // none, then both create.
-  it("rejects the second of two starts that both found no open workout", async () => {
+  // From the #76 schema audit: startOrResumeWorkout (src/app/session/actions.ts) looks
+  // for an open workout on the plan, then creates one, outside a transaction. Two taps
+  // can both see none and both create; this runs those steps in that order.
+  it("rejects a second open workout on a plan after both lookups found none", async () => {
     // Arrange
     const user = await createUser();
     const { planId, planDayId } = await createPlanDay(user.id, true);
@@ -354,6 +401,17 @@ describe("one open workout per plan", () => {
 
     await db.workout.create({ data: { userId: user.id, ...oldPlan } });
     await db.workout.create({ data: { userId: user.id, ...newPlan } });
+
+    expect(
+      await db.workout.count({ where: { userId: user.id, finishedAt: null } }),
+    ).toBe(WORKOUTS_CREATED);
+  });
+
+  it("allows more than one open workout without a plan", async () => {
+    const user = await createUser();
+
+    await db.workout.create({ data: { userId: user.id } });
+    await db.workout.create({ data: { userId: user.id } });
 
     expect(
       await db.workout.count({ where: { userId: user.id, finishedAt: null } }),
@@ -459,45 +517,111 @@ async function profile(daysPerWeek: number, existingUserId?: string) {
 }
 
 describe("range checks", () => {
-  const outOfRange: [string, Insert][] = [
-    ["SetLog.setNumber below 1", () => setLog({ setNumber: FIRST_SET - 1 })],
-    ["SetLog.reps below 0", () => setLog({ reps: FEWEST_LOGGED_REPS - 1 })],
-    ["SetLog.rpe below 1", () => setLog({ rpe: RPE_MIN - 1 })],
-    ["SetLog.rpe above 10", () => setLog({ rpe: RPE_MAX + 1 })],
-    ["SetLog.weightKg below 0", () => setLog({ weightKg: NEGATIVE_WEIGHT_KG })],
-    ["RunLog.distanceKm of 0", () => runLog({ distanceKm: 0 })],
-    ["RunLog.durationSec of 0", () => runLog({ durationSec: 0 })],
-    ["RunLog.rpe above 10", () => runLog({ rpe: RPE_MAX + 1 })],
+  // [what is wrong, the constraint that must reject it, the insert]
+  const outOfRange: [string, string, Insert][] = [
+    [
+      "SetLog.setNumber below 1",
+      "SetLog_setNumber_check",
+      () => setLog({ setNumber: FIRST_SET - 1 }),
+    ],
+    [
+      "SetLog.reps below 0",
+      "SetLog_reps_check",
+      () => setLog({ reps: FEWEST_LOGGED_REPS - 1 }),
+    ],
+    [
+      "SetLog.rpe below 1",
+      "SetLog_rpe_check",
+      () => setLog({ rpe: RPE_MIN - 1 }),
+    ],
+    [
+      "SetLog.rpe above 10",
+      "SetLog_rpe_check",
+      () => setLog({ rpe: RPE_MAX + 1 }),
+    ],
+    [
+      "SetLog.weightKg below 0",
+      "SetLog_weightKg_check",
+      () => setLog({ weightKg: NEGATIVE_WEIGHT_KG }),
+    ],
+    [
+      "RunLog.distanceKm of 0",
+      "RunLog_distanceKm_check",
+      () => runLog({ distanceKm: 0 }),
+    ],
+    [
+      "RunLog.durationSec of 0",
+      "RunLog_durationSec_check",
+      () => runLog({ durationSec: 0 }),
+    ],
+    [
+      "RunLog.rpe below 1",
+      "RunLog_rpe_check",
+      () => runLog({ rpe: RPE_MIN - 1 }),
+    ],
+    [
+      "RunLog.rpe above 10",
+      "RunLog_rpe_check",
+      () => runLog({ rpe: RPE_MAX + 1 }),
+    ],
     [
       "PlanExercise.sets below 1",
+      "PlanExercise_sets_check",
       () => planExercise({ sets: FEWEST_SETS - 1 }),
     ],
     [
       "PlanExercise.reps below 1",
+      "PlanExercise_reps_check",
       () => planExercise({ reps: FEWEST_PLANNED_REPS - 1 }),
     ],
     [
       "PlanExercise.restSeconds below 0",
+      "PlanExercise_restSeconds_check",
       () => planExercise({ restSeconds: NO_REST - 1 }),
     ],
     [
       "PlanExercise.order below 0",
+      "PlanExercise_order_check",
       () => planExercise({ order: FIRST_ORDER - 1 }),
     ],
-    ["PlanRun.distanceKm of 0", () => planRun({ distanceKm: 0 })],
+    [
+      "PlanRun.distanceKm of 0",
+      "PlanRun_distanceKm_check",
+      () => planRun({ distanceKm: 0 }),
+    ],
     [
       "PlanRun.targetPaceSecPerKm of 0",
+      "PlanRun_targetPaceSecPerKm_check",
       () => planRun({ targetPaceSecPerKm: 0 }),
     ],
-    ["PlanDay.dayIndex below 0", () => planDay(DAY_INDEX_MIN - 1)],
-    ["PlanDay.dayIndex above 6", () => planDay(DAY_INDEX_MAX + 1)],
-    ["Profile.daysPerWeek below 1", () => profile(DAYS_PER_WEEK_MIN - 1)],
-    ["Profile.daysPerWeek above 7", () => profile(DAYS_PER_WEEK_MAX + 1)],
+    [
+      "PlanDay.dayIndex below 0",
+      "PlanDay_dayIndex_check",
+      () => planDay(DAY_INDEX_MIN - 1),
+    ],
+    [
+      "PlanDay.dayIndex above 6",
+      "PlanDay_dayIndex_check",
+      () => planDay(DAY_INDEX_MAX + 1),
+    ],
+    [
+      "Profile.daysPerWeek below 1",
+      "Profile_daysPerWeek_check",
+      () => profile(DAYS_PER_WEEK_MIN - 1),
+    ],
+    [
+      "Profile.daysPerWeek above 7",
+      "Profile_daysPerWeek_check",
+      () => profile(DAYS_PER_WEEK_MAX + 1),
+    ],
   ];
 
-  it.each(outOfRange)("rejects %s", async (_label, insert) => {
-    await expect(insert()).rejects.toThrow(CHECK_VIOLATION);
-  });
+  it.each(outOfRange)(
+    "rejects %s by %s",
+    async (_label, constraint, insert) => {
+      await expect(insert()).rejects.toThrow(checkViolation(constraint));
+    },
+  );
 
   const atTheBoundary: [string, Insert][] = [
     [
@@ -511,6 +635,7 @@ describe("range checks", () => {
         }),
     ],
     ["SetLog at the highest rpe", () => setLog({ rpe: RPE_MAX })],
+    ["RunLog at the lowest rpe", () => runLog({ rpe: RPE_MIN })],
     ["RunLog at the highest rpe", () => runLog({ rpe: RPE_MAX })],
     ["RunLog with no rpe", () => runLog({})],
     [
