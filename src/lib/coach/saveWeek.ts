@@ -1,8 +1,9 @@
 // Saving a week (#46). A hybrid week from buildHybridWeek, or a coach plan, becomes
 // one Plan with a PlanDay per day: strength days carry PlanExercise rows, run days a
 // PlanRun. The new plan becomes the user's only active plan, in one transaction that
-// locks the user's row, so neither a dropped connection nor two saves at once leave
-// two active plans or a plan without its days.
+// locks the user's row, so a dropped connection never leaves a plan without its days
+// and two saveWeek calls run in turn. The Plan_one_active_per_user index holds the
+// one-active-plan rule against every other writer (#76).
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import type { WeekDay } from "./hybridWeek";
 
@@ -55,6 +56,9 @@ export function weekToPlanData(
 }
 
 // Prisma's code when Postgres aborts a transaction for a deadlock or write conflict.
+// Only ORM statements report it; a deadlock in a raw query comes back as P2010. The
+// raw FOR UPDATE below is the transaction's first statement, holding no locks yet, so
+// it cannot be part of a deadlock: keep it first.
 const ABORTED = "P2034";
 
 function wasAborted(error: unknown) {
@@ -66,10 +70,12 @@ function wasAborted(error: unknown) {
 
 // A quiz save (src/app/onboarding/actions.ts) that has deactivated the old plan holds
 // that row, then needs the User row for its insert, while saveWeek holds the User row
-// and waits for the old plan: a deadlock, which Postgres breaks by aborting saveWeek.
-// One retry, after the quiz save has committed, deactivates the quiz's plan and saves
-// this one, so the newer save wins. The transaction has no side effects outside the
-// database, so running it again is safe (#76).
+// and waits for the old plan: a deadlock. Postgres aborts one of the two, and which
+// one "should not be relied upon" (PostgreSQL 16, 13.3.4). If it aborts saveWeek, one
+// retry, after the quiz save has committed, deactivates the quiz's plan and saves this
+// one, so the newer save wins. If it aborts the quiz save, this save goes through and
+// the quiz save fails with P2034 (tests/integration/schema-constraints.test.ts). The
+// transaction has no side effects outside the database, so running it again is safe.
 export async function saveWeek(
   prisma: PrismaClient,
   userId: string,
@@ -80,6 +86,10 @@ export async function saveWeek(
     return await saveWeekOnce(prisma, userId, week, source);
   } catch (error) {
     if (!wasAborted(error)) throw error;
+    console.warn("saveWeek: retrying once after Postgres aborted it", {
+      userId,
+      error,
+    });
     return saveWeekOnce(prisma, userId, week, source);
   }
 }

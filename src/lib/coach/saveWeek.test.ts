@@ -142,12 +142,13 @@ describe("saveWeek", () => {
 
 describe("saveWeek when Postgres aborts it", () => {
   // A quiz save that already holds the old plan's row lock and then needs the User
-  // row deadlocks with saveWeek; Postgres aborts saveWeek, which Prisma reports as
-  // P2034 (tests/integration/schema-constraints.test.ts reproduces it).
-  const DEADLOCK = "P2034";
+  // row deadlocks with saveWeek; Postgres may abort saveWeek, which Prisma reports as
+  // P2034. These mocks only count transactions; the real re-run against PostgreSQL is
+  // in tests/integration/schema-constraints.test.ts.
+  const ABORTED = "P2034";
   const UNIQUE_VIOLATION = "P2002";
   const SAVED_PLAN_ID = 9;
-  const ONE_RETRY = 2;
+  const CALLS_WITH_ONE_RETRY = 2;
 
   function knownError(code: string) {
     return new Prisma.PrismaClientKnownRequestError("aborted", {
@@ -168,24 +169,27 @@ describe("saveWeek when Postgres aborts it", () => {
 
   const week = buildHybridWeek(profile, library);
 
-  it("retries once and saves the plan after a deadlock abort", async () => {
-    const prisma = prismaFailing(knownError(DEADLOCK));
+  it("retries once, logs the retry and saves the plan after an abort", async () => {
+    const prisma = prismaFailing(knownError(ABORTED));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     await expect(saveWeek(prisma, "u1", week, "COACH")).resolves.toEqual({
       planId: SAVED_PLAN_ID,
     });
 
-    expect(prisma.$transaction).toHaveBeenCalledTimes(ONE_RETRY);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(CALLS_WITH_ONE_RETRY);
+    expect(warn).toHaveBeenCalledOnce();
+    warn.mockRestore();
   });
 
   it("throws the abort when the retry is aborted too", async () => {
-    const prisma = prismaFailing(knownError(DEADLOCK), knownError(DEADLOCK));
+    const prisma = prismaFailing(knownError(ABORTED), knownError(ABORTED));
 
     await expect(saveWeek(prisma, "u1", week, "COACH")).rejects.toMatchObject({
-      code: DEADLOCK,
+      code: ABORTED,
     });
 
-    expect(prisma.$transaction).toHaveBeenCalledTimes(ONE_RETRY);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(CALLS_WITH_ONE_RETRY);
   });
 
   it("does not retry a unique violation", async () => {
