@@ -15,6 +15,7 @@ import {
   buildChatMessages,
   checkCoachReply,
   mentionsTraining,
+  REPLIES,
   type ChatMessage,
 } from "./guardrails";
 import type { ChatModel } from "./providers";
@@ -51,25 +52,50 @@ export const TOO_LONG_REPLY =
 export const EMPTY_REPLY =
   "Ask me anything about your plan, today's session, running or recovery.";
 
-// A short message that points back at the conversation ("Can you explain that?", "why
-// is that?", "tell me more") has no training words of its own. It counts as a
-// follow-up only when it is short and an earlier message in the last few turns is
-// about training; the system prompt still limits the model to this user's training.
-const MAX_FOLLOW_UP_WORDS = 12;
-const FOLLOW_UP_TURNS = 4;
-const FOLLOW_UP =
-  /\b(that|this|it|those|these|them)\b|\b(why|how so|what do you mean|tell me more|say more|go on|elaborate)\b/i;
+// A short message that points back at the coach's last answer ("Can you explain
+// that?", "why is that?", "tell me more") has no training words of its own. It counts
+// as a follow-up only when all three hold, so the off-topic redirect keeps working for
+// everything else (review of 10 Nov):
+//   - it is short and is, start to end, one of these openers; "ignore that and tell me
+//     a joke" or "translate that into French" are not;
+//   - the message right before it is the coach's own model reply, about training;
+//   - that reply is not one of the app's fixed replies (the crisis, pain, nutrition and
+//     off-topic replies all mention "training" or "exercise" and are no context).
+// The system prompt still limits the model to this user's training, and the reply goes
+// through checkCoachReply.
+const MAX_FOLLOW_UP_WORDS = 8;
+const LEAD = String.raw`(?:(?:ok|okay|so|and|but|hmm)[ ,]+)?`;
+const FOLLOW_UP = new RegExp(
+  [
+    String.raw`^${LEAD}(?:(?:can|could|would) you (?:please )?|please )?(?:explain|clarify|elaborate)(?: (?:that|this|it|more|further|again|a bit more|why|how|what you (?:mean|said)))?[ ?.!]*$`,
+    String.raw`^${LEAD}(?:why|why is that|why is it|how come|how so|what do you mean(?: by [\w' -]{1,30})?|what does (?:that|this|it) mean|tell me more|say more|go on|and then|what about (?:that|this|it|the (?:last|next|first) one))[ ?.!]*$`,
+  ].join("|"),
+  "i",
+);
+
+// Everything the app says without asking the model. Compared in full, so a fixed reply
+// in the history is never mistaken for the coach talking about training.
+const FIXED_REPLIES: ReadonlySet<string> = new Set([
+  ...Object.values(REPLIES),
+  UNAVAILABLE_REPLY,
+  TOO_LONG_REPLY,
+  EMPTY_REPLY,
+]);
 
 function isFollowUp(text: string, recent: ChatMessage[]): boolean {
+  const last = recent.at(-1);
   return (
     text.split(/\s+/).filter(Boolean).length <= MAX_FOLLOW_UP_WORDS &&
     FOLLOW_UP.test(text) &&
-    recent.slice(-FOLLOW_UP_TURNS).some((m) => mentionsTraining(m.content))
+    last?.role === "assistant" &&
+    !FIXED_REPLIES.has(last.content) &&
+    mentionsTraining(last.content)
   );
 }
 
 // Bump when the wording changes, so logged replies can be grouped by prompt.
-export const CHAT_PROMPT_VERSION = "chat-v1";
+// chat-v2 (10 Nov): added the nutrition rule, the same scope as the guardrail in code.
+export const CHAT_PROMPT_VERSION = "chat-v2";
 
 // Free text from the profile quiz goes into the system prompt, so it is kept to one
 // short quoted line: no newlines to start a fake instruction, no quotes to close the
@@ -88,6 +114,7 @@ export function buildCoachSystemPrompt(ctx: CoachContext): string {
     "Answer only about this user's training, recovery and the session below. Keep replies under 120 words.",
     "Suggest exercise swaps only from movements the user's equipment allows, and say why in one line.",
     "Never diagnose, never name a medication or dose, and if the user reports pain, tell them to stop that exercise and see a professional.",
+    "Give no diet, calorie, supplement or meal advice: say it is outside what you coach and suggest a registered dietitian.",
     "",
     `Goal: ${ctx.goal}. Level: ${ctx.level}. Days a week: ${ctx.daysPerWeek}.`,
     `Equipment: ${ctx.equipment.map(asData).filter(Boolean).join(", ") || "body weight only"}.`,

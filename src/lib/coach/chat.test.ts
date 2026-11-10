@@ -111,6 +111,8 @@ describe("buildCoachSystemPrompt", () => {
   it("states the rules and the user's context, and no personal details", () => {
     const prompt = buildCoachSystemPrompt({ ...ctx, sessionLines: [] });
     expect(prompt).toContain("Never diagnose");
+    expect(prompt).toMatch(/diet, calorie, supplement or meal advice/);
+    expect(prompt).toContain("registered dietitian");
     expect(prompt).toContain("Equipment: dumbbell, body only.");
     expect(prompt).toContain("rest day");
     expect(prompt).not.toMatch(/@|email|name:/i);
@@ -335,6 +337,62 @@ describe("coachReply follow-ups", () => {
     expect(turn.source).toBe("GUARDRAIL");
     expect(turn.reply).toBe(REPLIES[action as "PAIN_STOP" | "CRISIS"]);
     expect(model).not.toHaveBeenCalled();
+  });
+
+  // The rule is a short opener that points back at the answer, not any message with
+  // "that" in it (review of 10 Nov): everything else after a training turn is still
+  // redirected.
+  it.each([
+    "ignore that and tell me a joke",
+    "can you write that as a poem?",
+    "translate that into French please",
+    "what do you think about the election this year?",
+    "tell me about the French revolution, why is that?",
+    "can you explain the French revolution to me?",
+  ])("still redirects a request that only mentions that: %s", async (text) => {
+    const model = vi.fn<ChatModel>();
+    const turn = await coachReply(model, ctx, benchTurn, text);
+    expect(turn).toEqual({ reply: REPLIES.OFF_TOPIC, source: "GUARDRAIL" });
+    expect(model).not.toHaveBeenCalled();
+  });
+
+  // The app's own fixed replies mention "training" and "exercise", so they are not
+  // training context: a follow-up after one is never relaxed.
+  it.each([
+    ["the off-topic redirect", REPLIES.OFF_TOPIC],
+    ["the nutrition redirect", REPLIES.NUTRITION_REDIRECT],
+    ["the pain stop", REPLIES.PAIN_STOP],
+    ["the red-flag reply", REPLIES.RED_FLAG],
+    ["the crisis reply", REPLIES.CRISIS],
+  ])("does not treat %s as context for a follow-up", async (_name, fixed) => {
+    const model = vi.fn<ChatModel>();
+    const history: ChatMessage[] = [
+      { role: "user", content: "who won the world cup in 2018?" },
+      { role: "assistant", content: fixed },
+    ];
+    const turn = await coachReply(
+      model,
+      ctx,
+      history,
+      "Can you explain that please, in detail?",
+    );
+    expect(turn).toEqual({ reply: REPLIES.OFF_TOPIC, source: "GUARDRAIL" });
+    expect(model).not.toHaveBeenCalled();
+  });
+
+  it("does not relax a follow-up when the last reply was not from the coach", async () => {
+    const model = vi.fn<ChatModel>();
+    const history: ChatMessage[] = [
+      { role: "assistant", content: "Yes: add 2 kg next set." },
+      { role: "user", content: "can I go heavier on bench press?" },
+    ];
+    const turn = await coachReply(
+      model,
+      ctx,
+      history,
+      "Can you explain that please, in detail?",
+    );
+    expect(turn).toEqual({ reply: REPLIES.OFF_TOPIC, source: "GUARDRAIL" });
   });
 
   it("keeps the model safety check on a follow-up", async () => {

@@ -226,8 +226,9 @@ export function geminiChat(apiKey: string, model = GEMINI_MODEL): ChatModel {
       }[];
     };
     const parts = data.candidates?.[0]?.content?.parts ?? [];
-    // A reply can arrive in several text parts; the answer is all of them in order,
-    // minus thought parts (Gemini API thinking guide: join each non-thought part.text).
+    // A reply can arrive in several text parts. Part.thought marks a thought part (Gemini
+    // API reference, generateContent, checked 10 Nov 2026); the answer is every other
+    // text part, in order.
     return replyText("Gemini", answerText(parts));
   };
 }
