@@ -11,6 +11,13 @@
 // Trade-offs and measurements: docs/COACH_EVAL.md, round 2.
 import type { PlanModel } from "./generatePlan";
 
+export type CoachChatMessage = {
+  role: "system" | "user" | "assistant";
+  content: string;
+};
+
+export type CoachChatModel = (messages: CoachChatMessage[]) => Promise<string>;
+
 export const GROQ_MODEL = "openai/gpt-oss-120b";
 export const GEMINI_MODEL = "gemini-3.5-flash";
 
@@ -170,11 +177,74 @@ export function geminiModel(apiKey: string, model = GEMINI_MODEL): PlanModel {
   };
 }
 
+function parseTextReply(provider: string, text: unknown): string {
+  if (typeof text !== "string" || text.trim() === "") {
+    throw new Error(`${provider} reply had no text`);
+  }
+  return text.trim();
+}
+
+export function groqChatModel(
+  apiKey: string,
+  model = GROQ_MODEL,
+): CoachChatModel {
+  return async (messages) => {
+    const data = (await postJson(
+      "Groq",
+      GROQ_URL,
+      { Authorization: `Bearer ${apiKey}` },
+      {
+        model,
+        messages: messages.map(({ role, content }) => ({ role, content })),
+        temperature: 0.3,
+        max_tokens: 300,
+      },
+    )) as { choices?: { message?: { content?: unknown } }[] };
+    return parseTextReply("Groq", data.choices?.[0]?.message?.content);
+  };
+}
+
+export function geminiChatModel(
+  apiKey: string,
+  model = GEMINI_MODEL,
+): CoachChatModel {
+  return async (messages) => {
+    const systemInstruction = messages.find(
+      (message) => message.role === "system",
+    )?.content;
+    const contents = messages
+      .filter((message) => message.role !== "system")
+      .map((message) => ({
+        role: message.role === "assistant" ? "model" : "user",
+        parts: [{ text: message.content }],
+      }));
+    const data = (await postJson(
+      "Gemini",
+      geminiUrl(model),
+      { "x-goog-api-key": apiKey },
+      {
+        ...(systemInstruction
+          ? { systemInstruction: { parts: [{ text: systemInstruction }] } }
+          : {}),
+        contents,
+        generationConfig: { temperature: 0.3, maxOutputTokens: 300 },
+      },
+    )) as {
+      candidates?: {
+        content?: { parts?: { text?: unknown; thought?: boolean }[] };
+      }[];
+    };
+    const parts = data.candidates?.[0]?.content?.parts ?? [];
+    return parseTextReply("Gemini", parts.find((part) => !part.thought)?.text);
+  };
+}
+
 export type ProviderEvent = {
   provider: string;
-  action: "retry" | "fallback";
+  action: "retry" | "fallback" | "served";
   status?: number;
   waitMs?: number;
+  model?: string; // on "served": the model that answered
 };
 
 export type RetryOptions = {
@@ -241,6 +311,29 @@ export function withFallback(
   };
 }
 
+// Reports the provider and model that answered, so a log record can name them (#41).
+// A reply that arrived but would not parse also counts as answered: those are the
+// records most worth tracing. A ProviderError means no reply, so nothing is reported.
+export function servedBy(
+  model: PlanModel,
+  provider: string,
+  modelName: string,
+  onEvent?: (event: ProviderEvent) => void,
+): PlanModel {
+  const served = () =>
+    onEvent?.({ provider, action: "served", model: modelName });
+  return async (prompt) => {
+    try {
+      const reply = await model(prompt);
+      served();
+      return reply;
+    } catch (e) {
+      if (!(e instanceof ProviderError)) served();
+      throw e;
+    }
+  };
+}
+
 function requireKey(env: Env, name: string): string {
   const key = env[name];
   if (!key) {
@@ -261,13 +354,21 @@ export function coachModel(
     throw new Error(`COACH_PROVIDER must be groq or gemini, not "${lead}"`);
   }
   // GROQ_MODEL and GEMINI_MODEL override the defaults, so a model swap is a setting.
-  const build = (name: "groq" | "gemini", key: string) =>
-    withRetry(
+  const build = (name: "groq" | "gemini", key: string) => {
+    const id =
       name === "groq"
-        ? groqModel(key, env.GROQ_MODEL || GROQ_MODEL)
-        : geminiModel(key, env.GEMINI_MODEL || GEMINI_MODEL),
-      options,
+        ? env.GROQ_MODEL || GROQ_MODEL
+        : env.GEMINI_MODEL || GEMINI_MODEL;
+    return servedBy(
+      withRetry(
+        name === "groq" ? groqModel(key, id) : geminiModel(key, id),
+        options,
+      ),
+      name === "groq" ? "Groq" : "Gemini",
+      id,
+      options.onEvent,
     );
+  };
   const other = lead === "groq" ? "gemini" : "groq";
   const keyName = (name: string) => `${name.toUpperCase()}_API_KEY`;
   const primary = build(lead, requireKey(env, keyName(lead)));
@@ -275,4 +376,63 @@ export function coachModel(
   return otherKey
     ? withFallback(primary, build(other, otherKey), options.onEvent)
     : primary;
+}
+
+function asPlanModel(model: CoachChatModel): PlanModel {
+  return async (serializedMessages) => {
+    let messages: CoachChatMessage[];
+    try {
+      messages = JSON.parse(serializedMessages) as CoachChatMessage[];
+    } catch {
+      throw new Error("Invalid serialized coach chat messages");
+    }
+    return { reply: await model(messages) };
+  };
+}
+
+export function coachChatModel(
+  env: Env = process.env,
+  options: RetryOptions = {},
+): CoachChatModel {
+  const lead = (env.COACH_PROVIDER ?? "groq").trim().toLowerCase();
+  if (lead !== "groq" && lead !== "gemini") {
+    throw new Error(`COACH_PROVIDER must be groq or gemini, not "${lead}"`);
+  }
+
+  const build = (name: "groq" | "gemini", key: string): PlanModel => {
+    const modelName =
+      name === "groq"
+        ? env.GROQ_MODEL || GROQ_MODEL
+        : env.GEMINI_MODEL || GEMINI_MODEL;
+    const chat =
+      name === "groq"
+        ? groqChatModel(key, modelName)
+        : geminiChatModel(key, modelName);
+    return servedBy(
+      withRetry(asPlanModel(chat), options),
+      name === "groq" ? "Groq" : "Gemini",
+      modelName,
+      options.onEvent,
+    );
+  };
+
+  const other = lead === "groq" ? "gemini" : "groq";
+  const keyName = (name: string) => `${name.toUpperCase()}_API_KEY`;
+  const primary = build(lead, requireKey(env, keyName(lead)));
+  const otherKey = env[keyName(other)];
+  const chain = otherKey
+    ? withFallback(primary, build(other, otherKey), options.onEvent)
+    : primary;
+
+  return async (messages) => {
+    const result = await chain(JSON.stringify(messages));
+    if (
+      !result ||
+      typeof result !== "object" ||
+      typeof (result as { reply?: unknown }).reply !== "string"
+    ) {
+      throw new Error("Coach chat returned an invalid response");
+    }
+    return (result as { reply: string }).reply;
+  };
 }

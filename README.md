@@ -1,28 +1,27 @@
 # FitnessCoach
 
-A web app that turns a short quiz into a gym plan the user can trust, with an AI coach that explains each exercise and answers questions when a movement feels wrong.
+A web app that turns a short quiz into a weekly gym, running or hybrid plan the user can trust, with an AI coach that explains each exercise and answers questions about the user's own plan.
 
 Team project for ECE1724 Advanced Web Development, University of Toronto, Fall 2026.
 
-**Status:** proposal drafting; tooling merged; schema and coach logic on feature branches. Proposal due **Sunday 8 November**, section drafts by Sunday 1 November. Architecture and plan in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/PLAN.md](docs/PLAN.md); research behind the choices in [docs/RESEARCH.md](docs/RESEARCH.md); meeting notes in [docs/meetings/](docs/meetings/).
+**Status (8 November):** proposal final on `main` (#13). On `main`: the Next.js skeleton, the Prisma schema for strength and running with its migrations, the seeded exercise library, CI with a replay of recorded coach replies, the coach's plan generation with the verifier and Groq-to-Gemini fallback, rule-based running and hybrid weeks, saving a week as the active plan, coach-call records (not yet stored), the session screen (#39), and sign-in, access tiers and Stripe test mode (#67, #68). In open pull requests: coach chat (#53), guardrails (#48), streamed replies (#56), the deployed preview (#61), the body map (#70), the strength-only starter plan (#73), root loading and error states (#74), the shadcn/ui components (#77), the query indexes (#78), integration tests against PostgreSQL in CI (#81, draft) and the progress streak and muscle logic (#82). Core path working end to end by Sunday 15 November; demo-feature freeze Monday 23 November.
+
+Architecture and decisions: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Plan and dates: [docs/PLAN.md](docs/PLAN.md). Research behind the choices: [docs/RESEARCH.md](docs/RESEARCH.md). Coach evaluation, Groq against Gemini: [docs/COACH_EVAL.md](docs/COACH_EVAL.md). Meeting notes: [docs/meetings/](docs/meetings/). Design reviews: [docs/design-reviews/](docs/design-reviews/). Paper notes, one per paper we cite: [docs/papers/](docs/papers/README.md).
 
 ## Who does what
 
-| Area                                                               | Owner                  | Issue |
-| ------------------------------------------------------------------ | ---------------------- | ----- |
-| Proposal 1, Motivation (about 350 words)                           | Mohammad               | #3    |
-| Proposal 2, Objectives, architecture, features (about 900 words)   | Nabeegh                | #4    |
-| Proposal 3, Plan and responsibilities (about 300 words)            | Shubham, with everyone | #5    |
-| Proposal 4, Initial reasoning and AI exploration (about 300 words) | Farnaz                 | #6    |
-| Foundation: schema, seed, CI                                       | Nabeegh                | #2    |
-| AI coach, including running plans                                  | Nabeegh                | #11   |
-| Quiz, body map, today's session                                    | Mohammad               | #15   |
-| Progress and photos (cloud upload and download)                    | Farnaz                 | #16   |
-| Accounts: sign-in, tiers, Stripe test mode                         | Shubham                | #14   |
+| Area                                               | Owner    | Issue |
+| -------------------------------------------------- | -------- | ----- |
+| Foundation: schema, seed, CI (done)                | Nabeegh  | #2    |
+| AI coach, including running plans                  | Nabeegh  | #11   |
+| Quiz, body map, today's session                    | Mohammad | #15   |
+| Progress and photos (cloud upload and download)    | Farnaz   | #16   |
+| Accounts: sign-in, access tiers, Stripe test mode  | Shubham  | #14   |
+| Proposal (one Markdown file, every member submits) | Everyone | #13   |
 
-The proposal is one Markdown file, 2,000 words at most; each owner commits their own section, and every member submits the same file on Quercus (#13).
+**Demo path:** sign-in, quiz, plan, logged workout, one coach exchange. Everything else adds to it and must not break it. Stripe test mode is a stretch off the demo path, shown if ready by the freeze.
 
-**Demo path:** sign-in, quiz, plan, logged workout, coach. Everything else adds to it and must not break it. Core path working end to end by Sunday 15 November; demo-feature freeze Monday 23 November.
+**Scope:** lifting, strength training and running. The coach gives no nutrition advice (diet, calories, supplements or meals); a nutrition question gets a short out-of-scope reply that points to a registered dietitian (8 November [design review](docs/design-reviews/2026-11-08-review.md), decision 5; the reply lands with #43).
 
 ## Team
 
@@ -40,30 +39,36 @@ The proposal is one Markdown file, 2,000 words at most; each owner commits their
 | App      | Next.js App Router, TypeScript (Server Components, Server Actions, route handlers) |
 | UI       | Tailwind CSS, shadcn/ui, mobile-first                                              |
 | Data     | PostgreSQL with Prisma                                                             |
-| Files    | Private S3-compatible bucket; provider chosen in #16                               |
+| Files    | Private S3-compatible bucket (D3, #16)                                             |
 | Auth     | Better Auth                                                                        |
-| AI       | Groq first, Gemini as fallback (D4); both tested on the same profiles (#7)         |
-| Payments | Stripe in test mode                                                                |
+| AI       | Groq first, Gemini as fallback, rule-based plan if both fail (D4, D6)              |
+| Payments | Stripe in test mode, a stretch off the demo path (#14)                             |
 
 ## Repository layout
 
 ```
-src/app/          pages and route handlers
-src/components/   UI components
-src/lib/          auth, database client, AI client, storage client
-prisma/           schema and migrations
-docs/             architecture, plan, research, meetings
+src/app/          pages; Server Actions and route handlers as they land
+src/lib/coach/    plan generation, verifier, rule-based fallback; providers.ts is the only module that calls a model API
+src/lib/          database client, auth and storage clients as they land
+prisma/           schema, migrations and seed
+docs/             architecture, plan, research, coach evaluation, meetings, proposal section drafts
+ece1724_group18_project_proposal.md   final proposal (submitted on Quercus)
 ```
-
-Lands with the skeleton; until then only `docs/` exists.
 
 ## Local Development
 
-Prerequisites: Node.js 22 (the version CI and Vercel use, `engines` in `package.json`), npm, and Docker Desktop with Docker Compose available.
+Start with the [complete local setup guide](docs/LOCAL_DEVELOPMENT.md) for Node 22,
+PostgreSQL, authentication secrets, Mailpit, Stripe and the separate terminals.
+The [acceptance checklist](docs/ACCOUNTS_TESTING.md) documents expected results for
+all three accounts milestones. The commands below are a database/app overview;
+configure authentication and mail before testing signup.
+
+Prerequisites: Node.js 22.13 or newer, npm, and Docker Desktop with Docker Compose available.
 Start Docker Desktop before running the Docker commands. When using WSL, enable
 Docker Desktop integration for your distribution.
 
-Install dependencies and copy the environment template:
+Install dependencies and copy the environment template **only for a fresh setup**
+(preserve an existing `.env`):
 
 ```bash
 npm install
@@ -95,7 +100,7 @@ Wait until the `postgres` service reports `healthy`, then apply migrations, seed
 the exercise dataset and demo user, and start the application:
 
 ```bash
-npm run db:migrate
+npx prisma migrate deploy
 npm run db:seed
 npm run dev
 ```
@@ -111,6 +116,42 @@ all local PostgreSQL data; run migrations and seeding again after starting it:
 
 ```bash
 docker compose down -v
+```
+
+### Accounts and access tiers
+
+For signup, email verification, login, password recovery and account setup, see
+[the accounts guide](docs/ACCOUNTS.md). Add the Better Auth and SMTP values from
+`.env.example` to your existing `.env`, generate your own secret, and apply the
+new migration before using `/sign-up`. On `/account`, eligible users can start a
+one-time seven-day trial without a card. The guide explains server-side access
+checks, admin setup, and isolated database and browser tests. For Milestone 3
+Stripe test-mode Checkout, the billing portal and webhook setup, follow
+[the billing guide](docs/BILLING.md). Stripe settings are optional for free/trial
+access.
+
+### Coach keys
+
+The coach reads its keys from `.env` (never committed). `COACH_PROVIDER` picks the provider that goes first (`groq` by default), and its key is required. If the other provider's key is also set, it becomes the fallback. `GROQ_MODEL` and `GEMINI_MODEL` override the default models.
+
+```dotenv
+COACH_PROVIDER="groq"
+GROQ_API_KEY=""     # console.groq.com/keys
+GEMINI_API_KEY=""   # aistudio.google.com/apikey
+```
+
+### Checks
+
+Tests come in three layers (8 November design review, decision 4): unit tests for pure logic, with saved model replies instead of live calls; API mocking at the provider boundary, so timeouts, invalid JSON and rate limits are tested on purpose; and integration tests against a real PostgreSQL 16 that CI has run on every pull request since #67 (accounts, trials and billing); the ones for the quiz and session Server Actions are #79 (PR #81, open). Each owner tests their own slice.
+
+The same checks CI runs on every pull request:
+
+```bash
+npm run format:check
+npm run lint
+npm run typecheck
+npm test
+npm run build
 ```
 
 ## Deploy

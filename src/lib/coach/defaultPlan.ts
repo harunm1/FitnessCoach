@@ -55,6 +55,13 @@ export function buildDefaultPlan(
         );
         if (match) picked.push(match.id);
       }
+      for (const exercise of usable) {
+        if (picked.length >= 2) break;
+        if (!picked.includes(exercise.id)) picked.push(exercise.id);
+      }
+      if (picked.length < 2) {
+        throw new Error(`Not enough compatible exercises for ${day.name}`);
+      }
       return {
         name: day.name,
         exercises: picked.map((exerciseId) => ({
