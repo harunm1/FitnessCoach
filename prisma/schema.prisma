@@ -4,13 +4,19 @@
 // both the schema and the migration folder.
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  // `where` on @@unique (partial unique indexes on Plan and Workout), Preview since 7.4.
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
   provider = "postgresql"
 }
+
+// Range CHECK constraints on SetLog, RunLog, PlanExercise, PlanRun, PlanDay and Profile
+// live only in migration 20261110220259_range_checks: Prisma cannot declare CHECK, so
+// neither this file nor `prisma db pull` shows them (#76).
 
 // ---------------------------------------------------------------------------
 // Accounts
@@ -146,6 +152,10 @@ model Plan {
   days     PlanDay[]
   workouts Workout[]
 
+  // One active plan per user, held by the database (#76): the quiz save and saveWeek
+  // each deactivate the old plan and insert a new one under different locks, and a
+  // race between them left two active plans (docs/RESEARCH.md, D2 constraints).
+  @@unique([userId], where: { active: true }, map: "Plan_one_active_per_user")
   // Postgres does not index foreign keys on its own. The session screen and actions
   // look up the user's newest active plan; onboarding and saveWeek deactivate the old
   // one: where userId and active, order by createdAt (#76).
@@ -216,28 +226,36 @@ model PlanRun {
 // ---------------------------------------------------------------------------
 
 model Workout {
-  id         Int       @id @default(autoincrement())
-  userId     String
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  planId     Int?
-  plan       Plan?     @relation(fields: [planId], references: [id], onDelete: SetNull)
-  planDayId  Int?
-  planDay    PlanDay?  @relation(fields: [planDayId], references: [id], onDelete: SetNull)
-  startedAt  DateTime  @default(now())
-  finishedAt DateTime?
-  distanceKm Decimal?  @db.Decimal(6, 2)
+  id              Int       @id @default(autoincrement())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId          Int?
+  plan            Plan?     @relation(fields: [planId], references: [id], onDelete: SetNull)
+  planDayId       Int?
+  planDay         PlanDay?  @relation(fields: [planDayId], references: [id], onDelete: SetNull)
+  startedAt       DateTime  @default(now())
+  finishedAt      DateTime?
+  distanceKm      Decimal?  @db.Decimal(6, 2)
   durationSeconds Int?
-  notes      String?
+  notes           String?
 
   sets SetLog[]
   run  RunLog?
 
+  // One open workout per plan (#76): Start looks for an open workout, then creates one,
+  // so two taps could open two. Per plan, not per user: a plan switch leaves the old
+  // plan's open workout open, and Start must still work on the new plan.
+  @@unique([planId], where: { finishedAt: null }, map: "Workout_one_open_per_plan")
   // The session screen and actions find the open workout and count finished ones:
   // where userId, planId and finishedAt (#76). No startedAt column: Postgres does not
   // treat finishedAt IS NULL as an equality, so the startedAt sort runs on the few
-  // matched rows either way (one open workout per user and plan in practice). The lookups by plan.active (no planId) seek on userId
-  // and check finishedAt inside the index.
+  // matched rows either way (one open workout per plan, held above). The lookups by
+  // plan.active (no planId) seek on userId and check finishedAt inside the index.
   @@index([userId, planId, finishedAt])
+  // Deleting a plan or a plan day sets these to null; the indexes let Postgres find
+  // the workouts without scanning the table (#76).
+  @@index([planId])
+  @@index([planDayId])
 }
 
 model SetLog {
