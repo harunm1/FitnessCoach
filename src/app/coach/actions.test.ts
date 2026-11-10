@@ -1,6 +1,8 @@
 // The coach Server Action (#63): one exchange saved for the session owner, guardrails before any model call.
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { UNAVAILABLE_REPLY } from "@/lib/coach/chat";
 import { REPLIES } from "@/lib/coach/guardrails";
+import { NO_PROFILE_MESSAGE, SAVE_FAILED_MESSAGE, TIER_MESSAGE } from "./copy";
 
 type Row = {
   id: number;
@@ -155,7 +157,7 @@ describe("sendCoachMessage", () => {
     const result = await sendCoachMessage(idle, form({ message: "Hi coach" }));
 
     expect(result).toMatchObject({ status: "error" });
-    expect(result.status === "error" && result.message).toMatch(/trial|Pro/i);
+    expect(result).toEqual({ status: "error", message: TIER_MESSAGE });
     expect(chatModel).not.toHaveBeenCalled();
     expect(db.messages).toHaveLength(0);
   });
@@ -183,7 +185,7 @@ describe("sendCoachMessage", () => {
     const result = await sendCoachMessage(idle, form({ message: "Hi coach" }));
 
     expect(result).toMatchObject({ status: "error" });
-    expect(result.status === "error" && result.message).toMatch(/quiz/i);
+    expect(result).toEqual({ status: "error", message: NO_PROFILE_MESSAGE });
     expect(chatModel).not.toHaveBeenCalled();
   });
 
@@ -204,5 +206,39 @@ describe("sendCoachMessage", () => {
     );
 
     expect(db.messages[0]).toMatchObject({ role: "USER", content: "Too hard" });
+  });
+
+  it("saves nothing and offers a retry when no provider answers", async () => {
+    chatModel.mockRejectedValue(new Error("groq returned HTTP 503"));
+
+    const result = await sendCoachMessage(
+      idle,
+      form({ message: "How long should I rest?" }),
+    );
+
+    expect(result).toEqual({
+      status: "unsaved",
+      text: "How long should I rest?",
+      message: UNAVAILABLE_REPLY,
+    });
+    expect(db.messages).toHaveLength(0);
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("shows the reply as not saved and offers a retry when saving fails", async () => {
+    db.$transaction.mockRejectedValueOnce(new Error("connection refused"));
+
+    const result = await sendCoachMessage(
+      idle,
+      form({ message: "How long should I rest?" }),
+    );
+
+    expect(result).toEqual({
+      status: "unsaved",
+      text: "How long should I rest?",
+      reply: "Keep the dumbbell press at 3 x 10 and rest 90 seconds.",
+      message: SAVE_FAILED_MESSAGE,
+    });
+    expect(revalidatePath).not.toHaveBeenCalled();
   });
 });

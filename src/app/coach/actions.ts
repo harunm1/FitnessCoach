@@ -15,6 +15,7 @@ import { prisma } from "@/lib/prisma";
 import {
   EMPTY_MESSAGE,
   NO_PROFILE_MESSAGE,
+  SAVE_FAILED_MESSAGE,
   TIER_MESSAGE,
   TOO_LONG_MESSAGE,
 } from "./copy";
@@ -22,7 +23,10 @@ import {
 export type CoachActionState =
   | { status: "idle" }
   | { status: "sent" }
-  | { status: "error"; message: string };
+  | { status: "error"; message: string }
+  // Nothing was stored: the text comes back for "Send again", with the reply if one
+  // was written but could not be saved (#42).
+  | { status: "unsaved"; text: string; message: string; reply?: string };
 
 // Far above the 1,000 characters the coach answers; coachReply still screens the
 // ends of anything longer, so only a pasted wall of text is refused outright.
@@ -86,13 +90,29 @@ export async function sendCoachMessage(
     key ? groqSafetyClassifier(key) : undefined,
   );
 
-  await saveExchange(
-    prisma,
-    userId,
-    conversation?.id ?? null,
-    text,
-    turn.reply,
-  );
+  // The "coach can't answer" reply is not part of the conversation: nothing is saved
+  // and the user can send the same text again.
+  if (turn.source === "UNAVAILABLE") {
+    return { status: "unsaved", text, message: turn.reply };
+  }
+
+  try {
+    await saveExchange(
+      prisma,
+      userId,
+      conversation?.id ?? null,
+      text,
+      turn.reply,
+    );
+  } catch {
+    // The reply is shown once, marked as not saved; the database error is not.
+    return {
+      status: "unsaved",
+      text,
+      reply: turn.reply,
+      message: SAVE_FAILED_MESSAGE,
+    };
+  }
   revalidatePath("/coach");
   return { status: "sent" };
 }

@@ -5,3 +5,5 @@ export const NO_PROFILE_MESSAGE =
   "Take the quiz first, so the coach knows your goal, equipment and injuries.";
 export const EMPTY_MESSAGE = "Type a message for the coach first.";
 export const TOO_LONG_MESSAGE = "That message is too long to send.";
+export const SAVE_FAILED_MESSAGE =
+  "Your message and the coach's reply could not be saved. Send it again to keep them in your conversation.";
