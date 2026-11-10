@@ -204,6 +204,16 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Did with it:** limited a follow-up to eight words or fewer in a fixed set of openers that comes right after a coach reply (never after a fixed reply); widened and narrowed the nutrition patterns with the failing messages as tests; added the nutrition rule to the coach prompt as version chat-v2; and joined the Gemini parts. I kept "should I take creatine breaks" as a nutrition redirect because it is supplement advice. No coach route calls the chat code yet (#11), so screening history roles waits for it. Tools: mattpocock-skills:tdd, backend-design:error-handling-as-design, agentic-council:oracle-prompt-engineering, the backend-design:security-reviewer agent, an independent review agent, Context7 for the Gemini API, and the Gemini API reference page.
 
+### 10 November 2026, repeated eval runs and consistency (issue #64)
+
+**Before asking:** the eval sent each profile once, so it could not show whether the same profile gets a similar plan twice. Following Lee (2026, arXiv 2604.19598 and 2604.11287), I decided to send each profile five times per provider and to compare the structured plan fields rather than text similarity: verifier pass rate, exact duplicates, exercise overlap, the spread of sets and reps, and latency, reported per profile. I also wanted the runs paced under each provider's free-tier limits and able to stop at a daily cap and resume.
+
+**Asked:** the current free-tier limits for Groq `openai/gpt-oss-120b` and for Gemini; how the two papers define exact duplicates and per-scenario reporting; test-first slices for a consistency function and for pacing helpers; and an independent review of the branch before the pull request.
+
+**Got:** Groq's base limits (30 requests a minute, 1,000 a day, 8,000 tokens a minute, 200,000 a day) from Groq's docs. Gemini's free-tier limits are shown only per project in AI Studio, with the daily count resetting at midnight Pacific. The papers count exact duplicates per scenario on preprocessed text and warn that embedding similarity misses numeric changes, which supports comparing fields. The review found that the providers' own retries bypassed the pacing and the call count, and that a 429 on the first call was being scored as a verifier failure.
+
+**Did with it:** wrote `consistency.ts`, the pacing helpers and the `--repeat` flag test first, and fixed the review findings (retries off in repeat mode, failed first calls left pending, argument parsing tested). The first live run then showed calls timed at about 60 s: I had put the pacing wait inside the timer. I moved the wait before the timer, with a test that fails on the old code, and set that run's files aside. The run itself was stopped partway when the machine ran low on memory, so the results table in `docs/COACH_EVAL.md` waits for a fresh run (pull request #87). Tools: agentic-council:oracle-ai-evaluation, mattpocock-skills:tdd, agentic-sdlc:testing-vitest, omniout:add-fallback, Context7 (Groq and Gemini docs), Firecrawl (Gemini rate-limit page), alphaXiv (both Lee papers), and /pr-review-toolkit:review-pr as the independent reviewer.
+
 ## Mohammad
 
 ### 31 October 2026, onboarding quiz validation edge cases
