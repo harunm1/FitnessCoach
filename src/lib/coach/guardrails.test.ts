@@ -1001,6 +1001,24 @@ describe("phrasings from the 10 November blind review", () => {
     expect(checkUserMessage(text).action).toBe("CRISIS");
   });
 
+  // Fourth check: "to kms", "kms, <filler>" and "on the bridge ... end it" stay crises.
+  it.each([
+    "i want to kms",
+    "i'm going to kms",
+    "i'm about to kms!",
+    "i need to kms",
+    "the urge to kms",
+    "gonna kms, for real",
+    "i'll kms, and i mean it",
+    "lol kms, to be honest",
+    "just kms, on god",
+    "on the roof, time to end it",
+    "i'm at the bridge to end it tonight",
+    "on the bridge, end it",
+  ])("gives the crisis reply (fourth check): %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("CRISIS");
+  });
+
   it.each([
     "convert miles to kms",
     "switch the app to kms",
