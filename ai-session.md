@@ -244,6 +244,16 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Did with it:** normalized text before every safety pattern, kept only user and assistant turns in history, put the 9-8-8 line in the length reply, and widened the drug and diagnosis list in the reply check. In the streaming code, in-stream errors, malformed lines and a Groq stream without its end marker are now provider failures, and the decision table says when fallback runs. A log entry for a streamed failure is left for when a route calls the stream, as stated on the pull request. Tools: mattpocock-skills:tdd, backend-design:error-handling-as-design, backend-design:idempotency-and-side-effects, coding-skills:retry-amplification, omniout:add-fallback, the backend-design:security-reviewer agent, the pr-review-toolkit:silent-failure-hunter and pr-review-toolkit:code-reviewer agents, and Context7 for the MDN stream reader and Groq streaming pages.
 
+### 10 November 2026, coach personas literature note (issue #80)
+
+**Before asking:** #80 says a persona changes wording only, with a calm technical default and a strict style that is opt-in. I wanted to know what the research on coaching style says before anyone builds it, so I had a first pass written from eight papers through the Lune connector.
+
+**Asked:** to file the note in `docs/papers` with its row in the paper index, and to check every paper and figure in it against the papers themselves and against #80 before it went to main.
+
+**Got:** a review that confirmed all eight papers exist with the right authors, venues and DOIs, and corrected the note's reading of several. The biggest: the GymBuddy paper did not use the controlling coach as a negative case (it was ranked last by 9 of 14 participants, but some said it made them try hardest). Also: the Srinivas study's styles change the flow of the conversation, not only the wording, so it does not test wording-only personas; a directive option has less support than the first draft said (facilitative beat directive in that study); and the draft's proposed default (supportive) contradicted #80's calm technical default. The review also added missing numbers and DOIs and found a "Feeds #84" line that no part of the note supported.
+
+**Did with it:** I rewrote the note so each claim says what the paper found and how it was read (full text for five papers, abstract only for three), dropped #84 from the index row, and changed the persona paragraph to say the papers do not settle the default, which stays a decision on #80. I have not re-read the corrected figures in the papers myself; they come from the check's reads. Tools for the targeted help: the Lune connector (paper search, extraction and full text), Crossref and arXiv, the ACM and PubMed Central pages through Firecrawl, the gh CLI, and a fresh review agent (`general-purpose`).
+
 ## Mohammad
 
 ### 31 October 2026, onboarding quiz validation edge cases
