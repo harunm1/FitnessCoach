@@ -953,8 +953,72 @@ describe("phrasings from the 10 November blind review", () => {
     "did I tear my shoulder",
     "did I tear my hip flexor",
     "did I strain something",
+    "did i strain my back",
+    "did i strain my neck",
   ])("declines to diagnose (re-check): %s", (text) => {
     expect(checkUserMessage(text).action).toBe("NO_DIAGNOSIS");
+  });
+
+  // Third check: crisis wordings the narrowed patterns must still catch.
+  it.each([
+    "i won't be here tomorrow so tell my family i love them",
+    "i won't be here tomorrow so tell my mom i'm sorry",
+    "i won't be here tomorrow so take care",
+    "i won't be here tomorrow so love you all",
+    "i won't be here tomorrow so bye",
+    "i won't be here tomorrow so thanks for everything",
+    "i won't be here tomorrow so it doesn't matter",
+    "i won't be here tomorrow so don't bother",
+    "I won't be here tomorrow so",
+    "i won't be here tomorrow so goodbye",
+    "i won't be around tomorrow so goodbye everyone",
+    "fml kms",
+    "ngl kms",
+    "kms rn",
+    "kms tbh",
+    "kms fr fr",
+    "bro kms",
+    "i swear kms",
+    "ok kms",
+    "kms now",
+    "kms :(",
+    "leg day kms",
+    "this workout, kms",
+    "everything hurts kms",
+    "took my sleeping pills and then 20 more tonight",
+    "i took pills for my headache and then 30 more an hour ago",
+    "took my sleeping pills then 30 more of them",
+    "i took my pills and 25 more just now",
+    "standing on the roof i'm gonna jump",
+    "i'm on the ledge, gonna jump",
+    "i'm on the roof and i wanna jump",
+    "on the bridge, gonna jump",
+    "on the bridge and i'll jump",
+    "standing on the ledge i will jump",
+    "on the bridge i might jump",
+    "on the edge of the bridge going to jump",
+  ])("gives the crisis reply (third check): %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("CRISIS");
+  });
+
+  it.each([
+    "convert miles to kms",
+    "switch the app to kms",
+    "kms, not miles",
+    "on the roof deck i want to jump rope",
+  ])("does not give the crisis reply (third check): %s", (text) => {
+    expect(checkUserMessage(text).action).not.toBe("CRISIS");
+  });
+
+  it.each([
+    "did i break my back squat pr",
+    "did i break my back squat record",
+    "did i break my hip thrust 1rm",
+    "did i tear my hip thrust pr",
+    "did i tear my shoulder press pr",
+    "did i break my neck pr",
+  ])("does not treat a lift record as a diagnosis: %s", (text) => {
+    expect(checkUserMessage(text).action).not.toBe("NO_DIAGNOSIS");
   });
 });
 
