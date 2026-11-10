@@ -25,7 +25,7 @@ export default function MessageList({ messages }: MessageListProps) {
             }
             key={message.id}
           >
-            <p className="m-0 text-[10px] font-semibold tracking-[0.12em] text-foreground/55 uppercase">
+            <p className="m-0 text-[10px] font-semibold tracking-[0.12em] text-foreground/70 uppercase">
               {message.role === "USER" ? "You" : "Coach"}
             </p>
             <p className="mt-1 mb-0 text-sm leading-6 whitespace-pre-line">

@@ -1,7 +1,7 @@
 // The message box for the coach (#63): sends through the Server Action and shows its pending, error and unsaved-retry states.
 "use client";
 
-import { useActionState, useId } from "react";
+import { useActionState, useEffect, useId, useRef } from "react";
 import QuickReplies from "@/components/coach/QuickReplies";
 import { sendCoachMessage, type CoachActionState } from "./actions";
 import UnsavedNotice from "./UnsavedNotice";
@@ -14,6 +14,14 @@ export default function CoachForm() {
     initialState,
   );
   const inputId = useId();
+  const errorId = useId();
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // The send button is disabled while the coach replies, which drops keyboard focus;
+  // it goes back to the message box once the exchange is saved.
+  useEffect(() => {
+    if (state.status === "sent") inputRef.current?.focus();
+  }, [state]);
 
   return (
     <>
@@ -30,11 +38,14 @@ export default function CoachForm() {
           Message the coach
         </label>
         <textarea
+          aria-describedby={state.status === "error" ? errorId : undefined}
           className="min-h-24 rounded-md border border-foreground/25 bg-background px-3 py-2 text-base"
-          disabled={pending}
           id={inputId}
           name="message"
           placeholder="For example: can I swap squats for lunges today?"
+          // Read-only, not disabled, while pending: a disabled box loses focus.
+          readOnly={pending}
+          ref={inputRef}
           required
           rows={3}
         />
@@ -45,7 +56,7 @@ export default function CoachForm() {
           </p>
         ) : null}
         {state.status === "error" ? (
-          <p className="m-0 text-sm" role="alert">
+          <p className="m-0 text-sm" id={errorId} role="alert">
             {state.message}
           </p>
         ) : null}

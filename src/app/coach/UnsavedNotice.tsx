@@ -23,7 +23,7 @@ export default function UnsavedNotice({
       <p className="m-0 text-sm leading-6">{message}</p>
       {reply ? (
         <div className="mt-3">
-          <p className="m-0 text-[10px] font-semibold tracking-[0.12em] text-foreground/55 uppercase">
+          <p className="m-0 text-[10px] font-semibold tracking-[0.12em] text-foreground/70 uppercase">
             Not saved
           </p>
           <p className="mt-1 mb-0 text-sm leading-6 whitespace-pre-line">
