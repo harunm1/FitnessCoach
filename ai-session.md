@@ -214,6 +214,16 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Did with it:** wrote `consistency.ts`, the pacing helpers and the `--repeat` flag test first, and fixed the review findings (retries off in repeat mode, failed first calls left pending, argument parsing tested). The first live run then showed calls timed at about 60 s: I had put the pacing wait inside the timer. I moved the wait before the timer, with a test that fails on the old code, and set that run's files aside. The run itself was stopped partway when the machine ran low on memory, so the results table in `docs/COACH_EVAL.md` waits for a fresh run (pull request #87). Tools: agentic-council:oracle-ai-evaluation, mattpocock-skills:tdd, agentic-sdlc:testing-vitest, omniout:add-fallback, Context7 (Groq and Gemini docs), Firecrawl (Gemini rate-limit page), alphaXiv (both Lee papers), and /pr-review-toolkit:review-pr as the independent reviewer.
 
+### 10 November 2026, competitor benchmark, domain check and follow-up issues (issues #91 to #95)
+
+**Before asking:** I had benchmarked fitness platforms for the 5:30pm design review. I decided which ideas to take, which to leave out (generating every session from scratch, a human-coach tier, nutrition), and that all of the new ones wait until after the 15 November core path.
+
+**Asked:** to put the note in `docs/design-reviews`, check the candidate domain names with an RDAP lookup, open one backlog issue per idea with a one-line reason, and check every claim in the note against its sources and against what is merged on main.
+
+**Got:** the note on main, a dated domain table (three names have no registration record, two are registered), and issues #91 to #95 with the enhancement label, my assignment and Backlog status. The task said six domain candidates; the note lists five, so I checked five. The review corrected the note: three sentences claimed things that are only in open pull requests or not shown on a page yet (the verifier on every plan, the pain guardrails, the fallback); Hevy's Trainer already has an injury setting that swaps or warns; the Jefit comparison is a competitor's own page; the lower bound of the coaching price had no source; and the Runna wording went beyond what the sources say.
+
+**Did with it:** I applied the corrections in a separate commit and marked what could not be confirmed (the WSJ full text and its date, the TechRadar article, and any source for Fitbod's periodization). I kept the issue bodies to one line of why plus a link to the note. Tools for the targeted help: skills `engineering:documentation` and `product-management:write-spec` (the issues stayed one line each, so I did not write full specs), the gh CLI, curl for the RDAP lookups, and a fresh review agent (`general-purpose`) that checked the claims through web search, the ExerciseBank and PubMed connectors and the GitHub issues.
+
 ## Mohammad
 
 ### 31 October 2026, onboarding quiz validation edge cases
