@@ -17,7 +17,7 @@ const EXERCISE_CONTEXT = new RegExp(`\\b${EXERCISE}\\b`, "i");
 const TIED = new RegExp(
   [
     `(gonna|going to|about to|could|will|might|want to|wanna) (die|kill myself)( \\w+){0,2} (on|doing|during|at|in|from|after)( \\w+){0,2} ${EXERCISE}\\b`,
-    `${EXERCISE}( \\w+){0,4} (makes? me want to die|is (gonna|going to) kill me|i'?m (gonna|going to) die)`,
+    `\\b${EXERCISE}( \\w+){0,4} (makes? me want to die|is (gonna|going to) kill me|i'?m (gonna|going to) die)`,
     `\\bkms (lol|lmao|haha)`,
   ].join("|"),
   "gi",

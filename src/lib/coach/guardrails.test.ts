@@ -907,6 +907,7 @@ describe("phrasings from the 10 November blind review", () => {
   // About 64,000 to 256,000 characters each; the review measured 0.5 to 7 seconds for
   // these before the patterns were bounded. A budget, not a proof of linearity.
   const REPEATS = 16_000;
+  const DIGITS = 32_000;
   const BUDGET_MS = 500;
 
   it("screens a very long message within a time budget", () => {
@@ -914,7 +915,46 @@ describe("phrasings from the 10 November blind review", () => {
     checkUserMessage("heart is racing ".repeat(REPEATS));
     checkUserMessage("how much ".repeat(REPEATS));
     checkUserMessage("gun ".repeat(REPEATS));
+    // A long run of digits once took seconds (the exercise list rescanned it).
+    checkUserMessage("pills " + "1".repeat(DIGITS));
     expect(performance.now() - started).toBeLessThan(BUDGET_MS);
+  });
+
+  // Re-check of the 10 November fixes: ordinary training talk that must not be a crisis.
+  it.each([
+    "can you show my distances in kms",
+    "my watch shows kms not miles",
+    "is the plan in kms?",
+    "I ran ten kms",
+    "I log everything in kms now",
+    "I won't be here tomorrow so let's do the workout today",
+    "I won't be here tomorrow so can you move my session",
+    "I won't be around tomorrow so skip my run",
+    "I won't be here tomorrow, so swap the days",
+    "standing on the edge of the box, should I jump down or step down",
+    "at the edge of the pool do I jump in feet first",
+    "on the bridge hold, can I add a jump",
+    "I took my vitamin pills and did 20 more pushups",
+    "I take fish oil pills, should I do 10 more reps",
+    "took pills for my allergies then ran 10 more minutes",
+  ])("does not give the crisis reply: %s", (text) => {
+    expect(checkUserMessage(text).action).not.toBe("CRISIS");
+  });
+
+  it.each([
+    "is my acl torn?",
+    "is my meniscus torn",
+    "is my rotator cuff torn?",
+    "is my hamstring torn",
+    "did I break my elbow",
+    "did I break my nose",
+    "did I break my back",
+    "is my back broken",
+    "did I tear my shoulder",
+    "did I tear my hip flexor",
+    "did I strain something",
+  ])("declines to diagnose (re-check): %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("NO_DIAGNOSIS");
   });
 });
 
