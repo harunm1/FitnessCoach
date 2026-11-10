@@ -16,7 +16,8 @@ datasource db {
 
 // Range CHECK constraints on SetLog, RunLog, PlanExercise, PlanRun, PlanDay and Profile
 // live only in migration 20261110220259_range_checks: Prisma cannot declare CHECK, so
-// neither this file nor `prisma db pull` shows them (#76).
+// this file does not show them, and `prisma db pull` only marks those models as having
+// check constraints (#76).
 
 // ---------------------------------------------------------------------------
 // Accounts
@@ -155,6 +156,9 @@ model Plan {
   // One active plan per user, held by the database (#76): the quiz save and saveWeek
   // each deactivate the old plan and insert a new one under different locks, and a
   // race between them left two active plans (docs/RESEARCH.md, D2 constraints).
+  // Unique only among active plans: Prisma still offers userId as a unique key, but
+  // never use it in findUnique, update, upsert or delete, which would match inactive
+  // plans too. Find the active plan with findFirst({ where: { userId, active: true } }).
   @@unique([userId], where: { active: true }, map: "Plan_one_active_per_user")
   // Postgres does not index foreign keys on its own. The session screen and actions
   // look up the user's newest active plan; onboarding and saveWeek deactivate the old
@@ -193,8 +197,10 @@ model PlanDay {
   @@unique([planId, dayIndex])
 }
 
-// One exercise slot on one plan day. The verifier's range checks (sets, reps, rest)
-// are enforced in code, not here, because the ranges are coaching decisions.
+// One exercise slot on one plan day. The verifier's coaching ranges (sets, reps, rest)
+// are enforced in code, because they are coaching decisions; the database holds only
+// sanity bounds (sets and reps at least 1, rest and order at least 0) in migration
+// 20261110220259_range_checks.
 model PlanExercise {
   id          Int      @id @default(autoincrement())
   planDayId   Int
@@ -244,7 +250,10 @@ model Workout {
 
   // One open workout per plan (#76): Start looks for an open workout, then creates one,
   // so two taps could open two. Per plan, not per user: a plan switch leaves the old
-  // plan's open workout open, and Start must still work on the new plan.
+  // plan's open workout open, and Start must still work on the new plan. Unique only
+  // among open workouts: never use planId as a key in findUnique, update, upsert or
+  // delete, which would match finished workouts too; filter with
+  // findFirst({ where: { planId, finishedAt: null } }).
   @@unique([planId], where: { finishedAt: null }, map: "Workout_one_open_per_plan")
   // The session screen and actions find the open workout and count finished ones:
   // where userId, planId and finishedAt (#76). No startedAt column: Postgres does not
@@ -253,7 +262,9 @@ model Workout {
   // plan.active (no planId) seek on userId and check finishedAt inside the index.
   @@index([userId, planId, finishedAt])
   // Deleting a plan or a plan day sets these to null; the indexes let Postgres find
-  // the workouts without scanning the table (#76).
+  // the workouts without scanning the table (#76). Workout_one_open_per_plan covers
+  // only open workouts and the composite above leads with userId, so neither serves
+  // this.
   @@index([planId])
   @@index([planDayId])
 }

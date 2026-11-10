@@ -4,8 +4,8 @@
 -- A plain ADD CONSTRAINT checks every existing row while it holds the table lock,
 -- which is instant on demo data. On a large table, add the constraint NOT VALID here
 -- and run VALIDATE CONSTRAINT in a separate migration, since one migration file runs
--- as one transaction. Workout's own columns are not constrained here (a draft for
--- their owner).
+-- as one transaction. Workout's distanceKm and durationSeconds are not constrained
+-- here; their bounds are for the session screen's owner to decide (#76).
 
 ALTER TABLE "SetLog"
   ADD CONSTRAINT "SetLog_setNumber_check" CHECK ("setNumber" >= 1),
