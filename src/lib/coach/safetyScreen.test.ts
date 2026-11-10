@@ -1,7 +1,11 @@
 // Tests for the layered safety screen (D15): the model check can raise the response, never lower the word list.
 import { describe, expect, it, vi } from "vitest";
 import { REPLIES } from "./guardrails";
-import { screenUserMessage, type SafetyClassifier } from "./safetyScreen";
+import {
+  screenUserMessage,
+  screenUserMessageWithReading,
+  type SafetyClassifier,
+} from "./safetyScreen";
 
 const says =
   (category: Awaited<ReturnType<SafetyClassifier>>): SafetyClassifier =>
@@ -149,12 +153,15 @@ describe("screenUserMessage keeps every floor reply the model does not outrank",
     vi.useFakeTimers();
     try {
       let aborted = false;
+      // A well-behaved classifier drops its own work on abort, so any timer still
+      // counted after the timeout path belongs to the screen (10 November review).
       const slow: SafetyClassifier = (_text, signal) =>
         new Promise((resolve) => {
+          const own = setTimeout(() => resolve("NONE"), 60_000);
           signal?.addEventListener("abort", () => {
             aborted = true;
+            clearTimeout(own);
           });
-          setTimeout(() => resolve("NONE"), 60_000);
         });
       const pending = screenUserMessage("how many sets today?", slow, {
         timeoutMs: 3000,
@@ -162,11 +169,69 @@ describe("screenUserMessage keeps every floor reply the model does not outrank",
       await vi.advanceTimersByTimeAsync(3000);
       await pending;
       expect(aborted).toBe(true);
-      vi.clearAllTimers();
+      expect(vi.getTimerCount()).toBe(0);
       await screenUserMessage("how many sets today?", says("NONE"));
       expect(vi.getTimerCount()).toBe(0);
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+// The screen used to turn every model failure into "no reading" with nothing to show
+// it; a caller can now count and log the times the model did not run (10 November
+// blind review).
+describe("screenUserMessageWithReading", () => {
+  const MODEL_LIMIT = 4000;
+
+  it.each([
+    [
+      "a classifier that throws",
+      (() => Promise.reject(new Error("HTTP 503"))) as SafetyClassifier,
+    ],
+    [
+      "a classifier that returns an unknown label",
+      (async () => "MAYBE") as unknown as SafetyClassifier,
+    ],
+  ])(
+    "reports the model as unavailable for %s and keeps the word-list result",
+    async (_name, classify) => {
+      const result = await screenUserMessageWithReading(
+        "I want to die",
+        classify,
+      );
+      expect(result).toEqual({
+        guard: { action: "CRISIS", reply: REPLIES.CRISIS },
+        model: "UNAVAILABLE",
+      });
+    },
+  );
+
+  it("reports the model as not configured when there is no classifier", async () => {
+    const result = await screenUserMessageWithReading("how many sets today?");
+    expect(result).toEqual({
+      guard: { action: "ALLOW" },
+      model: "NOT_CONFIGURED",
+    });
+  });
+
+  it("reports the category the model read", async () => {
+    const result = await screenUserMessageWithReading(
+      "honestly what is even the point anymore",
+      says("DISTRESS"),
+    );
+    expect(result.model).toBe("DISTRESS");
+    expect(result.guard.action).toBe("CHECK_IN");
+  });
+
+  it("sends the model at most a bounded slice of a very long message", async () => {
+    let seen = "";
+    const record: SafetyClassifier = async (text) => {
+      seen = text;
+      return "NONE";
+    };
+    // Two characters per repeat, so twice the limit.
+    await screenUserMessageWithReading("x ".repeat(MODEL_LIMIT), record);
+    expect(seen.length).toBeLessThanOrEqual(MODEL_LIMIT);
   });
 });

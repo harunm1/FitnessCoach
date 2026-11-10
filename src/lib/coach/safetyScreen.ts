@@ -3,8 +3,14 @@
 // the check-in from distress.ts) is the deterministic floor. The model can only raise
 // the response, to the check-in, the red-flag reply or the crisis reply; it never
 // lowers what the word list finds. If the model is not configured, fails or is slow,
-// the word list decides alone, so a provider outage never weakens the floor.
-import { REPLIES, checkUserMessage, type Guard } from "./guardrails";
+// the word list decides alone, so a provider outage never weakens the floor; the
+// result says which happened, so the caller can log it.
+import {
+  REPLIES,
+  checkUserMessage,
+  normalizeText,
+  type Guard,
+} from "./guardrails";
 
 export type SafetyCategory = "CRISIS" | "MEDICAL" | "DISTRESS" | "NONE";
 // The signal aborts the request when the screen stops waiting.
@@ -66,18 +72,67 @@ function readWithinTime(
   return Promise.race([work, late]).finally(() => clearTimeout(timer));
 }
 
-export async function screenUserMessage(
+// The model reads at most this much of a message; the word list reads all of it. A
+// very long message would otherwise be refused or time out at the provider and leave
+// the floor alone with nothing to show for it (10 November review).
+export const SAFETY_MODEL_INPUT_CHARS = 4000;
+
+const KNOWN: readonly SafetyCategory[] = [
+  "CRISIS",
+  "MEDICAL",
+  "DISTRESS",
+  "NONE",
+];
+
+// What the model contributed: its category, UNAVAILABLE when it failed, timed out or
+// gave an unknown label, NOT_CONFIGURED when there is no classifier or nothing to read.
+// A caller logs UNAVAILABLE, so an outage or a bad key does not pass unnoticed.
+export type ModelReading = SafetyCategory | "UNAVAILABLE" | "NOT_CONFIGURED";
+
+// One model reading of the first SAFETY_MODEL_INPUT_CHARS characters; any failure or
+// unknown label is UNAVAILABLE, never a silent NONE.
+async function readModel(
+  classify: SafetyClassifier,
+  text: string,
+  timeoutMs: number,
+): Promise<SafetyCategory | "UNAVAILABLE"> {
+  try {
+    const category = await readWithinTime(
+      classify,
+      text.slice(0, SAFETY_MODEL_INPUT_CHARS),
+      timeoutMs,
+    );
+    return KNOWN.includes(category) ? category : "UNAVAILABLE";
+  } catch {
+    return "UNAVAILABLE";
+  }
+}
+
+export async function screenUserMessageWithReading(
   text: string,
   classify?: SafetyClassifier,
   { timeoutMs = SAFETY_TIMEOUT_MS }: { timeoutMs?: number } = {},
-): Promise<Guard> {
-  if (!classify || text.trim() === "") return checkUserMessage(text);
-  const reading = readWithinTime(classify, text, timeoutMs).catch(
-    () => "NONE" as const,
-  );
+): Promise<{ guard: Guard; model: ModelReading }> {
+  if (!classify || normalizeText(text) === "") {
+    return { guard: checkUserMessage(text), model: "NOT_CONFIGURED" };
+  }
+  // Started before the word list runs, so the two overlap.
+  const reading = readModel(classify, text, timeoutMs);
   const floor = checkUserMessage(text);
-  const category = await reading;
-  if (category === "NONE") return floor;
-  const raised = FROM_MODEL[category];
-  return severity(raised) > severity(floor) ? raised : floor;
+  const model = await reading;
+  if (model === "UNAVAILABLE" || model === "NONE")
+    return { guard: floor, model };
+  const raised = FROM_MODEL[model];
+  return {
+    guard: severity(raised) > severity(floor) ? raised : floor,
+    model,
+  };
+}
+
+export async function screenUserMessage(
+  text: string,
+  classify?: SafetyClassifier,
+  options: { timeoutMs?: number } = {},
+): Promise<Guard> {
+  return (await screenUserMessageWithReading(text, classify, options)).guard;
 }
