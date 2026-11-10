@@ -142,7 +142,7 @@ GEMINI_API_KEY=""   # aistudio.google.com/apikey
 
 ### Checks
 
-Tests come in three layers (8 November design review, decision 4): unit tests for pure logic, with saved model replies instead of live calls; API mocking at the provider boundary, so timeouts, invalid JSON and rate limits are tested on purpose; and integration tests that run Server Actions against a real PostgreSQL in CI (#79, not in CI yet). Each owner tests their own slice.
+Tests come in three layers (8 November design review, decision 4): unit tests for pure logic, with saved model replies instead of live calls; API mocking at the provider boundary, so timeouts, invalid JSON and rate limits are tested on purpose; and integration tests against a real PostgreSQL 16 that CI has run on every pull request since #67 (accounts, trials and billing); the ones for the quiz and session Server Actions are #79 (PR #81, open). Each owner tests their own slice.
 
 The same checks CI runs on every pull request:
 
