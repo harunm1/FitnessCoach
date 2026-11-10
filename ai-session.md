@@ -184,6 +184,16 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Did with it:** kept the board and label changes, committed the section order and the README line separately, and left the architecture document's "not in CI yet" line for its own edit. Tools: gh CLI, engineering:documentation, commit-commands:commit, and an independent review agent that checked the diff and the CI claim before the push.
 
+### 10 November 2026, "Why this plan" rows and panel (issue #66)
+
+**Before asking:** the verifier already decides every plan in code, and issue #66 asks that the user can see that decision. I decided on a pure function from the plan's source and its log records to the rows, a small server component that only renders them, and no new model call. The issue says "plan page", but main has no plan page and the log records are not stored yet, so I chose to build the function and the component without mounting them, and to say that in the pull request.
+
+**Asked:** for the function test first (one test per source state: model first try, model after regeneration, rule-based), the component, a check of the panel's wording and accessibility, and an independent review of every sentence the panel shows against the code.
+
+**Got:** the function, the component and 19 tests. The independent review found four sentences that were false for some inputs: the running line said "10% more than last week" for users with no logged runs, a failed call was reported as a reply that failed the checks, "checked before you saw it" did not hold for every rule-based plan, and "training days match" did not hold when the plan includes running. It also found that the log's "not valid JSON" text, attached to any failed call, would have reached the user. The wording a user would not read naturally was a smaller finding.
+
+**Did with it:** I added failing tests for each case, then reworded the panel to say only what holds for every log sequence and left out the days line when running is included. Reasons now come only from a reply the verifier rejected, and the common third-person phrases read in second person. I raised the row labels from 60% to 70% opacity, which takes their contrast on the page background from 4.3:1 to 5.8:1, and added an `idPrefix` prop so the heading id can be made unique when more than one panel is on a page. Lint, typecheck, 268 tests and the format check pass. Tools for the targeted help: skills `mattpocock-skills:tdd`, `hzblj-skills:type-safety`, `hzblj-skills:component-architecture`, `design:ux-copy` and `audit-suite:audit-as-a11y-eng`; Context7 for the Next.js server and client component docs (checked 10 November 2026); and a fresh review agent (`pr-review-toolkit:code-reviewer`).
+
 ## Mohammad
 
 ### 31 October 2026, onboarding quiz validation edge cases
