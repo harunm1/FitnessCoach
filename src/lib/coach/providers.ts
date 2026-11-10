@@ -195,6 +195,13 @@ export function groqChat(apiKey: string, model = GROQ_MODEL): ChatModel {
   };
 }
 
+function answerText(parts: { text?: unknown; thought?: boolean }[]): string {
+  return parts
+    .filter((p) => !p.thought && typeof p.text === "string")
+    .map((p) => p.text as string)
+    .join("");
+}
+
 export function geminiChat(apiKey: string, model = GEMINI_MODEL): ChatModel {
   return async (messages) => {
     const system = messages.find((m) => m.role === "system");
@@ -219,7 +226,9 @@ export function geminiChat(apiKey: string, model = GEMINI_MODEL): ChatModel {
       }[];
     };
     const parts = data.candidates?.[0]?.content?.parts ?? [];
-    return replyText("Gemini", parts.find((p) => !p.thought)?.text);
+    // A reply can arrive in several text parts; the answer is all of them in order,
+    // minus thought parts (Gemini API thinking guide: join each non-thought part.text).
+    return replyText("Gemini", answerText(parts));
   };
 }
 

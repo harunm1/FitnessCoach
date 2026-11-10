@@ -227,6 +227,13 @@ export function checkCoachReply(text: string): Guard {
     : { action: "ALLOW" };
 }
 
+// True when the text is about training, running, recovery or the body, by the same word
+// list the off-topic rule uses. The chat turn uses it to tell whether an earlier turn
+// gives a short follow-up something to refer to (chat.ts).
+export function mentionsTraining(text: string): boolean {
+  return TRAINING.test(text);
+}
+
 export type ChatMessage = {
   role: "system" | "user" | "assistant";
   content: string;

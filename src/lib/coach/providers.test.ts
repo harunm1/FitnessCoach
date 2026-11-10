@@ -367,6 +367,27 @@ describe("chat providers", () => {
     expect(body.response_format).toBeUndefined();
   });
 
+  it("Gemini joins every non-thought text part of a multipart reply", async () => {
+    mockFetch(
+      200,
+      geminiReply([
+        { text: "thinking", thought: true },
+        { text: "Add 2 kg next set. " },
+        { text: "If the last rep slows down, stay at the same weight." },
+      ]),
+    );
+    expect(await geminiChat(KEY)(messages)).toBe(
+      "Add 2 kg next set. If the last rep slows down, stay at the same weight.",
+    );
+  });
+
+  it("Gemini reports no text when every part is a thought", async () => {
+    mockFetch(200, geminiReply([{ text: "thinking", thought: true }]));
+    await expect(geminiChat(KEY)(messages)).rejects.toThrow(
+      "Gemini reply had no text",
+    );
+  });
+
   it("Gemini moves the system prompt to systemInstruction and maps roles", async () => {
     const fetchMock = mockFetch(
       200,

@@ -3,7 +3,9 @@
 //   1. an empty or over-long message gets a fixed reply; otherwise the message goes
 //      through the safety screen (a model check that can only raise the response,
 //      then the word list, D15), and a crisis, red-flag, check-in, pain, diagnosis,
-//      eating, self-worth or off-topic message gets its fixed reply with no chat call
+//      eating, self-worth, nutrition or off-topic message gets its fixed reply with no
+//      chat call; a short follow-up to a training turn ("Can you explain that?") is not
+//      off-topic, but only that redirect is relaxed, every other check still runs
 //   2. the model sees a system prompt built here from the user's own plan and
 //      profile, then the conversation, then the new message as a user message
 //   3. the reply goes through checkCoachReply before anyone sees it
@@ -12,6 +14,7 @@
 import {
   buildChatMessages,
   checkCoachReply,
+  mentionsTraining,
   type ChatMessage,
 } from "./guardrails";
 import type { ChatModel } from "./providers";
@@ -47,6 +50,23 @@ export const TOO_LONG_REPLY =
   "That message is too long for the coach. Please keep it to 1,000 characters or fewer and ask one thing at a time.";
 export const EMPTY_REPLY =
   "Ask me anything about your plan, today's session, running or recovery.";
+
+// A short message that points back at the conversation ("Can you explain that?", "why
+// is that?", "tell me more") has no training words of its own. It counts as a
+// follow-up only when it is short and an earlier message in the last few turns is
+// about training; the system prompt still limits the model to this user's training.
+const MAX_FOLLOW_UP_WORDS = 12;
+const FOLLOW_UP_TURNS = 4;
+const FOLLOW_UP =
+  /\b(that|this|it|those|these|them)\b|\b(why|how so|what do you mean|tell me more|say more|go on|elaborate)\b/i;
+
+function isFollowUp(text: string, recent: ChatMessage[]): boolean {
+  return (
+    text.split(/\s+/).filter(Boolean).length <= MAX_FOLLOW_UP_WORDS &&
+    FOLLOW_UP.test(text) &&
+    recent.slice(-FOLLOW_UP_TURNS).some((m) => mentionsTraining(m.content))
+  );
+}
 
 // Bump when the wording changes, so logged replies can be grouped by prompt.
 export const CHAT_PROMPT_VERSION = "chat-v1";
@@ -104,7 +124,10 @@ export async function coachReply(
   }));
 
   const guard = await screenUserMessage(text, classify);
-  if (guard.action !== "ALLOW") {
+  // Only the off-topic redirect is relaxed for an in-context follow-up; crisis,
+  // red-flag, pain, diagnosis, eating, self-worth and nutrition replies stand.
+  const followUp = guard.action === "OFF_TOPIC" && isFollowUp(text, recent);
+  if (guard.action !== "ALLOW" && !followUp) {
     return { reply: guard.reply, source: "GUARDRAIL" };
   }
 

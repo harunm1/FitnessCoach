@@ -230,3 +230,124 @@ describe("coachReply over-long messages", () => {
     expect(model).not.toHaveBeenCalled();
   });
 });
+
+// A nutrition question never reaches the model: out of scope since the 8 November
+// design review (decision 5, #43). The word list lives in guardrails.ts; this proves
+// the chat turn honours it for the whole path.
+describe("coachReply nutrition scope", () => {
+  it.each([
+    "what should I eat before my long run?",
+    "how many calories should I eat on a rest day?",
+    "can I take creatine with this plan?",
+  ])("redirects without calling the model: %s", async (text) => {
+    const model = vi.fn<ChatModel>();
+    const turn = await coachReply(model, ctx, [], text);
+    expect(turn).toEqual({
+      reply: REPLIES.NUTRITION_REDIRECT,
+      source: "GUARDRAIL",
+    });
+    expect(model).not.toHaveBeenCalled();
+  });
+
+  it("redirects a nutrition follow-up even in a training conversation", async () => {
+    const model = vi.fn<ChatModel>();
+    const turn = await coachReply(
+      model,
+      ctx,
+      benchTurn,
+      "how much of that should I eat?",
+    );
+    expect(turn.source).toBe("GUARDRAIL");
+    expect(model).not.toHaveBeenCalled();
+  });
+});
+
+const benchTurn: ChatMessage[] = [
+  { role: "user", content: "can I go heavier on bench press?" },
+  {
+    role: "assistant",
+    content: "Yes: add 2 kg next set if your last rep was smooth.",
+  },
+];
+
+// In-context follow-ups ("Can you explain that?") go to the model after a training
+// turn, while every safety check still runs first and only the off-topic redirect is
+// relaxed.
+describe("coachReply follow-ups", () => {
+  it("answers 'Can you explain that?' after a bench-press turn", async () => {
+    const model = vi
+      .fn<ChatModel>()
+      .mockResolvedValue(
+        "A smooth last rep means you have a rep or two spare.",
+      );
+    const turn = await coachReply(
+      model,
+      ctx,
+      benchTurn,
+      "Can you explain that?",
+    );
+    expect(turn).toEqual({
+      reply: "A smooth last rep means you have a rep or two spare.",
+      source: "COACH",
+    });
+    const messages = model.mock.calls[0][0] as ChatMessage[];
+    expect(messages.slice(1, -1)).toEqual(benchTurn);
+    expect(messages.at(-1)).toEqual({
+      role: "user",
+      content: "Can you explain that?",
+    });
+  });
+
+  it.each(["Why is that?", "what do you mean by smooth?", "tell me more"])(
+    "answers a short follow-up: %s",
+    async (text) => {
+      const model = vi.fn<ChatModel>().mockResolvedValue("Sure.");
+      const turn = await coachReply(model, ctx, benchTurn, text);
+      expect(turn.source).toBe("COACH");
+    },
+  );
+
+  it("still redirects 'Can you explain that?' with no earlier training turn", async () => {
+    const model = vi.fn<ChatModel>();
+    const turn = await coachReply(model, ctx, [], "Can you explain that?");
+    expect(turn).toEqual({ reply: REPLIES.OFF_TOPIC, source: "GUARDRAIL" });
+    expect(model).not.toHaveBeenCalled();
+  });
+
+  it("still redirects an unrelated request after a training turn", async () => {
+    const model = vi.fn<ChatModel>();
+    const turn = await coachReply(
+      model,
+      ctx,
+      benchTurn,
+      "write me a poem about the French revolution please",
+    );
+    expect(turn).toEqual({ reply: REPLIES.OFF_TOPIC, source: "GUARDRAIL" });
+    expect(model).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["my knee hurts when I explain that", "PAIN_STOP"],
+    ["Can you explain that? I feel like I want to die", "CRISIS"],
+  ])("keeps the safety checks on a follow-up: %s", async (text, action) => {
+    const model = vi.fn<ChatModel>();
+    const turn = await coachReply(model, ctx, benchTurn, text);
+    expect(turn.source).toBe("GUARDRAIL");
+    expect(turn.reply).toBe(REPLIES[action as "PAIN_STOP" | "CRISIS"]);
+    expect(model).not.toHaveBeenCalled();
+  });
+
+  it("keeps the model safety check on a follow-up", async () => {
+    const model = vi.fn<ChatModel>();
+    const classify = vi.fn<SafetyClassifier>().mockResolvedValue("CRISIS");
+    const turn = await coachReply(
+      model,
+      ctx,
+      benchTurn,
+      "Can you explain that?",
+      classify,
+    );
+    expect(turn).toEqual({ reply: REPLIES.CRISIS, source: "GUARDRAIL" });
+    expect(model).not.toHaveBeenCalled();
+  });
+});
