@@ -12,6 +12,7 @@ import { REPLIES, type ChatMessage } from "./guardrails";
 import type { SafetyClassifier } from "./safetyScreen";
 import {
   ProviderError,
+  geminiChatStream,
   groqChatStream,
   withStreamFallback,
   type ChatStream,
@@ -364,5 +365,83 @@ describe("groqChatStream early stop (point 3)", () => {
     await pieces.return?.(undefined);
     expect(onCancel).toHaveBeenCalledTimes(1);
     expect(body.locked).toBe(false);
+  });
+});
+
+// Verifier and silent-failure review, 10 Nov: an error sent inside the stream, a line
+// that is not JSON, or a Groq stream that stops without [DONE] is a provider failure,
+// so the fallback runs while nothing has been shown and a cut is visible after text.
+const groqEvent = (content: string) =>
+  `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`;
+const rawResponse = (body: string) => new Response(body, { status: HTTP_OK });
+
+describe("in-stream provider errors", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it.each([
+    [
+      "an error event",
+      'data: {"error":{"message":"overloaded","code":"503"}}\n\n',
+    ],
+    ["a line that is not JSON", "data: {not json\n\n"],
+  ])("falls back on %s before any text", async (_name, body) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => rawResponse(body)),
+    );
+    const out = await collect(
+      withStreamFallback(
+        groqChatStream("test-key"),
+        streamOf("From Gemini."),
+      )([]),
+    );
+    expect(out).toEqual(["From Gemini."]);
+  });
+
+  it("reports a Gemini error event as a ProviderError", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        rawResponse('data: {"error":{"code":503,"message":"overloaded"}}\n\n'),
+      ),
+    );
+    await expect(
+      collect(geminiChatStream("test-key")([])),
+    ).rejects.toBeInstanceOf(ProviderError);
+  });
+
+  it("treats a Groq stream that ends without [DONE] as broken off", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => rawResponse(groqEvent("Hello"))),
+    );
+    const pieces = groqChatStream("test-key")([])[Symbol.asyncIterator]();
+    expect(await pieces.next()).toEqual({ value: "Hello", done: false });
+    await expect(pieces.next()).rejects.toBeInstanceOf(ProviderError);
+  });
+});
+
+describe("coachReplyStream after text has been shown", () => {
+  it("adds nothing for whitespace after the last sentence", async () => {
+    const out = await collect(
+      coachReplyStream(
+        streamOf("Done. ", "  ", "\n"),
+        ctx,
+        [],
+        "what pace for my easy run?",
+      ),
+    );
+    expect(out).toEqual(["Done. "]);
+  });
+
+  it("marks a provider failure after text with the unavailable line once", async () => {
+    const half: ChatStream = async function* () {
+      yield "One. ";
+      throw new ProviderError("reset", "Groq");
+    };
+    const out = await collect(
+      coachReplyStream(half, ctx, [], "what pace for my easy run?"),
+    );
+    expect(out).toEqual(["One. ", "\n\n" + UNAVAILABLE_REPLY]);
   });
 });

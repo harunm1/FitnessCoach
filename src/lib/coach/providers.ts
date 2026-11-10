@@ -412,7 +412,7 @@ async function readChunk(
   try {
     return await reader.read();
   } catch (e) {
-    const timedOut = (e as Error).name === "TimeoutError";
+    const timedOut = e instanceof Error && e.name === "TimeoutError";
     throw new ProviderError(
       `${provider} stream ${timedOut ? "timed out" : "broke off"}`,
       provider,
@@ -421,6 +421,31 @@ async function readChunk(
       timedOut,
     );
   }
+}
+
+// One data line as JSON. A line that is not JSON, or an error object sent inside the
+// stream, is a provider failure like an HTTP error: withStreamFallback can switch while
+// nothing has been shown (verifier and silent-failure review, 10 Nov).
+function parseEvent(provider: string, data: string): Record<string, unknown> {
+  let event: unknown;
+  try {
+    event = JSON.parse(data);
+  } catch {
+    throw new ProviderError(`${provider} sent a malformed event`, provider);
+  }
+  if (typeof event !== "object" || event === null) {
+    throw new ProviderError(`${provider} sent a malformed event`, provider);
+  }
+  const error = (event as { error?: { code?: unknown } }).error;
+  if (error) {
+    const code = Number(error.code);
+    throw new ProviderError(
+      `${provider} stream error`,
+      provider,
+      Number.isInteger(code) ? code : undefined,
+    );
+  }
+  return event as Record<string, unknown>;
 }
 
 async function* sseData(
@@ -495,10 +520,15 @@ export function groqChatStream(apiKey: string, model = GROQ_MODEL): ChatStream {
     for await (const data of sseData("Groq", res)) {
       if (data === "[DONE]") return;
       const piece = (
-        JSON.parse(data) as { choices?: { delta?: { content?: unknown } }[] }
+        parseEvent("Groq", data) as {
+          choices?: { delta?: { content?: unknown } }[];
+        }
       ).choices?.[0]?.delta?.content;
       if (typeof piece === "string" && piece) yield piece;
     }
+    // Groq ends every complete stream with data: [DONE] (API reference, checked
+    // 10 Nov 2026); a body that closes without it was cut off.
+    throw new ProviderError("Groq stream ended before [DONE]", "Groq");
   };
 }
 
@@ -527,7 +557,7 @@ export function geminiChatStream(
     for await (const data of sseData("Gemini", res)) {
       const parts =
         (
-          JSON.parse(data) as {
+          parseEvent("Gemini", data) as {
             candidates?: {
               content?: { parts?: { text?: unknown; thought?: boolean }[] };
             }[];
