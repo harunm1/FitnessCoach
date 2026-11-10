@@ -95,27 +95,44 @@ const NEGATED_PAIN =
   /\b(no|not|never|don'?t|doesn'?t|didn'?t|isn'?t|wasn'?t)\b(\s+(?!(stop|stops|stopped|way)\b)\w+){0,2}\s+(pain|painful|hurt|hurts|hurting)\b/gi;
 const DIAGNOSIS =
   /\b(diagnos\w*|do i have|is it (a )?(torn|tear|broken|fracture|sprain|strain)|what injury|tendinitis|tendonitis|herniat\w*|ibuprofen|advil|painkillers?|pills?|medication|meds|dosage)\b/i;
-// A question or request about what to eat, drink or take, or how much. Food in a goal
-// ("I want to lose fat") or in a training question ("I skipped breakfast, should I
-// still train?") is not matched: the pattern needs an ask about the food itself.
-const FOOD = String.raw`(calor\w*|kcal|macros?|carbs?|carbohydrates?|protein|supplements?|creatine|pre-?workout|whey|bcaas?|vitamins?|foods?|meals?|snacks?|diets?|keto|fasting|electrolytes?)`;
+// A question or request about what to eat or take, or how much. Food in a goal ("I want
+// to lose fat") or in a training question ("I skipped breakfast, should I still
+// train?") is not matched: the pattern needs an ask about the food itself. Water and
+// electrolytes during a run, calories burned and meal timing around a session are
+// training questions and go to the coach. This list is best effort: the coach prompt
+// repeats the rule (chat.ts), but a nutrition phrasing it misses is not a safety gap.
+const FOOD = String.raw`(calor\w*|kcal|macros?|carbs?|carbohydrates?|protein|supplements?|creatine|pre-?workout|whey|bcaas?|vitamins?|diets?|keto)(?!-)`;
 const NUTRITION = new RegExp(
   [
-    // "what should I eat", "what to drink", "what do I have for dinner"
-    String.raw`\bwhat\b[^.?!]{0,30}\b(eat|drink|have for (breakfast|lunch|dinner)|take (for|before|after))\b`,
-    // "should I cut calories", "can I take creatine", "do I need to track carbs"
-    String.raw`\b(should|can|could|do|would)\s+i\b[^.?!]{0,30}\b(eat|drink|take|cut|count|track|reduce|increase|add|avoid|limit|need)\b[^.?!]{0,30}\b${FOOD}\b`,
-    // "how much protein", "how many calories", "how much should I eat"
-    String.raw`\bhow (much|many)\b[^.?!]{0,30}\b(eat|${FOOD})\b`,
+    // "what should I eat", "what do I have for dinner", "what to take before a run"
+    String.raw`\bwhat\b[^.?!]{0,30}\b(eat|have for (breakfast|lunch|dinner)|take (for|before|after))\b`,
+    // "what foods help recovery", "what vitamins should I take", "what supplements"
+    String.raw`\bwhat\b[^.?!]{0,20}\b(foods?|snacks?(?!-)|supplements?|vitamins?|meals?(?!\s+times?\b))\b`,
+    // "should I eat before a run", "do I need to eat more", "can I eat late"
+    String.raw`\b(should|can|could|do|would|will)\s+i\b[^.?!]{0,20}\beat\b`,
+    // "should I cut calories", "can I take creatine", "do I track carbs"
+    String.raw`\b(should|can|could|do|would)\s+i\b[^.?!]{0,30}\b(take|cut|count|track|reduce|increase|avoid|limit)\b[^.?!]{0,30}\b${FOOD}\b`,
+    // "how much protein", "how many calories should I eat"; not "how many calories does a run burn"
+    String.raw`\bhow (much|many)\b(?![^.?!]*\bburn\w*)[^.?!]{0,30}\b(eat|${FOOD})\b`,
+    // "how should I fuel for a marathon"
+    String.raw`\b(how|what)\b[^.?!]{0,20}\bfuel(l?ing)?\b(?!\s+stops?\b)`,
     // "best supplements", "recommend a diet", "healthy snacks"
-    String.raw`\b(best|good|healthy|recommend\w*|suggest\w*)\b[^.?!]{0,30}\b(diets?|meals?|snacks?|supplements?|foods?|protein (shakes?|powder|bars?)|creatine|pre-?workout)\b`,
+    String.raw`\b(best|good|healthy|recommend\w*|suggest\w*)\b[^.?!]{0,30}\b(diets?|meals?(?!\s+times?\b)|snacks?(?!-)|supplements?|foods?|protein (shakes?|powder|bars?)|creatine|pre-?workout|breakfast|lunch|dinner)\b`,
+    // "breakfast ideas", "dinner recipes"
+    String.raw`\b(breakfast|lunch|dinner|snack|meal)s? (ideas?|recipes?|options?)\b|\b(ideas?|recipes?) for (breakfast|lunch|dinner|snacks?|meals?)\b`,
     // "any alternatives to this protein shake"
     String.raw`\b(protein (shakes?|powder|bars?)|supplements?|snacks?)\b[^.?!]{0,60}\b(alternatives?|instead|recommend\w*|suggest\w*|which)\b`,
+    // "is whey worth it", "is creatine safe", "does creatine work"
+    String.raw`\b(is|are|does|do)\b[^.?!]{0,25}\b(whey|creatine|protein( powder| shakes?)?|supplements?|bcaas?|pre-?workout|vitamins?)\b[^.?!]{0,25}\b(worth|safe|good|work\w*|necessary|needed|healthy|bad|effective|enough)\b`,
+    // "sources of protein"
+    String.raw`\bsources? of (protein|carbs?|fats?|iron|calcium|vitamins?)\b`,
     // "give me a meal plan", "build a diet", "what my macros should be"
     String.raw`\b(give|make|write|create|build|plan|need|want|calculate|set|help)\b[^.?!]{0,40}\b(meal (plans?|prep)|diet( plans?)?|macros?|calorie (target|goal|intake))\b`,
     String.raw`\b(my )?(macros?|calories|calorie (target|intake))\b[^.?!]{0,20}\b(be|should)\b`,
+    // "I'm eating 1200 calories, is that enough?"
+    String.raw`\b(eat(ing)?|consum\w*|having|on)\b[^.?!]{0,15}\b\d{3,4}\b[^.?!]{0,10}\b(calor\w*|kcal)\b`,
     // "is keto good for running", "is intermittent fasting worth it"
-    String.raw`\bis\b[^.?!]{0,20}\b(keto|fasting|a diet|the \w+ diet)\b`,
+    String.raw`\bis\b[^.?!]{0,20}\b(keto|intermittent fasting|a diet|the \w+ diet)\b`,
   ].join("|"),
   "i",
 );

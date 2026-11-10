@@ -38,7 +38,11 @@ function severity(guard: Guard): number {
     case "MINDSET_REFRAME":
     case "NO_DIAGNOSIS":
       return 1;
-    default:
+    // Plain redirects and guidance, no safety content: any model reading outranks them.
+    case "PAIN_GUIDANCE":
+    case "NUTRITION_REDIRECT":
+    case "OFF_TOPIC":
+    case "ALLOW":
       return 0;
   }
 }
