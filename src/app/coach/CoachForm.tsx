@@ -2,6 +2,7 @@
 "use client";
 
 import { useActionState, useId } from "react";
+import QuickReplies from "@/components/coach/QuickReplies";
 import { sendCoachMessage, type CoachActionState } from "./actions";
 
 const initialState: CoachActionState = { status: "idle" };
@@ -27,6 +28,7 @@ export default function CoachForm() {
         required
         rows={3}
       />
+      <QuickReplies disabled={pending} />
       {pending ? (
         <p className="m-0 text-sm text-foreground/70" role="status">
           The coach is replying...

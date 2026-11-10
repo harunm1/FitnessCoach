@@ -55,8 +55,11 @@ export async function sendCoachMessage(
     throw error;
   }
 
-  const raw = formData.get("message");
-  const text = typeof raw === "string" ? raw.trim() : "";
+  // The quick-reply button that was pressed, otherwise the text box.
+  const text =
+    [formData.get("quickReply"), formData.get("message")]
+      .map((value) => (typeof value === "string" ? value.trim() : ""))
+      .find((value) => value !== "") ?? "";
   if (text === "") {
     return { status: "error", message: EMPTY_MESSAGE };
   }

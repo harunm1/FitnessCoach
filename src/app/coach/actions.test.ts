@@ -186,4 +186,23 @@ describe("sendCoachMessage", () => {
     expect(result.status === "error" && result.message).toMatch(/quiz/i);
     expect(chatModel).not.toHaveBeenCalled();
   });
+
+  it("sends a quick reply when the text box is empty", async () => {
+    const result = await sendCoachMessage(
+      idle,
+      form({ message: "", quickReply: "Too easy" }),
+    );
+
+    expect(result).toEqual({ status: "sent" });
+    expect(db.messages[0]).toMatchObject({ role: "USER", content: "Too easy" });
+  });
+
+  it("sends the quick reply that was pressed, even with text in the box", async () => {
+    await sendCoachMessage(
+      idle,
+      form({ message: "half-typed question", quickReply: "Too hard" }),
+    );
+
+    expect(db.messages[0]).toMatchObject({ role: "USER", content: "Too hard" });
+  });
 });
