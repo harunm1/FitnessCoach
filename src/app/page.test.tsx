@@ -16,6 +16,22 @@ function links(html: string) {
   }));
 }
 
+// The markup between the Card's opening <div> and its matching </div>, so a test can
+// tell what is inside the Card from what merely comes after it.
+function cardMarkup(html: string): string {
+  const slot = html.indexOf('data-slot="card"');
+  const start = html.lastIndexOf("<div", slot);
+  let depth = 0;
+  for (const tag of html.slice(start).matchAll(/<(\/?)div\b/g)) {
+    depth += tag[1] ? -1 : 1;
+    if (depth === 0) {
+      const close = html.indexOf(">", start + tag.index) + 1;
+      return html.slice(start, close);
+    }
+  }
+  throw new Error("The Card's <div> is never closed");
+}
+
 // The quiz link, found by where it goes, so the account links can come after it.
 function quizLink() {
   const link = links(render()).find((l) => l.href === "/onboarding");
@@ -27,7 +43,7 @@ describe("root page", () => {
   it("has exactly one h1, naming the product", () => {
     const headings = [...render().matchAll(/<h1[^>]*>(.*?)<\/h1>/g)];
     expect(headings).toHaveLength(1);
-    expect(headings[0][1]).toBe("FORM");
+    expect(headings[0][1].replace(/<[^>]*>/g, "")).toBe("FORM");
   });
 
   it("keeps the tagline", () => {
@@ -46,12 +62,10 @@ describe("root page", () => {
   });
 
   it("puts the heading, the quiz link and the account links inside the shadcn Card", () => {
-    const html = render();
-    const card = html.indexOf('data-slot="card"');
-    expect(card).toBeGreaterThan(-1);
-    expect(html.indexOf("<h1")).toBeGreaterThan(card);
+    const card = cardMarkup(render());
+    expect(card).toContain("<h1");
     for (const href of ["/onboarding", "/sign-up", "/sign-in"]) {
-      expect(html.indexOf(`href="${href}"`)).toBeGreaterThan(card);
+      expect(card).toContain(`href="${href}"`);
     }
   });
 
@@ -61,7 +75,7 @@ describe("root page", () => {
     expect(account).toHaveLength(2);
     for (const { classes } of account) {
       expect(classes).toContain("underline");
-      expect(classes).not.toContain("bg-primary");
+      expect(classes.filter((c) => /^bg-/.test(c))).toEqual([]);
     }
   });
 
