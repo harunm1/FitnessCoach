@@ -7,7 +7,7 @@ import {
   TOKENS_PER_CALL,
   callGapMs,
   dailyCallBudget,
-  paced,
+  pacer,
   pendingRuns,
   rateLimitedOut,
 } from "./pacing";
@@ -32,7 +32,7 @@ export async function runRepeats(
   // Retries off: each HTTP request is one paced call against the budget, and a run
   // whose first call fails in transport is left pending instead of retried in a burst.
   const ctx = await setUpEval(mode, { retries: 0 });
-  ctx.model = paced(ctx.model, gapMs);
+  ctx.beforeCall = pacer(gapMs);
 
   const done = existsSync(file)
     ? parseDoneRuns(readFileSync(file, "utf8"))

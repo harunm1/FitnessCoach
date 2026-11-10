@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   callGapMs,
   dailyCallBudget,
-  paced,
+  pacer,
   pendingRuns,
   rateLimitedOut,
 } from "./pacing";
@@ -46,7 +46,7 @@ describe("pendingRuns", () => {
   });
 });
 
-describe("paced", () => {
+describe("pacer", () => {
   it("spaces call starts by the gap, counting the time the last call took", async () => {
     let clock = 0;
     const waits: number[] = [];
@@ -54,17 +54,14 @@ describe("paced", () => {
       waits.push(ms);
       clock += ms;
     };
-    // Each call takes 10 s, so 50 s are left of a 60 s gap measured from its start.
-    const slowDouble = async (x: number) => {
-      clock += 10_000;
-      return x * 2;
-    };
-    const call = paced(slowDouble, 60_000, () => clock, sleep);
+    const gate = pacer(60_000, () => clock, sleep);
 
-    const first = await call(1);
-    const second = await call(2);
+    await gate(); // first call starts at once
+    clock += 10_000; // and takes 10 s
+    await gate(); // so 50 s are left of the 60 s gap measured from its start
+    clock += 70_000; // a slow call
+    await gate(); // longer than the gap: no wait
 
-    expect([first, second]).toEqual([2, 4]);
     expect(waits).toEqual([50_000]);
   });
 });

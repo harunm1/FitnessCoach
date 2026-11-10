@@ -58,22 +58,21 @@ export function pendingRuns(
   );
 }
 
-// Wraps a call so each one starts at least gapMs after the previous one started. The
-// coach can call twice in a row (a rejected plan is retried), so pacing sits on the
-// call, not between profiles.
-export function paced<A, R>(
-  call: (arg: A) => Promise<R>,
+// A gate to await before each call, so each call starts at least gapMs after the
+// previous one started. The coach can call twice in a row (a rejected plan is
+// retried), so pacing sits on the call, not between profiles. It is awaited before
+// the call's timer starts, so recorded times never include the wait.
+export function pacer(
   gapMs: number,
   now: () => number = Date.now,
   sleep: (ms: number) => Promise<void> = (ms) =>
     new Promise((resolve) => setTimeout(resolve, ms)),
-): (arg: A) => Promise<R> {
+): () => Promise<void> {
   let lastStart = -Infinity;
-  return async (arg) => {
+  return async () => {
     const wait = lastStart + gapMs - now();
     if (wait > 0) await sleep(wait);
     lastStart = now();
-    return call(arg);
   };
 }
 

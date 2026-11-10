@@ -22,6 +22,8 @@ const EXERCISES_URL =
 
 export type EvalContext = {
   model: PlanModel;
+  // Awaited before each call and outside its timer (the repeat runner's pacer).
+  beforeCall?: () => Promise<void>;
   events: ProviderEvent[];
   library: LibraryExercise[];
   byId: Map<string, LibraryExercise>;
@@ -97,6 +99,7 @@ export async function evalProfile(
   const calls: Call[] = [];
   // Wraps the model to record each call's time, error and verifier result.
   const timed: PlanModel = async (prompt) => {
+    await ctx.beforeCall?.();
     const start = performance.now();
     try {
       const reply = await ctx.model(prompt);
