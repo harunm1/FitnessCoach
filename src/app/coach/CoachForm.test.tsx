@@ -9,10 +9,16 @@ describe("CoachForm", () => {
   it("renders a labelled message box and a send button", () => {
     const html = renderToStaticMarkup(<CoachForm />);
 
-    const id = html.match(/<textarea[^>]*id="([^"]+)"/)?.[1];
+    const textarea = html.slice(html.indexOf("<textarea"));
+    const idStart = textarea.indexOf('id="') + 'id="'.length;
+    const id = textarea.slice(idStart, textarea.indexOf('"', idStart));
     expect(id).toBeTruthy();
     expect(html).toContain(`for="${id}"`);
     expect(html).toContain('name="message"');
-    expect(html).toMatch(/<button[^>]*type="submit"[^>]*>Send<\/button>/);
+    const send = html.slice(
+      html.lastIndexOf("<button", html.indexOf(">Send</button>")),
+      html.indexOf(">Send</button>"),
+    );
+    expect(send).toContain('type="submit"');
   });
 });

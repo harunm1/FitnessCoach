@@ -20,9 +20,11 @@ describe("MessageList", () => {
     expect(html.indexOf("Can I swap squats")).toBeLessThan(
       html.indexOf("Yes, 3 x 10"),
     );
-    expect(html).toMatch(
-      /You[\s\S]*Can I swap squats[\s\S]*Coach[\s\S]*Yes, 3 x 10/,
+    const order = ["You", "Can I swap squats", "Coach", "Yes, 3 x 10"].map(
+      (text) => html.indexOf(text),
     );
+    expect(order.every((at) => at > -1)).toBe(true);
+    expect(order).toEqual([...order].sort((a, b) => a - b));
   });
 
   it("shows how to start when there are no messages yet", () => {

@@ -14,7 +14,8 @@ describe("QuickReplies", () => {
 
   it("renders one submit button per reply, sent as quickReply, skipping the text box's required check", () => {
     const html = renderToStaticMarkup(<QuickReplies />);
-    const buttons = html.match(/<button[^>]*>[^<]*<\/button>/g) ?? [];
+    // Each piece after "<button" is one button's attributes and label.
+    const buttons = html.split("<button").slice(1);
 
     expect(buttons).toHaveLength(3);
     for (const [i, text] of QUICK_REPLIES.entries()) {
