@@ -11,7 +11,7 @@ WHERE "active"
   );
 
 -- The newest open workout on each plan stays open. An older open one on the same plan
--- with nothing logged (no set, no run, no distance or time) is a second tap on Start
+-- with nothing logged (no set, no run, no distance, time or notes) is a second tap on Start
 -- and is deleted, so it does not count as a finished workout and move the user on a
 -- day. One with something logged is kept and closed at its start time. A workout
 -- without a plan is not constrained.
@@ -26,6 +26,7 @@ WHERE w."finishedAt" IS NULL
   )
   AND w."distanceKm" IS NULL
   AND w."durationSeconds" IS NULL
+  AND w."notes" IS NULL
   AND NOT EXISTS (SELECT 1 FROM "SetLog" s WHERE s."workoutId" = w."id")
   AND NOT EXISTS (SELECT 1 FROM "RunLog" r WHERE r."workoutId" = w."id");
 
