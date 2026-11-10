@@ -10,8 +10,25 @@ WHERE "active"
     ORDER BY "userId", "createdAt" DESC, "id" DESC
   );
 
--- The newest open workout on each plan stays open; older open ones on the same plan
--- are closed at their start time. A workout without a plan is not constrained.
+-- The newest open workout on each plan stays open. An older open one on the same plan
+-- with nothing logged (no set, no run, no distance or time) is a second tap on Start
+-- and is deleted, so it does not count as a finished workout and move the user on a
+-- day. One with something logged is kept and closed at its start time. A workout
+-- without a plan is not constrained.
+DELETE FROM "Workout" AS w
+WHERE w."finishedAt" IS NULL
+  AND w."planId" IS NOT NULL
+  AND w."id" NOT IN (
+    SELECT DISTINCT ON ("planId") "id"
+    FROM "Workout"
+    WHERE "finishedAt" IS NULL AND "planId" IS NOT NULL
+    ORDER BY "planId", "startedAt" DESC, "id" DESC
+  )
+  AND w."distanceKm" IS NULL
+  AND w."durationSeconds" IS NULL
+  AND NOT EXISTS (SELECT 1 FROM "SetLog" s WHERE s."workoutId" = w."id")
+  AND NOT EXISTS (SELECT 1 FROM "RunLog" r WHERE r."workoutId" = w."id");
+
 UPDATE "Workout" SET "finishedAt" = "startedAt"
 WHERE "finishedAt" IS NULL
   AND "planId" IS NOT NULL
