@@ -174,6 +174,16 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Did with it:** made each change in its own commit naming the section's owner, cut repetition in Section 2 to stay under the cap, and rebuilt the combined file from the sections. The proposal ends at 1,985 words.
 
+### 10 November 2026, board and docs upkeep (issues #70, #73 to #77)
+
+**Before asking:** pull requests #70, #73, #74 and #77 were not on the project board, #75 and #76 still said In progress while they waited for review, #76, #77 and #78 had no enhancement label or assignee, and the Mohammad heading in this file sat above my entries from 27 October on. I decided the board, labels and section order myself and wanted only the mechanical edits done and checked.
+
+**Asked:** to put those four pull requests on the board and set #70, #73, #74, #75, #76 and #77 to In review, label #76, #77 and #78 as enhancement with me as assignee on #77 and #78, move Mohammad's two entries under his own heading without changing any text, and correct the README line about integration tests in CI.
+
+**Got:** the board, label and assignee changes through the GitHub CLI, confirmed by reading them back; the entries moved with every line of the file still present; and a CI file check showing that CI has run integration tests against PostgreSQL 16 on every pull request since #67, which is for accounts, trials and billing, not the quiz or session actions.
+
+**Did with it:** kept the board and label changes, committed the section order and the README line separately, and left the architecture document's "not in CI yet" line for its own edit. Tools: gh CLI, engineering:documentation, commit-commands:commit, and an independent review agent that checked the diff and the CI claim before the push.
+
 ## Mohammad
 
 ### 31 October 2026, onboarding quiz validation edge cases
