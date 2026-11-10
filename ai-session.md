@@ -232,3 +232,23 @@ Milestones 1–2. The complete billing implementation is preserved on its own br
 **Got:** an explanation of the Checkout and webhook flow. The main points were to verify payment on the server before granting PRO, refresh the account status after Checkout, and keep trial dates and ADMIN access intact. The review also brought up duplicate Checkout requests, cancellation, renewal and failed payments.
 
 **Did with it:** I configured the Stripe sandbox and wrote down the monthly and yearly requirements. When I tested a payment locally, the displayed tier didn't update, so I asked for a fix, automatic status refresh and clearer startup instructions. I used AI to help run checks and sandbox scenarios for purchase, cancellation and renewal. At the milestone review, 94 unit tests passed, along with formatting, lint and TypeScript checks. This is test-mode billing only, and connecting it to the quiz/session and coach screens is separate integration work.
+
+### 8 November 2026, integration tests in CI (issue #79, step 1)
+
+**Before asking:** decision 4 of the 8 November design review asks for Server Actions tested against a real PostgreSQL in CI. I first added a PostgreSQL 16 service, a `test:integration` script and an onboarding test, then #67 merged the same service, script and a guarded `_test` database helper. I kept those and added only what onboarding needs: a seed step and one test of the core path's first write.
+
+**Asked:** for one test that runs the onboarding action twice for the demo user, with different answers, and checks that the profile and the single active plan come from the second save, plus an independent review of the PR.
+
+**Got:** the test, which points the app's client at the guarded `_test` database before importing the action. Run with a deliberately wrong day count, it failed against a local PostgreSQL 16 ("expected … to have a length of 3 but got 4"); with the right count it passes. The review found that the first version sent the same answers twice and never checked the first save, so it could pass without showing the old plan was deactivated, and that some comments overstated what withholding the database URL does.
+
+**Did with it:** fixed both, merged main, moved the test into `tests/integration`, and added `prisma db seed` against `TEST_DATABASE_URL` after the migration step. Lint, typecheck, 249 unit tests, 47 integration tests and the build pass locally; the browser tests were not run locally.
+
+### 10 November 2026, integration test checked against the sign-in change (issue #79)
+
+**Before asking:** PR #83 makes the onboarding action require a signed-in user, and it is not merged yet. I wanted to know whether my integration test still matches what is on main.
+
+**Asked:** to compare the test with #83 and to rerun every check against a fresh PostgreSQL 16.
+
+**Got:** confirmation that the test matches main, where the action still uses the seeded demo user, and that it will need a sign-in once #83 lands.
+
+**Did with it:** merged main (README only), reran lint, typecheck, 249 unit tests and 47 integration tests (all pass), and noted in the PR that the test must sign in the demo user after #83 merges.
