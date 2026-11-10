@@ -3,7 +3,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./actions", () => ({ sendCoachMessage: vi.fn() }));
+import { MAX_MESSAGE_CHARS } from "@/lib/coach/chat";
 import CoachForm from "./CoachForm";
+import { MESSAGE_MAX_LENGTH } from "./copy";
 
 describe("CoachForm", () => {
   it("renders a labelled message box and a send button", () => {
@@ -20,5 +22,15 @@ describe("CoachForm", () => {
       html.indexOf(">Send</button>"),
     );
     expect(send).toContain('type="submit"');
+  });
+
+  it("stops the message box at the length the coach answers", () => {
+    const html = renderToStaticMarkup(<CoachForm />);
+    const textarea = html.slice(html.indexOf("<textarea"));
+
+    expect(textarea.slice(0, textarea.indexOf(">"))).toContain(
+      `maxLength="${MESSAGE_MAX_LENGTH}"`,
+    );
+    expect(MESSAGE_MAX_LENGTH).toBe(MAX_MESSAGE_CHARS);
   });
 });

@@ -4,6 +4,7 @@
 import { useActionState, useEffect, useId, useRef } from "react";
 import QuickReplies from "@/components/coach/QuickReplies";
 import { sendCoachMessage, type CoachActionState } from "./actions";
+import { MESSAGE_MAX_LENGTH } from "./copy";
 import UnsavedNotice from "./UnsavedNotice";
 
 const initialState: CoachActionState = { status: "idle" };
@@ -18,9 +19,12 @@ export default function CoachForm() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // The send button is disabled while the coach replies, which drops keyboard focus;
-  // it goes back to the message box once the exchange is saved.
+  // it goes back to the message box after a saved exchange or an error. After an
+  // unsaved reply it goes to Send again instead (autoFocus in UnsavedNotice).
   useEffect(() => {
-    if (state.status === "sent") inputRef.current?.focus();
+    if (state.status === "sent" || state.status === "error") {
+      inputRef.current?.focus();
+    }
   }, [state]);
 
   return (
@@ -41,6 +45,7 @@ export default function CoachForm() {
           aria-describedby={state.status === "error" ? errorId : undefined}
           className="min-h-24 rounded-md border border-foreground/25 bg-background px-3 py-2 text-base"
           id={inputId}
+          maxLength={MESSAGE_MAX_LENGTH}
           name="message"
           placeholder="For example: can I swap squats for lunges today?"
           // Read-only, not disabled, while pending: a disabled box loses focus.

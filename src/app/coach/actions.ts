@@ -8,13 +8,17 @@ import {
   coachContextFor,
   loadConversation,
   saveExchange,
+  userMessagesSince,
 } from "@/lib/coach/conversation";
 import { coachChatModel, type ChatModel } from "@/lib/coach/providers";
 import { groqSafetyClassifier } from "@/lib/coach/safetyModel";
 import { prisma } from "@/lib/prisma";
 import {
   EMPTY_MESSAGE,
+  LOAD_FAILED_MESSAGE,
   NO_PROFILE_MESSAGE,
+  RATE_DAY_MESSAGE,
+  RATE_MINUTE_MESSAGE,
   SAVE_FAILED_MESSAGE,
   TIER_MESSAGE,
   TOO_LONG_MESSAGE,
@@ -32,6 +36,14 @@ export type CoachActionState =
 // ends of anything longer, so only a pasted wall of text is refused outright.
 const MAX_STORED_CHARS = 10_000;
 
+// Each message can cost two model calls (the safety check and the reply), so one
+// account cannot script the action in a loop (security review, 10 Nov). Counted
+// from saved messages, so a refused or unsaved send does not count.
+const PER_MINUTE = 5;
+const PER_DAY = 50;
+const MINUTE_MS = 60_000;
+const DAY_MS = 24 * 60 * MINUTE_MS;
+
 // No provider key means no chat model: the turn then gets the "coach can't answer"
 // reply from coachReply instead of an error page.
 function chatModel(): ChatModel {
@@ -44,11 +56,19 @@ function chatModel(): ChatModel {
   }
 }
 
+// A Prisma error code such as P2025 for the server log; never the message text,
+// which can hold what the user typed.
+function errorCode(error: unknown): string {
+  return typeof error === "object" && error !== null && "code" in error
+    ? String(error.code)
+    : "unknown";
+}
+
 export async function sendCoachMessage(
   _previous: CoachActionState,
   formData: FormData,
 ): Promise<CoachActionState> {
-  // Outside any try: a sign-in redirect must reach Next.js.
+  // Only AccessDeniedError is caught; a sign-in redirect is re-thrown to Next.js.
   let userId: string;
   try {
     userId = (await requirePermission("coach")).user.id;
@@ -71,11 +91,26 @@ export async function sendCoachMessage(
     return { status: "error", message: TOO_LONG_MESSAGE };
   }
 
-  const [context, conversation] = await Promise.all([
-    coachContextFor(prisma, userId),
-    loadConversation(prisma, userId),
-  ]);
+  let loaded;
+  try {
+    const now = Date.now();
+    loaded = await Promise.all([
+      coachContextFor(prisma, userId),
+      loadConversation(prisma, userId),
+      userMessagesSince(prisma, userId, new Date(now - MINUTE_MS)),
+      userMessagesSince(prisma, userId, new Date(now - DAY_MS)),
+    ]);
+  } catch (error) {
+    console.error("coach: conversation load failed", errorCode(error));
+    // The typed text comes back with Send again rather than the route's error page.
+    return { status: "unsaved", text, message: LOAD_FAILED_MESSAGE };
+  }
+  const [context, conversation, lastMinute, lastDay] = loaded;
   if (!context) return { status: "error", message: NO_PROFILE_MESSAGE };
+  if (lastMinute >= PER_MINUTE) {
+    return { status: "error", message: RATE_MINUTE_MESSAGE };
+  }
+  if (lastDay >= PER_DAY) return { status: "error", message: RATE_DAY_MESSAGE };
 
   const history = (conversation?.messages ?? []).map((m) => ({
     role: m.role === "USER" ? ("user" as const) : ("assistant" as const),
@@ -104,7 +139,8 @@ export async function sendCoachMessage(
       text,
       turn.reply,
     );
-  } catch {
+  } catch (error) {
+    console.error("coach: exchange not saved", errorCode(error));
     // The reply is shown once, marked as not saved; the database error is not.
     return {
       status: "unsaved",

@@ -2,13 +2,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { UNAVAILABLE_REPLY } from "@/lib/coach/chat";
 import { REPLIES } from "@/lib/coach/guardrails";
-import { NO_PROFILE_MESSAGE, SAVE_FAILED_MESSAGE, TIER_MESSAGE } from "./copy";
+import {
+  LOAD_FAILED_MESSAGE,
+  NO_PROFILE_MESSAGE,
+  RATE_DAY_MESSAGE,
+  RATE_MINUTE_MESSAGE,
+  SAVE_FAILED_MESSAGE,
+  TIER_MESSAGE,
+} from "./copy";
 
 type Row = {
   id: number;
   conversationId: number;
   role: string;
   content: string;
+  createdAt: Date;
 };
 
 const { requirePermission, AccessDeniedError, revalidatePath, chatModel, db } =
@@ -53,12 +61,42 @@ const { requirePermission, AccessDeniedError, revalidatePath, chatModel, db } =
         ),
       },
       message: {
-        createMany: vi.fn(async ({ data }: { data: Omit<Row, "id">[] }) => {
-          for (const m of data) {
-            db.messages.push({ id: db.messages.length + 1, ...m });
-          }
-          return { count: data.length };
-        }),
+        createMany: vi.fn(
+          async ({ data }: { data: Omit<Row, "id" | "createdAt">[] }) => {
+            for (const m of data) {
+              db.messages.push({
+                id: db.messages.length + 1,
+                createdAt: new Date(),
+                ...m,
+              });
+            }
+            return { count: data.length };
+          },
+        ),
+        // The user's own messages of one role since a time (the rate cap's query).
+        count: vi.fn(
+          async ({
+            where,
+          }: {
+            where: {
+              role: string;
+              conversation: { userId: string };
+              createdAt: { gte: Date };
+            };
+          }) => {
+            const own = new Set(
+              db.conversations
+                .filter((c) => c.userId === where.conversation.userId)
+                .map((c) => c.id),
+            );
+            return db.messages.filter(
+              (m) =>
+                own.has(m.conversationId) &&
+                m.role === where.role &&
+                m.createdAt >= where.createdAt.gte,
+            ).length;
+          },
+        ),
       },
       profile: { findUnique: vi.fn(async () => db.profileRow) },
       plan: { findFirst: vi.fn(async () => null) },
@@ -240,5 +278,119 @@ describe("sendCoachMessage", () => {
       message: SAVE_FAILED_MESSAGE,
     });
     expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("gives the model the saved conversation, oldest first, as user and assistant turns", async () => {
+    db.conversations.push({ id: 1, userId: "owner", updatedAt: new Date() });
+    const earlier = new Date(Date.now() - 3_600_000);
+    db.messages.push(
+      {
+        id: 1,
+        conversationId: 1,
+        role: "USER",
+        content: "first question about squats",
+        createdAt: earlier,
+      },
+      {
+        id: 2,
+        conversationId: 1,
+        role: "ASSISTANT",
+        content: "first answer about squats",
+        createdAt: earlier,
+      },
+    );
+
+    await sendCoachMessage(idle, form({ message: "How many sets of squats?" }));
+
+    const sent = chatModel.mock.calls[0][0] as {
+      role: string;
+      content: string;
+    }[];
+    expect(sent[0].role).toBe("system");
+    expect(sent.slice(1)).toEqual([
+      { role: "user", content: "first question about squats" },
+      { role: "assistant", content: "first answer about squats" },
+      { role: "user", content: "How many sets of squats?" },
+    ]);
+  });
+
+  it("offers a retry instead of the error page when the conversation cannot be loaded", async () => {
+    db.profile.findUnique.mockRejectedValueOnce(
+      new Error("connection refused"),
+    );
+
+    const result = await sendCoachMessage(
+      idle,
+      form({ message: "How long should I rest?" }),
+    );
+
+    expect(result).toEqual({
+      status: "unsaved",
+      text: "How long should I rest?",
+      message: LOAD_FAILED_MESSAGE,
+    });
+    expect(chatModel).not.toHaveBeenCalled();
+  });
+
+  it("refuses a sixth message within a minute, before any model call", async () => {
+    db.conversations.push({ id: 1, userId: "owner", updatedAt: new Date() });
+    for (let i = 0; i < 5; i++) {
+      db.messages.push({
+        id: i + 1,
+        conversationId: 1,
+        role: "USER",
+        content: `q${i}`,
+        createdAt: new Date(),
+      });
+    }
+
+    const result = await sendCoachMessage(idle, form({ message: "One more?" }));
+
+    expect(result).toEqual({ status: "error", message: RATE_MINUTE_MESSAGE });
+    expect(chatModel).not.toHaveBeenCalled();
+    expect(db.messages).toHaveLength(5);
+  });
+
+  it("refuses a message past the daily cap", async () => {
+    db.conversations.push({ id: 1, userId: "owner", updatedAt: new Date() });
+    const earlier = new Date(Date.now() - 2 * 3_600_000);
+    for (let i = 0; i < 50; i++) {
+      db.messages.push({
+        id: i + 1,
+        conversationId: 1,
+        role: "USER",
+        content: `q${i}`,
+        createdAt: earlier,
+      });
+    }
+
+    const result = await sendCoachMessage(idle, form({ message: "One more?" }));
+
+    expect(result).toEqual({ status: "error", message: RATE_DAY_MESSAGE });
+    expect(chatModel).not.toHaveBeenCalled();
+  });
+
+  it("does not count another user's messages against the cap", async () => {
+    db.conversations.push({
+      id: 1,
+      userId: "someone-else",
+      updatedAt: new Date(),
+    });
+    for (let i = 0; i < 5; i++) {
+      db.messages.push({
+        id: i + 1,
+        conversationId: 1,
+        role: "USER",
+        content: `q${i}`,
+        createdAt: new Date(),
+      });
+    }
+
+    const result = await sendCoachMessage(
+      idle,
+      form({ message: "How long should I rest?" }),
+    );
+
+    expect(result).toEqual({ status: "sent" });
   });
 });

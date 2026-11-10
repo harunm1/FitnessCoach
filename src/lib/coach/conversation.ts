@@ -9,6 +9,9 @@ type Db = Pick<
 >;
 
 // The screen shows the latest turns; the model sees fewer (MAX_HISTORY_MESSAGES).
+// With no active plan the prompt says so, instead of the "rest day" an empty list gives.
+export const NO_PLAN_LINE = "No plan yet: the user has not saved a plan.";
+
 export const SHOWN_MESSAGES = 50;
 
 export type StoredMessage = {
@@ -81,7 +84,7 @@ async function nextSessionLines(db: Db, userId: string): Promise<string[]> {
       },
     },
   });
-  if (!plan) return [];
+  if (!plan) return [NO_PLAN_LINE];
   const done = await db.workout.count({
     where: { userId, planId: plan.id, finishedAt: { not: null } },
   });
@@ -121,4 +124,30 @@ export async function saveExchange(
       ],
     });
   });
+}
+
+// How many messages the user has sent the coach since a time, across their own
+// conversations only (the per-user cap in the coach Server Action).
+export async function userMessagesSince(
+  db: Db,
+  userId: string,
+  since: Date,
+): Promise<number> {
+  return db.message.count({
+    where: {
+      role: "USER",
+      conversation: { userId },
+      createdAt: { gte: since },
+    },
+  });
+}
+
+// Whether the user has taken the quiz; the page asks for it before showing the chat.
+export async function hasProfile(db: Db, userId: string): Promise<boolean> {
+  return (
+    (await db.profile.findUnique({
+      where: { userId },
+      select: { id: true },
+    })) !== null
+  );
 }

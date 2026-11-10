@@ -33,6 +33,8 @@ export default function UnsavedNotice({
       ) : null}
       <form action={action} className="mt-3">
         <button
+          // The disabled Send button had focus; it moves here when the notice appears.
+          autoFocus
           className="min-h-12 bg-foreground px-5 text-sm font-semibold text-background transition-opacity hover:opacity-80"
           name="message"
           type="submit"
