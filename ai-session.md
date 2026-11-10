@@ -242,3 +242,13 @@ Milestones 1–2. The complete billing implementation is preserved on its own br
 **Got:** the test, which points the app's client at the guarded `_test` database before importing the action. Run with a deliberately wrong day count, it failed against a local PostgreSQL 16 ("expected … to have a length of 3 but got 4"); with the right count it passes. The review found that the first version sent the same answers twice and never checked the first save, so it could pass without showing the old plan was deactivated, and that some comments overstated what withholding the database URL does.
 
 **Did with it:** fixed both, merged main, moved the test into `tests/integration`, and added `prisma db seed` against `TEST_DATABASE_URL` after the migration step. Lint, typecheck, 249 unit tests, 47 integration tests and the build pass locally; the browser tests were not run locally.
+
+### 10 November 2026, integration test checked against the sign-in change (issue #79)
+
+**Before asking:** PR #83 makes the onboarding action require a signed-in user, and it is not merged yet. I wanted to know whether my integration test still matches what is on main.
+
+**Asked:** to compare the test with #83 and to rerun every check against a fresh PostgreSQL 16.
+
+**Got:** confirmation that the test matches main, where the action still uses the seeded demo user, and that it will need a sign-in once #83 lands.
+
+**Did with it:** merged main (README only), reran lint, typecheck, 249 unit tests and 47 integration tests (all pass), and noted in the PR that the test must sign in the demo user after #83 merges.
