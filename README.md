@@ -158,13 +158,14 @@ npm run build
 
 The hosted preview runs on Vercel (Hobby) with PostgreSQL on Neon (Free); why is
 decision D15 in `docs/ARCHITECTURE.md`. `vercel.json` sets the build command to
-`scripts/vercel-build.ts`, which runs `prisma migrate deploy`, then `next build`, on
-production and preview deployments. Production uses the Neon `main` branch and pull
-request previews use a separate `preview` branch, so a pull request never reads or
-changes the production database.
+`scripts/vercel-build.ts`. On production and preview deployments it first checks that
+`DATABASE_URL` and `DATABASE_URL_UNPOOLED` are both set and point at the same Neon
+branch, then runs `prisma migrate deploy` and `next build`; elsewhere it only builds.
+Production uses the Neon `main` branch and pull request previews use a separate
+`preview` branch, so a pull request never reads or changes the production database.
 
 Who does what: Nabeegh sets up Neon (steps 1 to 3). Mohammad creates the Vercel project
-(steps 4 to 6): Vercel lets only the owner of a personal-account repository import it,
+(steps 4 to 7): Vercel lets only the owner of a personal-account repository import it,
 so a collaborator cannot. The project belongs to Mohammad's Hobby account. The
 repository stays public; Vercel's Hobby limits on commit authors apply to private
 repositories.
@@ -172,57 +173,82 @@ repositories.
 One-time setup:
 
 1. Create a Neon account at neon.com and a project named `fitnesscoach` in **AWS US
-   East (N. Virginia)**, next to Vercel's default function region (`iad1`); the region cannot be changed after
-   the project is created. From
-   **Connect**, copy two connection strings for the `main` branch: the pooled one (host
-   contains `-pooler`) and the direct one (connection pooling turned off). Append
-   `connect_timeout=15` to the direct string (after `&` if it already has a `?`,
-   otherwise after `?`), so the Prisma CLI waits for a suspended database to wake
-   instead of failing with P1001.
-2. Apply the migrations and seed the `main` branch from your machine. Set both variables
-   to the direct string, so `migrate` (which prefers `DATABASE_URL_UNPOOLED`) and the
-   seed (which reads `DATABASE_URL`) reach the same database:
+   East (N. Virginia)**, next to Vercel's default function region (`iad1`); the region
+   cannot be changed after the project is created. From **Connect**, copy two
+   connection strings for the `main` branch: the pooled one (host contains `-pooler`)
+   and the direct one (connection pooling turned off). Append `connect_timeout=15` to
+   the direct string (after `&` if it already has a `?`, otherwise after `?`), so the
+   Prisma CLI waits for a suspended database to wake instead of failing with P1001.
+2. Apply the migrations and seed the `main` branch from your machine. On your machine
+   the Prisma CLI and the seed both read `DATABASE_URL` (the direct string is used
+   only on Vercel), so set that one variable to the direct string:
 
    ```bash
-   export DATABASE_URL="<direct string>" DATABASE_URL_UNPOOLED="<direct string>"
+   export DATABASE_URL="<direct string>"
    npx prisma migrate deploy
    npx prisma db seed
-   unset DATABASE_URL DATABASE_URL_UNPOOLED
+   unset DATABASE_URL
    ```
 
-   In PowerShell: `$env:DATABASE_URL="<direct string>"` and
-   `$env:DATABASE_URL_UNPOOLED="<direct string>"`, the two `npx` commands, then
-   `Remove-Item Env:DATABASE_URL, Env:DATABASE_URL_UNPOOLED`.
+   In PowerShell: `$env:DATABASE_URL="<direct string>"`, the two `npx` commands, then
+   `Remove-Item Env:DATABASE_URL`.
 
-3. In Neon, create a branch named `preview` from `main`; it starts with the same schema
-   and seed data. Copy its pooled and direct strings the same way, with
+3. In Neon, create a branch named `seed` from `main` now, while `main` holds only the
+   seed, and connect nothing to it. Then create a branch named `preview` from `seed`, not
+   from `main`: a branch copies its parent's data, and previews must never hold real
+   users' accounts. Copy the `preview` pooled and direct strings the same way, with
    `connect_timeout=15` on the direct one. Send all four strings to Mohammad privately,
    not in the repository or the team chat.
 4. Mohammad creates a Vercel account at vercel.com (Hobby) with his GitHub login,
-   chooses **Add New > Project** and imports `harunm1/FitnessCoach`. Keep the detected
-   Next.js preset; `vercel.json` supplies the build command.
-5. Before the first deploy, add these under **Settings > Environment Variables**:
+   chooses **Add New > Project**, names the project and imports `harunm1/FitnessCoach`.
+   Keep the detected Next.js preset; `vercel.json` supplies the build command. Read the
+   production domain from **Settings > Domains** (usually `<project>.vercel.app`).
+5. Add these under **Settings > Environment Variables**, each scoped as listed:
 
-   | Name                    | Environment         | Value                        |
-   | ----------------------- | ------------------- | ---------------------------- |
-   | `DATABASE_URL`          | Production          | Neon `main` pooled string    |
-   | `DATABASE_URL_UNPOOLED` | Production          | Neon `main` direct string    |
-   | `DATABASE_URL`          | Preview             | Neon `preview` pooled string |
-   | `DATABASE_URL_UNPOOLED` | Preview             | Neon `preview` direct string |
-   | `COACH_PROVIDER`        | Production, Preview | `groq`                       |
-   | `GROQ_API_KEY`          | Production, Preview | from console.groq.com        |
-   | `GEMINI_API_KEY`        | Production, Preview | from aistudio.google.com     |
+   | Name                                      | Environment         | Value                                                                                               |
+   | ----------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------- |
+   | `DATABASE_URL`                            | Production          | Neon `main` pooled string                                                                           |
+   | `DATABASE_URL_UNPOOLED`                   | Production          | Neon `main` direct string                                                                           |
+   | `DATABASE_URL`                            | Preview             | Neon `preview` pooled string                                                                        |
+   | `DATABASE_URL_UNPOOLED`                   | Preview             | Neon `preview` direct string                                                                        |
+   | `BETTER_AUTH_SECRET`                      | Production          | a random secret of 32 or more characters (the `node -e` line in `.env.example`)                     |
+   | `BETTER_AUTH_URL`                         | Production          | the production origin, `https://<project>.vercel.app`, with no path                                 |
+   | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`   | Production          | a hosted SMTP service with a verified sender; port 465 with `SMTP_SECURE=true`, or 587 with `false` |
+   | `SMTP_FROM`, `SMTP_USER`, `SMTP_PASSWORD` | Production          | the verified sender address, and the service's login (user and password set together)               |
+   | `COACH_PROVIDER`                          | Production, Preview | `groq`                                                                                              |
+   | `GROQ_API_KEY`                            | Production, Preview | from console.groq.com                                                                               |
+   | `GEMINI_API_KEY`                          | Production, Preview | from aistudio.google.com                                                                            |
+
+   Sign-up needs a working email: the app requires a verified address, and Mailpit
+   (the local mail catcher) does not exist on Vercel, which also blocks outbound port 25. Stripe stays unset unless billing is configured as in `docs/BILLING.md`.
 
 6. Deploy. Each push to `main` redeploys production and applies any new migration to
    the Neon `main` branch; each pull request gets its own preview URL and applies its
-   migrations to the `preview` branch first.
+   migrations to the `preview` branch first. A build stops before any step, with the
+   variable named, if a database URL is missing or the two point at different branches.
+7. Deployment Protection: new Vercel projects protect preview URLs with a Vercel login,
+   and a Hobby account can share them with only one outside user. Previews are for
+   checking the build and the migrations: auth is not configured on them
+   (`BETTER_AUTH_URL` and `BETTER_AUTH_SECRET` are Production only), so pages that need
+   a session show the error page there. Sign-in works on production only; use the
+   production URL for the demo and the pilot.
 
 Migrations run before the new build goes live, so the running version briefly meets
 the new schema: keep migrations additive (new tables and nullable columns), and drop or
 rename in a later change. The `preview` branch is shared by every open pull request; if
 two of them add migrations that conflict, or a pull request closes without merging,
-reset `preview` from `main` in Neon. Seed again only when the seed itself changes; it
-upserts, so re-running is safe.
+use **Reset from parent** on `preview` in Neon. Its parent is `seed`, so the reset
+returns it to the seed-only state and never copies real users from `main`; the next
+preview build applies the migrations again. Never connect anything to `seed`. (Neon
+Free keeps only a few hours of history, so a restore point is not a substitute for the
+`seed` branch.) Seed again only when the seed itself changes; it upserts, so
+re-running is safe.
+
+If `prisma migrate deploy` fails partway through a migration, Prisma records the
+failure and refuses later deploys until it is resolved. Either undo whatever part of
+the migration did apply and run `npx prisma migrate resolve --rolled-back
+<migration_name>`, or finish the migration by hand and run `--applied` instead; run
+either with `DATABASE_URL` set to that branch's direct string, then redeploy.
 
 ## How we work
 

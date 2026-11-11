@@ -12,7 +12,8 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    // Direct URL when one is set (hosted Neon, D15), else DATABASE_URL (local Docker).
+    // The direct Neon URL on a Vercel build (D15); everywhere else DATABASE_URL, so a
+    // test migration (scripts/migrate-test.ts) always reaches the test database.
     url: cliDatabaseUrl(process.env),
   },
 });
