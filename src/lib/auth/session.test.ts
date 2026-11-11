@@ -26,13 +26,16 @@ describe("protected-page authorization", () => {
     getSession.mockResolvedValue({ user: { emailVerified: false } });
     await expect(requireUser()).rejects.toThrow("redirect:/sign-in");
   });
-  it("returns only display fields after a fresh server check", async () => {
+  it("returns identity and tier fields after a fresh server check", async () => {
+    const trialEndsAt = new Date("2026-11-20T12:00:00Z");
     getSession.mockResolvedValue({
       user: {
         id: "athlete",
         name: "Athlete",
         email: "athlete@example.test",
         emailVerified: true,
+        tier: "TRIAL",
+        trialEndsAt,
         password: "hidden",
       },
       session: { token: "hidden-token" },
@@ -41,9 +44,32 @@ describe("protected-page authorization", () => {
       id: "athlete",
       name: "Athlete",
       email: "athlete@example.test",
+      tier: "TRIAL",
+      trialEndsAt,
     });
     expect(getSession).toHaveBeenCalledWith(
       expect.objectContaining({ query: { disableCookieCache: true } }),
     );
+  });
+  it("does not retain tier data between requests", async () => {
+    const user = {
+      id: "athlete",
+      name: "Athlete",
+      email: "athlete@example.test",
+      emailVerified: true,
+    };
+    getSession.mockResolvedValueOnce({ user: { ...user, tier: "FREE" } });
+    getSession.mockResolvedValueOnce({
+      user: { ...user, tier: "ADMIN", trialEndsAt: null },
+    });
+    expect(await requireUser()).toMatchObject({
+      tier: "FREE",
+      trialEndsAt: null,
+    });
+    expect(await requireUser()).toMatchObject({
+      tier: "ADMIN",
+      trialEndsAt: null,
+    });
+    expect(getSession).toHaveBeenCalledTimes(2);
   });
 });

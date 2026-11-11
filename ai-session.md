@@ -344,16 +344,27 @@ I worked on accounts, access tiers and Stripe test-mode billing, which meant the
 
 ### Stripe test-mode subscriptions (issue #14, milestone 3)
 
-This entry records the separate billing work; the sign-in and tiers PR contains
-Milestones 1–2. The complete billing implementation is preserved on its own branch.
+The billing work lives on its own branch. The sign-in and tiers PR only has milestones 1 and 2.
 
-**Before asking:** I took a backup before adding billing and set up a Stripe sandbox. I decided on monthly and yearly PRO subscriptions, kept separate from the cardless app trial.
+**Before asking:** I took a backup before touching billing and set up a Stripe sandbox. I'd already decided on monthly and yearly PRO plans, and that they would stay separate from the seven-day trial, which needs no card.
 
-**Asked:** how Checkout, billing management and webhooks should work with our existing access tiers. I was also unsure about parts of the Stripe setup, so I asked for detailed instructions, and I asked for a review of cases I might be missing.
+**Asked:** how Checkout, billing management and webhooks should fit with the access tiers we already had. I'd never set up Stripe, so I asked for step-by-step instructions where I got stuck. Once I had a flow, I asked it to look for cases I'd missed.
 
-**Got:** an explanation of the Checkout and webhook flow. The main points were to verify payment on the server before granting PRO, refresh the account status after Checkout, and keep trial dates and ADMIN access intact. The review also brought up duplicate Checkout requests, cancellation, renewal and failed payments.
+**Got:** the main thing I took from it was not to trust the redirect after Checkout. PRO should only be granted once the server has confirmed the payment. It also said to refresh the account status when the user comes back from Checkout, and to make sure billing never overwrites trial dates or ADMIN access. When I asked what I was missing, it listed double-clicked Checkout requests, cancellations, renewals and failed payments.
 
 **Did with it:** I configured the Stripe sandbox and wrote down the monthly and yearly requirements. When I tested a payment locally, the displayed tier didn't update, so I asked for a fix, automatic status refresh and clearer startup instructions. I used AI to help run checks and sandbox scenarios for purchase, cancellation and renewal. At the milestone review, 94 unit tests passed, along with formatting, lint and TypeScript checks. This is test-mode billing only, and connecting it to the quiz/session and coach screens is separate integration work.
+
+---
+
+### Signed-in quiz and workout sessions (issue #50)
+
+**Before asking:** I wanted the existing quiz and workout flow to work with real accounts, as the issue describes, so each person only sees and logs their own workouts. I decided to add local demo accounts for all four tiers, including an offline PRO one, so I could test everything without going through a Stripe purchase.
+
+**Asked:** how the signed-in flow should run from login through the quiz, the plan, workout logging and finishing a workout, and then for help building and checking it. While setting up locally I hit three errors and pasted them in: a migration error about the existing `Session` table, a missing Stripe module, and a warning that another dev server was already running.
+
+**Got:** the advice was to check the session on every page and every action, and to look up user data by the user ID from the server, never from anything the client sends. It also suggested returning the tier and trial info with the session. Most of the code for this was written by AI from what I told it, including the demo account seeding and the tests for signed-out redirects and for trying to open someone else's plan. For the errors, it traced the migration problem to a renamed migration history, the Stripe error to a dependency that wasn't installed, and the last one to a dev server I'd left running.
+
+**Did with it:** I decided how the flow and the demo accounts should work. I got the app running locally, fixed the three errors and told it what I saw when something else broke. Near the end I asked it to check the work against every requirement in the issue. The automated checks passed in a clean workspace, including the database and browser tests. I repaired the local migration history after taking a backup, and no app data was deleted. The demo passwords are in my private env file, not in the repo, and the offline PRO account only exists for local testing.
 
 ### 10 November 2026, quiz plans with run days (issue #85)
 

@@ -99,6 +99,10 @@ docker compose ps
 Wait until the `postgres` service reports `healthy`, then apply migrations, seed
 the exercise dataset and demo user, and start the application:
 
+For a database used with an older accounts branch, complete the
+[auth migration history update](docs/ACCOUNTS.md#migration-name-update) before
+deploying migrations. This avoids trying to recreate existing auth tables.
+
 ```bash
 npx prisma migrate deploy
 npm run db:seed
@@ -130,6 +134,9 @@ Stripe test-mode Checkout, the billing portal and webhook setup, follow
 [the billing guide](docs/BILLING.md). Stripe settings are optional for free/trial
 access.
 
+The [signed-in quiz/session guide](docs/QUIZ_SESSION_AUTH.md) covers user-owned
+plans and logs, plus optional local demo logins for all four tiers.
+
 ### Coach keys
 
 The coach reads its keys from `.env` (never committed). `COACH_PROVIDER` picks the provider that goes first (`groq` by default), and its key is required. If the other provider's key is also set, it becomes the fallback. `GROQ_MODEL` and `GEMINI_MODEL` override the default models.
@@ -142,7 +149,7 @@ GEMINI_API_KEY=""   # aistudio.google.com/apikey
 
 ### Checks
 
-Tests come in three layers (8 November design review, decision 4): unit tests for pure logic, with saved model replies instead of live calls; API mocking at the provider boundary, so timeouts, invalid JSON and rate limits are tested on purpose; and integration tests against a real PostgreSQL 16 that CI has run on every pull request since #67 (accounts, trials and billing); the ones for the quiz and session Server Actions are #79 (PR #81, open). Each owner tests their own slice.
+Tests come in three layers (8 November design review, decision 4): unit tests for pure logic, with saved model replies instead of live calls; API mocking at the provider boundary, so timeouts, invalid JSON and rate limits are tested on purpose; and integration tests against a real PostgreSQL 16 that CI has run on every pull request since #67 (accounts, trials and billing), including authentication and the quiz and session Server Actions (#83; more in #79, PR #81). Each owner tests their own slice.
 
 The same checks CI runs on every pull request:
 
