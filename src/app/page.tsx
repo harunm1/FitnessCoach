@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { cn } from "cn";
 
-// Landing page; the reference screen for the shadcn/ui components (D17 in docs/ARCHITECTURE.md).
+// Landing page; the reference screen for the shadcn/ui components (D20 in docs/ARCHITECTURE.md).
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-6">
