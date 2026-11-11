@@ -6,9 +6,21 @@ type Env = Record<string, string | undefined>;
 // Production and preview deployments migrate; VERCEL_ENV is set at build and run time
 // (Vercel system environment variables, checked 10 Nov 2026).
 const MIGRATING_ENVS = new Set(["production", "preview"]);
+const VERCEL_ENVS = new Set(["production", "preview", "development"]);
 
 function isHostedBuild(env: Env): boolean {
   return MIGRATING_ENVS.has(env.VERCEL_ENV ?? "");
+}
+
+/**
+ * VERCEL=1 and VERCEL_ENV are system environment variables (Vercel docs, checked 11 Nov
+ * 2026). A Vercel build that sees VERCEL but no known VERCEL_ENV would skip migrations
+ * without a word, so it stops instead and names the project setting to turn on.
+ * Off Vercel (local, CI) VERCEL is unset and nothing is checked.
+ */
+export function vercelEnvProblem(env: Env): string | undefined {
+  if (!env.VERCEL || VERCEL_ENVS.has(env.VERCEL_ENV ?? "")) return undefined;
+  return 'VERCEL is set but VERCEL_ENV is not production, preview or development; turn on "Enable access to System Environment Variables" in the Vercel project (README, Deploy step 5)';
 }
 
 /**

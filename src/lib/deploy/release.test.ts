@@ -5,6 +5,7 @@ import {
   cliDatabaseUrl,
   databaseTarget,
   hostedDatabaseProblems,
+  vercelEnvProblem,
 } from "./release";
 
 const POOLED = "postgresql://u:p@ep-x-pooler.neon.tech/db";
@@ -129,6 +130,36 @@ describe("hostedDatabaseProblems", () => {
     ).toEqual([
       "DATABASE_URL_UNPOOLED (ep-x-pooler.neon.tech/db) is a pooled string for VERCEL_ENV=preview; set the direct Neon string, with connection pooling off (README, Deploy step 5)",
     ]);
+  });
+});
+
+describe("vercelEnvProblem", () => {
+  // Without System Environment Variables exposed, a Vercel build would skip migrations
+  // silently (11 Nov review). VERCEL and VERCEL_ENV are system variables (Vercel docs, 11 Nov 2026).
+  it("stops a Vercel build that cannot see VERCEL_ENV", () => {
+    expect(vercelEnvProblem({ VERCEL: "1" })).toBe(
+      'VERCEL is set but VERCEL_ENV is not production, preview or development; turn on "Enable access to System Environment Variables" in the Vercel project (README, Deploy step 5)',
+    );
+  });
+
+  it("stops a Vercel build with an unknown VERCEL_ENV", () => {
+    expect(vercelEnvProblem({ VERCEL: "1", VERCEL_ENV: "staging" })).toMatch(
+      /^VERCEL is set but VERCEL_ENV is not production, preview or development/,
+    );
+  });
+
+  it.each(["production", "preview", "development"])(
+    "accepts a Vercel build with VERCEL_ENV=%s",
+    (vercelEnv) => {
+      expect(
+        vercelEnvProblem({ VERCEL: "1", VERCEL_ENV: vercelEnv }),
+      ).toBeUndefined();
+    },
+  );
+
+  it("checks nothing off Vercel, where VERCEL is unset (local and CI)", () => {
+    expect(vercelEnvProblem({})).toBeUndefined();
+    expect(vercelEnvProblem({ VERCEL_ENV: "preview" })).toBeUndefined();
   });
 });
 

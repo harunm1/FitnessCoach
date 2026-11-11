@@ -1,17 +1,19 @@
-// Vercel build command (vercel.json): checks the database URLs, then runs the steps from buildSteps, stopping at the first failure.
+// Vercel build command (vercel.json): checks VERCEL_ENV and the database URLs, then runs the steps from buildSteps, stopping at the first failure.
 import { execSync } from "node:child_process";
 import {
   buildSteps,
   cliDatabaseUrl,
   databaseTarget,
   hostedDatabaseProblems,
+  vercelEnvProblem,
 } from "../src/lib/deploy/release";
 
 const env = process.env;
 const steps = buildSteps(env);
 const migrates = steps.includes("prisma migrate deploy");
 
-const problems = hostedDatabaseProblems(env);
+const envProblem = vercelEnvProblem(env);
+const problems = envProblem ? [envProblem] : hostedDatabaseProblems(env);
 if (problems.length > 0) {
   problems.forEach((problem) => console.error(`Build stopped: ${problem}`));
   process.exit(1);

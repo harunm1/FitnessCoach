@@ -244,10 +244,15 @@ One-time setup:
    Sign-up needs a working email: the app requires a verified address, and Mailpit
    (the local mail catcher) does not exist on Vercel, which also blocks outbound port 25. Stripe stays unset unless billing is configured as in `docs/BILLING.md`.
 
+   On the same page, keep **Enable access to System Environment Variables** turned
+   on: the build reads `VERCEL_ENV` to decide whether to migrate, and stops with that
+   setting named if it runs on Vercel without it.
+
 6. Deploy. Each push to `main` redeploys production and applies any new migration to
    the Neon `main` branch; each pull request gets its own preview URL and applies its
    migrations to the `preview` branch first. A build stops before any step, with the
-   variable named, if a database URL is missing or the two point at different branches.
+   variable named, if `VERCEL_ENV` is missing, a database URL is missing or unreadable,
+   the direct URL is the pooled one, or the two point at different branches.
 7. Deployment Protection: new Vercel projects protect preview URLs with a Vercel login,
    and a Hobby account can share them with only one outside user. Previews are for
    checking the build and the migrations: auth is not configured on them
