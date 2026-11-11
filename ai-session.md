@@ -296,6 +296,16 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Did with it:** updated the timer to highlight while running and show explicit “Resting”, “Paused”, and “Rest complete” states; verified in the browser that clicking Start rest changes the button to Pause timer and the countdown decreases. Styled the UI with Tailwind utility classes. No shadcn/ui components were used.
 
+### 10 November 2026, exercise cue library (issue #8)
+
+**Before asking:** the exercise library already contained 876 records, while its `cues` and `commonMistakes` fields were empty. Issue #8 asks for original, concise form guidance on 30 beginner or intermediate strength exercises across the main movement patterns.
+
+**Asked:** to select eligible seeded exercises, review one source for each, and write three to five form cues and two to three common mistakes per exercise. I also asked for AI assistance to be recorded transparently in this session log.
+
+**Got:** AI-assisted summaries of setup, movement and common technique errors from exercise-specific ExRx pages and the upstream Free Exercise DB records used by our seed. Candidate IDs and their category, level and equipment were checked against the seeded database. Where an external page did not provide a usable or matching description, the source list cites the exact upstream library record instead.
+
+**Did with it:** reviewed the exercise and equipment matches, kept the cue wording original rather than copying source text, and checked that the completed JSON contains 30 IDs with the required cue and mistake counts. The dataset and source list are the data-only increment; automated tests, seed integration and session-screen display are separate coding work.
+
 ## Shubham
 
 I worked on accounts, access tiers and Stripe test-mode billing, which meant the UI, the application code, the data models and the tests, plus the account policies and the Stripe and local service setup. I used AI mostly to talk through the flow before I built something, to understand parts I hadn't used before, to help me read errors, and to double-check things afterwards. Where it gave me a draft, I treated it as a starting point and went through it and changed it. The entries below are a few representative examples.
