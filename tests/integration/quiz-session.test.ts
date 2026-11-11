@@ -96,7 +96,12 @@ async function signIn(user: { email: string }) {
   });
 }
 
-async function plan(userId: string, name: string, exerciseId = exercises[0]) {
+async function plan(
+  userId: string,
+  name: string,
+  exerciseId = exercises[0],
+  includeSecondExercise = false,
+) {
   return db.plan.create({
     data: {
       userId,
@@ -107,13 +112,28 @@ async function plan(userId: string, name: string, exerciseId = exercises[0]) {
           name: `${name} day`,
           dayIndex: 0,
           exercises: {
-            create: {
-              exerciseId,
-              order: 0,
-              sets: 3,
-              reps: 10,
-              restSeconds: 90,
-            },
+            create: [
+              {
+                exerciseId,
+                order: 0,
+                sets: 3,
+                reps: 10,
+                restSeconds: 90,
+              },
+              ...(includeSecondExercise
+                ? [
+                    {
+                      exerciseId:
+                        exercises.find((id) => id !== exerciseId) ??
+                        exercises[1],
+                      order: 1,
+                      sets: 3,
+                      reps: 10,
+                      restSeconds: 90,
+                    },
+                  ]
+                : []),
+            ],
           },
         },
       },
@@ -299,6 +319,28 @@ describe("quiz and session authorization with PostgreSQL", () => {
     const html = renderToStaticMarkup(await SessionPage());
     expect(html).toContain("First visible plan");
     expect(html).not.toContain("Second private plan");
+  });
+
+  it("shows saved cues and mistakes only for exercises that have them", async () => {
+    await db.exercise.update({
+      where: { id: exercises[0] },
+      data: {
+        cues: ["Brace before the press."],
+        commonMistakes: ["Letting the wrists bend back."],
+      },
+    });
+    await plan(first.id, "Plan with mixed cue coverage", exercises[0], true);
+    await signIn(first);
+
+    const html = renderToStaticMarkup(await SessionPage());
+
+    expect(html).toContain("Form guidance");
+    expect(html).toContain("Form cues");
+    expect(html).toContain("Brace before the press.");
+    expect(html).toContain("Common mistakes");
+    expect(html).toContain("Letting the wrists bend back.");
+    expect(html).toContain(`${prefix} Squat`);
+    expect(html.match(/Form guidance/g)).toHaveLength(1);
   });
 
   it("does not borrow another user's plan when the caller has none", async () => {

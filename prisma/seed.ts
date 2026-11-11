@@ -5,7 +5,11 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, Level, Tier } from "../src/generated/prisma/client";
-import { getExerciseCueFields } from "./exerciseCueData";
+import {
+  EXERCISE_CUE_IDS,
+  getExerciseCueFields,
+  getMissingExerciseCueIds,
+} from "./exerciseCueData";
 import { seedLocalDemoUsers } from "./demo-users";
 
 const EXERCISES_URL =
@@ -39,6 +43,16 @@ async function seedExercises() {
     throw new Error(`Could not download exercises: ${response.status}`);
   }
   const exercises = (await response.json()) as SourceExercise[];
+  const missingCueIds = getMissingExerciseCueIds(
+    EXERCISE_CUE_IDS,
+    exercises.map((e) => e.id),
+  );
+  if (missingCueIds.length > 0) {
+    throw new Error(
+      `Curated exercise cues are missing from the source library: ${missingCueIds.join(", ")}`,
+    );
+  }
+  let cueCount = 0;
 
   // Batches keep the number of round trips down; 876 single upserts would be slow.
   const batchSize = 50;
@@ -47,6 +61,7 @@ async function seedExercises() {
     await prisma.$transaction(
       batch.map((e) => {
         const cueFields = getExerciseCueFields(e.id);
+        if (cueFields) cueCount += 1;
         return prisma.exercise.upsert({
           where: { id: e.id },
           create: {
@@ -71,13 +86,14 @@ async function seedExercises() {
             secondaryMuscles: e.secondaryMuscles,
             instructions: e.instructions,
             images: e.images,
-            ...(cueFields ?? {}),
+            cues: cueFields?.cues ?? [],
+            commonMistakes: cueFields?.commonMistakes ?? [],
           },
         });
       }),
     );
   }
-  return exercises.length;
+  return { exerciseCount: exercises.length, cueCount };
 }
 
 async function seedDemoUser() {
@@ -101,9 +117,16 @@ async function seedDemoUser() {
 }
 
 async function main() {
-  const count = await seedExercises();
+  const { exerciseCount, cueCount } = await seedExercises();
   const user = await seedDemoUser();
-  console.log(`Seeded ${count} exercises and demo user ${user.email}`);
+  if (cueCount !== EXERCISE_CUE_IDS.length) {
+    throw new Error(
+      `Seeded ${cueCount} exercises with cues; expected ${EXERCISE_CUE_IDS.length}.`,
+    );
+  }
+  console.log(
+    `Seeded ${exerciseCount} exercises (${cueCount} with cues and common mistakes) and demo user ${user.email}`,
+  );
   const demoUsers = await seedLocalDemoUsers(prisma, {
     password: process.env.DEMO_PASSWORD,
     databaseURL: process.env.DATABASE_URL,

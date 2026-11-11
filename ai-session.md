@@ -346,7 +346,7 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 
 **Got:** AI-assisted summaries of setup, movement and common technique errors from exercise-specific ExRx pages and the upstream Free Exercise DB records used by our seed. Candidate IDs and their category, level and equipment were checked against the seeded database. Where an external page did not provide a usable or matching description, the source list cites the exact upstream library record instead.
 
-**Did with it:** reviewed the exercise and equipment matches, kept the cue wording original rather than copying source text, and checked that the completed JSON contains 30 IDs with the required cue and mistake counts. The dataset and source list are the data-only increment; automated tests, seed integration and session-screen display are separate coding work.
+**Did with it:** reviewed the exercise and equipment matches, kept the cue wording original rather than copying source text, and added 30 entries with the required cue and mistake counts. Tests validate the cue counts and missing-ID checker; the seed checks every curated ID against the downloaded library before writing, reports how many entries received cues, and clears stale cue arrays when the JSON no longer contains an exercise. Running the seed twice confirmed the cue arrays remain stable. The session page displays form guidance in a closed-by-default disclosure for each exercise that has cues, with a render test for populated and empty guidance. Formatting, lint, typecheck, and the unit suite passed.
 
 ## Shubham
 

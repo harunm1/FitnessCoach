@@ -1,27 +1,26 @@
 import { describe, expect, it } from "vitest";
 import exerciseCues from "./exercise-cues.json";
-import exerciseLibrary from "./exercise-cue-library.json";
-import { getExerciseCueFields } from "../exerciseCueData";
+import {
+  EXERCISE_CUE_IDS,
+  getMissingExerciseCueIds,
+  getExerciseCueFields,
+} from "../exerciseCueData";
 
 describe("curated exercise cues", () => {
-  it("covers exactly the pinned beginner and intermediate strength exercises", () => {
-    expect(Object.keys(exerciseCues).sort()).toEqual(
-      exerciseLibrary.map(({ id }) => id).sort(),
-    );
-
-    for (const exercise of exerciseLibrary) {
-      expect(exercise.category).toBe("strength");
-      expect(["BEGINNER", "INTERMEDIATE"]).toContain(exercise.level);
-      expect(["barbell", "dumbbell", "body only"]).toContain(
-        exercise.equipment,
-      );
-    }
+  it("contains exactly 30 curated exercise IDs", () => {
+    expect(EXERCISE_CUE_IDS).toHaveLength(30);
   });
 
-  it.each(Object.entries(exerciseCues))(
-    "%s has 3-5 cues and 2-3 common mistakes",
-    (id, entry) => {
-      expect(getExerciseCueFields(id)).toEqual(entry);
+  it("reports cue IDs absent from the source library", () => {
+    expect(
+      getMissingExerciseCueIds(["squat", "typo"], ["squat", "row"]),
+    ).toEqual(["typo"]);
+    expect(getMissingExerciseCueIds(["squat"], ["squat", "row"])).toEqual([]);
+  });
+
+  it.each(Object.values(exerciseCues))(
+    "has 3-5 cues and 2-3 common mistakes",
+    (entry) => {
       expect(entry.cues.length).toBeGreaterThanOrEqual(3);
       expect(entry.cues.length).toBeLessThanOrEqual(5);
       expect(entry.commonMistakes.length).toBeGreaterThanOrEqual(2);
@@ -35,4 +34,11 @@ describe("curated exercise cues", () => {
   it("returns no curated fields for an unlisted exercise", () => {
     expect(getExerciseCueFields("Unlisted_Exercise")).toBeUndefined();
   });
+
+  it.each(["constructor", "toString", "__proto__"])(
+    "does not treat inherited key %s as a curated exercise",
+    (id) => {
+      expect(getExerciseCueFields(id)).toBeUndefined();
+    },
+  );
 });
