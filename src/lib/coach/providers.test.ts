@@ -3,10 +3,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { generatePlan } from "./generatePlan";
 import {
   coachModel,
+  coachChatModel,
   GEMINI_MODEL,
+  geminiChatModel,
   geminiModel,
   GROQ_MODEL,
   groqModel,
+  groqChatModel,
   ProviderError,
   type ProviderEvent,
   retryAfterMs,
@@ -111,6 +114,62 @@ describe("geminiModel", () => {
     await expect(geminiModel(KEY)("x")).rejects.toThrow(
       "Gemini returned HTTP 503",
     );
+  });
+});
+
+describe("exercise coach chat providers", () => {
+  const messages = [
+    { role: "system" as const, content: "Ground replies in exercise cues." },
+    { role: "user" as const, content: "How should I hold the dumbbells?" },
+  ];
+
+  it("sends plain-text chat messages to Groq", async () => {
+    const fetchMock = mockFetch(200, groqReply("Keep wrists neutral."));
+
+    await expect(groqChatModel(KEY)(messages)).resolves.toBe(
+      "Keep wrists neutral.",
+    );
+    expect(sent(fetchMock)).toMatchObject({
+      url: "https://api.groq.com/openai/v1/chat/completions",
+      headers: { Authorization: `Bearer ${KEY}` },
+      body: { model: GROQ_MODEL, messages, temperature: 0.3, max_tokens: 300 },
+    });
+    expect(sent(fetchMock).body.response_format).toBeUndefined();
+  });
+
+  it("sends the system instruction and chat history in Gemini format", async () => {
+    const fetchMock = mockFetch(
+      200,
+      geminiReply([{ text: "Use a neutral wrist." }]),
+    );
+
+    await expect(geminiChatModel(KEY)(messages)).resolves.toBe(
+      "Use a neutral wrist.",
+    );
+    expect(sent(fetchMock)).toMatchObject({
+      url: `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+      headers: { "x-goog-api-key": KEY },
+      body: {
+        systemInstruction: {
+          parts: [{ text: "Ground replies in exercise cues." }],
+        },
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: "How should I hold the dumbbells?" }],
+          },
+        ],
+      },
+    });
+  });
+
+  it("uses COACH_PROVIDER and requires its API key", async () => {
+    const fetchMock = mockFetch(200, groqReply("Breathe steadily."));
+    await expect(coachChatModel({ GROQ_API_KEY: KEY })(messages)).resolves.toBe(
+      "Breathe steadily.",
+    );
+    expect(sent(fetchMock).url).toContain("api.groq.com");
+    expect(() => coachChatModel({})).toThrow("GROQ_API_KEY is not set");
   });
 });
 

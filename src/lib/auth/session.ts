@@ -12,10 +12,12 @@ export async function requireUser() {
     query: { disableCookieCache: true },
   });
   if (!session || !session.user.emailVerified) redirect("/sign-in");
-  // Expose only account-display fields; password hashes and tokens never reach props.
+  // Server-derived identity and tier data; hashes and session tokens stay private.
   return {
     id: session.user.id,
     name: session.user.name,
     email: session.user.email,
+    tier: session.user.tier,
+    trialEndsAt: session.user.trialEndsAt ?? null,
   };
 }
