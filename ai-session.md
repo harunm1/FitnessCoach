@@ -286,6 +286,16 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 
 **Did with it:** wrote each slice test first and fixed every finding. A failed load now offers Send again. A per-user cap of 5 messages a minute and 50 a day counts attempts before the model call, and the saved-message count backs it up across server instances. Tests cover the history order, the no-plan case and the ownership check. Focus is kept, and the labels are at 5.85:1. A pain report and a diagnosis request get the fixed reply without calling the model, and a test pins it (draft pull request #96). Tools: vercel:nextjs, vercel:react-best-practices, hzblj-skills:component-architecture and hooks, design:ux-copy, mattpocock-skills:tdd, agentic-sdlc:testing-vitest, audit-suite:audit-as-a11y-eng, Context7 (Next.js docs), backend-design:security-reviewer, and /pr-review-toolkit:review-pr as the independent reviewer.
 
+### 10 November 2026, self-review of the guardrails and hosting pull requests (#48, #61)
+
+**Before asking:** both pull requests had waited past the three-day review window. I decided they would get an independent review instead: a reviewer that sees only the diff, the issue and our engineering practices, plus a second check that confirms each finding before it counts. I also decided that nothing merges until I run the merge myself, and that #48 merges before #53, which is stacked on it.
+
+**Asked:** blind reviews of #48 (code quality, silent failures, security) and #61 (code quality, silent failures, deployment and CI, workflow security), a fresh check of every round of fixes, and the current Vercel, Neon, Better Auth and Prisma pages for each claim in the Deploy section.
+
+**Got:** for #48, missed crisis and eating wordings, training talk wrongly stopped, a screen that did not report when the model check failed, and regexes that slowed badly on long messages. Each later round of checks found that some fixes had moved other wordings the wrong way, so I set a limit of four rounds. For #61, a leftover direct database URL could redirect the test migrations, a hosted build could start with a missing URL or with two URLs on different Neon branches, CI never ran the migrate path, the README lacked the auth and email settings, and the preview reset could copy real users.
+
+**Did with it:** wrote a failing test for every finding before fixing it, and pushed #48 after the last round's blocking findings were fixed (844 unit and 46 integration tests). The remaining false positives and gaps are listed on the pull request as follow-ups. A plugin rule stopped me from staging the environment template, so the #61 fixes are verified but wait for me to commit and push them by hand. Tools for the targeted help: pr-review-toolkit:code-reviewer and silent-failure-hunter, backend-design:security-reviewer, vercel:deployments-cicd, sweetclaude:workflow-guardian, fresh general-purpose agents as second checks, and Firecrawl for the Vercel, Neon, Better Auth and Prisma pages.
+
 ## Mohammad
 
 ### 31 October 2026, onboarding quiz validation edge cases
