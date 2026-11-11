@@ -7,6 +7,12 @@ describe("dayKey", () => {
     expect(dayKey(new Date("2026-11-09T03:30:00Z"))).toBe("2026-11-08");
   });
 
+  it("follows daylight saving time", () => {
+    // 04:30 UTC on 1 July is 00:30 EDT (UTC-4), so it is still 1 July in Toronto.
+    // A fixed UTC-5 offset would put it on 30 June.
+    expect(dayKey(new Date("2026-07-01T04:30:00Z"))).toBe("2026-07-01");
+  });
+
   it("accepts another time zone", () => {
     expect(dayKey(new Date("2026-11-09T03:30:00Z"), "UTC")).toBe("2026-11-09");
   });

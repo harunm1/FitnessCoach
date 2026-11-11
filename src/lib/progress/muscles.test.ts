@@ -65,6 +65,23 @@ describe("musclesWorked", () => {
       secondary: ["triceps"],
     });
   });
+
+  it("counts other lifting categories, not just strength", () => {
+    const deadlift: LoggedSet = {
+      category: "powerlifting",
+      primaryMuscles: ["lower back"],
+      secondaryMuscles: ["glutes"],
+    };
+    const boxJump: LoggedSet = {
+      category: "plyometrics",
+      primaryMuscles: ["hamstrings"],
+      secondaryMuscles: [],
+    };
+    expect(musclesWorked([deadlift, boxJump])).toEqual({
+      primary: ["hamstrings", "lower back"],
+      secondary: ["glutes"],
+    });
+  });
 });
 
 describe("muscleShare", () => {
@@ -101,9 +118,14 @@ describe("muscleShare", () => {
     ]);
   });
 
-  it("leaves workouts that worked no muscle out of the total", () => {
-    const run: LoggedSet[] = [];
-    const shares = muscleShare([[benchPress], run]);
+  it("leaves cardio-only workouts out of the total", () => {
+    const cardio: LoggedSet = {
+      category: "cardio",
+      primaryMuscles: ["quadriceps"],
+      secondaryMuscles: ["calves"],
+    };
+    const shares = muscleShare([[benchPress], [cardio]]);
     expect(shares.find((s) => s.muscle === "chest")?.share).toBe(1);
+    expect(shares.find((s) => s.muscle === "quadriceps")).toBeUndefined();
   });
 });

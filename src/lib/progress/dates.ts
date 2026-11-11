@@ -3,15 +3,18 @@
 // day in UTC. Days are computed in America/Toronto until profiles store a time zone.
 export const DEFAULT_TIME_ZONE = "America/Toronto";
 
-// "2026-11-08" for the day the timestamp falls on in the given zone.
-// The en-CA locale formats dates as YYYY-MM-DD.
+// "2026-11-08" for the day the timestamp falls on in the given zone. The parts are
+// joined by hand so the result does not depend on a locale's date format.
 export function dayKey(date: Date, timeZone = DEFAULT_TIME_ZONE): string {
-  return new Intl.DateTimeFormat("en-CA", {
+  const parts = new Intl.DateTimeFormat("en-US", {
     timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(date);
+  }).formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
 // A day key as a UTC midnight Date, so day arithmetic ignores daylight saving.

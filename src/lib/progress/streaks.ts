@@ -60,7 +60,7 @@ const isActive = (week: Week | undefined) => (week?.workouts ?? 0) > 0;
 
 // A week meets its goal when it has as many workouts as its plan has training days.
 const metGoal = (week: Week | undefined) =>
-  week !== undefined && week.workouts >= Math.max(1, week.planDays);
+  week !== undefined && week.workouts >= week.planDays;
 
 // Week keys (Mondays) of the current active-week streak, newest first. The progress
 // page uses them to collect the muscles worked across the streak.
@@ -86,7 +86,8 @@ export function activeWeekStreak(
   return activeStreakWeeks(workouts, today, timeZone).length;
 }
 
-// Weeks in a row where every planned training day was done.
+// Weeks in a row with at least as many finished workouts as the plan has training
+// days. It counts workouts, not which plan days they were.
 export function goalMetStreak(
   workouts: FinishedWorkout[],
   today: Date,

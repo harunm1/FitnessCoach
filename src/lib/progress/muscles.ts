@@ -33,8 +33,9 @@ export type MuscleShare = {
 };
 
 // For each muscle, how many workouts used it. Workouts that worked no muscle (a run,
-// or a stretching session) are left out of the total, so the shares describe
-// strength work only. Most used first, then by name.
+// or only stretching or cardio) are left out of the total, so the shares describe
+// muscle work: every category except stretching and cardio. Most used first, then
+// by name.
 export function muscleShare(workouts: LoggedSet[][]): MuscleShare[] {
   const counts = new Map<string, number>();
   let counted = 0;

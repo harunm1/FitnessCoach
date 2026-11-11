@@ -6,7 +6,8 @@ import {
   type FinishedWorkout,
 } from "./streaks";
 
-// Noon in Toronto, so the UTC timestamp falls on the same calendar day.
+// 17:00 UTC is midday in Toronto (noon in winter, 1 p.m. during daylight saving),
+// so the UTC timestamp falls on the same calendar day.
 function on(day: string, planDays = 3): FinishedWorkout {
   return { startedAt: new Date(`${day}T17:00:00Z`), planDays };
 }
@@ -43,16 +44,6 @@ describe("activeWeekStreak", () => {
     const workouts = [on("2026-11-09"), on("2026-11-10"), on("2026-11-11")];
     expect(activeWeekStreak(workouts, today)).toBe(1);
   });
-
-  it("uses the Toronto calendar day for late-evening workouts", () => {
-    // 11:30 p.m. Sunday 8 November in Toronto is Monday 9 November in UTC, so it
-    // belongs to last week, not this one.
-    const lateSunday = {
-      startedAt: new Date("2026-11-09T04:30:00Z"),
-      planDays: 3,
-    };
-    expect(activeStreakWeeks([lateSunday], today)).toEqual(["2026-11-02"]);
-  });
 });
 
 describe("activeStreakWeeks", () => {
@@ -63,6 +54,16 @@ describe("activeStreakWeeks", () => {
       "2026-11-02",
       "2026-10-26",
     ]);
+  });
+
+  it("uses the Toronto calendar day for late-evening workouts", () => {
+    // 11:30 p.m. Sunday 8 November in Toronto is Monday 9 November in UTC, so it
+    // belongs to last week, not this one.
+    const lateSunday = {
+      startedAt: new Date("2026-11-09T04:30:00Z"),
+      planDays: 3,
+    };
+    expect(activeStreakWeeks([lateSunday], today)).toEqual(["2026-11-02"]);
   });
 });
 
@@ -87,5 +88,16 @@ describe("goalMetStreak", () => {
     // Two workouts on a 3-day plan, then a switch to a 2-day plan: the goal is 2.
     const workouts = [on("2026-11-02", 3), on("2026-11-04", 2)];
     expect(goalMetStreak(workouts, today)).toBe(1);
+  });
+
+  it("finds the latest workout even when the list is not in date order", () => {
+    // Same week as above, newest first: the 2-day plan still sets the goal.
+    const workouts = [on("2026-11-04", 2), on("2026-11-02", 3)];
+    expect(goalMetStreak(workouts, today)).toBe(1);
+  });
+
+  it("counts a week as met when the workout has no plan", () => {
+    // A deleted plan has no training days, so there is no goal to miss.
+    expect(goalMetStreak([on("2026-11-10", 0)], today)).toBe(1);
   });
 });
