@@ -5,6 +5,7 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, Level, Tier } from "../src/generated/prisma/client";
+import { seedLocalDemoUsers } from "./demo-users";
 
 const EXERCISES_URL =
   "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json";
@@ -98,6 +99,14 @@ async function main() {
   const count = await seedExercises();
   const user = await seedDemoUser();
   console.log(`Seeded ${count} exercises and demo user ${user.email}`);
+  const demoUsers = await seedLocalDemoUsers(prisma, {
+    password: process.env.DEMO_PASSWORD,
+    databaseURL: process.env.DATABASE_URL,
+    environment: process.env.NODE_ENV,
+  });
+  for (const demo of demoUsers) {
+    console.log(`Local demo login: ${demo.email} (${demo.tier})`);
+  }
 }
 
 main()
