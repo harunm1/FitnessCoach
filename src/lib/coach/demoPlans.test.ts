@@ -6,6 +6,7 @@ import {
   DEMO_PLAN_CACHE,
   demoPlans,
   firstVerifiedReply,
+  planPromptFingerprint,
   type CachedPlan,
 } from "./demoPlans";
 import { EVAL_PROFILES } from "./evalProfiles";
@@ -64,6 +65,12 @@ describe("the cached plans", () => {
     expect(DEMO_PLAN_CACHE.promptVersion).toBe(PLAN_PROMPT_VERSION);
   });
 
+  it("match the plan prompt's current wording, even without a version bump", () => {
+    expect(DEMO_PLAN_CACHE.promptFingerprint).toBe(
+      planPromptFingerprint(library),
+    );
+  });
+
   it("cover every eval profile, and each passes the verifier for its own profile", async () => {
     expect(DEMO_PLAN_CACHE.plans.map((p) => p.profileId).sort()).toEqual(
       EVAL_PROFILES.map((p) => p.id).sort(),
@@ -105,16 +112,28 @@ describe("generatePlan in demo mode", () => {
     expect(result).toMatchObject({ source: "COACH", cached: true });
     expect(verifyPlan(result.plan, demoUser, byId).ok).toBe(true);
     expect(list.map((r) => r.outcome)).toEqual(["error", "cached"]);
+    const served = list.at(-1);
+    expect(DEMO_PLAN_CACHE.plans.map((p) => p.profileId)).toContain(
+      served?.cachedProfileId,
+    );
+    // A provider failure is not a fault in a reply, so no problem is listed.
+    expect(served?.problems).toEqual([]);
   });
 
-  it("serves a cached plan after two rejected replies", async () => {
-    const result = await generatePlan(rejectedEveryTime, demoUser, library, {
+  it("serves a cached plan after one rejected reply instead of asking again", async () => {
+    let calls = 0;
+    const rejected: PlanModel = async (prompt) => {
+      calls++;
+      return rejectedEveryTime(prompt);
+    };
+    const result = await generatePlan(rejected, demoUser, library, {
       demoPlans: DEMO_PLAN_CACHE.plans,
     });
+    expect(calls).toBe(ONE_CALL);
     expect(result).toMatchObject({
       source: "COACH",
       cached: true,
-      attempts: BOTH_ATTEMPTS,
+      attempts: ONE_CALL,
     });
   });
 

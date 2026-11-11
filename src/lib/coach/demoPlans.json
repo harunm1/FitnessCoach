@@ -1,5 +1,6 @@
 {
   "promptVersion": "plan-v2",
+  "promptFingerprint": "dd6ddbee3ae01c1890d755b20a7e9c5a47ead621182e7cb482cd51402c87375f",
   "source": "eval/results/2026-10-30-chain-round2.jsonl",
   "plans": [
     {

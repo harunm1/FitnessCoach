@@ -114,8 +114,8 @@ export type GenerateOptions = {
   log?: CoachSink; // one record per model call (#41)
   takeProviderEvents?: () => ProviderEvent[]; // from providerEventCollector
   now?: () => number;
-  // Demo mode (D12, #59), from demoPlans(): a failed provider chain is not asked
-  // again, and these plans are tried before the rule-based plan.
+  // Demo mode (D12, #59), from demoPlans(): one attempt only, so a failure of any
+  // kind reaches these plans at once; they are tried before the rule-based plan.
   demoPlans?: CachedPlan[];
 };
 
@@ -135,16 +135,23 @@ export async function generatePlan(
   let problems: string[] = [];
   let attempts = 0;
   const base = { kind: "plan" as const, promptVersion: PLAN_PROMPT_VERSION };
+  // In demo mode a cached plan, already verified, beats a regeneration that costs
+  // another wait; the worst case stays one pass through the provider chain.
+  const maxAttempts = demoPlans ? 1 : MAX_ATTEMPTS;
 
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     attempts = attempt;
     const started = now();
     let raw: unknown;
     try {
       raw = await model(buildPlanPrompt(profile, usable, problems));
     } catch (e) {
-      // A failed call or unparseable reply counts as a failed attempt.
-      problems = ["the reply was not valid JSON for the plan shape"];
+      // A failed call or unparseable reply counts as a failed attempt. A provider
+      // failure is not a fault in a reply, so there is nothing to tell the model.
+      problems =
+        e instanceof ProviderError
+          ? []
+          : ["the reply was not valid JSON for the plan shape"];
       const { served, providerEvents } = splitServed(takeProviderEvents());
       await writeRecord(log, {
         ...base,
@@ -155,9 +162,6 @@ export async function generatePlan(
         providerEvents,
         error: e instanceof Error ? e.message : String(e),
       });
-      // Both providers already failed at the transport level; in demo mode asking
-      // again would only repeat the wait, so go to the cache.
-      if (demoPlans && e instanceof ProviderError) break;
       continue;
     }
     const latencyMs = now() - started;
@@ -201,9 +205,10 @@ export async function generatePlan(
     outcome: cachedPlan ? "cached" : "rule_based",
     providerEvents: [],
     problems,
+    ...(cachedPlan ? { cachedProfileId: cachedPlan.profileId } : {}),
   });
   if (cachedPlan) {
-    return { plan: cachedPlan, source: "COACH", attempts, cached: true };
+    return { plan: cachedPlan.plan, source: "COACH", attempts, cached: true };
   }
   return {
     plan: buildDefaultPlan(profile, library),
@@ -221,12 +226,15 @@ function fromCache(
   profile: VerifyProfile,
   usable: LibraryExercise[],
   byId: Map<string, LibraryExercise>,
-): PlanInput | undefined {
+): { plan: PlanInput; profileId: string } | undefined {
   return plans
-    .map((cached) =>
-      verifyPlan(namesToIds(cached.reply, usable), profile, byId),
-    )
-    .find((result) => result.ok)?.plan;
+    .map((cached) => ({
+      profileId: cached.profileId,
+      result: verifyPlan(namesToIds(cached.reply, usable), profile, byId),
+    }))
+    .flatMap(({ profileId, result }) =>
+      result.ok ? [{ plan: result.plan, profileId }] : [],
+    )[0];
 }
 
 // The "served" event names the provider and model; the rest stay as the call's events.

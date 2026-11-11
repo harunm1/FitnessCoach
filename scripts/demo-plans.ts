@@ -2,6 +2,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import {
   firstVerifiedReply,
+  planPromptFingerprint,
   type DemoPlanCache,
 } from "../src/lib/coach/demoPlans";
 import { EVAL_PROFILES } from "../src/lib/coach/evalProfiles";
@@ -14,7 +15,9 @@ const JSON_INDENT = 2;
 
 type Row = { id: string; calls: { reply?: unknown; error?: string }[] };
 
-const [source, promptVersion] = process.argv.slice(FIRST_ARG);
+const [given, promptVersion] = process.argv.slice(FIRST_ARG);
+// Stored with forward slashes, so a run on Windows writes the same file.
+const source = given?.replaceAll("\\", "/");
 if (!source || !promptVersion) {
   console.error(
     "Usage: npx tsx scripts/demo-plans.ts <eval results .jsonl> <prompt version that produced it>",
@@ -44,6 +47,11 @@ const plans = ordered.map(({ id, profile }) => {
   return { profileId: id, reply };
 });
 
-const cache: DemoPlanCache = { promptVersion, source, plans };
+const cache: DemoPlanCache = {
+  promptVersion,
+  promptFingerprint: planPromptFingerprint(library),
+  source,
+  plans,
+};
 writeFileSync(OUT, `${JSON.stringify(cache, null, JSON_INDENT)}\n`);
 console.log(`Wrote ${plans.length} plans to ${OUT}`);

@@ -29,6 +29,7 @@ export type CoachRecord = {
   problems?: string[];
   raw?: unknown; // the model's reply as parsed, kept beside the plan we saved
   error?: string;
+  cachedProfileId?: string; // on "cached": the eval profile whose plan was served
 };
 
 export type CoachSink = (record: CoachRecord) => void | Promise<void>;

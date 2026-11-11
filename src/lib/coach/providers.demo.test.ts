@@ -65,6 +65,12 @@ describe("isDemoMode and retryOptionsFor", () => {
     expect(retryOptionsFor({})).toEqual({});
   });
 
+  it("keeps the demo default when an option is passed as undefined", () => {
+    expect(
+      retryOptionsFor({ COACH_DEMO_MODE: "1" }, { timeoutMs: undefined }),
+    ).toMatchObject({ retries: 0, timeoutMs: DEMO_TIMEOUT_MS });
+  });
+
   it("keeps an explicit option over the demo default", () => {
     expect(
       retryOptionsFor({ COACH_DEMO_MODE: "1" }, { timeoutMs: SHORT_LIMIT_MS }),
@@ -104,6 +110,51 @@ describe("coachModel in demo mode", () => {
 });
 
 describe("the call limit", () => {
+  const DEFAULT_LIMIT_MS = 30_000;
+
+  it("uses 8 s in demo mode and 30 s otherwise when no limit is given", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => geminiOk(JSON.stringify(plan))),
+    );
+    const timeout = vi.spyOn(AbortSignal, "timeout");
+    await coachModel({ ...DEMO, COACH_PROVIDER: "gemini" })("Plan as JSON");
+    expect(timeout).toHaveBeenLastCalledWith(DEMO_TIMEOUT_MS);
+    await coachModel({ ...BOTH, COACH_PROVIDER: "gemini" })("Plan as JSON");
+    expect(timeout).toHaveBeenLastCalledWith(DEFAULT_LIMIT_MS);
+    timeout.mockRestore();
+  });
+
+  // Headers arrived, then the body stalled until the limit aborted the read.
+  const bodyStalled = () =>
+    ({
+      ok: true,
+      status: HTTP_OK,
+      headers: new Headers(),
+      json: () => Promise.reject(new DOMException("aborted", "TimeoutError")),
+      text: async () => "",
+    }) as unknown as Response;
+
+  it("reports a body that stalls after the headers as a provider timeout", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => bodyStalled()),
+    );
+    const error = await groqModel(KEY)("Plan as JSON").catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ProviderError);
+    expect((error as ProviderError).timedOut).toBe(true);
+  });
+
+  it("moves to the other provider when the first one's body stalls", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) =>
+        url.includes("groq") ? bodyStalled() : geminiOk(JSON.stringify(plan)),
+      ),
+    );
+    await expect(coachModel(DEMO)("Plan as JSON")).resolves.toEqual(plan);
+  });
+
   // A provider that never answers until the request is aborted.
   function stalled() {
     const fn = vi.fn(

@@ -56,7 +56,8 @@ export class ProviderError extends Error {
 
   // Worth trying the same provider again: rate limits, server errors and network
   // drops are transient (Groq and Gemini error docs). 400, 401, 403 and 413 are not:
-  // the same request fails the same way. A timeout already cost 30 s, so it goes
+  // the same request fails the same way. A timeout already cost the call limit (30 s,
+  // or 8 s in demo mode), so it goes
   // straight to the fallback instead of waiting again.
   get retryable(): boolean {
     if (this.timedOut) return false;
@@ -130,7 +131,20 @@ async function postJson(
       retryAfterMs(res, text),
     );
   }
-  return res.json();
+  // The limit also covers reading the body; a body that stalls or breaks after the
+  // headers is a failed call, so it reaches the other provider like any other.
+  try {
+    return await res.json();
+  } catch (e) {
+    const timedOut = (e as Error).name === "TimeoutError";
+    throw new ProviderError(
+      `${provider} reply ${timedOut ? "timed out" : "could not be read"}`,
+      provider,
+      res.status,
+      undefined,
+      timedOut,
+    );
+  }
 }
 
 function parseReply(provider: string, text: unknown): unknown {
@@ -380,7 +394,11 @@ export function retryOptionsFor(
   options: RetryOptions = {},
 ): RetryOptions {
   if (!isDemoMode(env)) return options;
-  return { retries: 0, timeoutMs: DEMO_TIMEOUT_MS, ...options };
+  return {
+    ...options,
+    retries: options.retries ?? 0,
+    timeoutMs: options.timeoutMs ?? DEMO_TIMEOUT_MS,
+  };
 }
 
 // Builds the coach's model from the environment: the provider named by COACH_PROVIDER
