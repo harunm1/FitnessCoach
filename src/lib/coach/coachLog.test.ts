@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   PLAN_PROMPT_VERSION,
   providerEventCollector,
@@ -6,7 +6,13 @@ import {
   type CoachRecord,
 } from "./coachLog";
 import { generatePlan, type PlanModel } from "./generatePlan";
-import { ProviderError, servedBy, withFallback, withRetry } from "./providers";
+import {
+  coachModel,
+  ProviderError,
+  servedBy,
+  withFallback,
+  withRetry,
+} from "./providers";
 import type { LibraryExercise, VerifyProfile } from "./verify";
 
 const library: LibraryExercise[] = ["bench", "squat"].map((id, i) => ({
@@ -63,6 +69,9 @@ describe("coach log", () => {
         latencyMs: 250,
         outcome: "ok",
         providerEvents: [],
+        inputTokens: null,
+        outputTokens: null,
+        guardrailVerdict: null,
         raw: good,
       },
     ]);
@@ -155,8 +164,176 @@ describe("coach log", () => {
           latencyMs: 1,
           outcome: "ok",
           providerEvents: [],
+          inputTokens: null,
+          outputTokens: null,
+          guardrailVerdict: null,
         },
       ),
     ).resolves.toBeUndefined();
+  });
+});
+
+// The real provider chain with fetch mocked: the token counts in a record are the
+// ones the provider's response carried (#41).
+const KEY = "test-key-not-real";
+const answer = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status });
+const groqReply = (content: unknown, usage?: unknown) => ({
+  choices: [{ message: { content: JSON.stringify(content) } }],
+  ...(usage === undefined ? {} : { usage }),
+});
+const geminiReply = (content: unknown, usageMetadata?: unknown) => ({
+  candidates: [{ content: { parts: [{ text: JSON.stringify(content) }] } }],
+  ...(usageMetadata === undefined ? {} : { usageMetadata }),
+});
+
+function runChain(
+  env: Record<string, string>,
+  replies: Response[],
+  options: { guardrailVerdict?: string | null } = {},
+) {
+  const fetchMock = vi.fn();
+  for (const reply of replies) fetchMock.mockResolvedValueOnce(reply);
+  vi.stubGlobal("fetch", fetchMock);
+  const collector = providerEventCollector();
+  const records: CoachRecord[] = [];
+  return generatePlan(
+    coachModel(env, { retries: 0, onEvent: collector.onEvent }),
+    profile,
+    library,
+    {
+      log: (r) => {
+        records.push(r);
+      },
+      takeProviderEvents: collector.take,
+      ...options,
+    },
+  ).then(() => records);
+}
+
+describe("coach log token counts and guardrail verdict", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("records the prompt and completion tokens Groq reports", async () => {
+    const records = await runChain({ GROQ_API_KEY: KEY }, [
+      answer(
+        groqReply(good, {
+          prompt_tokens: 1200,
+          completion_tokens: 340,
+          total_tokens: 1540,
+        }),
+      ),
+    ]);
+    expect(records[0]).toMatchObject({
+      outcome: "ok",
+      provider: "Groq",
+      inputTokens: 1200,
+      outputTokens: 340,
+      providerEvents: [],
+    });
+  });
+
+  it("counts Gemini's thinking tokens as output tokens, as it bills them", async () => {
+    const records = await runChain(
+      { COACH_PROVIDER: "gemini", GEMINI_API_KEY: KEY },
+      [
+        answer(
+          geminiReply(good, {
+            promptTokenCount: 900,
+            candidatesTokenCount: 300,
+            thoughtsTokenCount: 120,
+            totalTokenCount: 1320,
+          }),
+        ),
+      ],
+    );
+    expect(records[0]).toMatchObject({
+      provider: "Gemini",
+      inputTokens: 900,
+      outputTokens: 420,
+    });
+  });
+
+  it("records null tokens when the response carries no usage", async () => {
+    const records = await runChain({ GROQ_API_KEY: KEY }, [
+      answer(groqReply(good)),
+    ]);
+    expect(records[0]).toMatchObject({
+      outcome: "ok",
+      inputTokens: null,
+      outputTokens: null,
+    });
+  });
+
+  it("records null for a count the provider sent in a form that is not a count", async () => {
+    const records = await runChain({ GROQ_API_KEY: KEY }, [
+      answer(groqReply(good, { prompt_tokens: "1200", completion_tokens: -5 })),
+    ]);
+    expect(records[0]).toMatchObject({ inputTokens: null, outputTokens: null });
+  });
+
+  it("keeps the tokens of a reply that came back but was not valid JSON", async () => {
+    const records = await runChain({ GROQ_API_KEY: KEY }, [
+      answer({
+        choices: [{ message: { content: "Sure! Here is your plan" } }],
+        usage: { prompt_tokens: 800, completion_tokens: 25 },
+      }),
+      answer(groqReply(good, { prompt_tokens: 830, completion_tokens: 310 })),
+    ]);
+    expect(records.map((r) => r.outcome)).toEqual(["error", "retried"]);
+    expect(records[0]).toMatchObject({ inputTokens: 800, outputTokens: 25 });
+    expect(records[1]).toMatchObject({ inputTokens: 830, outputTokens: 310 });
+  });
+
+  it("takes the tokens from the provider that answered after a switch", async () => {
+    const records = await runChain({ GROQ_API_KEY: KEY, GEMINI_API_KEY: KEY }, [
+      answer({ error: "rate limited" }, 429),
+      answer(
+        geminiReply(good, { promptTokenCount: 700, candidatesTokenCount: 200 }),
+      ),
+    ]);
+    expect(records[0]).toMatchObject({
+      outcome: "switched",
+      provider: "Gemini",
+      inputTokens: 700,
+      outputTokens: 200,
+    });
+    expect(records[0].providerEvents).toEqual([
+      { provider: "Groq", action: "fallback", status: 429 },
+    ]);
+  });
+
+  it("records null tokens when no provider answered, and on the rule-based record", async () => {
+    const { records } = await run(
+      vi.fn().mockRejectedValue(new Error("rate limited")),
+    );
+    expect(records.map((r) => [r.inputTokens, r.outputTokens])).toEqual([
+      [null, null],
+      [null, null],
+      [null, null],
+    ]);
+  });
+
+  it("records no guardrail verdict by default", async () => {
+    const { records } = await run(vi.fn().mockResolvedValue(good));
+    expect(records[0].guardrailVerdict).toBeNull();
+  });
+
+  it("carries the guardrail verdict it is given on every record of the call", async () => {
+    const records: CoachRecord[] = [];
+    await generatePlan(
+      vi.fn<PlanModel>().mockResolvedValueOnce(bad).mockResolvedValueOnce(good),
+      profile,
+      library,
+      {
+        log: (r) => {
+          records.push(r);
+        },
+        guardrailVerdict: "ALLOW",
+      },
+    );
+    expect(records.map((r) => r.guardrailVerdict)).toEqual(["ALLOW", "ALLOW"]);
   });
 });

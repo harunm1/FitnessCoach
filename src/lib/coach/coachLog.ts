@@ -25,6 +25,9 @@ export type CoachRecord = {
   provider?: string; // who answered; absent when no provider replied
   model?: string;
   providerEvents: ProviderEvent[]; // retries and switches during this call
+  inputTokens: number | null; // from the provider's response; null when it sent no count
+  outputTokens: number | null; // reply tokens, thinking included where the provider bills it
+  guardrailVerdict: string | null; // the #43 verdict name for the user's message; null when none was screened
   problems?: string[];
   raw?: unknown; // the model's reply as parsed, kept beside the plan we saved
   error?: string;
