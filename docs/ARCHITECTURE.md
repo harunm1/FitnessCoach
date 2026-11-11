@@ -44,7 +44,7 @@ A plan that fails is regenerated once with the problems listed, then the user ge
 
 **Form feedback questions are bounded:** where it is felt, at which point in the rep, the weight against usual. The answers pick a fix from the exercise's library entry (cues, common mistakes), so the advice traces to text we wrote.
 
-**AI only through `providers.ts`.** `src/lib/coach/providers.ts` is the one module that calls a model API (Groq first, Gemini as fallback, D4 and D6). No route handler, Server Action or component calls a provider directly. A new model path, such as the chat screen (#63) or the exercise chat (#70), goes through it and so gets the retries, timeouts, fallback and `coachLog` record. Coach modules pass typed data to each other, never raw model text. On `main` on 8 November, only `providers.ts` holds the provider URLs and keys. Core features (sign-in, quiz, rule-based plan, logging) work with no model key (8 November [design review](design-reviews/2026-11-08-review.md), decision 1, #76).
+**AI only through `providers.ts`.** `src/lib/coach/providers.ts` is the one module that calls a model API (Groq first, Gemini as fallback, D4 and D6). No route handler, Server Action or component calls a provider directly. A new model path, such as the chat screen (#63) or the exercise chat (#70), goes through it and so gets the retries, timeouts, fallback and `coachLog` record. Coach modules pass typed data to each other, never raw model text. On `main` on 10 November, `providers.ts` and, by the exception recorded under D15, `safetyModel.ts` (the safety check, not yet called on `main`) hold the provider URLs. Core features (sign-in, quiz, rule-based plan, logging) work with no model key (8 November [design review](design-reviews/2026-11-08-review.md), decision 1, #76).
 
 **No nutrition advice.** Scope is lifting, strength training and running. The coach gives no diet, calorie, supplement or meal advice; a nutrition question gets a short out-of-scope reply pointing to a registered dietitian (decision 5, #43).
 
@@ -89,7 +89,7 @@ Three layers, each owner testing their own slice (8 November design review, deci
 
 1. **Unit:** pure logic (the coach, progression, schemas) with model calls replaced by saved replies; runs offline in CI.
 2. **API mocking at the provider boundary:** `providers.ts` faked so timeouts, invalid JSON and rate limits are tested on purpose.
-3. **Integration:** Server Actions run against a real PostgreSQL in CI, covering tier checks, saving a week and logging a set (#79; not in CI yet).
+3. **Integration:** Server Actions run against a real PostgreSQL in CI, covering accounts, access tiers, billing, saving the quiz plan and logging a set. It runs in CI on every pull request (`npm run test:integration`, since #67); the coach and core-path cases are added under #79 (PR #81).
 
 The CI pipeline is itself tested: a deliberately failing check must fail the run.
 
