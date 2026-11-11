@@ -50,5 +50,58 @@
       "Using a grip so wide that it limits the range of motion.",
       "Dropping quickly instead of controlling the descent."
     ]
+  },
+  "Barbell_Deadlift": {
+    "cues": [
+      "Set your feet under the bar and grip it around shoulder width.",
+      "Brace your trunk and keep the bar close to your legs.",
+      "Push through the floor as your hips and knees extend.",
+      "Stand tall without leaning back at the top.",
+      "Lower the bar under control by bending your hips and knees."
+    ],
+    "commonMistakes": [
+      "Letting the bar drift away from the legs.",
+      "Rounding the back while lifting.",
+      "Yanking the bar from the floor instead of building tension first."
+    ]
+  },
+  "Dumbbell_Lunges": {
+    "cues": [
+      "Stand tall with a dumbbell at each side.",
+      "Step forward and lower under control, keeping your torso upright.",
+      "Keep the front knee tracking in the same direction as your foot.",
+      "Push through the front foot to return to standing, then switch sides."
+    ],
+    "commonMistakes": [
+      "Letting the front heel lift as you lower.",
+      "Allowing the front knee to collapse inward.",
+      "Rushing the descent and losing balance."
+    ]
+  },
+  "Standing_Military_Press": {
+    "cues": [
+      "Stand with feet about shoulder width and hold the bar at your upper chest.",
+      "Brace your trunk before pressing.",
+      "Press the bar overhead until your arms extend.",
+      "Lower the bar under control to your collarbone."
+    ],
+    "commonMistakes": [
+      "Leaning back and flaring the ribs to move the bar.",
+      "Letting the bar drift far forward during the press.",
+      "Dropping the bar quickly on the way down."
+    ]
+  },
+  "Crunches": {
+    "cues": [
+      "Lie on your back with knees bent and feet supported.",
+      "Keep your lower back in contact with the floor.",
+      "Curl your shoulders off the floor by tightening your abdominals.",
+      "Lower slowly until your shoulders return to the floor."
+    ],
+    "commonMistakes": [
+      "Pulling on the head or neck with the hands.",
+      "Using momentum instead of a controlled curl.",
+      "Lifting the lower back and turning the crunch into a sit-up."
+    ]
   }
 }
