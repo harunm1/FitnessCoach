@@ -177,9 +177,12 @@ export function geminiModel(apiKey: string, model = GEMINI_MODEL): PlanModel {
   };
 }
 
+// A chat reply with no text is no answer at all, unlike a plan reply that will not
+// parse (generatePlan asks again for that). It is a ProviderError so the chat chain
+// moves to the other provider; status 200 makes it non-retryable on this one.
 function parseTextReply(provider: string, text: unknown): string {
   if (typeof text !== "string" || text.trim() === "") {
-    throw new Error(`${provider} reply had no text`);
+    throw new ProviderError(`${provider} reply had no text`, provider, 200);
   }
   return text.trim();
 }
@@ -300,8 +303,9 @@ export function withRetry(
   };
 }
 
-// Tries the second provider when the first fails at the transport level. A reply
-// that isn't valid JSON is not a provider outage, so it goes back to generatePlan.
+// Tries the second provider when the first fails at the transport level, or when a
+// chat reply has no text. A plan reply that isn't valid JSON is not a provider outage,
+// so it goes back to generatePlan.
 export function withFallback(
   primary: PlanModel,
   fallback: PlanModel,

@@ -417,6 +417,46 @@ describe("withFallback and coachModel with both keys", () => {
     expect(fallback).not.toHaveBeenCalled();
   });
 
+  // A chat reply with no text is no answer, so the chat chain tries the other
+  // provider; it is not retried on the same one (review of 11 Nov).
+  it("moves a chat turn to Gemini when Groq answers with no text", async () => {
+    const fetchMock = queueFetch(
+      { status: 200, body: groqReply("") },
+      { status: 200, body: geminiReply([{ text: "Rest 90 seconds." }]) },
+    );
+    const events: ProviderEvent[] = [];
+    const model = coachChatModel(
+      { GROQ_API_KEY: KEY, GEMINI_API_KEY: KEY },
+      { sleep: noSleep, onEvent: (e) => events.push(e) },
+    );
+    await expect(
+      model([{ role: "user", content: "how long between sets?" }]),
+    ).resolves.toBe("Rest 90 seconds.");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(String(fetchMock.mock.calls[1][0])).toContain(
+      "generativelanguage.googleapis.com",
+    );
+    expect(events).toEqual([
+      { provider: "Groq", action: "fallback", status: 200 },
+      { provider: "Gemini", action: "served", model: GEMINI_MODEL },
+    ]);
+  });
+
+  // The plan path is unchanged: an empty plan reply goes back to generatePlan, which
+  // asks again with the problems listed, rather than to the other provider.
+  it("does not switch provider for an empty plan reply", async () => {
+    const fetchMock = queueFetch(
+      { status: 200, body: groqReply("") },
+      { status: 200, body: geminiReply([{ text: JSON.stringify(plan) }]) },
+    );
+    const model = coachModel(
+      { GROQ_API_KEY: KEY, GEMINI_API_KEY: KEY },
+      { sleep: noSleep },
+    );
+    await expect(model("x")).rejects.toThrow("Groq reply had no text");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("uses one provider when only its key is set", async () => {
     const fetchMock = queueFetch({ status: 503, body: {} });
     const model = coachModel(
