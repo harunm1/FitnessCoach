@@ -103,5 +103,57 @@
       "Using momentum instead of a controlled curl.",
       "Lifting the lower back and turning the crunch into a sit-up."
     ]
+  },
+  "Bodyweight_Squat": {
+    "cues": [
+      "Stand with your feet about shoulder width apart and brace your trunk.",
+      "Bend your hips and knees together as you lower under control.",
+      "Keep your knees pointed in the same direction as your toes.",
+      "Stand by extending your hips and knees."
+    ],
+    "commonMistakes": [
+      "Letting the heels lift from the floor.",
+      "Allowing the knees to collapse inward.",
+      "Dropping quickly into the bottom position."
+    ]
+  },
+  "Dumbbell_Bench_Press": {
+    "cues": [
+      "Lie on the bench with a dumbbell at each side of your chest.",
+      "Keep your feet planted and upper back supported.",
+      "Press the dumbbells up until your arms extend, keeping them controlled.",
+      "Lower to the sides of your chest with a steady motion."
+    ],
+    "commonMistakes": [
+      "Bouncing the weights at the bottom of the press.",
+      "Letting the dumbbells drift far out of line with your elbows.",
+      "Dropping the weights instead of controlling the lowering phase."
+    ]
+  },
+  "Dumbbell_Shoulder_Press": {
+    "cues": [
+      "Sit against a supported bench with a dumbbell at each shoulder.",
+      "Keep your elbows below your wrists at the start.",
+      "Brace your trunk and press the dumbbells overhead.",
+      "Lower the weights under control to shoulder level."
+    ],
+    "commonMistakes": [
+      "Overarching the lower back to finish the press.",
+      "Starting with the weights far below shoulder level.",
+      "Dropping the dumbbells quickly on the way down."
+    ]
+  },
+  "One-Arm_Dumbbell_Row": {
+    "cues": [
+      "Support one hand and the same-side knee on a bench.",
+      "Keep your back steady as you hinge forward.",
+      "Pull the dumbbell toward the side of your chest.",
+      "Lower until your arm extends, then repeat on the other side."
+    ],
+    "commonMistakes": [
+      "Rotating the torso to swing the dumbbell upward.",
+      "Rounding the back while holding the hinged position.",
+      "Shortening the controlled lowering portion of the row."
+    ]
   }
 }
