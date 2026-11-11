@@ -48,6 +48,25 @@ export function providerEventCollector() {
   };
 }
 
+// The "served" event names the provider and model; the rest stay as the call's events.
+export function splitServed(events: ProviderEvent[]) {
+  const last = events.filter((e) => e.action === "served").at(-1);
+  return {
+    served: last ? { provider: last.provider, model: last.model } : {},
+    providerEvents: events.filter((e) => e.action !== "served"),
+  };
+}
+
+// The outcome of a call that produced a usable reply.
+export function okOutcome(
+  attempt: number,
+  events: ProviderEvent[],
+): CoachOutcome {
+  if (events.some((e) => e.action === "fallback")) return "switched";
+  if (attempt > 1 || events.some((e) => e.action === "retry")) return "retried";
+  return "ok";
+}
+
 // A record must never break the request it describes, so sink failures are swallowed.
 export async function writeRecord(
   sink: CoachSink | undefined,

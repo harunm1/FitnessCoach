@@ -11,6 +11,14 @@
 //   3. the reply goes through checkCoachReply before anyone sees it
 //   4. if no provider answers, the user gets a short fixed reply and the rest of the
 //      app keeps working (Section 2.5: a failure degrades one capability)
+// Each model call writes one coachLog record (#41) with no user text or reply in it.
+// Only the model call itself is caught: a bug while building the prompt throws.
+import {
+  okOutcome,
+  splitServed,
+  writeRecord,
+  type CoachSink,
+} from "./coachLog";
 import {
   buildChatMessages,
   checkCoachReply,
@@ -18,12 +26,19 @@ import {
   REPLIES,
   type ChatMessage,
 } from "./guardrails";
-import type { CoachChatModel } from "./providers";
+import type { CoachChatModel, ProviderEvent } from "./providers";
 import { screenUserMessage, type SafetyClassifier } from "./safetyScreen";
 
 export type ChatSource = "COACH" | "GUARDRAIL" | "UNAVAILABLE";
 
 export type CoachTurn = { reply: string; source: ChatSource };
+
+// The same logging options as generatePlan's, so one sink serves both paths.
+export type ChatOptions = {
+  log?: CoachSink; // one record per model call (#41)
+  takeProviderEvents?: () => ProviderEvent[]; // from providerEventCollector
+  now?: () => number;
+};
 
 export const UNAVAILABLE_REPLY =
   "The coach can't answer right now. Your plan and logging still work; try the chat again in a minute.";
@@ -151,6 +166,7 @@ export async function coachReply(
   userText: string,
   // The model safety check (D15); without it the word list decides alone.
   classify?: SafetyClassifier,
+  options: ChatOptions = {},
 ): Promise<CoachTurn> {
   const text = userText.trim();
   if (text === "") return { reply: EMPTY_REPLY, source: "GUARDRAIL" };
@@ -182,17 +198,52 @@ export async function coachReply(
     return { reply: guard.reply, source: "GUARDRAIL" };
   }
 
+  // Built before the call, outside its catch: a bug here is the app's, not a provider's.
+  const messages = buildChatMessages(buildCoachSystemPrompt(ctx), recent, text);
+  return askModel(model, messages, options);
+}
+
+// The one model call of a turn, its reply check, and its record. The record carries
+// labels and timings only, never the messages or the reply.
+async function askModel(
+  model: CoachChatModel,
+  messages: ChatMessage[],
+  { log, takeProviderEvents = () => [], now = Date.now }: ChatOptions,
+): Promise<CoachTurn> {
+  const base = {
+    kind: "chat" as const,
+    promptVersion: CHAT_PROMPT_VERSION,
+    attempt: 1,
+  };
+  const started = now();
   let reply: string;
   try {
-    reply = await model(
-      buildChatMessages(buildCoachSystemPrompt(ctx), recent, text),
-    );
-  } catch {
+    reply = await model(messages);
+  } catch (e) {
+    const { served, providerEvents } = splitServed(takeProviderEvents());
+    await writeRecord(log, {
+      ...base,
+      latencyMs: now() - started,
+      outcome: "error",
+      ...served,
+      providerEvents,
+      error: e instanceof Error ? e.message : String(e),
+    });
     return { reply: UNAVAILABLE_REPLY, source: "UNAVAILABLE" };
   }
-
+  const latencyMs = now() - started;
+  const { served, providerEvents } = splitServed(takeProviderEvents());
   const checked = checkCoachReply(reply);
-  return checked.action === "ALLOW"
+  const ok = checked.action === "ALLOW";
+  await writeRecord(log, {
+    ...base,
+    latencyMs,
+    outcome: ok ? okOutcome(1, providerEvents) : "rejected",
+    ...served,
+    providerEvents,
+    ...(ok ? {} : { problems: [`reply check: ${checked.action}`] }),
+  });
+  return ok
     ? { reply, source: "COACH" }
     : { reply: checked.reply, source: "GUARDRAIL" };
 }
