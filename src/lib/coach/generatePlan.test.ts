@@ -252,7 +252,9 @@ describe("the full exercise list in the prompt", () => {
     const model = vi.fn<PlanModel>().mockResolvedValue(withoutRpe);
     const result = await generatePlan(model, user, named);
     expect(model).toHaveBeenCalledTimes(2);
-    expect(model.mock.calls[1][0]).toMatch(/rpe/);
+    expect(model.mock.calls[1][0]).toMatch(
+      /rejected for these reasons[\s\S]*exercises\.0\.rpe/,
+    );
     expect(result.source).toBe("DEFAULT");
   });
 });
