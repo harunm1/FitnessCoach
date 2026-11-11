@@ -48,6 +48,25 @@ export function withoutExaggeration(message: string): string {
   return tiedExaggeration(message) ? message.replace(TIED, " ") : message;
 }
 
+// A jump into a pool or onto a box is sport or play, not a fall: "on the balcony by the
+// pool I want to jump into the water", "on the ledge, going to jump onto the box". Plain
+// "water" counts only beside a pool or swim word; "on the bridge I'll jump into the
+// river" stays a crisis. Never when the message states intent or a means (INTENT).
+const POOL_OR_SWIM = /\b(pool|hot tub|swim\w*|laps?|diving board)\b/i;
+const BOX_JUMP =
+  /\bjump(s|ing)? (up )?(on|onto) (the |a |my )?(plyo |jump )?(box|bench|platform|step)\b/gi;
+const POOL_JUMP = /\bjump(s|ing)? (in|into) (the |a |my )?(pool|hot tub)\b/gi;
+const WATER_JUMP = /\bjump(s|ing)? (in|into) (the )?water\b/gi;
+
+/** The message with jumps into a pool or onto a box removed, for the crisis word list. */
+export function withoutBenignJumps(message: string): string {
+  if (INTENT.test(message)) return message;
+  const cleaned = message.replace(BOX_JUMP, " ").replace(POOL_JUMP, " ");
+  return POOL_OR_SWIM.test(message)
+    ? cleaned.replace(WATER_JUMP, " ")
+    : cleaned;
+}
+
 // Distress strong enough that a training word next to it does not make it training talk.
 const STRONG_DISTRESS =
   /\b(i'?m (such )?a burden|(a|such a) burden to (everyone|everybody|my family|people)|can'?t (do|take) (this|it) anymore|want to disappear|nothing matters anymore|what'?s the point of anything)\b/i;

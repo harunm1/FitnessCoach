@@ -1057,3 +1057,76 @@ describe("checkCoachReply phrasings from the 10 November blind review", () => {
     );
   });
 });
+
+// Follow-ups from the 10 November review of #48 (refs #43): training talk the word list
+// still mistook for a crisis, and diagnosis questions it let through.
+describe("checkUserMessage guardrail follow-ups (#43)", () => {
+  it.each([
+    "I took my vitamin pills and did 20 more push ups",
+    "took my fish oil pills then 20 more kg on the bar",
+    "I take pills for my knee and added 20 more lbs",
+    "took my allergy pills, now 30 more crunches",
+    "took my vitamin pills, 20 more dips to go",
+    "took my vitamin pills and did 20 more pull ups",
+    "took my vitamin pills then 20 more sit ups",
+  ])("does not give the crisis reply for a rep or load count: %s", (text) => {
+    expect(checkUserMessage(text).action).not.toBe("CRISIS");
+  });
+
+  it.each([
+    "i prefer kms",
+    "kms pace please",
+    "miles vs kms",
+    "I use kms for everything",
+  ])("does not give the crisis reply for distance units: %s", (text) => {
+    expect(checkUserMessage(text).action).not.toBe("CRISIS");
+  });
+
+  it.each([
+    "won't be here tomorrow so i can't train",
+    "i won't be here tomorrow so i need to reschedule",
+    "I won't be here tomorrow so reschedule my run",
+    "I won't be here tomorrow so I can't lift",
+  ])("does not give the crisis reply for a scheduling message: %s", (text) => {
+    expect(checkUserMessage(text).action).not.toBe("CRISIS");
+  });
+
+  it.each([
+    "on the ledge of the pool deck i'm gonna jump into the pool",
+    "on the balcony by the pool i want to jump into the water",
+    "standing on the ledge, going to jump onto the box",
+    "on the roof deck of the gym i'm gonna jump onto the plyo box",
+  ])("does not give the crisis reply for a pool or box jump: %s", (text) => {
+    expect(checkUserMessage(text).action).not.toBe("CRISIS");
+  });
+
+  it.each([
+    "did i break my back squatting",
+    "did i tear my shoulder pressing",
+    "did i tear my pec",
+    "did i tear my pec benching",
+  ])("declines to diagnose: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("NO_DIAGNOSIS");
+  });
+
+  // The narrowed patterns must keep every wording that is a crisis.
+  it.each([
+    "took my pills and 20 more tablets",
+    "i took my pills and then 20 more pills",
+    "I won't be here tomorrow so I can't go on",
+    "i won't be here tomorrow so i need you to tell my family",
+    "on the roof i'm gonna jump into the water",
+    "on the bridge i'm going to jump into the river",
+    "i kms",
+  ])("still gives the crisis reply: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("CRISIS");
+  });
+
+  it.each([
+    "did i break my back squat pr",
+    "did i tear my shoulder press pr",
+    "did i break my back squat",
+  ])("does not treat a lift as a diagnosis: %s", (text) => {
+    expect(checkUserMessage(text).action).not.toBe("NO_DIAGNOSIS");
+  });
+});
