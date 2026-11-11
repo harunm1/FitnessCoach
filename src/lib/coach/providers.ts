@@ -134,11 +134,25 @@ function parseReply(provider: string, text: unknown): unknown {
   }
 }
 
+// Token counts from a response, for the log record (#41). A field is left out when the
+// provider did not send it as a count, so the record says null rather than guess.
+export type Usage = { inputTokens?: number; outputTokens?: number };
+export type UsageReporter = (usage: Usage) => void;
+
+const count = (value: unknown): number | undefined =>
+  typeof value === "number" && Number.isInteger(value) && value >= 0
+    ? value
+    : undefined;
+
 // Groq uses the OpenAI chat-completions format. JSON mode needs the word "JSON" in the
 // prompt, which buildPlanPrompt already has. Low reasoning effort: picking from a
 // given list needs little planning, and fewer output tokens keep a full-library
 // request inside the free tier's tokens-per-minute limit.
-export function groqModel(apiKey: string, model = GROQ_MODEL): PlanModel {
+export function groqModel(
+  apiKey: string,
+  model = GROQ_MODEL,
+  onUsage?: UsageReporter,
+): PlanModel {
   return async (prompt) => {
     const data = (await postJson(
       "Groq",
@@ -150,14 +164,29 @@ export function groqModel(apiKey: string, model = GROQ_MODEL): PlanModel {
         response_format: { type: "json_object" },
         reasoning_effort: "low",
       },
-    )) as { choices?: { message?: { content?: unknown } }[] };
+    )) as {
+      choices?: { message?: { content?: unknown } }[];
+      usage?: { prompt_tokens?: unknown; completion_tokens?: unknown };
+    };
+    // Before the parse: a reply that is not JSON was still billed and is logged.
+    onUsage?.({
+      inputTokens: count(data.usage?.prompt_tokens),
+      outputTokens: count(data.usage?.completion_tokens),
+    });
     return parseReply("Groq", data.choices?.[0]?.message?.content);
   };
 }
 
 // Gemini's own REST format. Thinking models can return thought parts first, so take the
-// first part that is the answer.
-export function geminiModel(apiKey: string, model = GEMINI_MODEL): PlanModel {
+// first part that is the answer. Output tokens are the answer's candidatesTokenCount
+// plus thoughtsTokenCount: "response pricing is the sum of output tokens and thinking
+// tokens" (ai.google.dev/gemini-api/docs/thinking, checked 10 Nov 2026). Either one
+// alone still counts; with neither, the output count is unknown.
+export function geminiModel(
+  apiKey: string,
+  model = GEMINI_MODEL,
+  onUsage?: UsageReporter,
+): PlanModel {
   return async (prompt) => {
     const data = (await postJson(
       "Gemini",
@@ -171,7 +200,21 @@ export function geminiModel(apiKey: string, model = GEMINI_MODEL): PlanModel {
       candidates?: {
         content?: { parts?: { text?: unknown; thought?: boolean }[] };
       }[];
+      usageMetadata?: {
+        promptTokenCount?: unknown;
+        candidatesTokenCount?: unknown;
+        thoughtsTokenCount?: unknown;
+      };
     };
+    const answerTokens = count(data.usageMetadata?.candidatesTokenCount);
+    const thinkingTokens = count(data.usageMetadata?.thoughtsTokenCount);
+    onUsage?.({
+      inputTokens: count(data.usageMetadata?.promptTokenCount),
+      outputTokens:
+        answerTokens === undefined && thinkingTokens === undefined
+          ? undefined
+          : (answerTokens ?? 0) + (thinkingTokens ?? 0),
+    });
     const parts = data.candidates?.[0]?.content?.parts ?? [];
     return parseReply("Gemini", parts.find((p) => !p.thought)?.text);
   };
@@ -241,10 +284,12 @@ export function geminiChatModel(
 
 export type ProviderEvent = {
   provider: string;
-  action: "retry" | "fallback" | "served";
+  action: "retry" | "fallback" | "served" | "usage";
   status?: number;
   waitMs?: number;
   model?: string; // on "served": the model that answered
+  inputTokens?: number; // on "usage": counts from the response, when it had them
+  outputTokens?: number;
 };
 
 export type RetryOptions = {
@@ -359,12 +404,20 @@ export function coachModel(
       name === "groq"
         ? env.GROQ_MODEL || GROQ_MODEL
         : env.GEMINI_MODEL || GEMINI_MODEL;
+    const provider = name === "groq" ? "Groq" : "Gemini";
+    // One "usage" event per answered call, so the log record can carry the counts.
+    const onUsage: UsageReporter = (usage) => {
+      if (usage.inputTokens !== undefined || usage.outputTokens !== undefined)
+        options.onEvent?.({ provider, action: "usage", ...usage });
+    };
     return servedBy(
       withRetry(
-        name === "groq" ? groqModel(key, id) : geminiModel(key, id),
+        name === "groq"
+          ? groqModel(key, id, onUsage)
+          : geminiModel(key, id, onUsage),
         options,
       ),
-      name === "groq" ? "Groq" : "Gemini",
+      provider,
       id,
       options.onEvent,
     );

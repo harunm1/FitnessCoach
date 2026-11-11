@@ -2,6 +2,7 @@
 // call that produced it, and the ten-profile eval (#19) can report fallback rates.
 // The sink is passed in: tests collect records in memory; the app will write them
 // to a CoachEvent table once the schema has one (#41, after #44).
+import type { Guard } from "./guardrails";
 import type { ProviderEvent } from "./providers";
 
 // Bump when the plan prompt's wording or shape changes, so records from different
@@ -25,6 +26,9 @@ export type CoachRecord = {
   provider?: string; // who answered; absent when no provider replied
   model?: string;
   providerEvents: ProviderEvent[]; // retries and switches during this call
+  inputTokens: number | null; // from the provider's response; null when it sent no count
+  outputTokens: number | null; // reply tokens as the provider reports them (Gemini: answer plus thinking)
+  guardrailVerdict: Guard["action"] | null; // the #43 verdict on the user's message; null when none was screened, as for a plan
   problems?: string[];
   raw?: unknown; // the model's reply as parsed, kept beside the plan we saved
   error?: string;
