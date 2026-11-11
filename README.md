@@ -63,7 +63,7 @@ The [acceptance checklist](docs/ACCOUNTS_TESTING.md) documents expected results 
 all three accounts milestones. The commands below are a database/app overview;
 configure authentication and mail before testing signup.
 
-Prerequisites: Node.js, npm, and Docker Desktop with Docker Compose available.
+Prerequisites: Node.js 22.13 or newer, npm, and Docker Desktop with Docker Compose available.
 Start Docker Desktop before running the Docker commands. When using WSL, enable
 Docker Desktop integration for your distribution.
 

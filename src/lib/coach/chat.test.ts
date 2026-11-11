@@ -11,7 +11,7 @@ import {
 } from "./chat";
 import { REPLIES, type ChatMessage } from "./guardrails";
 import type { SafetyClassifier } from "./safetyScreen";
-import type { ChatModel } from "./providers";
+import type { CoachChatModel } from "./providers";
 
 const ctx: CoachContext = {
   goal: "MUSCLE",
@@ -25,7 +25,7 @@ const ctx: CoachContext = {
 describe("coachReply", () => {
   it("answers a training question through the model", async () => {
     const model = vi
-      .fn<ChatModel>()
+      .fn<CoachChatModel>()
       .mockResolvedValue("Use 2 kg more next set.");
     const turn = await coachReply(model, ctx, [], "can I go heavier on bench?");
     expect(turn).toEqual({ reply: "Use 2 kg more next set.", source: "COACH" });
@@ -39,7 +39,7 @@ describe("coachReply", () => {
   });
 
   it("stops on pain without calling the model", async () => {
-    const model = vi.fn<ChatModel>();
+    const model = vi.fn<CoachChatModel>();
     const turn = await coachReply(
       model,
       ctx,
@@ -52,7 +52,7 @@ describe("coachReply", () => {
 
   it("replaces a reply that diagnoses", async () => {
     const model = vi
-      .fn<ChatModel>()
+      .fn<CoachChatModel>()
       .mockResolvedValue("That sounds like tendinitis. Rest it.");
     const turn = await coachReply(
       model,
@@ -64,7 +64,7 @@ describe("coachReply", () => {
   });
 
   it("keeps the app working when no provider answers", async () => {
-    const model = vi.fn<ChatModel>().mockRejectedValue(new Error("429"));
+    const model = vi.fn<CoachChatModel>().mockRejectedValue(new Error("429"));
     const turn = await coachReply(model, ctx, [], "what pace for my easy run?");
     expect(turn).toEqual({ reply: UNAVAILABLE_REPLY, source: "UNAVAILABLE" });
   });
@@ -72,14 +72,14 @@ describe("coachReply", () => {
   // ENGINEERING_PRACTICES.md item 5: user text sent to the coach is length-capped.
   it("asks for a shorter message over 1,000 characters, without calling the model", async () => {
     expect(MAX_MESSAGE_CHARS).toBe(1000);
-    const model = vi.fn<ChatModel>();
+    const model = vi.fn<CoachChatModel>();
     const turn = await coachReply(model, ctx, [], "how to squat ".repeat(100));
     expect(turn).toEqual({ reply: TOO_LONG_REPLY, source: "GUARDRAIL" });
     expect(model).not.toHaveBeenCalled();
   });
 
   it("answers an empty message without calling the model", async () => {
-    const model = vi.fn<ChatModel>();
+    const model = vi.fn<CoachChatModel>();
     const turn = await coachReply(model, ctx, [], "   \t ");
     expect(turn).toEqual({ reply: EMPTY_REPLY, source: "GUARDRAIL" });
     expect(model).not.toHaveBeenCalled();
@@ -87,7 +87,9 @@ describe("coachReply", () => {
 
   it("sends only the last 12 history messages, each capped, in order", async () => {
     expect(MAX_HISTORY_MESSAGES).toBe(12);
-    const model = vi.fn<ChatModel>().mockResolvedValue("Keep the pace easy.");
+    const model = vi
+      .fn<CoachChatModel>()
+      .mockResolvedValue("Keep the pace easy.");
     const history: ChatMessage[] = Array.from({ length: 30 }, (_, i) => ({
       role: i % 2 ? "assistant" : "user",
       content: `${i} ` + "x".repeat(5000),
@@ -157,7 +159,7 @@ describe("buildCoachSystemPrompt", () => {
 
 describe("coachReply safety screen (D15)", () => {
   it("gives the crisis reply with no chat call when the model check reads crisis", async () => {
-    const model = vi.fn<ChatModel>();
+    const model = vi.fn<CoachChatModel>();
     const classify: SafetyClassifier = async () => "CRISIS";
     const turn = await coachReply(
       model,
@@ -171,14 +173,16 @@ describe("coachReply safety screen (D15)", () => {
   });
 
   it("checks in on training exaggeration with no chat call", async () => {
-    const model = vi.fn<ChatModel>();
+    const model = vi.fn<CoachChatModel>();
     const turn = await coachReply(model, ctx, [], "I'm gonna die on this run");
     expect(turn).toEqual({ reply: REPLIES.CHECK_IN, source: "GUARDRAIL" });
     expect(model).not.toHaveBeenCalled();
   });
 
   it("still answers when the model check fails", async () => {
-    const model = vi.fn<ChatModel>().mockResolvedValue("Keep it easy today.");
+    const model = vi
+      .fn<CoachChatModel>()
+      .mockResolvedValue("Keep it easy today.");
     const failing: SafetyClassifier = async () => {
       throw new Error("safety check returned HTTP 503");
     };
@@ -195,7 +199,7 @@ describe("coachReply safety screen (D15)", () => {
 
 describe("coachReply over-long messages", () => {
   it("still gives the crisis reply when a long message holds crisis wording", async () => {
-    const model = vi.fn<ChatModel>();
+    const model = vi.fn<CoachChatModel>();
     const text =
       "I don't know how to say this. ".repeat(40) + "I want to end it all.";
     expect(text.length).toBeGreaterThan(1000);
@@ -205,7 +209,7 @@ describe("coachReply over-long messages", () => {
   });
 
   it("still gives the red-flag reply when a long message starts with a symptom", async () => {
-    const model = vi.fn<ChatModel>();
+    const model = vi.fn<CoachChatModel>();
     const text =
       "I had chest pain on the last interval. " + "and then ".repeat(150);
     const turn = await coachReply(model, ctx, [], text);
@@ -213,7 +217,7 @@ describe("coachReply over-long messages", () => {
   });
 
   it("accepts exactly 1,000 characters and refuses 1,001", async () => {
-    const model = vi.fn<ChatModel>().mockResolvedValue("Fine.");
+    const model = vi.fn<CoachChatModel>().mockResolvedValue("Fine.");
     const thousand = "squat ".repeat(167).slice(0, 1000);
     const thousandAndOne = "squat ".repeat(167).slice(0, 1001);
     expect([thousand.length, thousandAndOne.length]).toEqual([1000, 1001]);
@@ -224,7 +228,7 @@ describe("coachReply over-long messages", () => {
   });
 
   it("gives the pain stop when a long message starts with a pain report", async () => {
-    const model = vi.fn<ChatModel>();
+    const model = vi.fn<CoachChatModel>();
     const text =
       "Sharp pain in my knee on squats today. " + "and then ".repeat(150);
     const turn = await coachReply(model, ctx, [], text);
@@ -242,7 +246,7 @@ describe("coachReply nutrition scope", () => {
     "how many calories should I eat on a rest day?",
     "can I take creatine with this plan?",
   ])("redirects without calling the model: %s", async (text) => {
-    const model = vi.fn<ChatModel>();
+    const model = vi.fn<CoachChatModel>();
     const turn = await coachReply(model, ctx, [], text);
     expect(turn).toEqual({
       reply: REPLIES.NUTRITION_REDIRECT,
@@ -252,7 +256,7 @@ describe("coachReply nutrition scope", () => {
   });
 
   it("redirects a nutrition follow-up even in a training conversation", async () => {
-    const model = vi.fn<ChatModel>();
+    const model = vi.fn<CoachChatModel>();
     const turn = await coachReply(
       model,
       ctx,
@@ -278,7 +282,7 @@ const benchTurn: ChatMessage[] = [
 describe("coachReply follow-ups", () => {
   it("answers 'Can you explain that?' after a bench-press turn", async () => {
     const model = vi
-      .fn<ChatModel>()
+      .fn<CoachChatModel>()
       .mockResolvedValue(
         "A smooth last rep means you have a rep or two spare.",
       );
@@ -303,21 +307,21 @@ describe("coachReply follow-ups", () => {
   it.each(["Why is that?", "what do you mean by smooth?", "tell me more"])(
     "answers a short follow-up: %s",
     async (text) => {
-      const model = vi.fn<ChatModel>().mockResolvedValue("Sure.");
+      const model = vi.fn<CoachChatModel>().mockResolvedValue("Sure.");
       const turn = await coachReply(model, ctx, benchTurn, text);
       expect(turn.source).toBe("COACH");
     },
   );
 
   it("still redirects 'Can you explain that?' with no earlier training turn", async () => {
-    const model = vi.fn<ChatModel>();
+    const model = vi.fn<CoachChatModel>();
     const turn = await coachReply(model, ctx, [], "Can you explain that?");
     expect(turn).toEqual({ reply: REPLIES.OFF_TOPIC, source: "GUARDRAIL" });
     expect(model).not.toHaveBeenCalled();
   });
 
   it("still redirects an unrelated request after a training turn", async () => {
-    const model = vi.fn<ChatModel>();
+    const model = vi.fn<CoachChatModel>();
     const turn = await coachReply(
       model,
       ctx,
@@ -332,7 +336,7 @@ describe("coachReply follow-ups", () => {
     ["my knee hurts when I explain that", "PAIN_STOP"],
     ["Can you explain that? I feel like I want to die", "CRISIS"],
   ])("keeps the safety checks on a follow-up: %s", async (text, action) => {
-    const model = vi.fn<ChatModel>();
+    const model = vi.fn<CoachChatModel>();
     const turn = await coachReply(model, ctx, benchTurn, text);
     expect(turn.source).toBe("GUARDRAIL");
     expect(turn.reply).toBe(REPLIES[action as "PAIN_STOP" | "CRISIS"]);
@@ -350,7 +354,7 @@ describe("coachReply follow-ups", () => {
     "tell me about the French revolution, why is that?",
     "can you explain the French revolution to me?",
   ])("still redirects a request that only mentions that: %s", async (text) => {
-    const model = vi.fn<ChatModel>();
+    const model = vi.fn<CoachChatModel>();
     const turn = await coachReply(model, ctx, benchTurn, text);
     expect(turn).toEqual({ reply: REPLIES.OFF_TOPIC, source: "GUARDRAIL" });
     expect(model).not.toHaveBeenCalled();
@@ -365,7 +369,7 @@ describe("coachReply follow-ups", () => {
     ["the red-flag reply", REPLIES.RED_FLAG],
     ["the crisis reply", REPLIES.CRISIS],
   ])("does not treat %s as context for a follow-up", async (_name, fixed) => {
-    const model = vi.fn<ChatModel>();
+    const model = vi.fn<CoachChatModel>();
     const history: ChatMessage[] = [
       { role: "user", content: "who won the world cup in 2018?" },
       { role: "assistant", content: fixed },
@@ -381,7 +385,7 @@ describe("coachReply follow-ups", () => {
   });
 
   it("does not relax a follow-up when the last reply was not from the coach", async () => {
-    const model = vi.fn<ChatModel>();
+    const model = vi.fn<CoachChatModel>();
     const history: ChatMessage[] = [
       { role: "assistant", content: "Yes: add 2 kg next set." },
       { role: "user", content: "can I go heavier on bench press?" },
@@ -396,7 +400,7 @@ describe("coachReply follow-ups", () => {
   });
 
   it("keeps the model safety check on a follow-up", async () => {
-    const model = vi.fn<ChatModel>();
+    const model = vi.fn<CoachChatModel>();
     const classify = vi.fn<SafetyClassifier>().mockResolvedValue("CRISIS");
     const turn = await coachReply(
       model,
@@ -415,7 +419,7 @@ describe("coachReply follow-ups", () => {
 // with no text does not break the turn.
 describe("coachReply hardening", () => {
   it("names 9-8-8 in the length reply when crisis wording sits in the middle", async () => {
-    const model = vi.fn<ChatModel>();
+    const model = vi.fn<CoachChatModel>();
     const filler = "and then we did more sets ".repeat(60);
     const turn = await coachReply(
       model,
@@ -429,7 +433,7 @@ describe("coachReply hardening", () => {
   });
 
   it("skips a history row with no text instead of failing", async () => {
-    const model = vi.fn<ChatModel>().mockResolvedValue("Sure.");
+    const model = vi.fn<CoachChatModel>().mockResolvedValue("Sure.");
     const history = [
       { role: "assistant", content: null },
       ...benchTurn,

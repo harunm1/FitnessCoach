@@ -18,7 +18,7 @@ import {
   REPLIES,
   type ChatMessage,
 } from "./guardrails";
-import type { ChatModel } from "./providers";
+import type { CoachChatModel } from "./providers";
 import { screenUserMessage, type SafetyClassifier } from "./safetyScreen";
 
 export type ChatSource = "COACH" | "GUARDRAIL" | "UNAVAILABLE";
@@ -127,7 +127,7 @@ export function buildCoachSystemPrompt(ctx: CoachContext): string {
 }
 
 export async function coachReply(
-  model: ChatModel,
+  model: CoachChatModel,
   ctx: CoachContext,
   history: ChatMessage[],
   userText: string,

@@ -72,6 +72,28 @@ describe("groqSafetyClassifier", () => {
   });
 });
 
+describe("groqSafetyClassifier labels and key (10 November blind review)", () => {
+  it.each([
+    ['{"category":"crisis"}', "CRISIS"],
+    ['{"category":"CRISIS "}', "CRISIS"],
+    ['{"category":"Crisis","rationale":"x"}', "CRISIS"],
+    ['{"category":" medical"}', "MEDICAL"],
+  ] as const)("reads %s as %s", async (content, expected) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(reply(content)));
+    await expect(groqSafetyClassifier("k")("text")).resolves.toBe(expected);
+  });
+
+  it.each(["", "   "])(
+    "refuses an empty API key before any request: %j",
+    (key) => {
+      const fetchMock = vi.fn();
+      vi.stubGlobal("fetch", fetchMock);
+      expect(() => groqSafetyClassifier(key)).toThrow(/API key/);
+      expect(fetchMock).not.toHaveBeenCalled();
+    },
+  );
+});
+
 describe("groqSafetyClassifier cancellation", () => {
   it("passes the caller's abort signal to the request", async () => {
     const fetchMock = vi.fn().mockResolvedValue(reply('{"category":"NONE"}'));

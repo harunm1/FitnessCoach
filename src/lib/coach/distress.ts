@@ -17,7 +17,7 @@ const EXERCISE_CONTEXT = new RegExp(`\\b${EXERCISE}\\b`, "i");
 const TIED = new RegExp(
   [
     `(gonna|going to|about to|could|will|might|want to|wanna) (die|kill myself)( \\w+){0,2} (on|doing|during|at|in|from|after)( \\w+){0,2} ${EXERCISE}\\b`,
-    `${EXERCISE}( \\w+){0,4} (makes me want to die|is (gonna|going to) kill me|i'?m (gonna|going to) die)`,
+    `\\b${EXERCISE}( \\w+){0,4} (makes? me want to die|is (gonna|going to) kill me|i'?m (gonna|going to) die)`,
     `\\bkms (lol|lmao|haha)`,
   ].join("|"),
   "gi",
@@ -25,7 +25,7 @@ const TIED = new RegExp(
 
 // Anything that states intent, a plan or a means keeps a message a crisis.
 const INTENT =
-  /\b(decided|tonight|tomorrow|plan(ning|ned)?|set a date|pills?|rope|gun|note|letter|ready|seriously|not joking|for real|therap(y|ist))\b/i;
+  /\b(decided|tonight|tomorrow|plan(ning|ned)?|set a date|pills?|rope|gun|knife|knives|blade|razor|hang|overdose|note|letter|ready|seriously|not joking|for real|therap(y|ist))\b/i;
 
 // Hopelessness and burden with nothing about training. Explicit wishes to die or not
 // exist are crisis wording in guardrails.ts, not here.
@@ -48,10 +48,19 @@ export function withoutExaggeration(message: string): string {
   return tiedExaggeration(message) ? message.replace(TIED, " ") : message;
 }
 
+// Distress strong enough that a training word next to it does not make it training talk.
+const STRONG_DISTRESS =
+  /\b(i'?m (such )?a burden|(a|such a) burden to (everyone|everybody|my family|people)|can'?t (do|take) (this|it) anymore|want to disappear|nothing matters anymore|what'?s the point of anything)\b/i;
+
+/** Distress wording that gets the check-in before any other reply (it names 9-8-8). */
+export function distressCheckIn(message: string): boolean {
+  if (STRONG_DISTRESS.test(message)) return true;
+  return !EXERCISE_CONTEXT.test(message) && DISTRESS.test(message);
+}
+
 /** True when the message should get the check-in rather than the full crisis reply. */
 export function needsCheckIn(message: string): boolean {
-  if (tiedExaggeration(message)) return true;
-  return !EXERCISE_CONTEXT.test(message) && DISTRESS.test(message);
+  return tiedExaggeration(message) || distressCheckIn(message);
 }
 
 /** True when a message the coach would redirect as off-topic carries crisis words. */
