@@ -274,6 +274,16 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Did with it:** wrote a failing test for every finding before fixing it, and pushed #48 after the last round's blocking findings were fixed (844 unit and 46 integration tests). The remaining false positives and gaps are listed on the pull request as follow-ups. A plugin rule stopped me from staging the environment template, so the #61 fixes are verified but wait for me to commit and push them by hand. Tools for the targeted help: pr-review-toolkit:code-reviewer and silent-failure-hunter, backend-design:security-reviewer, vercel:deployments-cicd, sweetclaude:workflow-guardian, fresh general-purpose agents as second checks, and Firecrawl for the Vercel, Neon, Better Auth and Prisma pages.
 
+### 10 November 2026, token counts and guardrail verdict on the model-call record (issue #41)
+
+**Before asking:** #49 already writes one in-memory record per model call, and #41 also asks for token counts and the guardrail verdict. I decided the CoachEvent table (#52) stays Shubham's, so this pull request adds the fields to the record only, with no migration and no table, and says "Refs #41" because the storage is #52. A plan call has no user message to screen, so the verdict is passed in and stays null until #48 merges. Null means the provider sent no count; it never means zero.
+
+**Asked:** which usage fields Groq and Gemini put in their responses; a failing test first for each case (a count, no count, a count in the wrong form, a reply that was not JSON, a switch of provider, the rule-based record); and an independent review of the diff before the push.
+
+**Got:** the Groq response has `usage.prompt_tokens` and `completion_tokens`; the Gemini response has `usageMetadata.promptTokenCount` and `candidatesTokenCount`, with thinking tokens in a separate `thoughtsTokenCount` that Gemini bills as output (Context7 on the Gemini and Groq documentation, 10 November).
+
+**Did with it:** wrote the tests first and saw 10 fail. The provider adapters now report the counts they find, before the reply is parsed, so a reply that was not valid JSON still has its tokens. The record carries `inputTokens`, `outputTokens` and `guardrailVerdict`; for Gemini the output count is the answer plus the thinking tokens. Tools: Context7, backend-design:observability-by-default, agentic-sdlc:testing-vitest.
+
 ## Mohammad
 
 ### 31 October 2026, onboarding quiz validation edge cases
