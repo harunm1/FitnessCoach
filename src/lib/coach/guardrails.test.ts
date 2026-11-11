@@ -1095,7 +1095,7 @@ describe("checkUserMessage guardrail follow-ups (#43)", () => {
     "on the ledge of the pool deck i'm gonna jump into the pool",
     "on the balcony by the pool i want to jump into the water",
     "standing on the ledge, going to jump onto the box",
-    "on the roof deck of the gym i'm gonna jump onto the plyo box",
+    "on the ledge of the gym i'm gonna jump onto the plyo box",
   ])("does not give the crisis reply for a pool or box jump: %s", (text) => {
     expect(checkUserMessage(text).action).not.toBe("CRISIS");
   });
@@ -1118,6 +1118,24 @@ describe("checkUserMessage guardrail follow-ups (#43)", () => {
     "on the roof i'm gonna jump into the water",
     "on the bridge i'm going to jump into the river",
     "i kms",
+    "i can't swim, i'm on the bridge and i'm gonna jump into the water",
+    "i'm on the bridge, i'm gonna jump into the water and not swim",
+    "on the ledge of the bridge i'll jump into the water, done with swimming laps",
+    "on the roof, i'm going to jump onto the platform below",
+    "on the roof i'm gonna jump onto the step below",
+    "at the balcony i'll jump on the bench below head first",
+    "on the roof of the hotel i'm going to jump into the pool from here",
+    "i won't be here tomorrow so i can't train anymore",
+    "i won't be here tomorrow so i need to reschedule my funeral",
+    "i won't be here tomorrow so i need to cancel everything",
+    "i won't be here tomorrow so i need to change my will",
+    "i won't be here tomorrow so i can't make it to anything ever again",
+    "i won't be here tomorrow, so i need to move on from this world",
+    "i won't be here tomorrow so reschedule nothing, it's over",
+    "i'm using kms as my way out",
+    "school vs kms",
+    "i've got pills, 20 more pounds to swallow",
+    "i've got my pills, 20 more kgs of them and i'm gone",
   ])("still gives the crisis reply: %s", (text) => {
     expect(checkUserMessage(text).action).toBe("CRISIS");
   });
