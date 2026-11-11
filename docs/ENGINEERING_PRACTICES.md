@@ -1,6 +1,6 @@
 # Engineering practices: proposals for discussion
 
-Proposed for the next team meeting, not agreed. Each one is chosen for how FitnessCoach is built: Next.js, Prisma, and an LLM coach behind a verifier. Whatever the team agrees goes into the README's "How we work".
+Proposed for the next team meeting, not agreed, except where a point says the [8 November design review](design-reviews/2026-11-08-review.md) decided it. Each one is chosen for how FitnessCoach is built: Next.js, Prisma, and an LLM coach behind a verifier. Whatever the team agrees goes into the README's "How we work". The papers behind these choices have one note each in [docs/papers](papers/README.md).
 
 1. **Small commits every week.** A few small commits a week per person rather than one large push before a checkpoint. The course reads contribution from the Git history, and problems with environment variables or Prisma migrations on the hosted database show up the week they are introduced.
 
@@ -8,9 +8,9 @@ Proposed for the next team meeting, not agreed. Each one is chosen for how Fitne
 
 3. **One schema per boundary.** A Zod schema for every Server Action input, route handler body and the coach's plan JSON; Prisma types for what is stored. The coach is asked for structured output against the same plan schema, so a malformed reply is rejected before it reaches the verifier, the UI or the database.
 
-4. **Tests that run offline and give the same result every time.** Coach logic stays in plain functions, as `generatePlan` and `verify` already are. Tests use saved model replies instead of calling Groq or Gemini, so CI needs no key and costs nothing. Bad replies are tested on purpose: invalid JSON, an unknown exercise ID, an empty plan, a timeout.
+4. **Three layers of tests, each owner testing their own slice** (decided 8 November, decision 4). Unit tests for pure logic run offline and give the same result every time. Coach logic stays in plain functions, as `generatePlan` and `verify` already are. Tests use saved model replies instead of calling Groq or Gemini, so CI needs no key and costs nothing. API mocking at the provider boundary tests bad replies on purpose: invalid JSON, an unknown exercise ID, an empty plan, a timeout, a rate limit. Integration tests run Server Actions against a real PostgreSQL in CI (#79). A deliberately failing check must fail the CI run.
 
-5. **Every model call is bounded.** A time limit and one retry, then the rule-based default plan. User text sent to the coach is length-capped and marked in the prompt as data, not instructions; off-topic or unsafe requests get a fixed reply, and the verifier checks the result either way.
+5. **Model calls only through `src/lib/coach/providers.ts`, and every one is bounded** (the first half decided 8 November, decision 1). No route handler, Server Action or component calls a provider directly, so every model call gets the same limits. A time limit and one retry, then the rule-based default plan. User text sent to the coach is length-capped and marked in the prompt as data, not instructions; off-topic or unsafe requests get a fixed reply, and the verifier checks the result either way. Nutrition is out of scope (decided 8 November, decision 5): diet, calorie, supplement and meal questions get the out-of-scope reply that points to a registered dietitian.
 
 6. **A logger from the start, with no personal data in it.** One module in `src/lib` that logs each coach step (prompt version, model, tokens, time, verifier result) under a request ID. Names, photos and health details never go into logs, prompts or Git; secrets stay in `.env`.
 
