@@ -374,12 +374,7 @@ describe("coachReply follow-ups", () => {
       { role: "user", content: "who won the world cup in 2018?" },
       { role: "assistant", content: fixed },
     ];
-    const turn = await coachReply(
-      model,
-      ctx,
-      history,
-      "Can you explain that please, in detail?",
-    );
+    const turn = await coachReply(model, ctx, history, "Can you explain that?");
     expect(turn).toEqual({ reply: REPLIES.OFF_TOPIC, source: "GUARDRAIL" });
     expect(model).not.toHaveBeenCalled();
   });
@@ -390,13 +385,20 @@ describe("coachReply follow-ups", () => {
       { role: "assistant", content: "Yes: add 2 kg next set." },
       { role: "user", content: "can I go heavier on bench press?" },
     ];
-    const turn = await coachReply(
-      model,
-      ctx,
-      history,
-      "Can you explain that please, in detail?",
-    );
+    const turn = await coachReply(model, ctx, history, "Can you explain that?");
     expect(turn).toEqual({ reply: REPLIES.OFF_TOPIC, source: "GUARDRAIL" });
+    expect(model).not.toHaveBeenCalled();
+  });
+
+  it("does not relax a follow-up when the coach's last reply was not about training", async () => {
+    const model = vi.fn<CoachChatModel>();
+    const history: ChatMessage[] = [
+      { role: "user", content: "can I go heavier on bench press?" },
+      { role: "assistant", content: "Paris is the capital of France." },
+    ];
+    const turn = await coachReply(model, ctx, history, "Can you explain that?");
+    expect(turn).toEqual({ reply: REPLIES.OFF_TOPIC, source: "GUARDRAIL" });
+    expect(model).not.toHaveBeenCalled();
   });
 
   it("keeps the model safety check on a follow-up", async () => {
