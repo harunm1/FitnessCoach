@@ -137,10 +137,14 @@ async function postJson(
     return await res.json();
   } catch (e) {
     const timedOut = (e as Error).name === "TimeoutError";
+    // A body that is not JSON (an HTML error page with 200) fails the same way
+    // again, so it keeps the status and is not retried; a connection that breaks
+    // mid-read is a network drop, retried like any other.
+    const notJson = e instanceof SyntaxError;
     throw new ProviderError(
       `${provider} reply ${timedOut ? "timed out" : "could not be read"}`,
       provider,
-      res.status,
+      notJson ? res.status : undefined,
       undefined,
       timedOut,
     );

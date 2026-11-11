@@ -135,6 +135,24 @@ describe("the call limit", () => {
       text: async () => "",
     }) as unknown as Response;
 
+  it("treats a body that breaks off mid-read as a network drop, worth a retry", async () => {
+    const broken = {
+      ok: true,
+      status: HTTP_OK,
+      headers: new Headers(),
+      json: () => Promise.reject(new TypeError("terminated")),
+      text: async () => "",
+    } as unknown as Response;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => broken),
+    );
+    const error = await groqModel(KEY)("Plan as JSON").catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ProviderError);
+    expect((error as ProviderError).timedOut).toBe(false);
+    expect((error as ProviderError).retryable).toBe(true);
+  });
+
   it("reports a body that stalls after the headers as a provider timeout", async () => {
     vi.stubGlobal(
       "fetch",

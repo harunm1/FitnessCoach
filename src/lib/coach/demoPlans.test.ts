@@ -174,6 +174,17 @@ describe("generatePlan outside demo mode", () => {
     expect(down.calls()).toBe(BOTH_ATTEMPTS);
     expect(result).toMatchObject({ source: "DEFAULT", cached: false });
   });
+
+  it("does not tell the model its reply was rejected after a provider failure", async () => {
+    const prompts: string[] = [];
+    const down: PlanModel = async (prompt) => {
+      prompts.push(prompt);
+      throw new ProviderError("Groq request failed", "Groq");
+    };
+    await generatePlan(down, demoUser, library);
+    expect(prompts).toHaveLength(BOTH_ATTEMPTS);
+    expect(prompts[1]).not.toContain("rejected");
+  });
 });
 
 describe("firstVerifiedReply", () => {
