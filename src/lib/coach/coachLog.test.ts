@@ -6,6 +6,7 @@ import {
   type CoachRecord,
 } from "./coachLog";
 import { generatePlan, type PlanModel } from "./generatePlan";
+import type { Guard } from "./guardrails";
 import {
   coachModel,
   ProviderError,
@@ -190,7 +191,7 @@ const geminiReply = (content: unknown, usageMetadata?: unknown) => ({
 function runChain(
   env: Record<string, string>,
   replies: Response[],
-  options: { guardrailVerdict?: string | null } = {},
+  options: { guardrailVerdict?: Guard["action"] | null } = {},
 ) {
   const fetchMock = vi.fn();
   for (const reply of replies) fetchMock.mockResolvedValueOnce(reply);
@@ -254,6 +255,18 @@ describe("coach log token counts and guardrail verdict", () => {
       inputTokens: 900,
       outputTokens: 420,
     });
+  });
+
+  it("keeps Gemini's thinking tokens when the answer count is absent", async () => {
+    const records = await runChain(
+      { COACH_PROVIDER: "gemini", GEMINI_API_KEY: KEY },
+      [
+        answer(
+          geminiReply(good, { promptTokenCount: 900, thoughtsTokenCount: 120 }),
+        ),
+      ],
+    );
+    expect(records[0]).toMatchObject({ inputTokens: 900, outputTokens: 120 });
   });
 
   it("records null tokens when the response carries no usage", async () => {

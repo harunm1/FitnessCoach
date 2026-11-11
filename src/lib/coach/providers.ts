@@ -179,8 +179,9 @@ export function groqModel(
 
 // Gemini's own REST format. Thinking models can return thought parts first, so take the
 // first part that is the answer. Output tokens are the answer's candidatesTokenCount
-// plus thoughtsTokenCount, because thinking tokens are billed as output (Gemini API
-// token docs, checked 10 Nov 2026).
+// plus thoughtsTokenCount: "response pricing is the sum of output tokens and thinking
+// tokens" (ai.google.dev/gemini-api/docs/thinking, checked 10 Nov 2026). Either one
+// alone still counts; with neither, the output count is unknown.
 export function geminiModel(
   apiKey: string,
   model = GEMINI_MODEL,
@@ -206,12 +207,13 @@ export function geminiModel(
       };
     };
     const answerTokens = count(data.usageMetadata?.candidatesTokenCount);
+    const thinkingTokens = count(data.usageMetadata?.thoughtsTokenCount);
     onUsage?.({
       inputTokens: count(data.usageMetadata?.promptTokenCount),
       outputTokens:
-        answerTokens === undefined
+        answerTokens === undefined && thinkingTokens === undefined
           ? undefined
-          : answerTokens + (count(data.usageMetadata?.thoughtsTokenCount) ?? 0),
+          : (answerTokens ?? 0) + (thinkingTokens ?? 0),
     });
     const parts = data.candidates?.[0]?.content?.parts ?? [];
     return parseReply("Gemini", parts.find((p) => !p.thought)?.text);

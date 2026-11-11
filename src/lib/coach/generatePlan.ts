@@ -9,6 +9,7 @@ import {
   type CoachSink,
 } from "./coachLog";
 import { buildDefaultPlan } from "./defaultPlan";
+import type { Guard } from "./guardrails";
 import type { ProviderEvent } from "./providers";
 import type { PlanInput } from "./schema";
 import {
@@ -110,9 +111,10 @@ export type GenerateOptions = {
   log?: CoachSink; // one record per model call (#41)
   takeProviderEvents?: () => ProviderEvent[]; // from providerEventCollector
   now?: () => number;
-  // The #43 verdict name for the user's message, once guardrails (#48) are merged;
-  // the same on every record of this call. A plan call has no message to screen.
-  guardrailVerdict?: string | null;
+  // The #43 verdict on the user's message (guardrails.ts), the same on every record
+  // of this call. A plan call has no message to screen, so it stays null; the chat
+  // path (#53) supplies it.
+  guardrailVerdict?: Guard["action"] | null;
 };
 
 export async function generatePlan(
