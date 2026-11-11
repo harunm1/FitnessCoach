@@ -4,24 +4,33 @@ A web app that turns a short quiz into a weekly gym, running or hybrid plan the 
 
 Team project for ECE1724 Advanced Web Development, University of Toronto, Fall 2026.
 
-**Status (8 November):** proposal final on `main` (#13). On `main`: the Next.js skeleton, the Prisma schema for strength and running with its migrations, the seeded exercise library, CI with a replay of recorded coach replies, the coach's plan generation with the verifier and Groq-to-Gemini fallback, rule-based running and hybrid weeks, saving a week as the active plan, coach-call records (not yet stored), the session screen (#39), and sign-in, access tiers and Stripe test mode (#67, #68). In open pull requests: coach chat (#53), guardrails (#48), streamed replies (#56), the deployed preview (#61), the body map (#70), the strength-only starter plan (#73), root loading and error states (#74), the shadcn/ui components (#77), the query indexes (#78), integration tests against PostgreSQL in CI (#81, draft) and the progress streak and muscle logic (#82). Core path working end to end by Sunday 15 November; demo-feature freeze Monday 23 November.
+## Status
+
+As of 10 November 2026, checked against `main`, the open pull requests and the project board.
+
+**Merged on main.** The proposal (#13). The Next.js skeleton, the Prisma schema for strength and running, the seeded exercise library and CI, which replays recorded coach replies. The coach's plan generation with the verifier, Groq-to-Gemini fallback, rule-based running and hybrid weeks, saving a week as the active plan, per-call logging in code (the table that stores it, #52, is not built), and guardrails for pain, diagnosis and off-topic requests (#48). Sign-in, access tiers and Stripe test mode (#67, #68), and the session screen, body map and signed-in quiz and sessions (#39, #70, #83).
+
+**In review (open pull requests).** Coach chat (#53), streamed replies (#56), the deployed preview (#61), the strength-only starter plan (#73), root loading and error states (#74), shadcn/ui (#77), query indexes (#78), integration tests for the core path (#81), guardrail false positives (#100), the progress streak and muscle logic (#82), the eval repeat runner (#87), the "Why this plan" panel (#88), quiz run days (#97), model-call record fields (#98) and demo mode with cached coach plans (#99). Drafts: schema constraints (#89) and the coach chat screen (#96).
+
+**Next (board columns Ready and In progress).** Ready: the curated exercise library (#8), logging and chat that survive a dropped connection (#42), the coach-call table (#52), "Personalize with the coach" (#58) and the body-map follow-up questions (#60). In progress: progress and photos (#16), the hybrid week (#46), the per-user coach limit (#51), the chat screen (#63), an RPE target per exercise (#65), integration tests for the core path (#79) and quiz run days (#85). Core path working end to end by Sunday 15 November; demo-feature freeze Monday 23 November; final report Sunday 6 December.
 
 Architecture and decisions: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Plan and dates: [docs/PLAN.md](docs/PLAN.md). Research behind the choices: [docs/RESEARCH.md](docs/RESEARCH.md). Coach evaluation, Groq against Gemini: [docs/COACH_EVAL.md](docs/COACH_EVAL.md). Meeting notes: [docs/meetings/](docs/meetings/). Design reviews: [docs/design-reviews/](docs/design-reviews/). Paper notes, one per paper we cite: [docs/papers/](docs/papers/README.md).
 
 ## Who does what
 
-| Area                                               | Owner    | Issue |
-| -------------------------------------------------- | -------- | ----- |
-| Foundation: schema, seed, CI (done)                | Nabeegh  | #2    |
-| AI coach, including running plans                  | Nabeegh  | #11   |
-| Quiz, body map, today's session                    | Mohammad | #15   |
-| Progress and photos (cloud upload and download)    | Farnaz   | #16   |
-| Accounts: sign-in, access tiers, Stripe test mode  | Shubham  | #14   |
-| Proposal (one Markdown file, every member submits) | Everyone | #13   |
+| Area                                                     | Owner    | Issue |
+| -------------------------------------------------------- | -------- | ----- |
+| Foundation: schema, seed, CI (done)                      | Nabeegh  | #2    |
+| AI coach, including running plans                        | Nabeegh  | #11   |
+| Quiz, body map, today's session (done)                   | Mohammad | #15   |
+| Exercise library (curated, with cues)                    | Mohammad | #8    |
+| Progress and photos (cloud upload and download)          | Farnaz   | #16   |
+| Accounts: sign-in, access tiers, Stripe test mode (done) | Shubham  | #14   |
+| Proposal (one Markdown file, every member submits)       | Everyone | #13   |
 
-**Demo path:** sign-in, quiz, plan, logged workout, one coach exchange. Everything else adds to it and must not break it. Stripe test mode is a stretch off the demo path, shown if ready by the freeze.
+**Demo path:** sign-in, quiz, plan, logged workout, one coach exchange. Everything else adds to it and must not break it. Stripe test mode is on `main` (#68) but off the demo path.
 
-**Scope:** lifting, strength training and running. The coach gives no nutrition advice (diet, calories, supplements or meals); a nutrition question gets a short out-of-scope reply that points to a registered dietitian (8 November [design review](docs/design-reviews/2026-11-08-review.md), decision 5; the reply lands with #43).
+**Scope:** lifting, strength training and running. The coach gives no nutrition advice (diet, calories, supplements or meals); a nutrition question gets a short out-of-scope reply that points to a registered dietitian (8 November [design review](docs/design-reviews/2026-11-08-review.md), decision 5; the reply is in code on `main`, #48).
 
 ## Team
 
@@ -47,10 +56,14 @@ Architecture and decisions: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Plan a
 ## Repository layout
 
 ```
-src/app/          pages; Server Actions and route handlers as they land
-src/lib/coach/    plan generation, verifier, rule-based fallback; providers.ts is the only module that calls a model API
-src/lib/          database client, auth and storage clients as they land
+src/app/          pages, Server Actions and route handlers (account, onboarding, session, auth pages, api/auth, api/stripe)
+src/components/   shared components (quiz form, body map, set logging, rest timer, coach chat)
+src/lib/coach/    plan generation, verifier, rule-based fallback, guardrails; providers.ts is the only module that calls a coach model API, apart from the safety model check, which holds its own URL and is not called on main yet (D15)
+src/lib/          database client, auth, billing, body map, onboarding and workout logic
 prisma/           schema, migrations and seed
+tests/            integration (PostgreSQL) and browser (Playwright) tests
+eval/             coach evaluation runner and recorded results
+scripts/          admin and test-database helpers
 docs/             architecture, plan, research, coach evaluation, meetings, proposal section drafts
 ece1724_group18_project_proposal.md   final proposal (submitted on Quercus)
 ```
@@ -151,14 +164,16 @@ GEMINI_API_KEY=""   # aistudio.google.com/apikey
 
 Tests come in three layers (8 November design review, decision 4): unit tests for pure logic, with saved model replies instead of live calls; API mocking at the provider boundary, so timeouts, invalid JSON and rate limits are tested on purpose; and integration tests against a real PostgreSQL 16 that CI has run on every pull request since #67 (accounts, trials and billing), including authentication and the quiz and session Server Actions (#83; more in #79, PR #81). Each owner tests their own slice.
 
-The same checks CI runs on every pull request:
+The same checks CI runs on every pull request, in this order (CI first applies the migrations to a PostgreSQL 16 service with `npm run db:migrate:test`; locally, set `TEST_DATABASE_URL` and run it before the integration tests):
 
 ```bash
 npm run format:check
 npm run lint
 npm run typecheck
 npm test
+npm run test:integration
 npm run build
+npm run test:e2e
 ```
 
 ## How we work
