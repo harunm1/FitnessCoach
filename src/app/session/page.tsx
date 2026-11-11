@@ -31,6 +31,8 @@ export default async function SessionPage() {
                   name: true,
                   equipment: true,
                   primaryMuscles: true,
+                  cues: true,
+                  commonMistakes: true,
                 },
               },
             },
@@ -182,6 +184,36 @@ export default async function SessionPage() {
                           {slot.exercise.equipment &&
                             ` · ${slot.exercise.equipment}`}
                         </p>
+                        {slot.exercise.cues.length > 0 && (
+                          <section
+                            aria-label={`${slot.exercise.name} form cues`}
+                            className="mt-4"
+                          >
+                            <h3 className="mb-1 text-xs font-semibold">
+                              Form cues
+                            </h3>
+                            <ul className="m-0 list-disc space-y-1 pl-5 text-xs leading-5 text-foreground/70">
+                              {slot.exercise.cues.map((cue) => (
+                                <li key={cue}>{cue}</li>
+                              ))}
+                            </ul>
+                          </section>
+                        )}
+                        {slot.exercise.commonMistakes.length > 0 && (
+                          <section
+                            aria-label={`${slot.exercise.name} common mistakes`}
+                            className="mt-3"
+                          >
+                            <h3 className="mb-1 text-xs font-semibold">
+                              Common mistakes
+                            </h3>
+                            <ul className="m-0 list-disc space-y-1 pl-5 text-xs leading-5 text-foreground/70">
+                              {slot.exercise.commonMistakes.map((mistake) => (
+                                <li key={mistake}>{mistake}</li>
+                              ))}
+                            </ul>
+                          </section>
+                        )}
                         {activeWorkout && (
                           <>
                             <p className="mt-3 mb-0 text-xs font-medium text-foreground/70">
