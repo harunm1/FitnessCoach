@@ -375,3 +375,13 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Got:** the review found that the profile and the plan were saved in two steps, so a failed plan save would leave the profile saying running with the old strength plan active, and that the hybrid week was saved without running either verifier, against D9. It also found tests that would pass without the change, and the new-runner default missing from the docs.
 
 **Did with it:** `saveWeek` takes a hook that runs inside its transaction, so the profile is saved with the plan or not at all; a test makes the plan fail and checks the profile is unchanged. The strength and running verifiers run before saving. I tightened the running-only test to two runs and two strength days, and added tests for the saved mode, one-day running and the refusal paths. The new-runner default and the options it beat are in the D9 note in `ARCHITECTURE.md`. Lint, typecheck, 850 unit tests, 54 integration tests on PostgreSQL 16 and the format check pass (pull request #97). Tools for the targeted help: skills `agentic-sdlc:testing-vitest` and `hzblj-skills:functions`, Context7 for the Next.js Server Action and `useActionState` form docs (checked 10 November 2026), and a fresh review agent (`pr-review-toolkit:code-reviewer`).
+
+### 10 November 2026, bringing the chat pull request current after #48 merged (issue #11, pull request #53)
+
+**Before asking:** #48 was squashed, so the chat branch still carried the guardrail commits it had merged one by one, and git reported add/add conflicts in the guardrail files. I decided to merge the #43 branch first, so the chat changes kept their place, and then main, instead of taking main's copy of every guardrail file, which would have dropped the chat branch's `mentionsTraining`.
+
+**Asked:** the merge, and an independent review of the result against main.
+
+**Got:** the typecheck failed after the merge: main already has its own chat model (`coachChatModel`), which duplicated the one in this branch. The review found no blocking issue and noted that the route must pass history from stored rows, not the request body.
+
+**Did with it:** I dropped the duplicate chat model and used main's. Main's Gemini chat reply kept only the first text part, the bug Shubham found, so I re-applied the join-all-parts fix there; the test failed first. Lint, typecheck, 991 unit tests, 46 integration tests on PostgreSQL 16 and the format check pass. Tools for the targeted help: `pr-review-toolkit:code-reviewer` (fresh context) and git.
