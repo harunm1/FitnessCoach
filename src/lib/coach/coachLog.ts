@@ -14,7 +14,8 @@ export type CoachOutcome =
   | "switched" // verified after moving to the other provider
   | "rejected" // the reply failed the verifier; problems listed
   | "error" // no usable reply (transport failure or not JSON)
-  | "rule_based"; // both attempts failed; the user got the default plan
+  | "rule_based" // both attempts failed; the user got the default plan
+  | "cached"; // demo mode: both attempts failed; the user got a pre-generated coach plan (#59)
 
 export type CoachRecord = {
   kind: "plan" | "chat";
