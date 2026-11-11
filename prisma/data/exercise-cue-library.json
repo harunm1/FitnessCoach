@@ -1,0 +1,212 @@
+[
+  {
+    "id": "Barbell_Bench_Press_-_Medium_Grip",
+    "name": "Barbell Bench Press - Medium Grip",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "barbell"
+  },
+  {
+    "id": "Barbell_Deadlift",
+    "name": "Barbell Deadlift",
+    "category": "strength",
+    "level": "INTERMEDIATE",
+    "equipment": "barbell"
+  },
+  {
+    "id": "Barbell_Incline_Bench_Press_-_Medium_Grip",
+    "name": "Barbell Incline Bench Press - Medium Grip",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "barbell"
+  },
+  {
+    "id": "Barbell_Lunge",
+    "name": "Barbell Lunge",
+    "category": "strength",
+    "level": "INTERMEDIATE",
+    "equipment": "barbell"
+  },
+  {
+    "id": "Barbell_Shoulder_Press",
+    "name": "Barbell Shoulder Press",
+    "category": "strength",
+    "level": "INTERMEDIATE",
+    "equipment": "barbell"
+  },
+  {
+    "id": "Barbell_Squat",
+    "name": "Barbell Squat",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "barbell"
+  },
+  {
+    "id": "Barbell_Walking_Lunge",
+    "name": "Barbell Walking Lunge",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "barbell"
+  },
+  {
+    "id": "Bent_Over_Barbell_Row",
+    "name": "Bent Over Barbell Row",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "barbell"
+  },
+  {
+    "id": "Bent_Over_Two-Dumbbell_Row",
+    "name": "Bent Over Two-Dumbbell Row",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "dumbbell"
+  },
+  {
+    "id": "Bent_Over_Two-Dumbbell_Row_With_Palms_In",
+    "name": "Bent Over Two-Dumbbell Row With Palms In",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "dumbbell"
+  },
+  {
+    "id": "Bodyweight_Squat",
+    "name": "Bodyweight Squat",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "body only"
+  },
+  {
+    "id": "Butt_Lift_Bridge",
+    "name": "Butt Lift (Bridge)",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "body only"
+  },
+  {
+    "id": "Chin-Up",
+    "name": "Chin-Up",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "body only"
+  },
+  {
+    "id": "Crunches",
+    "name": "Crunches",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "body only"
+  },
+  {
+    "id": "Dumbbell_Bench_Press",
+    "name": "Dumbbell Bench Press",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "dumbbell"
+  },
+  {
+    "id": "Dumbbell_Lunges",
+    "name": "Dumbbell Lunges",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "dumbbell"
+  },
+  {
+    "id": "Dumbbell_One-Arm_Shoulder_Press",
+    "name": "Dumbbell One-Arm Shoulder Press",
+    "category": "strength",
+    "level": "INTERMEDIATE",
+    "equipment": "dumbbell"
+  },
+  {
+    "id": "Dumbbell_Rear_Lunge",
+    "name": "Dumbbell Rear Lunge",
+    "category": "strength",
+    "level": "INTERMEDIATE",
+    "equipment": "dumbbell"
+  },
+  {
+    "id": "Dumbbell_Shoulder_Press",
+    "name": "Dumbbell Shoulder Press",
+    "category": "strength",
+    "level": "INTERMEDIATE",
+    "equipment": "dumbbell"
+  },
+  {
+    "id": "Dumbbell_Squat",
+    "name": "Dumbbell Squat",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "dumbbell"
+  },
+  {
+    "id": "Flat_Bench_Lying_Leg_Raise",
+    "name": "Flat Bench Lying Leg Raise",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "body only"
+  },
+  {
+    "id": "Front_Squat_Clean_Grip",
+    "name": "Front Squat (Clean Grip)",
+    "category": "strength",
+    "level": "INTERMEDIATE",
+    "equipment": "barbell"
+  },
+  {
+    "id": "Incline_Push-Up",
+    "name": "Incline Push-Up",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "body only"
+  },
+  {
+    "id": "One-Arm_Dumbbell_Row",
+    "name": "One-Arm Dumbbell Row",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "dumbbell"
+  },
+  {
+    "id": "Pullups",
+    "name": "Pullups",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "body only"
+  },
+  {
+    "id": "Reverse_Crunch",
+    "name": "Reverse Crunch",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "body only"
+  },
+  {
+    "id": "Romanian_Deadlift",
+    "name": "Romanian Deadlift",
+    "category": "strength",
+    "level": "INTERMEDIATE",
+    "equipment": "barbell"
+  },
+  {
+    "id": "Standing_Military_Press",
+    "name": "Standing Military Press",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "barbell"
+  },
+  {
+    "id": "Stiff-Legged_Dumbbell_Deadlift",
+    "name": "Stiff-Legged Dumbbell Deadlift",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "dumbbell"
+  },
+  {
+    "id": "V-Bar_Pullup",
+    "name": "V-Bar Pullup",
+    "category": "strength",
+    "level": "BEGINNER",
+    "equipment": "body only"
+  }
+]

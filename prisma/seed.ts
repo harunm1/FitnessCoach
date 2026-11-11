@@ -5,6 +5,7 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, Level, Tier } from "../src/generated/prisma/client";
+import { getExerciseCueFields } from "./exerciseCueData";
 
 const EXERCISES_URL =
   "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json";
@@ -43,8 +44,9 @@ async function seedExercises() {
   for (let i = 0; i < exercises.length; i += batchSize) {
     const batch = exercises.slice(i, i + batchSize);
     await prisma.$transaction(
-      batch.map((e) =>
-        prisma.exercise.upsert({
+      batch.map((e) => {
+        const cueFields = getExerciseCueFields(e.id);
+        return prisma.exercise.upsert({
           where: { id: e.id },
           create: {
             id: e.id,
@@ -56,6 +58,8 @@ async function seedExercises() {
             secondaryMuscles: e.secondaryMuscles,
             instructions: e.instructions,
             images: e.images,
+            cues: cueFields?.cues ?? [],
+            commonMistakes: cueFields?.commonMistakes ?? [],
           },
           update: {
             name: e.name,
@@ -66,9 +70,10 @@ async function seedExercises() {
             secondaryMuscles: e.secondaryMuscles,
             instructions: e.instructions,
             images: e.images,
+            ...(cueFields ?? {}),
           },
-        }),
-      ),
+        });
+      }),
     );
   }
   return exercises.length;
