@@ -296,6 +296,16 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 
 **Did with it:** wrote a failing test for every finding before fixing it, and pushed #48 after the last round's blocking findings were fixed (844 unit and 46 integration tests). The remaining false positives and gaps are listed on the pull request as follow-ups. A plugin rule stopped me from staging the environment template, so the #61 fixes are verified but wait for me to commit and push them by hand. Tools for the targeted help: pr-review-toolkit:code-reviewer and silent-failure-hunter, backend-design:security-reviewer, vercel:deployments-cicd, sweetclaude:workflow-guardian, fresh general-purpose agents as second checks, and Firecrawl for the Vercel, Neon, Better Auth and Prisma pages.
 
+### 10 November 2026, demo mode with cached coach plans (issue #59, PR #99)
+
+**Before asking:** the 3 November design review decided the demo's fallback must be immediate and its coach outputs cached (D12). I decided where the cache lives before any code: a file in the repository holding the coach's own verified plans from the 30 October eval, not a cache filled from live replies, which would be empty in a rehearsal with the network off. I decided a cached plan is served only when it passes the verifier for the user's own profile, that it is a coach plan but must be labelled as written earlier, and that plans come first and chat replies in a later slice. The design went into `docs/ARCHITECTURE.md` before the code.
+
+**Asked:** the current Vercel runtime cache and Gemini model pages; test-first slices for demo mode in the provider chain and for the cache in plan generation; a list of what could go wrong on demo day; and an independent review of the branch, then a second check of the fixes.
+
+**Got:** the review found that my worst case of 16 seconds was wrong: a reply that stalled after its headers, or a rejected plan, sent the request round the chain a second time, up to about 32 seconds. My latency figures came from the first eval round on Gemini Flash, not the Flash-Lite model the fallback uses. My test only caught a prompt change when the version was bumped. And the architecture note described a screen that does not exist yet. The incident list found the same stalled-body gap independently.
+
+**Did with it:** wrote a failing test for each finding before fixing it. Demo mode now makes one attempt, so the worst case really is one pass through the chain. A stalled body counts as a provider timeout. The cache carries a hash of the prompt, so any wording change fails a test until the cache is refreshed. The demo sets the Flash-Lite model. I corrected the architecture note to say the "Personalize with the coach" action (#58) will show the cached plan. 877 tests pass. Tools: backend-design:error-handling-as-design, vercel:runtime-cache, agentic-sdlc:testing-vitest, backend-design:incident-thinker, pr-review-toolkit:code-reviewer as the independent reviewer, and Firecrawl for the Vercel and Google pages.
+
 ## Mohammad
 
 ### 31 October 2026, onboarding quiz validation edge cases
