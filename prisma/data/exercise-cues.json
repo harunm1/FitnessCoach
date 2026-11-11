@@ -1,0 +1,54 @@
+{
+  "Barbell_Squat": {
+    "cues": [
+      "Brace your trunk before lifting the bar from the rack.",
+      "Keep your feet planted as you bend your hips and knees.",
+      "Let your knees follow the direction of your toes.",
+      "Stand up by extending your hips and knees together."
+    ],
+    "commonMistakes": [
+      "Letting the heels rise during the descent.",
+      "Allowing the back to round under the bar.",
+      "Letting the knees collapse inward."
+    ]
+  },
+  "Barbell_Bench_Press_-_Medium_Grip": {
+    "cues": [
+      "Plant your feet and keep your upper back supported on the bench.",
+      "Grip the bar slightly wider than shoulder width.",
+      "Lower the bar under control toward your chest.",
+      "Press the bar upward until your arms extend."
+    ],
+    "commonMistakes": [
+      "Bouncing the bar off the chest.",
+      "Using a grip so wide that it restricts the movement.",
+      "Lifting the hips off the bench during the press."
+    ]
+  },
+  "Bent_Over_Barbell_Row": {
+    "cues": [
+      "Hinge at your hips with your knees slightly bent.",
+      "Keep your back steady while you hold the hinged position.",
+      "Draw the bar toward your upper waist.",
+      "Lower the bar with control until your arms extend."
+    ],
+    "commonMistakes": [
+      "Rounding the lower back while bent over.",
+      "Jerking the torso upward to move the bar.",
+      "Cutting the lowering phase short."
+    ]
+  },
+  "Pullups": {
+    "cues": [
+      "Grip the bar with your palms facing away from you.",
+      "Start from a controlled hang with your arms extended.",
+      "Pull your body upward until your chin clears the bar.",
+      "Lower yourself with control back to the starting position."
+    ],
+    "commonMistakes": [
+      "Swinging the legs to gain momentum.",
+      "Using a grip so wide that it limits the range of motion.",
+      "Dropping quickly instead of controlling the descent."
+    ]
+  }
+}
