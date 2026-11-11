@@ -9,6 +9,9 @@ export const LIMITS = {
   sets: { min: 1, max: 6 },
   reps: { min: 1, max: 30 },
   restSeconds: { min: 30, max: 300 },
+  // Target effort per exercise, 6 to 9 on the 1 to 10 RPE scale (#65): hard enough to
+  // train, never a true max for a plan the model writes without seeing the user lift.
+  rpe: { min: 6, max: 9 },
   exercisesPerDay: { min: 2, max: 8 },
   daysPerWeek: { min: 1, max: 7 },
 } as const;
@@ -22,6 +25,7 @@ export const planExerciseSchema = z.object({
     .int()
     .min(LIMITS.restSeconds.min)
     .max(LIMITS.restSeconds.max),
+  rpe: z.number().int().min(LIMITS.rpe.min).max(LIMITS.rpe.max),
 });
 
 export const planDaySchema = z.object({

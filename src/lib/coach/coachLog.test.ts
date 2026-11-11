@@ -25,6 +25,7 @@ const slot = (exerciseId: string) => ({
   sets: 3,
   reps: 10,
   restSeconds: 90,
+  rpe: 7,
 });
 const good = {
   name: "P",

@@ -52,9 +52,9 @@ export function buildPlanPrompt(
       ? `\nYour last plan was rejected for these reasons. Fix every one:\n- ${problems.join("\n- ")}\n`
       : "";
   return [
-    `Build a ${profile.daysPerWeek}-day weekly strength plan as JSON: {"name", "days": [{"name", "exercises": [{"exercise", "sets", "reps", "restSeconds"}]}]}.`,
+    `Build a ${profile.daysPerWeek}-day weekly strength plan as JSON: {"name", "days": [{"name", "exercises": [{"exercise", "sets", "reps", "restSeconds", "rpe"}]}]}.`,
     `"exercise" must be an exact name from this list, which is grouped as "muscle (category): name; name":\n${options}`,
-    `2 to 8 exercises a day, no exercise twice on a day, sets 1 to 6, reps 1 to 30, rest 30 to 300 seconds. For a timed hold such as a plank, give reps as the number of holds (for example 3 sets of 1), not seconds.`,
+    `2 to 8 exercises a day, no exercise twice on a day, sets 1 to 6, reps 1 to 30, rest 30 to 300 seconds, rpe 6 to 9 (a whole number: the effort you want on every set, 10 being all-out). For a timed hold such as a plank, give reps as the number of holds (for example 3 sets of 1), not seconds.`,
     retry,
   ].join("\n\n");
 }
