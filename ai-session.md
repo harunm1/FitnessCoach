@@ -42,28 +42,6 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Did with it:** wrote `generatePlan.ts`, `defaultPlan.ts` and three tests (pass first time, retry with the problems in the prompt, fallback that passes the verifier). Nine tests pass in total.
 
-## Mohammad
-
-### 31 October 2026, onboarding quiz validation edge cases
-
-**Before asking:** the quiz schema already constrained training days to 1–7, goal and level to Prisma enums, equipment to the supported exercise-library values, and injury notes to 500 characters. The existing tests covered a valid form payload, missing equipment, and an out-of-range schedule, but not the boundaries or malformed values.
-
-**Asked:** what edge cases should be added to `schema.test.ts` based on the current quiz schema.
-
-**Got:** suggestions to test both valid day-count boundaries, invalid fractional and non-numeric day counts, unknown goal and level values, unsupported equipment, and injury notes at and over the length limit.
-
-**Did with it:** checked each suggestion against the schema instead of treating the list as requirements, added the applicable cases, and ran the focused Vitest file. An initial test run exposed that Vitest did not resolve the schema's `@/` alias, so I changed that import to a relative path. The focused tests passed (11/11), and the full suite passed (12/12).
-
-### 1 November 2026, rest timer UI
-
-**Before asking:** the rest timer countdown worked, but its state changes were subtle and users could think the button did nothing.
-
-**Asked:** how to make the timer's running, paused, and completed states clearer and more visually noticeable.
-
-**Got:** suggestions to give the countdown stronger visual emphasis and display a clear status label as it changes state.
-
-**Did with it:** updated the timer to highlight while running and show explicit “Resting”, “Paused”, and “Rest complete” states; verified in the browser that clicking Start rest changes the button to Pause timer and the countdown decreases. Styled the UI with Tailwind utility classes. No shadcn/ui components were used.
-
 ### 27 October 2026, provider research before meeting 2 (issues #7, #22)
 
 **Before asking:** the architecture doc said Groq first, Gemini as fallback, on free-tier limits and data use. I wanted that checked against current pricing pages and against any evidence that an open-weight model is good enough for short structured output, so the meeting could decide on facts.
@@ -154,6 +132,18 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Did with it:** rechecked the R2 page on 6 November before committing, changed D3 and the diagram node to R2, and added a short storage section to the research doc. R2's get-started page shows the checkout step but does not mention a payment method, so the doc attributes that to the teammate's report. The README keeps its generic "S3-compatible bucket" wording, which stays true. I also closed the research doc's stale questions against the issues that settled them and pointed the plan's eval link at `main`.
 
+### 6 November 2026, crisis and red-flag guardrails (issue #43)
+
+**Before asking:** I set both rules and wrote both replies myself. Any message about not wanting to be alive, suicide, self-harm or ending one's life gets a fixed reply pointing to 9-8-8 (call or text, any time) and 911, with no model call, before every other rule; I checked 9-8-8 on the Public Health Agency of Canada and CRTC pages. Chest pain or tightness, fainting, severe shortness of breath or an irregular heartbeat during exercise gets "stop exercising now" and medical attention, checked next, before pain. Effort talk ("this workout is killing me", "I'm dying after that run") and soreness ("my chest is sore from bench") must pass.
+
+**Asked:** for the matching patterns and for test phrases in both directions.
+
+**Got:** patterns and phrases. Running them showed that "I don't want to hurt myself on heavy deadlifts" was read as a pain report, because "don't" was missing from the words that cancel a pain phrase, and that "this workout is killing me" was read as pain.
+
+**Did with it:** ran the new tests against the old code first (20 failed), then wrote the patterns, added "don't" to the negations and narrowed "killing me" to a body part ("my shoulder is killing me").
+
+An independent review then confirmed the 9-8-8 details on the CRTC, Public Health Agency of Canada and 988.ca pages, and found the first patterns too narrow. Missed were "I want to die", "I've been cutting myself", "I took too many pills on purpose" (which got the no-medication reply), "my chest hurts during runs", "I collapsed after the set" and every message typed with a phone's curly apostrophe. It also found training talk caught by mistake: "suicide sprints", "I want to end it with planks", "cut myself some slack", "faint praise". Each became a test, failing first, before I widened or narrowed the patterns. Any mention of shortness of breath counts as a red flag, which is on the safe side of my "severe".
+
 ### 6 November 2026, review before merging the coach pull requests (issues #11, #19, #34, #41, #43, #46)
 
 **Before asking:** my rule for my own pull requests is three days for the team to review, then an independent review of each diff against its issue, the tests and `docs/ENGINEERING_PRACTICES.md` before merging. I decided which findings block a merge: a safety rule that can be bypassed, a promise in the code or the issue that the code does not keep, and data the database can get wrong.
@@ -195,6 +185,138 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** SensAI's App Store listing at $6.99 a month and Future's site at $199 a month; the chat code shows a fixed message when the model is down, not a cached reply; and four review findings: Groq sends a token-wait header as well as Retry-After, Section 3's review rule contradicted the 3 November decision, the SensAI title was off, and Section 2 no longer said where verified plans go.
 
 **Did with it:** made each change in its own commit naming the section's owner, cut repetition in Section 2 to stay under the cap, and rebuilt the combined file from the sections. The proposal ends at 1,985 words.
+
+### 6 November 2026, crisis screening in three layers (issue #43)
+
+**Before asking:** two independent reviews of the guardrails found crisis and cardiac wordings the word list missed, and common gym exaggeration getting the full crisis reply. I decided a longer word list would not catch up, and set the design: keep the word list as the deterministic floor; add a short check-in that still names 9-8-8 for exaggeration in training talk ("I'm gonna die on this run") and for distress with no training context; and run a model safety check first that can only raise the response, never lower it. Tests first, from every phrasing the reviews found.
+
+**Asked:** for Groq's current safety models and their status, the tests from the review phrasings, the three layers as separate small modules, and a fresh independent review before anything merges.
+
+**Got:** Groq serves `openai/gpt-oss-safeguard-20b` for bring-your-own-policy moderation, in preview (Groq content-moderation and model pages, 6 Nov); 67 new word-list cases and two new test files that failed first; `distress.ts` (check-in), `safetyScreen.ts` (layers, 3-second limit, model failure falls back to the word list) and `safetyModel.ts` (policy in Groq's recommended four sections, JSON output).
+
+**Did with it:** checked that every earlier case still passes, wrote the decision as D15 in `docs/ARCHITECTURE.md` with the option it beat, and kept the check-in wording short with 9-8-8 and 911 in it. Nothing in the app calls the screen yet; the chat code (#53) does next. A second fresh review found more missed crisis and cardiac wordings, a distress reading from the model replacing the eating-support and pain-stop replies, and crisis messages softened to the check-in by any gym word. I kept the design and tightened it: a reply that already gives specific help now outranks a distress reading; exaggeration counts only when tied to the session and nothing states intent; any message with crisis words that would get the off-topic redirect gets the check-in; and every new wording became a test that failed first (64).
+
+### 10 November 2026, board and docs upkeep (issues #70, #73 to #77)
+
+**Before asking:** pull requests #70, #73, #74 and #77 were not on the project board, #75 and #76 still said In progress while they waited for review, #76, #77 and #78 had no enhancement label or assignee, and the Mohammad heading in this file sat above my entries from 27 October on. I decided the board, labels and section order myself and wanted only the mechanical edits done and checked.
+
+**Asked:** to put those four pull requests on the board and set #70, #73, #74, #75, #76 and #77 to In review, label #76, #77 and #78 as enhancement with me as assignee on #77 and #78, move Mohammad's two entries under his own heading without changing any text, and correct the README line about integration tests in CI.
+
+**Got:** the board, label and assignee changes through the GitHub CLI, confirmed by reading them back; the entries moved with every line of the file still present; and a CI file check showing that CI has run integration tests against PostgreSQL 16 on every pull request since #67, which is for accounts, trials and billing, not the quiz or session actions.
+
+**Did with it:** kept the board and label changes, committed the section order and the README line separately, and left the architecture document's "not in CI yet" line for its own edit. Tools: gh CLI, engineering:documentation, commit-commands:commit, and an independent review agent that checked the diff and the CI claim before the push.
+
+### 10 November 2026, "Why this plan" rows and panel (issue #66)
+
+**Before asking:** the verifier already decides every plan in code, and issue #66 asks that the user can see that decision. I decided on a pure function from the plan's source and its log records to the rows, a small server component that only renders them, and no new model call. The issue says "plan page", but main has no plan page and the log records are not stored yet, so I chose to build the function and the component without mounting them, and to say that in the pull request.
+
+**Asked:** for the function test first (one test per source state: model first try, model after regeneration, rule-based), the component, a check of the panel's wording and accessibility, and an independent review of every sentence the panel shows against the code.
+
+**Got:** the function, the component and 19 tests. The independent review found four sentences that were false for some inputs: the running line said "10% more than last week" for users with no logged runs, a failed call was reported as a reply that failed the checks, "checked before you saw it" did not hold for every rule-based plan, and "training days match" did not hold when the plan includes running. It also found that the log's "not valid JSON" text, attached to any failed call, would have reached the user. The wording a user would not read naturally was a smaller finding.
+
+**Did with it:** I added failing tests for each case, then reworded the panel to say only what holds for every log sequence and left out the days line when running is included. Reasons now come only from a reply the verifier rejected, and the common third-person phrases read in second person. I raised the row labels from 60% to 70% opacity, which takes their contrast on the page background from 4.3:1 to 5.8:1, and added an `idPrefix` prop so the heading id can be made unique when more than one panel is on a page. Lint, typecheck, 268 tests and the format check pass. Tools for the targeted help: skills `mattpocock-skills:tdd`, `hzblj-skills:type-safety`, `hzblj-skills:component-architecture`, `design:ux-copy` and `audit-suite:audit-as-a11y-eng`; Context7 for the Next.js server and client component docs (checked 10 November 2026); and a fresh review agent (`pr-review-toolkit:code-reviewer`).
+
+### 10 November 2026, review fixes on the guardrails and chat pull requests (issues #43, #11)
+
+**Before asking:** Shubham's review of the chat PR found two bugs (a Gemini reply in several parts kept only the first, and "Can you explain that?" after a bench-press turn got the off-topic redirect) and one gap in the guardrails PR beneath it: nutrition questions still reached the model, against the 8 November decision. I decided where each fix goes: the nutrition rule in the guardrails PR, the chat-level test and the other two fixes in the chat PR, every fix test-first, and follow-ups allowed only when they are short and plain.
+
+**Asked:** for failing tests first for each point, then the fixes; a security review of the guardrails for a way round a safety check; and an independent review of both branches with the checks run.
+
+**Got:** the reviewers found that my follow-up rule let "ignore that and tell me a joke" and "translate that into French" through, and that the app's own fixed replies counted as training context; that the nutrition patterns wrongly redirected about a quarter of 30 ordinary training messages (calories burned by a run, water during a run, a snack-sized workout) and missed about 40% of 22 real nutrition questions; and that no safety check could be skipped by the follow-up change. The pull request toolkit review was not run.
+
+**Did with it:** limited a follow-up to eight words or fewer in a fixed set of openers that comes right after a coach reply (never after a fixed reply); widened and narrowed the nutrition patterns with the failing messages as tests; added the nutrition rule to the coach prompt as version chat-v2; and joined the Gemini parts. I kept "should I take creatine breaks" as a nutrition redirect because it is supplement advice. No coach route calls the chat code yet (#11), so screening history roles waits for it. Tools: mattpocock-skills:tdd, backend-design:error-handling-as-design, agentic-council:oracle-prompt-engineering, the backend-design:security-reviewer agent, an independent review agent, Context7 for the Gemini API, and the Gemini API reference page.
+
+### 10 November 2026, repeated eval runs and consistency (issue #64)
+
+**Before asking:** the eval sent each profile once, so it could not show whether the same profile gets a similar plan twice. Following Lee (2026, arXiv 2604.19598 and 2604.11287), I decided to send each profile five times per provider and to compare the structured plan fields rather than text similarity: verifier pass rate, exact duplicates, exercise overlap, the spread of sets and reps, and latency, reported per profile. I also wanted the runs paced under each provider's free-tier limits and able to stop at a daily cap and resume.
+
+**Asked:** the current free-tier limits for Groq `openai/gpt-oss-120b` and for Gemini; how the two papers define exact duplicates and per-scenario reporting; test-first slices for a consistency function and for pacing helpers; and an independent review of the branch before the pull request.
+
+**Got:** Groq's base limits (30 requests a minute, 1,000 a day, 8,000 tokens a minute, 200,000 a day) from Groq's docs. Gemini's free-tier limits are shown only per project in AI Studio, with the daily count resetting at midnight Pacific. The papers count exact duplicates per scenario on preprocessed text and warn that embedding similarity misses numeric changes, which supports comparing fields. The review found that the providers' own retries bypassed the pacing and the call count, and that a 429 on the first call was being scored as a verifier failure.
+
+**Did with it:** wrote `consistency.ts`, the pacing helpers and the `--repeat` flag test first, and fixed the review findings (retries off in repeat mode, failed first calls left pending, argument parsing tested). The first live run then showed calls timed at about 60 s: I had put the pacing wait inside the timer. I moved the wait before the timer, with a test that fails on the old code, and set that run's files aside. The run itself was stopped partway when the machine ran low on memory, so the results table in `docs/COACH_EVAL.md` waits for a fresh run (pull request #87). Tools: agentic-council:oracle-ai-evaluation, mattpocock-skills:tdd, agentic-sdlc:testing-vitest, omniout:add-fallback, Context7 (Groq and Gemini docs), Firecrawl (Gemini rate-limit page), alphaXiv (both Lee papers), and /pr-review-toolkit:review-pr as the independent reviewer.
+
+### 10 November 2026, competitor benchmark, domain check and follow-up issues (issues #91 to #95)
+
+**Before asking:** I had benchmarked fitness platforms for the 5:30pm design review. I decided which ideas to take, which to leave out (generating every session from scratch, a human-coach tier, nutrition), and that all of the new ones wait until after the 15 November core path.
+
+**Asked:** to put the note in `docs/design-reviews`, check the candidate domain names with an RDAP lookup, open one backlog issue per idea with a one-line reason, and check every claim in the note against its sources and against what is merged on main.
+
+**Got:** the note on main, a dated domain table (three names have no registration record, two are registered), and issues #91 to #95 with the enhancement label, my assignment and Backlog status. The task said six domain candidates; the note lists five, so I checked five. The review corrected the note: three sentences claimed things that are only in open pull requests or not shown on a page yet (the verifier on every plan, the pain guardrails, the fallback); Hevy's Trainer already has an injury setting that swaps or warns; the Jefit comparison is a competitor's own page; the lower bound of the coaching price had no source; and the Runna wording went beyond what the sources say.
+
+**Did with it:** I applied the corrections in a separate commit and marked what could not be confirmed (the WSJ full text and its date, the TechRadar article, and any source for Fitbod's periodization). I kept the issue bodies to one line of why plus a link to the note. Tools for the targeted help: skills `engineering:documentation` and `product-management:write-spec` (the issues stayed one line each, so I did not write full specs), the gh CLI, curl for the RDAP lookups, and a fresh review agent (`general-purpose`) that checked the claims through web search, the ExerciseBank and PubMed connectors and the GitHub issues.
+
+### 10 November 2026, Shubham's two review notes on the shadcn/ui pull request (issue #75, PR #77)
+
+**Before asking:** Shubham reviewed #77 on 8 November (no blocking issues, "Happy to approve") with two notes: document Node.js 22 as the minimum, and when the pull request is combined with #67 keep the account links, update the test that expects one link and retain the Vitest exclusions. I wanted the second note done test first, because the old test, which expects exactly one link, fails on the merged page, and I wanted the Node floor read from the packages' own declarations, not only from the one package he named.
+
+**Asked:** to merge `main` into the branch and resolve the conflicts file by file, to read the `engines` field of the direct dependencies, to update the root-page test so it expects the quiz link and the two account links, and for an independent review of the merged branch, the test and the two docs lines (the README line and the `docs/LOCAL_DEVELOPMENT.md` line).
+
+**Got:** `cn` 0.5.2 declares Node `>=22`, Vitest 5.0.5 declares `^22.12.0 || ^24.0.0 || >=26.0.0` and Prisma 7.10.1 `^20.19 || ^22.12 || >=24.0` in their packages, which Vitest's migration guide and Prisma's system-requirements page agree with (checked 10 November 2026), so I first set the floor to 22.12. The independent review then checked every package in the lockfile and found that `eslint-visitor-keys` 5.0.1, a dev-only dependency of `@typescript-eslint/visitor-keys` (pulled in through eslint-config-next), declares `^20.19.0 || ^22.13.0 || >=24`, so the floor became 22.13. It also showed, by moving the account links out of the card, that my card test could not fail, because it only checked that the links came after the card's opening tag. Main's Vitest config already held the integration and end-to-end exclusions, so it replaced mine.
+
+**Did with it:** wrote the updated page test first and watched three of its seven tests fail on the page without the account links, then added the links under the quiz button in the card footer; replaced the card test with one that slices the card's markup, and showed it fail when the links sit outside the card; set `engines` to `>=22.13.0` and the README and `docs/LOCAL_DEVELOPMENT.md` to match; regenerated the lockfile from main's with `npm install`, which also moved five Babel packages to newer patch versions, and added the root `engines` block by hand (three lines) after a second `npm install` rewrite added unrelated optional packages and I discarded it. Tools for the targeted help: the `vercel:shadcn`, `prism:stack-nextjs` and `agentic-sdlc:testing-vitest` skills, and `pr-review-toolkit:review-pr` with its `code-reviewer`, `pr-test-analyzer` and `comment-analyzer` agents as the independent check.
+
+### 10 November 2026, streaming review fixes and a second guardrail security pass (issues #11, #43)
+
+**Before asking:** Shubham's review of the streaming PR asked for four changes: the same checks as the chat PR, fallback when the connection drops before any text, cancelling the provider's stream when the reply check stops it, and a visible reply when a stream ends empty. I decided to merge the chat PR into the streaming branch rather than rewrite its history, to share one preparation step between the plain and the streamed turn, and to write each test before its fix. I also asked for the guardrails to be security-reviewed again after the last round of fixes.
+
+**Asked:** for failing tests first, then the fixes; a fresh security review of the guardrails and chat PRs; a review hunting for errors the streaming code hides; and an independent review of the streaming PR, with the checks run and each test shown to fail without its fix.
+
+**Got:** the security review found that a line break, a double space or a zero-width character hid "trouble breathing" or "chest pain" from the word list, that history could pass roles other than user and assistant, and that the middle of a very long message is not screened. The hidden-error review and the independent review found that an error sent inside the stream or a malformed line ended the stream quietly instead of falling back, and that the architecture table said fallback happens before the first sentence when the code decides at the first text piece. The independent review confirmed all four points were fixed and that the new tests fail without the changes.
+
+**Did with it:** normalized text before every safety pattern, kept only user and assistant turns in history, put the 9-8-8 line in the length reply, and widened the drug and diagnosis list in the reply check. In the streaming code, in-stream errors, malformed lines and a Groq stream without its end marker are now provider failures, and the decision table says when fallback runs. A log entry for a streamed failure is left for when a route calls the stream, as stated on the pull request. Tools: mattpocock-skills:tdd, backend-design:error-handling-as-design, backend-design:idempotency-and-side-effects, coding-skills:retry-amplification, omniout:add-fallback, the backend-design:security-reviewer agent, the pr-review-toolkit:silent-failure-hunter and pr-review-toolkit:code-reviewer agents, and Context7 for the MDN stream reader and Groq streaming pages.
+
+### 10 November 2026, coach personas literature note (issue #80)
+
+**Before asking:** #80 says a persona changes wording only, with a calm technical default and a strict style that is opt-in. I wanted to know what the research on coaching style says before anyone builds it, so I had a first pass written from eight papers through the Lune connector.
+
+**Asked:** to file the note in `docs/papers` with its row in the paper index, and to check every paper and figure in it against the papers themselves and against #80 before it went to main.
+
+**Got:** a review that confirmed all eight papers exist with the right authors, venues and DOIs, and corrected the note's reading of several. The biggest: the GymBuddy paper did not use the controlling coach as a negative case (it was ranked last by 9 of 14 participants, but some said it made them try hardest). Also: the Srinivas study's styles change the flow of the conversation, not only the wording, so it does not test wording-only personas; a directive option has less support than the first draft said (facilitative beat directive in that study); and the draft's proposed default (supportive) contradicted #80's calm technical default. The review also added missing numbers and DOIs and found a "Feeds #84" line that no part of the note supported.
+
+**Did with it:** I rewrote the note so each claim says what the paper found and how it was read (full text for five papers, abstract only for three), dropped #84 from the index row, and changed the persona paragraph to say the papers do not settle the default, which stays a decision on #80. I have not re-read the corrected figures in the papers myself; they come from the check's reads. Tools for the targeted help: the Lune connector (paper search, extraction and full text), Crossref and arXiv, the ACM and PubMed Central pages through Firecrawl, the gh CLI, and a fresh review agent (`general-purpose`).
+
+### 10 November 2026, the coach chat screen (issue #63)
+
+**Before asking:** the core path ends with one coach exchange, and no screen used the chat turn from #53. I decided the shape: a Server Component reads the user's conversation, a Server Action does the turn and saves both messages in one transaction, and the guardrails stay inside `coachReply` so no path reaches the model without them. Streaming (#56) is not merged, so the reply comes in one piece for now. Free accounts see the tier message, and a failed reply shows what happened with Send again, saving nothing half-done (#42). I left Mohammad's session page alone because #83 changes it, and noted the missing link in the pull request.
+
+**Asked:** the Next.js 16 conventions for Server Actions, `useActionState` and the route `error.tsx`; test-first slices for the action, the page, the message list, quick replies and the retry notice; an accessibility pass; a security review of the guardrail path; and independent reviews of the branch before the push.
+
+**Got:** the docs confirmed `retry()` re-fetches the segment where `reset()` does not, and that a `"use server"` file may export only async functions, so the screen's wording moved to its own file. The security review found no per-user cap on model calls. The first review found that a failed database read threw to the error page, and that nothing tested the history the model receives. The second found that my first cap counted saved messages, so parallel or failed sends got through. The accessibility pass found that focus was lost while the coach replied, and small labels at 3.66:1 contrast.
+
+**Did with it:** wrote each slice test first and fixed every finding. A failed load now offers Send again. A per-user cap of 5 messages a minute and 50 a day counts attempts before the model call, and the saved-message count backs it up across server instances. Tests cover the history order, the no-plan case and the ownership check. Focus is kept, and the labels are at 5.85:1. A pain report and a diagnosis request get the fixed reply without calling the model, and a test pins it (draft pull request #96). Tools: vercel:nextjs, vercel:react-best-practices, hzblj-skills:component-architecture and hooks, design:ux-copy, mattpocock-skills:tdd, agentic-sdlc:testing-vitest, audit-suite:audit-as-a11y-eng, Context7 (Next.js docs), backend-design:security-reviewer, and /pr-review-toolkit:review-pr as the independent reviewer.
+
+### 10 November 2026, self-review of the guardrails and hosting pull requests (#48, #61)
+
+**Before asking:** both pull requests had waited past the three-day review window. I decided they would get an independent review instead: a reviewer that sees only the diff, the issue and our engineering practices, plus a second check that confirms each finding before it counts. I also decided that nothing merges until I run the merge myself, and that #48 merges before #53, which is stacked on it.
+
+**Asked:** blind reviews of #48 (code quality, silent failures, security) and #61 (code quality, silent failures, deployment and CI, workflow security), a fresh check of every round of fixes, and the current Vercel, Neon, Better Auth and Prisma pages for each claim in the Deploy section.
+
+**Got:** for #48, missed crisis and eating wordings, training talk wrongly stopped, a screen that did not report when the model check failed, and regexes that slowed badly on long messages. Each later round of checks found that some fixes had moved other wordings the wrong way, so I set a limit of four rounds. For #61, a leftover direct database URL could redirect the test migrations, a hosted build could start with a missing URL or with two URLs on different Neon branches, CI never ran the migrate path, the README lacked the auth and email settings, and the preview reset could copy real users.
+
+**Did with it:** wrote a failing test for every finding before fixing it, and pushed #48 after the last round's blocking findings were fixed (844 unit and 46 integration tests). The remaining false positives and gaps are listed on the pull request as follow-ups. A plugin rule stopped me from staging the environment template, so the #61 fixes are verified but wait for me to commit and push them by hand. Tools for the targeted help: pr-review-toolkit:code-reviewer and silent-failure-hunter, backend-design:security-reviewer, vercel:deployments-cicd, sweetclaude:workflow-guardian, fresh general-purpose agents as second checks, and Firecrawl for the Vercel, Neon, Better Auth and Prisma pages.
+
+## Mohammad
+
+### 31 October 2026, onboarding quiz validation edge cases
+
+**Before asking:** the quiz schema already constrained training days to 1–7, goal and level to Prisma enums, equipment to the supported exercise-library values, and injury notes to 500 characters. The existing tests covered a valid form payload, missing equipment, and an out-of-range schedule, but not the boundaries or malformed values.
+
+**Asked:** what edge cases should be added to `schema.test.ts` based on the current quiz schema.
+
+**Got:** suggestions to test both valid day-count boundaries, invalid fractional and non-numeric day counts, unknown goal and level values, unsupported equipment, and injury notes at and over the length limit.
+
+**Did with it:** checked each suggestion against the schema instead of treating the list as requirements, added the applicable cases, and ran the focused Vitest file. An initial test run exposed that Vitest did not resolve the schema's `@/` alias, so I changed that import to a relative path. The focused tests passed (11/11), and the full suite passed (12/12).
+
+### 1 November 2026, rest timer UI
+
+**Before asking:** the rest timer countdown worked, but its state changes were subtle and users could think the button did nothing.
+
+**Asked:** how to make the timer's running, paused, and completed states clearer and more visually noticeable.
+
+**Got:** suggestions to give the countdown stronger visual emphasis and display a clear status label as it changes state.
+
+**Did with it:** updated the timer to highlight while running and show explicit “Resting”, “Paused”, and “Rest complete” states; verified in the browser that clicking Start rest changes the button to Pause timer and the countdown decreases. Styled the UI with Tailwind utility classes. No shadcn/ui components were used.
 
 ## Shubham
 

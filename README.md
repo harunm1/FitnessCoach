@@ -4,7 +4,7 @@ A web app that turns a short quiz into a weekly gym, running or hybrid plan the 
 
 Team project for ECE1724 Advanced Web Development, University of Toronto, Fall 2026.
 
-**Status (8 November):** proposal final on `main` (#13). On `main`: the Next.js skeleton, the Prisma schema for strength and running with its migrations, the seeded exercise library, CI with a replay of recorded coach replies, the coach's plan generation with the verifier and Groq-to-Gemini fallback, rule-based running and hybrid weeks, saving a week as the active plan, coach-call records (not yet stored), and the session screen (#39). In open pull requests: coach chat (#53), guardrails (#48), streamed replies (#56), the deployed preview (#61), sign-in and Stripe test mode (#67, #68), the body map (#70), the strength-only starter plan (#73), root loading and error states (#74), the shadcn/ui components (#77) and the query indexes (#78). Core path working end to end by Sunday 15 November; demo-feature freeze Monday 23 November.
+**Status (8 November):** proposal final on `main` (#13). On `main`: the Next.js skeleton, the Prisma schema for strength and running with its migrations, the seeded exercise library, CI with a replay of recorded coach replies, the coach's plan generation with the verifier and Groq-to-Gemini fallback, rule-based running and hybrid weeks, saving a week as the active plan, coach-call records (not yet stored), the session screen (#39), and sign-in, access tiers and Stripe test mode (#67, #68). In open pull requests: coach chat (#53), guardrails (#48), streamed replies (#56), the deployed preview (#61), the body map (#70), the strength-only starter plan (#73), root loading and error states (#74), the shadcn/ui components (#77), the query indexes (#78), integration tests against PostgreSQL in CI (#81, draft) and the progress streak and muscle logic (#82). Core path working end to end by Sunday 15 November; demo-feature freeze Monday 23 November.
 
 Architecture and decisions: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Plan and dates: [docs/PLAN.md](docs/PLAN.md). Research behind the choices: [docs/RESEARCH.md](docs/RESEARCH.md). Coach evaluation, Groq against Gemini: [docs/COACH_EVAL.md](docs/COACH_EVAL.md). Meeting notes: [docs/meetings/](docs/meetings/). Design reviews: [docs/design-reviews/](docs/design-reviews/). Paper notes, one per paper we cite: [docs/papers/](docs/papers/README.md).
 
@@ -63,7 +63,7 @@ The [acceptance checklist](docs/ACCOUNTS_TESTING.md) documents expected results 
 all three accounts milestones. The commands below are a database/app overview;
 configure authentication and mail before testing signup.
 
-Prerequisites: Node.js, npm, and Docker Desktop with Docker Compose available.
+Prerequisites: Node.js 22.13 or newer, npm, and Docker Desktop with Docker Compose available.
 Start Docker Desktop before running the Docker commands. When using WSL, enable
 Docker Desktop integration for your distribution.
 
@@ -149,7 +149,7 @@ GEMINI_API_KEY=""   # aistudio.google.com/apikey
 
 ### Checks
 
-Tests come in three layers (8 November design review, decision 4): unit tests for pure logic, with saved model replies instead of live calls; API mocking at the provider boundary, so timeouts, invalid JSON and rate limits are tested on purpose; and integration tests against real PostgreSQL in CI, including authentication and the quiz/session Server Actions. Each owner tests their own slice.
+Tests come in three layers (8 November design review, decision 4): unit tests for pure logic, with saved model replies instead of live calls; API mocking at the provider boundary, so timeouts, invalid JSON and rate limits are tested on purpose; and integration tests against a real PostgreSQL 16 that CI has run on every pull request since #67 (accounts, trials and billing), including authentication and the quiz and session Server Actions (#83; more in #79, PR #81). Each owner tests their own slice.
 
 The same checks CI runs on every pull request:
 

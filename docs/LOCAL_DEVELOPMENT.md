@@ -6,7 +6,7 @@ Stripe; [ACCOUNTS_TESTING.md](ACCOUNTS_TESTING.md) contains acceptance checks.
 
 ## Prerequisites
 
-- Node.js 22 (22.12 or newer; CI uses Node 22), npm and Git.
+- Node.js 22 (22.13 or newer; CI uses Node 22), npm and Git.
 - Docker Desktop with Compose. Start Docker Desktop first; enable WSL integration
   if running commands from WSL. Use Windows Node/npm in PowerShell, or Linux
   Node/npm in WSL; do not share native `node_modules` between the two.
