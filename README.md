@@ -140,6 +140,8 @@ GROQ_API_KEY=""     # console.groq.com/keys
 GEMINI_API_KEY=""   # aistudio.google.com/apikey
 ```
 
+For the demo, set `COACH_DEMO_MODE=1`: each provider call stops after 8 seconds and nothing waits for a retry, and when both providers fail the user gets a coach plan written earlier (`src/lib/coach/demoPlans.json`) that passes the verifier for their profile, before the rule-based plan (D12 in [ARCHITECTURE.md](docs/ARCHITECTURE.md)). After a change to the plan prompt, refresh it from a new eval run with `npx tsx scripts/demo-plans.ts <results.jsonl> <prompt version>`.
+
 ### Checks
 
 Tests come in three layers (8 November design review, decision 4): unit tests for pure logic, with saved model replies instead of live calls; API mocking at the provider boundary, so timeouts, invalid JSON and rate limits are tested on purpose; and integration tests against a real PostgreSQL 16 that CI has run on every pull request since #67 (accounts, trials and billing); the ones for the quiz and session Server Actions are #79 (PR #81, open). Each owner tests their own slice.
