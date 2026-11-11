@@ -14,13 +14,13 @@ import {
   type RunMetricsActionState,
 } from "@/lib/workout/runMetricsSchema";
 import { getNextPlanDayIndex } from "@/lib/workout/progression";
-
-const demoEmail = "demo@fitnesscoach.local";
+import { requireUser } from "@/lib/auth/session";
 
 export async function saveRunMetrics(
   _previousState: RunMetricsActionState,
   formData: FormData,
 ): Promise<RunMetricsActionState> {
+  const user = await requireUser();
   const parsed = runMetricsSchema.safeParse({
     distanceKm: formData.get("distanceKm"),
     durationMinutes: formData.get("durationMinutes"),
@@ -34,19 +34,11 @@ export async function saveRunMetrics(
     };
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: demoEmail },
-    select: { id: true },
-  });
-  if (!user) {
-    return { status: "error", message: "The demo user could not be found." };
-  }
-
   const workout = await prisma.workout.findFirst({
     where: {
       userId: user.id,
       finishedAt: null,
-      plan: { active: true },
+      plan: { userId: user.id, active: true },
     },
     orderBy: { startedAt: "desc" },
     select: { id: true },
@@ -60,7 +52,12 @@ export async function saveRunMetrics(
 
   try {
     await prisma.workout.update({
-      where: { id: workout.id },
+      where: {
+        id: workout.id,
+        userId: user.id,
+        finishedAt: null,
+        plan: { userId: user.id, active: true },
+      },
       data: {
         distanceKm: new Prisma.Decimal(parsed.data.distanceKm),
         durationSeconds:
@@ -83,6 +80,7 @@ export async function logSet(
   _previousState: SetLogActionState,
   formData: FormData,
 ): Promise<SetLogActionState> {
+  const user = await requireUser();
   const parsed = setLogSchema.safeParse({
     setNumber: formData.get("setNumber"),
     reps: formData.get("reps"),
@@ -95,19 +93,12 @@ export async function logSet(
     };
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: demoEmail },
-    select: { id: true },
-  });
-  if (!user) {
-    return { status: "error", message: "The demo user could not be found." };
-  }
-
   const workout = await prisma.workout.findFirst({
     where: {
       userId: user.id,
       finishedAt: null,
-      plan: { active: true },
+      plan: { userId: user.id, active: true },
+      planDay: { plan: { userId: user.id } },
     },
     orderBy: { startedAt: "desc" },
     include: {
@@ -158,6 +149,7 @@ export async function logSet(
           exerciseId,
           setNumber: parsed.data.setNumber,
         },
+        workout: { userId: user.id },
       },
       create: {
         workoutId: workout.id,
@@ -183,11 +175,7 @@ export async function logSet(
 }
 
 export async function startOrResumeWorkout() {
-  const user = await prisma.user.findUnique({
-    where: { email: demoEmail },
-    select: { id: true },
-  });
-  if (!user) redirect("/onboarding");
+  const user = await requireUser();
 
   const plan = await prisma.plan.findFirst({
     where: { userId: user.id, active: true },
@@ -230,9 +218,9 @@ export async function startOrResumeWorkout() {
 
   await prisma.workout.create({
     data: {
-      userId: user.id,
-      planId: plan.id,
-      planDayId: nextDay.id,
+      user: { connect: { id: user.id } },
+      plan: { connect: { id: plan.id, userId: user.id, active: true } },
+      planDay: { connect: { id: nextDay.id, planId: plan.id } },
     },
   });
 
@@ -240,17 +228,13 @@ export async function startOrResumeWorkout() {
 }
 
 export async function finishWorkout() {
-  const user = await prisma.user.findUnique({
-    where: { email: demoEmail },
-    select: { id: true },
-  });
-  if (!user) redirect("/onboarding");
+  const user = await requireUser();
 
   const workout = await prisma.workout.findFirst({
     where: {
       userId: user.id,
       finishedAt: null,
-      plan: { active: true },
+      plan: { userId: user.id, active: true },
     },
     orderBy: { startedAt: "desc" },
     select: { id: true },

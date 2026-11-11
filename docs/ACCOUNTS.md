@@ -40,8 +40,9 @@ For the complete ordered PowerShell/Bash setup and terminal layout, start with
 6. Open `/sign-up`, create an account using a password of 12–128 characters, and
    follow its verification email. Then sign in at `/sign-in` and open `/account`.
 
-The seeded exercise-demo user is not an email/password credential account.
-Register a new account for Milestone 1. The existing exercise seed is unchanged.
+The legacy exercise-demo user is not an email/password credential account.
+Register a new account, or opt into the four local-only tier logins described in
+[QUIZ_SESSION_AUTH.md](QUIZ_SESSION_AUTH.md#optional-local-demo-logins).
 
 ## Migration name update
 
@@ -51,7 +52,32 @@ The SQL and its checksum are unchanged. Fresh databases need no special step.
 
 If your local database already applied the old name, back it up first. In a
 PostgreSQL query console connected to that database, rename only its successful
-history record with the matching SQL checksum:
+history record with the matching SQL checksum.
+
+If you already tried deploying and received `P3018` with `Session already exists`,
+first inspect the history:
+
+```sql
+SELECT migration_name, checksum, finished_at, rolled_back_at, applied_steps_count
+FROM "_prisma_migrations"
+WHERE migration_name IN (
+  '20261103090000_add_better_auth', '20261108090000_add_better_auth'
+);
+```
+
+Only when the old entry completed with the checksum below, the auth tables are
+already complete, and the renamed attempt failed at the first `CREATE TABLE`,
+mark that failed attempt rolled back before running the rename SQL:
+
+```bash
+npx prisma migrate resolve --rolled-back 20261108090000_add_better_auth
+```
+
+This changes the failed attempt's history status; it does not drop or revert any
+tables. If the schema is incomplete or the checksums differ, stop and inspect it
+instead of marking a partially applied migration as complete.
+
+Then rename the successful old entry:
 
 ```sql
 BEGIN;
@@ -64,6 +90,7 @@ WHERE migration_name = '20261103090000_add_better_auth'
   AND NOT EXISTS (
     SELECT 1 FROM "_prisma_migrations"
     WHERE migration_name = '20261108090000_add_better_auth'
+      AND rolled_back_at IS NULL
   )
 RETURNING migration_name;
 COMMIT;
@@ -84,6 +111,8 @@ migration rename.
 - `requireUser()` in `src/lib/auth/session.ts` verifies the database session and
   email verification state. Call it inside each protected page or Server Action,
   before reading or writing user data. Use its user ID, never a submitted user ID.
+  It returns identity, stored tier and trial expiry from the fresh server session;
+  effective permissions still come from the shared access policy.
   API handlers should validate sessions and return appropriate 401/403 responses.
 - The browser client uses HttpOnly session cookies. Tier and trial fields cannot
   be supplied through signup/update requests. Cookie session caching is disabled.
@@ -127,9 +156,10 @@ An expired TRIAL account has effective FREE access immediately; no scheduled job
 or database rewrite is required. A legacy TRIAL account without an expiry also
 has effective FREE access and cannot start another trial.
 
-The account page reports permissions; quiz, tracking, coach and content-management
-screens remain owned by their respective feature areas. Each feature must enforce
-its permission before reading data or doing work:
+The quiz/session pages and their actions now require a verified session and scope
+data to its owner (#50; [details](QUIZ_SESSION_AUTH.md)). Coach and
+content-management entrypoints must enforce their permission before reading data
+or doing work:
 
 ```ts
 // Inside a protected Server Component:
@@ -158,9 +188,10 @@ npx tsx scripts/create-admin.ts --email admin@your-domain.com --confirm
 
 This grants ADMIN only to the selected existing, verified password account. It
 does not create users, set passwords or change trial dates. It is safe to repeat.
-There is no public admin signup or promotion endpoint. The exercise/demo seed is
-unchanged; its demo user is not an admin credential account. Protect database and
-server access, since the operator command deliberately bypasses app permissions.
+There is no public admin signup or promotion endpoint. The legacy exercise demo
+is not an admin credential account; the optional tier fixtures are restricted to
+local development. Protect database and server access, since the operator
+command deliberately bypasses app permissions.
 
 Stripe checkout, signed webhooks and paid-tier reconciliation preserve trial dates
 and ADMIN access. PRO requires a current active billing record and a future

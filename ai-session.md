@@ -90,7 +90,7 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Got:** Render's free PostgreSQL is deleted 30 days after creation and its web service sleeps after 15 minutes; Railway gives a 30-day $5 trial, then $1 a month; Vercel Hobby is free with a 300-second function limit and Neon Free needs no card. Neon's Prisma guide uses the pooled string for the app and a direct string for the CLI. A suggestion to migrate only on production builds, so a pull request preview never applies an unmerged migration to the shared database.
 
-**Did with it:** recorded the choice and the options it beat as D15 with the sources and the date checked; wrote the two rules (which URL the CLI uses, which steps a build runs) as a small module with six tests written first and seen failing; added `vercel.json`, the build script, the `.env.example` entry and the README Deploy steps. CI already runs `npm run build`. Creating the accounts, seeding Neon and checking the demo path on the live URL are the steps left to me.
+**Did with it:** recorded the choice and the options it beat as D19 with the sources and the date checked; wrote the two rules (which URL the CLI uses, which steps a build runs) as a small module with six tests written first and seen failing; added `vercel.json`, the build script, the `.env.example` entry and the README Deploy steps. CI already runs `npm run build`. Creating the accounts, seeding Neon and checking the demo path on the live URL are the steps left to me.
 
 ### 5 November 2026, deploy review fixes (issue #57, PR #61)
 
@@ -100,7 +100,7 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Got:** Prisma's guide says a pull request with a migration would change the production schema and recommends a second database scoped to Preview; Neon's guide gives `connect_timeout=15` for P1001 on wake; Vercel's default function region is `iad1`; Node 22.x is still offered; Vercel's Hobby commit-author check applies to private repositories in organizations, not to our public repository.
 
-**Did with it:** updated the README Deploy steps and the D15 cost, switched CI from `npm run build` to `scripts/vercel-build.ts` (so the first 5 November entry's "CI already runs `npm run build`" no longer holds), and added `engines` to `package.json`. A second independent review then found that Vercel lets only the owner of a personal-account repository import it, so Mohammad creates the Vercel project; that previews with their own database should migrate too, which I changed test first; and that `npx` should not fetch missing binaries. I checked each against Vercel's and Neon's docs, fixed them, and reran lint, typecheck, tests and the format check.
+**Did with it:** updated the README Deploy steps and the D19 cost, switched CI from `npm run build` to `scripts/vercel-build.ts` (so the first 5 November entry's "CI already runs `npm run build`" no longer holds), and added `engines` to `package.json`. A second independent review then found that Vercel lets only the owner of a personal-account repository import it, so Mohammad creates the Vercel project; that previews with their own database should migrate too, which I changed test first; and that `npx` should not fetch missing binaries. I checked each against Vercel's and Neon's docs, fixed them, and reran lint, typecheck, tests and the format check.
 
 ### 6 November 2026, Section 2 trim for the final proposal (issues #4, #13)
 
@@ -152,6 +152,18 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Did with it:** rechecked the R2 page on 6 November before committing, changed D3 and the diagram node to R2, and added a short storage section to the research doc. R2's get-started page shows the checkout step but does not mention a payment method, so the doc attributes that to the teammate's report. The README keeps its generic "S3-compatible bucket" wording, which stays true. I also closed the research doc's stale questions against the issues that settled them and pointed the plan's eval link at `main`.
 
+### 6 November 2026, crisis and red-flag guardrails (issue #43)
+
+**Before asking:** I set both rules and wrote both replies myself. Any message about not wanting to be alive, suicide, self-harm or ending one's life gets a fixed reply pointing to 9-8-8 (call or text, any time) and 911, with no model call, before every other rule; I checked 9-8-8 on the Public Health Agency of Canada and CRTC pages. Chest pain or tightness, fainting, severe shortness of breath or an irregular heartbeat during exercise gets "stop exercising now" and medical attention, checked next, before pain. Effort talk ("this workout is killing me", "I'm dying after that run") and soreness ("my chest is sore from bench") must pass.
+
+**Asked:** for the matching patterns and for test phrases in both directions.
+
+**Got:** patterns and phrases. Running them showed that "I don't want to hurt myself on heavy deadlifts" was read as a pain report, because "don't" was missing from the words that cancel a pain phrase, and that "this workout is killing me" was read as pain.
+
+**Did with it:** ran the new tests against the old code first (20 failed), then wrote the patterns, added "don't" to the negations and narrowed "killing me" to a body part ("my shoulder is killing me").
+
+An independent review then confirmed the 9-8-8 details on the CRTC, Public Health Agency of Canada and 988.ca pages, and found the first patterns too narrow. Missed were "I want to die", "I've been cutting myself", "I took too many pills on purpose" (which got the no-medication reply), "my chest hurts during runs", "I collapsed after the set" and every message typed with a phone's curly apostrophe. It also found training talk caught by mistake: "suicide sprints", "I want to end it with planks", "cut myself some slack", "faint praise". Each became a test, failing first, before I widened or narrowed the patterns. Any mention of shortness of breath counts as a red flag, which is on the safe side of my "severe".
+
 ### 6 November 2026, review before merging the coach pull requests (issues #11, #19, #34, #41, #43, #46)
 
 **Before asking:** my rule for my own pull requests is three days for the team to review, then an independent review of each diff against its issue, the tests and `docs/ENGINEERING_PRACTICES.md` before merging. I decided which findings block a merge: a safety rule that can be bypassed, a promise in the code or the issue that the code does not keep, and data the database can get wrong.
@@ -193,6 +205,16 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 **Got:** SensAI's App Store listing at $6.99 a month and Future's site at $199 a month; the chat code shows a fixed message when the model is down, not a cached reply; and four review findings: Groq sends a token-wait header as well as Retry-After, Section 3's review rule contradicted the 3 November decision, the SensAI title was off, and Section 2 no longer said where verified plans go.
 
 **Did with it:** made each change in its own commit naming the section's owner, cut repetition in Section 2 to stay under the cap, and rebuilt the combined file from the sections. The proposal ends at 1,985 words.
+
+### 6 November 2026, crisis screening in three layers (issue #43)
+
+**Before asking:** two independent reviews of the guardrails found crisis and cardiac wordings the word list missed, and common gym exaggeration getting the full crisis reply. I decided a longer word list would not catch up, and set the design: keep the word list as the deterministic floor; add a short check-in that still names 9-8-8 for exaggeration in training talk ("I'm gonna die on this run") and for distress with no training context; and run a model safety check first that can only raise the response, never lower it. Tests first, from every phrasing the reviews found.
+
+**Asked:** for Groq's current safety models and their status, the tests from the review phrasings, the three layers as separate small modules, and a fresh independent review before anything merges.
+
+**Got:** Groq serves `openai/gpt-oss-safeguard-20b` for bring-your-own-policy moderation, in preview (Groq content-moderation and model pages, 6 Nov); 67 new word-list cases and two new test files that failed first; `distress.ts` (check-in), `safetyScreen.ts` (layers, 3-second limit, model failure falls back to the word list) and `safetyModel.ts` (policy in Groq's recommended four sections, JSON output).
+
+**Did with it:** checked that every earlier case still passes, wrote the decision as D15 in `docs/ARCHITECTURE.md` with the option it beat, and kept the check-in wording short with 9-8-8 and 911 in it. Nothing in the app calls the screen yet; the chat code (#53) does next. A second fresh review found more missed crisis and cardiac wordings, a distress reading from the model replacing the eating-support and pain-stop replies, and crisis messages softened to the check-in by any gym word. I kept the design and tightened it: a reply that already gives specific help now outranks a distress reading; exaggeration counts only when tied to the session and nothing states intent; any message with crisis words that would get the off-topic redirect gets the check-in; and every new wording became a test that failed first (64).
 
 ### 10 November 2026, board and docs upkeep (issues #70, #73 to #77)
 
@@ -294,6 +316,26 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Did with it:** wrote a failing test for every finding before fixing it, and pushed #48 after the last round's blocking findings were fixed (844 unit and 46 integration tests). The remaining false positives and gaps are listed on the pull request as follow-ups. A plugin rule stopped me from staging the environment template, so the #61 fixes are verified but wait for me to commit and push them by hand. Tools for the targeted help: pr-review-toolkit:code-reviewer and silent-failure-hunter, backend-design:security-reviewer, vercel:deployments-cicd, sweetclaude:workflow-guardian, fresh general-purpose agents as second checks, and Firecrawl for the Vercel, Neon, Better Auth and Prisma pages.
 
+### 10 November 2026, demo mode with cached coach plans (issue #59, PR #99)
+
+**Before asking:** the 3 November design review decided the demo's fallback must be immediate and its coach outputs cached (D12). I decided where the cache lives before any code: a file in the repository holding the coach's own verified plans from the 30 October eval, not a cache filled from live replies, which would be empty in a rehearsal with the network off. I decided a cached plan is served only when it passes the verifier for the user's own profile, that it is a coach plan but must be labelled as written earlier, and that plans come first and chat replies in a later slice. The design went into `docs/ARCHITECTURE.md` before the code.
+
+**Asked:** the current Vercel runtime cache and Gemini model pages; test-first slices for demo mode in the provider chain and for the cache in plan generation; a list of what could go wrong on demo day; and an independent review of the branch, then a second check of the fixes.
+
+**Got:** the review found that my worst case of 16 seconds was wrong: a reply that stalled after its headers, or a rejected plan, sent the request round the chain a second time, up to about 32 seconds. My latency figures came from the first eval round on Gemini Flash, not the Flash-Lite model the fallback uses. My test only caught a prompt change when the version was bumped. And the architecture note described a screen that does not exist yet. The incident list found the same stalled-body gap independently.
+
+**Did with it:** wrote a failing test for each finding before fixing it. Demo mode now makes one attempt, so the worst case really is one pass through the chain. A stalled body counts as a provider timeout. The cache carries a hash of the prompt, so any wording change fails a test until the cache is refreshed. The demo sets the Flash-Lite model. I corrected the architecture note to say the "Personalize with the coach" action (#58) will show the cached plan. 877 tests pass. Tools: backend-design:error-handling-as-design, vercel:runtime-cache, agentic-sdlc:testing-vitest, backend-design:incident-thinker, pr-review-toolkit:code-reviewer as the independent reviewer, and Firecrawl for the Vercel and Google pages.
+
+### 10 November 2026, an RPE target per plan exercise (issue #65, pull request #101)
+
+**Before asking:** plans stated sets, reps and rest but not how hard each exercise should be, and the 8 November research (Lee) found intensity was the least stable part of generated plans. I decided on an integer RPE from 6 to 9 on each exercise, checked in code like the other ranges, and that it would be validated but not stored, because storing it needs a migration the issue does not ask for.
+
+**Asked:** the test-first cases (accepts 6 to 9, rejects 5, 10, a decimal and a missing value; the default plan sets 7; the prompt asks for it) and an independent review of the branch.
+
+**Got:** the review found that the plan prompt version had not been bumped, that one new test would pass even if the retry listed no problems, that the architecture doc and decision record were stale, and that the open demo-mode pull request (#99) caches replies without an RPE, so they would all fail the verifier. It checked the scale against Helms et al. (2016): RPE 7 is about three reps left, and the 6 to 9 band covers one to six.
+
+**Did with it:** I bumped the prompt to `plan-v3`, made the retry test name the `rpe` problem, wrote the scale and its source into the schema comment and the D17 row, and listed the #99 clash and the missing live run against Groq and Gemini in the pull request. The 30 October eval replay adds `rpe: 7` to the recorded replies, which predate the field. Lint, typecheck, 865 unit tests and the format check pass. Tools for the targeted help: a fresh review agent (`pr-review-toolkit:code-reviewer`) and git.
+
 ## Mohammad
 
 ### 31 October 2026, onboarding quiz validation edge cases
@@ -342,13 +384,54 @@ I worked on accounts, access tiers and Stripe test-mode billing, which meant the
 
 ### Stripe test-mode subscriptions (issue #14, milestone 3)
 
-This entry records the separate billing work; the sign-in and tiers PR contains
-Milestones 1–2. The complete billing implementation is preserved on its own branch.
+The billing work lives on its own branch. The sign-in and tiers PR only has milestones 1 and 2.
 
-**Before asking:** I took a backup before adding billing and set up a Stripe sandbox. I decided on monthly and yearly PRO subscriptions, kept separate from the cardless app trial.
+**Before asking:** I took a backup before touching billing and set up a Stripe sandbox. I'd already decided on monthly and yearly PRO plans, and that they would stay separate from the seven-day trial, which needs no card.
 
-**Asked:** how Checkout, billing management and webhooks should work with our existing access tiers. I was also unsure about parts of the Stripe setup, so I asked for detailed instructions, and I asked for a review of cases I might be missing.
+**Asked:** how Checkout, billing management and webhooks should fit with the access tiers we already had. I'd never set up Stripe, so I asked for step-by-step instructions where I got stuck. Once I had a flow, I asked it to look for cases I'd missed.
 
-**Got:** an explanation of the Checkout and webhook flow. The main points were to verify payment on the server before granting PRO, refresh the account status after Checkout, and keep trial dates and ADMIN access intact. The review also brought up duplicate Checkout requests, cancellation, renewal and failed payments.
+**Got:** the main thing I took from it was not to trust the redirect after Checkout. PRO should only be granted once the server has confirmed the payment. It also said to refresh the account status when the user comes back from Checkout, and to make sure billing never overwrites trial dates or ADMIN access. When I asked what I was missing, it listed double-clicked Checkout requests, cancellations, renewals and failed payments.
 
 **Did with it:** I configured the Stripe sandbox and wrote down the monthly and yearly requirements. When I tested a payment locally, the displayed tier didn't update, so I asked for a fix, automatic status refresh and clearer startup instructions. I used AI to help run checks and sandbox scenarios for purchase, cancellation and renewal. At the milestone review, 94 unit tests passed, along with formatting, lint and TypeScript checks. This is test-mode billing only, and connecting it to the quiz/session and coach screens is separate integration work.
+
+---
+
+### Signed-in quiz and workout sessions (issue #50)
+
+**Before asking:** I wanted the existing quiz and workout flow to work with real accounts, as the issue describes, so each person only sees and logs their own workouts. I decided to add local demo accounts for all four tiers, including an offline PRO one, so I could test everything without going through a Stripe purchase.
+
+**Asked:** how the signed-in flow should run from login through the quiz, the plan, workout logging and finishing a workout, and then for help building and checking it. While setting up locally I hit three errors and pasted them in: a migration error about the existing `Session` table, a missing Stripe module, and a warning that another dev server was already running.
+
+**Got:** the advice was to check the session on every page and every action, and to look up user data by the user ID from the server, never from anything the client sends. It also suggested returning the tier and trial info with the session. Most of the code for this was written by AI from what I told it, including the demo account seeding and the tests for signed-out redirects and for trying to open someone else's plan. For the errors, it traced the migration problem to a renamed migration history, the Stripe error to a dependency that wasn't installed, and the last one to a dev server I'd left running.
+
+**Did with it:** I decided how the flow and the demo accounts should work. I got the app running locally, fixed the three errors and told it what I saw when something else broke. Near the end I asked it to check the work against every requirement in the issue. The automated checks passed in a clean workspace, including the database and browser tests. I repaired the local migration history after taking a backup, and no app data was deleted. The demo passwords are in my private env file, not in the repo, and the offline PRO account only exists for local testing.
+
+### 10 November 2026, quiz plans with run days (issue #85)
+
+**Before asking:** the quiz plan came from `buildDefaultPlan`, so it never had a run day and the session screen had nothing to show for runs, although `buildHybridWeek` and `saveWeek` could already store them. I decided the quiz asks for training mode, strength by default, and that only running and both take the new path, so a strength quiz stays as it is. The quiz action is Mohammad's file, so I kept my change there to one early branch and put the rest in my own files.
+
+**Asked:** the test-first slices (a both-mode quiz saves a run day, running-only saves runs, strength-only is unchanged), the Next.js Server Action form handling, and an independent review of the branch.
+
+**Got:** the review found that the profile and the plan were saved in two steps, so a failed plan save would leave the profile saying running with the old strength plan active, and that the hybrid week was saved without running either verifier, against D9. It also found tests that would pass without the change, and the new-runner default missing from the docs.
+
+**Did with it:** `saveWeek` takes a hook that runs inside its transaction, so the profile is saved with the plan or not at all; a test makes the plan fail and checks the profile is unchanged. The strength and running verifiers run before saving. I tightened the running-only test to two runs and two strength days, and added tests for the saved mode, one-day running and the refusal paths. The new-runner default and the options it beat are in the D9 note in `ARCHITECTURE.md`. Lint, typecheck, 850 unit tests, 54 integration tests on PostgreSQL 16 and the format check pass (pull request #97). Tools for the targeted help: skills `agentic-sdlc:testing-vitest` and `hzblj-skills:functions`, Context7 for the Next.js Server Action and `useActionState` form docs (checked 10 November 2026), and a fresh review agent (`pr-review-toolkit:code-reviewer`).
+
+### 10 November 2026, bringing the chat pull request current after #48 merged (issue #11, pull request #53)
+
+**Before asking:** #48 was squashed, so the chat branch still carried the guardrail commits it had merged one by one, and git reported add/add conflicts in the guardrail files. I decided to merge the #43 branch first, so the chat changes kept their place, and then main, instead of taking main's copy of every guardrail file, which would have dropped the chat branch's `mentionsTraining`.
+
+**Asked:** the merge, and an independent review of the result against main.
+
+**Got:** the typecheck failed after the merge: main already has its own chat model (`coachChatModel`), which duplicated the one in this branch. The review found no blocking issue and noted that the route must pass history from stored rows, not the request body.
+
+**Did with it:** I dropped the duplicate chat model and used main's. Main's Gemini chat reply kept only the first text part, the bug Shubham found, so I re-applied the join-all-parts fix there; the test failed first. Lint, typecheck, 991 unit tests, 46 integration tests on PostgreSQL 16 and the format check pass. Tools for the targeted help: `pr-review-toolkit:code-reviewer` (fresh context) and git.
+
+### 10 November 2026, guardrail false positives and misses left from #48 (issue #43)
+
+**Before asking:** the review of #48 left a list: training talk the crisis word list still mistook for a crisis (a rep or load count after "pills", "kms" as a distance unit, "won't be here tomorrow so I can't train", jumps into a pool or onto a box) and three diagnosis questions it let through ("did i break my back squatting", "did i tear my shoulder pressing", "did i tear my pec"). I decided every fix stays inside the guardrail module, that each case gets a failing test first, and that if a fix would turn an existing crisis test red the crisis reading wins and the case is logged for the model check instead.
+
+**Asked:** the test-first slices, the narrowing of each pattern, and an independent review of the branch that had not seen the work.
+
+**Got:** the review ran the same probes against main and against the branch and found my first fix too wide: a swim word anywhere let "i can't swim, i'm on the bridge and i'm gonna jump into the water" through, a jump onto a "platform" or "step" from a roof stopped being a crisis, the "so i can't train" and "so i need to reschedule" exceptions accepted any words after them ("...so i need to reschedule my funeral"), and "using kms" and "school vs kms" were let through.
+
+**Did with it:** each of those inputs is now a test that failed first and stays a crisis. The jump exception needs a pool named just before the jump or a plyo box, and does nothing when the message has a height ("bridge", "below", "from here") or "can't swim". The scheduling exceptions need a training object or the end of the sentence. "Kms" is a unit only after "prefer" or a "miles vs" pair. Load units after "pills ... 20 more" stop counting when ingestion words follow. The diagnosis list gained pec, biceps, triceps, quads and groin, and a lift name no longer hides "squatting" or "pressing". Left to the model check, not coded: "kms today", "kms for real", "on the roof i'm jumping", and a roof or bridge jump into water. Lint, typecheck, 903 unit tests and the format check pass. Tools for the targeted help: skill `agentic-sdlc:testing-vitest`, skill `backend-design:error-handling-as-design` (not run, see the log), and a fresh review agent (`pr-review-toolkit:code-reviewer`).

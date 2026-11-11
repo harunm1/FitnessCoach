@@ -1,4 +1,4 @@
-// Release rules for the hosted preview (#57, docs/ARCHITECTURE.md D15): which URL the
+// Release rules for the hosted preview (#57, docs/ARCHITECTURE.md D19): which URL the
 // Prisma CLI uses, which steps a Vercel build runs, and what it checks first.
 
 type Env = Record<string, string | undefined>;
