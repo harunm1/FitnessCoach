@@ -306,6 +306,16 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 
 **Did with it:** wrote a failing test for each finding before fixing it. Demo mode now makes one attempt, so the worst case really is one pass through the chain. A stalled body counts as a provider timeout. The cache carries a hash of the prompt, so any wording change fails a test until the cache is refreshed. The demo sets the Flash-Lite model. I corrected the architecture note to say the "Personalize with the coach" action (#58) will show the cached plan. 877 tests pass. Tools: backend-design:error-handling-as-design, vercel:runtime-cache, agentic-sdlc:testing-vitest, backend-design:incident-thinker, pr-review-toolkit:code-reviewer as the independent reviewer, and Firecrawl for the Vercel and Google pages.
 
+### 10 November 2026, an RPE target per plan exercise (issue #65, pull request #101)
+
+**Before asking:** plans stated sets, reps and rest but not how hard each exercise should be, and the 8 November research (Lee) found intensity was the least stable part of generated plans. I decided on an integer RPE from 6 to 9 on each exercise, checked in code like the other ranges, and that it would be validated but not stored, because storing it needs a migration the issue does not ask for.
+
+**Asked:** the test-first cases (accepts 6 to 9, rejects 5, 10, a decimal and a missing value; the default plan sets 7; the prompt asks for it) and an independent review of the branch.
+
+**Got:** the review found that the plan prompt version had not been bumped, that one new test would pass even if the retry listed no problems, that the architecture doc and decision record were stale, and that the open demo-mode pull request (#99) caches replies without an RPE, so they would all fail the verifier. It checked the scale against Helms et al. (2016): RPE 7 is about three reps left, and the 6 to 9 band covers one to six.
+
+**Did with it:** I bumped the prompt to `plan-v3`, made the retry test name the `rpe` problem, wrote the scale and its source into the schema comment and the D17 row, and listed the #99 clash and the missing live run against Groq and Gemini in the pull request. The 30 October eval replay adds `rpe: 7` to the recorded replies, which predate the field. Lint, typecheck, 865 unit tests and the format check pass. Tools for the targeted help: a fresh review agent (`pr-review-toolkit:code-reviewer`) and git.
+
 ## Mohammad
 
 ### 31 October 2026, onboarding quiz validation edge cases
