@@ -11,6 +11,7 @@ const POOLED = "postgresql://u:p@ep-x-pooler.neon.tech/db";
 const DIRECT = "postgresql://u:p@ep-x.neon.tech/db";
 const OTHER_BRANCH = "postgresql://u:p@ep-y.neon.tech/db";
 const TEST_DB = "postgresql://u:p@localhost:5432/fitnesscoach_test";
+const DIRECT_OF_OTHER_POOLED = "postgresql://u:p@ep-x-pooler.neon.tech/db";
 
 describe("cliDatabaseUrl", () => {
   it("uses the direct connection for migrations on a hosted build", () => {
@@ -89,6 +90,44 @@ describe("hostedDatabaseProblems", () => {
       }),
     ).toEqual([
       "DATABASE_URL (ep-x-pooler.neon.tech/db) and DATABASE_URL_UNPOOLED (ep-y.neon.tech/db) point at different databases",
+    ]);
+  });
+  // An unreadable URL used to match any other unreadable URL (11 Nov review).
+  it("reports each URL that cannot be read instead of treating two as the same database", () => {
+    expect(
+      hostedDatabaseProblems({
+        VERCEL_ENV: "production",
+        DATABASE_URL: "not a url",
+        DATABASE_URL_UNPOOLED: "also bad",
+      }),
+    ).toEqual([
+      "DATABASE_URL is not a readable URL for VERCEL_ENV=production; copy the pooled Neon string again (README, Deploy step 5)",
+      "DATABASE_URL_UNPOOLED is not a readable URL for VERCEL_ENV=production; copy the direct Neon string again (README, Deploy step 5)",
+    ]);
+  });
+
+  it("reports one unreadable URL even when the other is fine", () => {
+    expect(
+      hostedDatabaseProblems({
+        VERCEL_ENV: "preview",
+        DATABASE_URL: POOLED,
+        DATABASE_URL_UNPOOLED: "also bad",
+      }),
+    ).toEqual([
+      "DATABASE_URL_UNPOOLED is not a readable URL for VERCEL_ENV=preview; copy the direct Neon string again (README, Deploy step 5)",
+    ]);
+  });
+
+  // The pooled string pasted twice is one mistake, not two databases (11 Nov review).
+  it("says so when the direct URL is the pooled string", () => {
+    expect(
+      hostedDatabaseProblems({
+        VERCEL_ENV: "preview",
+        DATABASE_URL: POOLED,
+        DATABASE_URL_UNPOOLED: DIRECT_OF_OTHER_POOLED,
+      }),
+    ).toEqual([
+      "DATABASE_URL_UNPOOLED (ep-x-pooler.neon.tech/db) is a pooled string for VERCEL_ENV=preview; set the direct Neon string, with connection pooling off (README, Deploy step 5)",
     ]);
   });
 });

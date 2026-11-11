@@ -24,28 +24,73 @@ export function cliDatabaseUrl(env: Env): string | undefined {
   return env.DATABASE_URL;
 }
 
-/** "host/database" for a log line; never the user name or password. */
-export function databaseTarget(url: string): string {
+function parseUrl(url: string): URL | undefined {
   try {
-    const parsed = new URL(url);
-    return `${parsed.host}${parsed.pathname}`;
+    return new URL(url);
   } catch {
-    return "an unreadable URL";
+    return undefined;
   }
 }
 
+/** "host/database" for a log line; never the user name or password. */
+export function databaseTarget(url: string): string {
+  const parsed = parseUrl(url);
+  return parsed ? `${parsed.host}${parsed.pathname}` : "an unreadable URL";
+}
+
+// Neon's pooled host carries "-pooler"; the direct host for the same branch does not.
+function isPooledHost(url: URL): boolean {
+  return url.hostname.includes("-pooler");
+}
+
 // The pooled and direct Neon strings for one branch differ only by "-pooler" in the host.
-function sameDatabase(pooled: string, direct: string): boolean {
-  return (
-    databaseTarget(pooled).replace("-pooler", "") === databaseTarget(direct)
-  );
+function sameDatabase(pooled: URL, direct: URL): boolean {
+  const target = (url: URL) => `${url.host}${url.pathname}`;
+  return target(pooled).replace("-pooler", "") === target(direct);
+}
+
+const DEPLOY_STEP = "(README, Deploy step 5)";
+
+// Problems with two set URLs: unreadable, the pooled string pasted as the direct one,
+// or two different databases.
+function urlPairProblems(
+  pooled: string,
+  direct: string,
+  where: string,
+): string[] {
+  const pooledUrl = parseUrl(pooled);
+  const directUrl = parseUrl(direct);
+  const problems: string[] = [];
+  if (!pooledUrl) {
+    problems.push(
+      `DATABASE_URL is not a readable URL ${where}; copy the pooled Neon string again ${DEPLOY_STEP}`,
+    );
+  }
+  if (!directUrl) {
+    problems.push(
+      `DATABASE_URL_UNPOOLED is not a readable URL ${where}; copy the direct Neon string again ${DEPLOY_STEP}`,
+    );
+  }
+  if (!pooledUrl || !directUrl) return problems;
+  if (isPooledHost(directUrl)) {
+    return [
+      `DATABASE_URL_UNPOOLED (${databaseTarget(direct)}) is a pooled string ${where}; set the direct Neon string, with connection pooling off ${DEPLOY_STEP}`,
+    ];
+  }
+  if (!sameDatabase(pooledUrl, directUrl)) {
+    return [
+      `DATABASE_URL (${databaseTarget(pooled)}) and DATABASE_URL_UNPOOLED (${databaseTarget(direct)}) point at different databases`,
+    ];
+  }
+  return [];
 }
 
 /**
  * What a hosted build must not start with: a missing pooled URL (the app would fail on
- * its first request), a missing direct URL (migrations would go through the pooler), or
- * two URLs on different databases (a preview could migrate production). Each problem
- * names the variable and never the credentials.
+ * its first request), a missing direct URL (migrations would go through the pooler), an
+ * unreadable URL, the pooled string set as the direct one, or two URLs on different
+ * databases (a preview could migrate production). Each problem names the variable and
+ * never the credentials.
  */
 export function hostedDatabaseProblems(env: Env): string[] {
   if (!isHostedBuild(env)) return [];
@@ -53,21 +98,17 @@ export function hostedDatabaseProblems(env: Env): string[] {
   const problems: string[] = [];
   if (!env.DATABASE_URL) {
     problems.push(
-      `DATABASE_URL is not set ${where}; set the pooled Neon string (README, Deploy step 5)`,
+      `DATABASE_URL is not set ${where}; set the pooled Neon string ${DEPLOY_STEP}`,
     );
   }
   if (!env.DATABASE_URL_UNPOOLED) {
     problems.push(
-      `DATABASE_URL_UNPOOLED is not set ${where}; set the direct Neon string (README, Deploy step 5)`,
+      `DATABASE_URL_UNPOOLED is not set ${where}; set the direct Neon string ${DEPLOY_STEP}`,
     );
   }
-  if (
-    env.DATABASE_URL &&
-    env.DATABASE_URL_UNPOOLED &&
-    !sameDatabase(env.DATABASE_URL, env.DATABASE_URL_UNPOOLED)
-  ) {
+  if (env.DATABASE_URL && env.DATABASE_URL_UNPOOLED) {
     problems.push(
-      `DATABASE_URL (${databaseTarget(env.DATABASE_URL)}) and DATABASE_URL_UNPOOLED (${databaseTarget(env.DATABASE_URL_UNPOOLED)}) point at different databases`,
+      ...urlPairProblems(env.DATABASE_URL, env.DATABASE_URL_UNPOOLED, where),
     );
   }
   return problems;
