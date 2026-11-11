@@ -62,7 +62,10 @@ export const EMPTY_REPLY =
 //     a joke" or "translate that into French" are not;
 //   - the message right before it is the coach's own model reply, about training;
 //   - that reply is not one of the app's fixed replies (the crisis, pain, nutrition and
-//     off-topic replies all mention "training" or "exercise" and are no context).
+//     off-topic replies all mention "training" or "exercise" and are no context);
+//   - in "what do you mean by X", X is words from that reply, so "what do you mean by
+//     RPE" after a reply that used RPE is a follow-up and "what do you mean by bitcoin
+//     price today" is not (review of 11 Nov).
 // The system prompt still limits the model to this user's training, and the reply goes
 // through checkCoachReply.
 const MAX_FOLLOW_UP_WORDS = 8;
@@ -70,10 +73,16 @@ const LEAD = String.raw`(?:(?:ok|okay|so|and|but|hmm)[ ,]+)?`;
 const FOLLOW_UP = new RegExp(
   [
     String.raw`^${LEAD}(?:(?:can|could|would) you (?:please )?|please )?(?:explain|clarify|elaborate)(?: (?:that|this|it|more|further|again|a bit more|why|how|what you (?:mean|said)))?[ ?.!]*$`,
-    String.raw`^${LEAD}(?:why|why is that|why is it|how come|how so|what do you mean(?: by [\w' -]{1,30})?|what does (?:that|this|it) mean|tell me more|say more|go on|and then|what about (?:that|this|it|the (?:last|next|first) one))[ ?.!]*$`,
+    String.raw`^${LEAD}(?:why|why is that|why is it|how come|how so|what do you mean(?: by (?<term>[\w' -]{1,30}))?|what does (?:that|this|it) mean|tell me more|say more|go on|and then|what about (?:that|this|it|the (?:last|next|first) one))[ ?.!]*$`,
   ].join("|"),
   "i",
 );
+
+// The words after "what do you mean by", if any, must appear in the coach's reply.
+function termFromReply(match: RegExpExecArray, reply: string): boolean {
+  const term = match.groups?.term?.trim().toLowerCase();
+  return !term || reply.toLowerCase().includes(term);
+}
 
 // Everything the app says without asking the model. Compared in full, so a fixed reply
 // in the history is never mistaken for the coach talking about training.
@@ -86,12 +95,14 @@ const FIXED_REPLIES: ReadonlySet<string> = new Set([
 
 function isFollowUp(text: string, recent: ChatMessage[]): boolean {
   const last = recent.at(-1);
+  const match = FOLLOW_UP.exec(text);
   return (
     text.split(/\s+/).filter(Boolean).length <= MAX_FOLLOW_UP_WORDS &&
-    FOLLOW_UP.test(text) &&
+    match !== null &&
     last?.role === "assistant" &&
     !FIXED_REPLIES.has(last.content) &&
-    mentionsTraining(last.content)
+    mentionsTraining(last.content) &&
+    termFromReply(match, last.content)
   );
 }
 
