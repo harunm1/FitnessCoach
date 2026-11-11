@@ -83,6 +83,11 @@ DATABASE_URL="postgresql://fitnesscoach:fitnesscoach@localhost:5432/fitnesscoach
 Host: localhost; port: 5432; database/user/password: fitnesscoach. Data persists
 in a named Docker volume. Do not delete it to troubleshoot an authentication error.
 
+If this database used the older accounts branch, first follow the
+[auth migration name update](ACCOUNTS.md#migration-name-update). It also covers
+an already-failed deploy reporting that `Session` exists; preserve your tables
+and data rather than resetting them.
+
 Apply existing migration files without generating a new migration:
 
 ```powershell
@@ -93,8 +98,13 @@ npm run db:seed
 `npm install` generates the Prisma client through postinstall. If the schema/client
 needs refreshing, run `npx prisma generate`. Use `npm run db:migrate` when actually
 creating a schema migration; ordinary setup uses the committed migration files.
-The seed imports exercises and the demo user. That demo is not a password-login
+The seed imports exercises and the legacy demo user. That demo is not a password-login
 account; register your own account. Seeding is not needed for each app restart.
+
+For optional verified local logins in all four tiers, set `DEMO_PASSWORD` in your
+private `.env` before seeding. These fixtures are restricted to localhost and
+non-production use; the PRO fixture is synthetic and does not use Stripe.
+See [QUIZ_SESSION_AUTH.md](QUIZ_SESSION_AUTH.md#optional-local-demo-logins).
 
 ## 3. Start Mailpit — mail terminal
 
