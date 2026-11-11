@@ -296,6 +296,26 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 
 **Did with it:** wrote a failing test for every finding before fixing it, and pushed #48 after the last round's blocking findings were fixed (844 unit and 46 integration tests). The remaining false positives and gaps are listed on the pull request as follow-ups. A plugin rule stopped me from staging the environment template, so the #61 fixes are verified but wait for me to commit and push them by hand. Tools for the targeted help: pr-review-toolkit:code-reviewer and silent-failure-hunter, backend-design:security-reviewer, vercel:deployments-cicd, sweetclaude:workflow-guardian, fresh general-purpose agents as second checks, and Firecrawl for the Vercel, Neon, Better Auth and Prisma pages.
 
+### 10 November 2026, demo mode with cached coach plans (issue #59, PR #99)
+
+**Before asking:** the 3 November design review decided the demo's fallback must be immediate and its coach outputs cached (D12). I decided where the cache lives before any code: a file in the repository holding the coach's own verified plans from the 30 October eval, not a cache filled from live replies, which would be empty in a rehearsal with the network off. I decided a cached plan is served only when it passes the verifier for the user's own profile, that it is a coach plan but must be labelled as written earlier, and that plans come first and chat replies in a later slice. The design went into `docs/ARCHITECTURE.md` before the code.
+
+**Asked:** the current Vercel runtime cache and Gemini model pages; test-first slices for demo mode in the provider chain and for the cache in plan generation; a list of what could go wrong on demo day; and an independent review of the branch, then a second check of the fixes.
+
+**Got:** the review found that my worst case of 16 seconds was wrong: a reply that stalled after its headers, or a rejected plan, sent the request round the chain a second time, up to about 32 seconds. My latency figures came from the first eval round on Gemini Flash, not the Flash-Lite model the fallback uses. My test only caught a prompt change when the version was bumped. And the architecture note described a screen that does not exist yet. The incident list found the same stalled-body gap independently.
+
+**Did with it:** wrote a failing test for each finding before fixing it. Demo mode now makes one attempt, so the worst case really is one pass through the chain. A stalled body counts as a provider timeout. The cache carries a hash of the prompt, so any wording change fails a test until the cache is refreshed. The demo sets the Flash-Lite model. I corrected the architecture note to say the "Personalize with the coach" action (#58) will show the cached plan. 877 tests pass. Tools: backend-design:error-handling-as-design, vercel:runtime-cache, agentic-sdlc:testing-vitest, backend-design:incident-thinker, pr-review-toolkit:code-reviewer as the independent reviewer, and Firecrawl for the Vercel and Google pages.
+
+### 10 November 2026, an RPE target per plan exercise (issue #65, pull request #101)
+
+**Before asking:** plans stated sets, reps and rest but not how hard each exercise should be, and the 8 November research (Lee) found intensity was the least stable part of generated plans. I decided on an integer RPE from 6 to 9 on each exercise, checked in code like the other ranges, and that it would be validated but not stored, because storing it needs a migration the issue does not ask for.
+
+**Asked:** the test-first cases (accepts 6 to 9, rejects 5, 10, a decimal and a missing value; the default plan sets 7; the prompt asks for it) and an independent review of the branch.
+
+**Got:** the review found that the plan prompt version had not been bumped, that one new test would pass even if the retry listed no problems, that the architecture doc and decision record were stale, and that the open demo-mode pull request (#99) caches replies without an RPE, so they would all fail the verifier. It checked the scale against Helms et al. (2016): RPE 7 is about three reps left, and the 6 to 9 band covers one to six.
+
+**Did with it:** I bumped the prompt to `plan-v3`, made the retry test name the `rpe` problem, wrote the scale and its source into the schema comment and the D17 row, and listed the #99 clash and the missing live run against Groq and Gemini in the pull request. The 30 October eval replay adds `rpe: 7` to the recorded replies, which predate the field. Lint, typecheck, 865 unit tests and the format check pass. Tools for the targeted help: a fresh review agent (`pr-review-toolkit:code-reviewer`) and git.
+
 ## Mohammad
 
 ### 31 October 2026, onboarding quiz validation edge cases
@@ -344,16 +364,27 @@ I worked on accounts, access tiers and Stripe test-mode billing, which meant the
 
 ### Stripe test-mode subscriptions (issue #14, milestone 3)
 
-This entry records the separate billing work; the sign-in and tiers PR contains
-Milestones 1–2. The complete billing implementation is preserved on its own branch.
+The billing work lives on its own branch. The sign-in and tiers PR only has milestones 1 and 2.
 
-**Before asking:** I took a backup before adding billing and set up a Stripe sandbox. I decided on monthly and yearly PRO subscriptions, kept separate from the cardless app trial.
+**Before asking:** I took a backup before touching billing and set up a Stripe sandbox. I'd already decided on monthly and yearly PRO plans, and that they would stay separate from the seven-day trial, which needs no card.
 
-**Asked:** how Checkout, billing management and webhooks should work with our existing access tiers. I was also unsure about parts of the Stripe setup, so I asked for detailed instructions, and I asked for a review of cases I might be missing.
+**Asked:** how Checkout, billing management and webhooks should fit with the access tiers we already had. I'd never set up Stripe, so I asked for step-by-step instructions where I got stuck. Once I had a flow, I asked it to look for cases I'd missed.
 
-**Got:** an explanation of the Checkout and webhook flow. The main points were to verify payment on the server before granting PRO, refresh the account status after Checkout, and keep trial dates and ADMIN access intact. The review also brought up duplicate Checkout requests, cancellation, renewal and failed payments.
+**Got:** the main thing I took from it was not to trust the redirect after Checkout. PRO should only be granted once the server has confirmed the payment. It also said to refresh the account status when the user comes back from Checkout, and to make sure billing never overwrites trial dates or ADMIN access. When I asked what I was missing, it listed double-clicked Checkout requests, cancellations, renewals and failed payments.
 
 **Did with it:** I configured the Stripe sandbox and wrote down the monthly and yearly requirements. When I tested a payment locally, the displayed tier didn't update, so I asked for a fix, automatic status refresh and clearer startup instructions. I used AI to help run checks and sandbox scenarios for purchase, cancellation and renewal. At the milestone review, 94 unit tests passed, along with formatting, lint and TypeScript checks. This is test-mode billing only, and connecting it to the quiz/session and coach screens is separate integration work.
+
+---
+
+### Signed-in quiz and workout sessions (issue #50)
+
+**Before asking:** I wanted the existing quiz and workout flow to work with real accounts, as the issue describes, so each person only sees and logs their own workouts. I decided to add local demo accounts for all four tiers, including an offline PRO one, so I could test everything without going through a Stripe purchase.
+
+**Asked:** how the signed-in flow should run from login through the quiz, the plan, workout logging and finishing a workout, and then for help building and checking it. While setting up locally I hit three errors and pasted them in: a migration error about the existing `Session` table, a missing Stripe module, and a warning that another dev server was already running.
+
+**Got:** the advice was to check the session on every page and every action, and to look up user data by the user ID from the server, never from anything the client sends. It also suggested returning the tier and trial info with the session. Most of the code for this was written by AI from what I told it, including the demo account seeding and the tests for signed-out redirects and for trying to open someone else's plan. For the errors, it traced the migration problem to a renamed migration history, the Stripe error to a dependency that wasn't installed, and the last one to a dev server I'd left running.
+
+**Did with it:** I decided how the flow and the demo accounts should work. I got the app running locally, fixed the three errors and told it what I saw when something else broke. Near the end I asked it to check the work against every requirement in the issue. The automated checks passed in a clean workspace, including the database and browser tests. I repaired the local migration history after taking a backup, and no app data was deleted. The demo passwords are in my private env file, not in the repo, and the offline PRO account only exists for local testing.
 
 ### 10 November 2026, quiz plans with run days (issue #85)
 
@@ -364,3 +395,23 @@ Milestones 1–2. The complete billing implementation is preserved on its own br
 **Got:** the review found that the profile and the plan were saved in two steps, so a failed plan save would leave the profile saying running with the old strength plan active, and that the hybrid week was saved without running either verifier, against D9. It also found tests that would pass without the change, and the new-runner default missing from the docs.
 
 **Did with it:** `saveWeek` takes a hook that runs inside its transaction, so the profile is saved with the plan or not at all; a test makes the plan fail and checks the profile is unchanged. The strength and running verifiers run before saving. I tightened the running-only test to two runs and two strength days, and added tests for the saved mode, one-day running and the refusal paths. The new-runner default and the options it beat are in the D9 note in `ARCHITECTURE.md`. Lint, typecheck, 850 unit tests, 54 integration tests on PostgreSQL 16 and the format check pass (pull request #97). Tools for the targeted help: skills `agentic-sdlc:testing-vitest` and `hzblj-skills:functions`, Context7 for the Next.js Server Action and `useActionState` form docs (checked 10 November 2026), and a fresh review agent (`pr-review-toolkit:code-reviewer`).
+
+### 10 November 2026, bringing the chat pull request current after #48 merged (issue #11, pull request #53)
+
+**Before asking:** #48 was squashed, so the chat branch still carried the guardrail commits it had merged one by one, and git reported add/add conflicts in the guardrail files. I decided to merge the #43 branch first, so the chat changes kept their place, and then main, instead of taking main's copy of every guardrail file, which would have dropped the chat branch's `mentionsTraining`.
+
+**Asked:** the merge, and an independent review of the result against main.
+
+**Got:** the typecheck failed after the merge: main already has its own chat model (`coachChatModel`), which duplicated the one in this branch. The review found no blocking issue and noted that the route must pass history from stored rows, not the request body.
+
+**Did with it:** I dropped the duplicate chat model and used main's. Main's Gemini chat reply kept only the first text part, the bug Shubham found, so I re-applied the join-all-parts fix there; the test failed first. Lint, typecheck, 991 unit tests, 46 integration tests on PostgreSQL 16 and the format check pass. Tools for the targeted help: `pr-review-toolkit:code-reviewer` (fresh context) and git.
+
+### 10 November 2026, guardrail false positives and misses left from #48 (issue #43)
+
+**Before asking:** the review of #48 left a list: training talk the crisis word list still mistook for a crisis (a rep or load count after "pills", "kms" as a distance unit, "won't be here tomorrow so I can't train", jumps into a pool or onto a box) and three diagnosis questions it let through ("did i break my back squatting", "did i tear my shoulder pressing", "did i tear my pec"). I decided every fix stays inside the guardrail module, that each case gets a failing test first, and that if a fix would turn an existing crisis test red the crisis reading wins and the case is logged for the model check instead.
+
+**Asked:** the test-first slices, the narrowing of each pattern, and an independent review of the branch that had not seen the work.
+
+**Got:** the review ran the same probes against main and against the branch and found my first fix too wide: a swim word anywhere let "i can't swim, i'm on the bridge and i'm gonna jump into the water" through, a jump onto a "platform" or "step" from a roof stopped being a crisis, the "so i can't train" and "so i need to reschedule" exceptions accepted any words after them ("...so i need to reschedule my funeral"), and "using kms" and "school vs kms" were let through.
+
+**Did with it:** each of those inputs is now a test that failed first and stays a crisis. The jump exception needs a pool named just before the jump or a plyo box, and does nothing when the message has a height ("bridge", "below", "from here") or "can't swim". The scheduling exceptions need a training object or the end of the sentence. "Kms" is a unit only after "prefer" or a "miles vs" pair. Load units after "pills ... 20 more" stop counting when ingestion words follow. The diagnosis list gained pec, biceps, triceps, quads and groin, and a lift name no longer hides "squatting" or "pressing". Left to the model check, not coded: "kms today", "kms for real", "on the roof i'm jumping", and a roof or bridge jump into water. Lint, typecheck, 903 unit tests and the format check pass. Tools for the targeted help: skill `agentic-sdlc:testing-vitest`, skill `backend-design:error-handling-as-design` (not run, see the log), and a fresh review agent (`pr-review-toolkit:code-reviewer`).

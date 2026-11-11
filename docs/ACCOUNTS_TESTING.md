@@ -2,7 +2,9 @@
 
 Use an ordinary verified test account and a separate admin fixture. Local email
 links are read in Mailpit. Use only sandbox keys/cards for billing. The seeded
-demo user is not a credential account. [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md)
+legacy demo user is not a credential account. Optional local tier logins are
+described in [QUIZ_SESSION_AUTH.md](QUIZ_SESSION_AUTH.md).
+[LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md)
 contains startup steps; [ACCOUNTS.md](ACCOUNTS.md#automated-checks) contains isolated
 PostgreSQL test commands.
 
@@ -27,6 +29,21 @@ PostgreSQL test commands.
 | Sign out                                                               | Session invalidated; protected page cannot be reopened authenticated.                                      |
 | Cross-origin mutation, forged tier/owner or repeated excessive sign-in | Rejected or rate-limited; no privilege escalation.                                                         |
 | Keyboard/mobile/theme                                                  | Labels, focus, dialog cancel and password visibility work; no horizontal overflow at 320px in both themes. |
+
+## Signed-in quiz and session (Issue #50)
+
+| Check                                                                       | Expected outcome                                                                             |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Open `/onboarding` or `/session` without signing in                         | Redirect to `/sign-in` before protected data is read.                                        |
+| Call any quiz/session action without a session, including with invalid data | Redirect to `/sign-in`; no mutation occurs.                                                  |
+| Revoke a session and submit again                                           | The action requires sign-in again.                                                           |
+| Sign in as A while B has a plan/workout                                     | Only A's plan and logs are visible; B's records stay unchanged.                              |
+| Submit B's owner/workout IDs or a private exercise from B's plan            | IDs cannot redirect A's writes to B; the private exercise is rejected.                       |
+| Complete the quiz, log sets/run metrics and finish as a FREE user           | The core flow works without Stripe or model keys.                                            |
+| Opt into local demo logins and rerun the seed                               | All initial tiers can sign in; existing passwords, trial markers and progress are preserved. |
+
+See [QUIZ_SESSION_AUTH.md](QUIZ_SESSION_AUTH.md) for setup and the offline PRO
+fixture's limits.
 
 ## Milestone 2: trial and permissions
 
