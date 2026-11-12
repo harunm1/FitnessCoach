@@ -426,4 +426,4 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Got:** keep the current week from breaking a streak until it's over; compute days in Toronto time because workouts are stored in UTC; skip stretching and cardio when counting muscles. Plus 28 tests.
 
-**Did with it:** reviewed each function against my design, ran tests, lint, typecheck and Prettier locally, and chose to leave runs out of the muscle-share total so the percentages describe strength work.
+**Did with it:** reviewed each function against my design, ran tests, lint, typecheck and Prettier locally, and chose to leave runs out of the muscle-share total so the percentages describe strength work. After Nabeegh's review I added tests for daylight saving, workout order, other lifting categories, workouts without a plan and ties in muscle share, so there are now 33.

@@ -118,6 +118,18 @@ describe("muscleShare", () => {
     ]);
   });
 
+  it("breaks ties by muscle name", () => {
+    // Every muscle is used once, so only the name decides the order.
+    const shares = muscleShare([[curl], [benchPress]]);
+    expect(shares.map((s) => s.muscle)).toEqual([
+      "biceps",
+      "chest",
+      "forearms",
+      "shoulders",
+      "triceps",
+    ]);
+  });
+
   it("leaves cardio-only workouts out of the total", () => {
     const cardio: LoggedSet = {
       category: "cardio",
