@@ -437,3 +437,13 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Got:** step-by-step instructions and explanations that cleared up my doubts; the initial code for those files, including the 5-minute signed links; 77 tests; and a checklist for testing.
 
 **Did with it:** followed the instructions to set up the private R2 bucket and its key, reviewed the generated code to make sure it met our project requirements, ran tests, lint, typecheck and Prettier locally, and went through the checklist on localhost: upload, rejected files, delete, an expired link and signing out. I also left body measurements as a suggestion on #16, since they need a schema change.
+
+### 12 November 2026, profile photos (issue #16)
+
+**Before asking:** Shubham asked me to handle profile photos since I had built the photo storage functionality. I wanted users to have a round profile picture and be able to adjust its framing, similar to what other apps offer. I also wanted users to be able to edit an existing photo without uploading it again.
+
+**Asked:** I first explored how to implement an interactive image crop editor in React, including which libraries support dragging and zooming. I asked about using `react-easy-crop` and how it could fit into our existing photo storage and processing setup. I also asked how to preserve the original image so users could change the crop later, and how to handle upload, update, and removal securely. After discussing the approach, I requested implementation examples and tests for the account page and related actions.
+
+**Got:** An implementation approach using `react-easy-crop`, with drag-and-zoom controls, upload/edit/remove actions restricted to the signed-in user's profile photo, and a way to retain the original image alongside the cropped version; as well as 63 tests covering the new functionality.
+
+**Did with it:** Reviewed the implementation and checked that it reused our existing storage and photo processing modules. Ran tests, lint, typecheck, and Prettier locally, then tested adding, changing, editing, and removing a photo on localhost, including uploading a non-image file. I also checked R2 to verify that both the original and cropped images were stored correctly and that both were deleted when a photo was changed or removed. When the editor initially opened blank, I investigated the issue and traced it to a photo uploaded before original-image storage was introduced. This meant the issue was limited to older photos and did not affect newly uploaded ones.
