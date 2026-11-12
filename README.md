@@ -110,7 +110,8 @@ docker compose ps
 ```
 
 Wait until the `postgres` service reports `healthy`, then apply migrations, seed
-the exercise dataset and demo user, and start the application:
+the exercise dataset, and start the application. Optional local tier logins are
+created when `DEMO_PASSWORD` is configured:
 
 For a database used with an older accounts branch, complete the
 [auth migration history update](docs/ACCOUNTS.md#migration-name-update) before

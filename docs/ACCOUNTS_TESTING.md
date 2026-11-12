@@ -1,12 +1,18 @@
 # Accounts acceptance checks
 
 Use an ordinary verified test account and a separate admin fixture. Local email
-links are read in Mailpit. Use only sandbox keys/cards for billing. The seeded
-legacy demo user is not a credential account. Optional local tier logins are
-described in [QUIZ_SESSION_AUTH.md](QUIZ_SESSION_AUTH.md).
+links are read in Mailpit. Use only sandbox keys/cards for billing. Optional local
+tier logins are described in [QUIZ_SESSION_AUTH.md](QUIZ_SESSION_AUTH.md).
 [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md)
 contains startup steps; [ACCOUNTS.md](ACCOUNTS.md#automated-checks) contains isolated
 PostgreSQL test commands.
+
+Exercise-coach requests without a verified session must redirect to `/sign-in`
+before model setup or chat writes. Two signed-in users asking about the same
+exercise and muscle must receive separate histories, including when one request
+supplies the other user's ID, conversation ID or previous turns. The PostgreSQL
+quiz/session integration suite checks both the returned history and the messages
+sent to the mocked model.
 
 ## Milestone 1: account and session
 
