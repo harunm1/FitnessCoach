@@ -36,3 +36,15 @@ export function signPhotos(
     })),
   );
 }
+
+// The profile photo link for the page header. Profile photos are stored like
+// progress photos, so a storage key gets a short-lived link; a full web
+// address (for example from a sign-in provider) is used as it is.
+export async function signAvatar(
+  image: string | null,
+  storage: PhotoStorage,
+): Promise<string | null> {
+  if (!image) return null;
+  if (/^https?:\/\//.test(image)) return image;
+  return storage.signedUrl(image, VIEW_LINK_SECONDS);
+}

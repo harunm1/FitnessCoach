@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { MemoryStorage } from "@/lib/storage/memory";
-import { signPhotos, VIEW_LINK_SECONDS, type PhotoRow } from "./gallery";
+import {
+  signAvatar,
+  signPhotos,
+  VIEW_LINK_SECONDS,
+  type PhotoRow,
+} from "./gallery";
 
 const row: PhotoRow = {
   id: 1,
@@ -55,5 +60,23 @@ describe("signPhotos", () => {
 
   it("returns nothing when there are no photos", async () => {
     expect(await signPhotos([], new MemoryStorage())).toEqual([]);
+  });
+});
+
+describe("signAvatar", () => {
+  it("has no link when the user has no profile photo", async () => {
+    expect(await signAvatar(null, new MemoryStorage())).toBeNull();
+    expect(await signAvatar("", new MemoryStorage())).toBeNull();
+  });
+
+  it("signs a stored profile photo like a progress photo", async () => {
+    expect(await signAvatar("profile/u1/a.webp", new MemoryStorage())).toBe(
+      "memory://profile/u1/a.webp?expires=300",
+    );
+  });
+
+  it("uses a full web address as it is", async () => {
+    const url = "https://example.com/me.png";
+    expect(await signAvatar(url, new MemoryStorage())).toBe(url);
   });
 });

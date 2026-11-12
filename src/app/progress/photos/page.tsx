@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { DeletePhotoButton } from "@/components/photos/DeletePhotoButton";
 import { PhotoUploadForm } from "@/components/photos/PhotoUploadForm";
+import { UserBadge } from "@/components/photos/UserBadge";
 import { requireUser } from "@/lib/auth/session";
-import { signPhotos, type GalleryPhoto } from "@/lib/photos/gallery";
+import {
+  signAvatar,
+  signPhotos,
+  type GalleryPhoto,
+} from "@/lib/photos/gallery";
 import { prisma } from "@/lib/prisma";
 import { getPhotoStorage } from "@/lib/storage";
 
@@ -16,36 +21,50 @@ const dateFormat = new Intl.DateTimeFormat("en-CA", {
 
 export default async function ProgressPhotosPage() {
   const user = await requireUser();
-  const rows = await prisma.progressPhoto.findMany({
-    where: { userId: user.id },
-    orderBy: { takenAt: "desc" },
-    select: {
-      id: true,
-      storageKey: true,
-      takenAt: true,
-      weightKg: true,
-      note: true,
-    },
-  });
+  const [profile, rows] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: { image: true },
+    }),
+    prisma.progressPhoto.findMany({
+      where: { userId: user.id },
+      orderBy: { takenAt: "desc" },
+      select: {
+        id: true,
+        storageKey: true,
+        takenAt: true,
+        weightKg: true,
+        note: true,
+      },
+    }),
+  ]);
 
   let photos: GalleryPhoto[] | null;
+  let avatarUrl: string | null = null;
   try {
-    photos = await signPhotos(rows, getPhotoStorage());
+    const storage = getPhotoStorage();
+    [photos, avatarUrl] = await Promise.all([
+      signPhotos(rows, storage),
+      signAvatar(profile?.image ?? null, storage),
+    ]);
   } catch {
-    photos = null; // storage not set up or unreachable
+    photos = null; // storage not set up or unreachable; show the icon
   }
 
   return (
     <main className="min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12">
       <div className="mx-auto max-w-3xl">
-        <header className="mb-10 flex items-center justify-between border-b border-foreground/15 pb-5">
+        <header className="mb-10 flex items-center justify-between gap-4 border-b border-foreground/15 pb-5">
           <p className="text-sm font-bold tracking-[0.12em]">FORM</p>
-          <Link
-            href="/session"
-            className="text-xs text-foreground/60 underline underline-offset-4"
-          >
-            Back to training
-          </Link>
+          <div className="flex min-w-0 items-center gap-4">
+            <UserBadge name={user.name} imageUrl={avatarUrl} />
+            <Link
+              href="/session"
+              className="shrink-0 text-xs text-foreground/60 underline underline-offset-4"
+            >
+              Back to training
+            </Link>
+          </div>
         </header>
 
         <section className="mb-8">
