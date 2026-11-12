@@ -123,12 +123,12 @@ export async function deleteProgressPhoto(
       return { status: "error", message: NOT_FOUND };
     }
 
+    // The file goes first. If that fails, the row stays, the photo stays in
+    // the gallery and the user can try again, so no file is left behind
+    // unseen. Deleting a file that's already gone succeeds, so a retry after
+    // a database failure finishes the job.
+    await getPhotoStorage().delete(photo.storageKey);
     await prisma.progressPhoto.delete({ where: { id: photo.id } });
-    // The row is gone, so the photo is already hidden. If removing the file
-    // fails, the user still sees it deleted; the file stays private in R2.
-    await getPhotoStorage()
-      .delete(photo.storageKey)
-      .catch(() => undefined);
   } catch {
     return {
       status: "error",

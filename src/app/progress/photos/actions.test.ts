@@ -256,17 +256,29 @@ describe("deleteProgressPhoto", () => {
       status: "error",
       message: "That photo couldn't be deleted. Try again.",
     });
-    expect(files.files.size).toBe(1);
+    expect(revalidatePath).not.toHaveBeenCalled();
   });
 
-  it("still reports the photo deleted if removing the file fails", async () => {
-    storage.current = {
-      put: vi.fn(),
-      delete: vi.fn().mockRejectedValue(new Error("R2 is down")),
-      signedUrl: vi.fn(),
-    };
+  it("finishes the job when the user retries after a database failure", async () => {
+    database.progressPhoto.delete.mockRejectedValueOnce(new Error("db down"));
+    await deleteProgressPhoto(idle, form({ photoId: "7" }));
+    // The file is already gone; deleting it again succeeds, then the row goes.
     expect(await deleteProgressPhoto(idle, form({ photoId: "7" }))).toEqual({
       status: "deleted",
     });
+    expect(database.progressPhoto.delete).toHaveBeenCalledTimes(2);
+    expect(files.files.size).toBe(0);
+  });
+
+  it("keeps the photo so the user can retry if removing the file fails", async () => {
+    const remove = vi.fn().mockRejectedValue(new Error("R2 is down"));
+    storage.current = { put: vi.fn(), delete: remove, signedUrl: vi.fn() };
+    expect(await deleteProgressPhoto(idle, form({ photoId: "7" }))).toEqual({
+      status: "error",
+      message: "That photo couldn't be deleted. Try again.",
+    });
+    expect(remove).toHaveBeenCalledWith("progress/session-owner/a.webp");
+    expect(database.progressPhoto.delete).not.toHaveBeenCalled();
+    expect(revalidatePath).not.toHaveBeenCalled();
   });
 });
