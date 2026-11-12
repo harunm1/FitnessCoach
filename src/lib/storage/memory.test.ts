@@ -21,6 +21,13 @@ describe("MemoryStorage", () => {
     expect(storage.files.get("photos/a.webp")?.contentType).toBe("image/png");
   });
 
+  it("reads back a saved file, or null when there is none", async () => {
+    const storage = new MemoryStorage();
+    await storage.put("photos/a.webp", Buffer.from("a"), "image/webp");
+    expect((await storage.get("photos/a.webp"))?.toString()).toBe("a");
+    expect(await storage.get("missing")).toBeNull();
+  });
+
   it("deletes only the given key", async () => {
     const storage = new MemoryStorage();
     await storage.put("photos/a.webp", Buffer.from("a"), "image/webp");

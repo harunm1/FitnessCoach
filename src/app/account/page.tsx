@@ -7,6 +7,8 @@ import { AccountBrand, AccountIcon } from "@/components/auth/account-ui";
 import styles from "@/components/auth/account.module.css";
 import { AccountTheme, ThemeToggle } from "@/components/auth/account-theme";
 import { ChangePasswordDialog } from "@/components/auth/change-password-dialog";
+import { ProfilePhotoForm } from "@/components/auth/profile-photo-form";
+import { loadAvatar } from "@/lib/photos/avatar";
 
 // A request-time display snapshot; permission checks remain in the server guard.
 function trialDaysRemaining(endsAt: Date | null, active: boolean) {
@@ -22,6 +24,7 @@ export default async function AccountPage({
 }) {
   const { user, access } = await requireAccount();
   const params = await searchParams;
+  const avatar = await loadAvatar(user.id);
   const firstName = user.name.trim().split(/\s+/)[0] || "athlete";
   const initials =
     user.name
@@ -233,9 +236,15 @@ export default async function AccountPage({
           <div>
             <section className={styles.card} aria-labelledby="profile-heading">
               <div className={styles.profileTop}>
-                <span className={styles.avatar} aria-hidden="true">
-                  {initials}
-                </span>
+                {avatar ? (
+                  // Signed links expire, so the image optimizer can't cache them.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatar.url} alt="" className={styles.avatarPhoto} />
+                ) : (
+                  <span className={styles.avatar} aria-hidden="true">
+                    {initials}
+                  </span>
+                )}
                 <div>
                   <h2 id="profile-heading" className={styles.cardTitle}>
                     Your profile
@@ -243,6 +252,10 @@ export default async function AccountPage({
                   <p>Your account details</p>
                 </div>
               </div>
+              <ProfilePhotoForm
+                hasPhoto={avatar !== null}
+                editUrl={avatar?.editUrl ?? null}
+              />
               <dl className={styles.profileList}>
                 <div>
                   <dt>Name</dt>
