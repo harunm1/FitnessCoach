@@ -415,3 +415,15 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Got:** the review ran the same probes against main and against the branch and found my first fix too wide: a swim word anywhere let "i can't swim, i'm on the bridge and i'm gonna jump into the water" through, a jump onto a "platform" or "step" from a roof stopped being a crisis, the "so i can't train" and "so i need to reschedule" exceptions accepted any words after them ("...so i need to reschedule my funeral"), and "using kms" and "school vs kms" were let through.
 
 **Did with it:** each of those inputs is now a test that failed first and stays a crisis. The jump exception needs a pool named just before the jump or a plyo box, and does nothing when the message has a height ("bridge", "below", "from here") or "can't swim". The scheduling exceptions need a training object or the end of the sentence. "Kms" is a unit only after "prefer" or a "miles vs" pair. Load units after "pills ... 20 more" stop counting when ingestion words follow. The diagnosis list gained pec, biceps, triceps, quads and groin, and a lift name no longer hides "squatting" or "pressing". Left to the model check, not coded: "kms today", "kms for real", "on the roof i'm jumping", and a roof or bridge jump into water. Lint, typecheck, 903 unit tests and the format check pass. Tools for the targeted help: skill `agentic-sdlc:testing-vitest`, skill `backend-design:error-handling-as-design` (not run, see the log), and a fresh review agent (`pr-review-toolkit:code-reviewer`).
+
+## Farnaz
+
+### 8 November 2026, progress logic (issue #16)
+
+**Before asking:** I designed the progress page: two weekly streaks (active weeks and goal met), a body map of muscles worked, and a count of how many workouts used each muscle. Plan days have no dates, so streaks count workouts per week.
+
+**Asked:** how a streak should handle the current week before it ends, which calendar day a late-evening workout belongs to, and whether stretches should count toward muscles worked; and tests for functions.
+
+**Got:** keep the current week from breaking a streak until it's over; compute days in Toronto time because workouts are stored in UTC; skip stretching and cardio when counting muscles. Plus 28 tests.
+
+**Did with it:** reviewed each function against my design, ran tests, lint, typecheck and Prettier locally, and chose to leave runs out of the muscle-share total so the percentages describe strength work. After Nabeegh's review I added tests for daylight saving, workout order, other lifting categories, workouts without a plan and ties in muscle share, so there are now 33.
