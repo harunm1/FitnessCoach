@@ -13,6 +13,10 @@ exercise and muscle must receive separate histories, including when one request
 supplies the other user's ID, conversation ID or previous turns. The PostgreSQL
 quiz/session integration suite checks both the returned history and the messages
 sent to the mocked model.
+Exercise chat also requires an active trial, effective PRO or ADMIN tier. FREE,
+expired trials and PRO labels without paid entitlement must not call the model.
+The [coach-access guide](COACH_ACCESS.md) covers database-backed reservations and
+the remaining caller integrations.
 
 ## Milestone 1: account and session
 
