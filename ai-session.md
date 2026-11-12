@@ -427,3 +427,13 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Got:** keep the current week from breaking a streak until it's over; compute days in Toronto time because workouts are stored in UTC; skip stretching and cardio when counting muscles. Plus 28 tests.
 
 **Did with it:** reviewed each function against my design, ran tests, lint, typecheck and Prettier locally, and chose to leave runs out of the muscle-share total so the percentages describe strength work. After Nabeegh's review I added tests for daylight saving, workout order, other lifting categories, workouts without a plan and ties in muscle share, so there are now 33.
+
+### 12 November 2026, progress photo storage (issue #16)
+
+**Before asking:** I chose Cloudflare R2 for photos (D3). Phone photos carry GPS data, so I proposed on #16 to upload through a Server Action that removes it, instead of a signed upload link; Nabeegh and Shubham agreed.
+
+**Asked:** I had never set up R2, so I asked for step-by-step instructions with explanations so I'd understand each step. I also asked for the initial code and tests for the new files, based on the design I had in mind: the storage module, photo processing, upload and delete actions, and the page. I wasn't sure how to set up 5-minute signed links, so I asked for guidance on that, and for a list of checks for the UI and R2 so I wouldn't miss anything, on top of the checks I had planned myself.
+
+**Got:** step-by-step instructions and explanations that cleared up my doubts; the initial code for those files, including the 5-minute signed links; 77 tests; and a checklist for testing.
+
+**Did with it:** followed the instructions to set up the private R2 bucket and its key, reviewed the generated code to make sure it met our project requirements, ran tests, lint, typecheck and Prettier locally, and went through the checklist on localhost: upload, rejected files, delete, an expired link and signing out. I also left body measurements as a suggestion on #16, since they need a schema change.
