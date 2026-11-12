@@ -160,6 +160,10 @@ GROQ_API_KEY=""     # console.groq.com/keys
 GEMINI_API_KEY=""   # aistudio.google.com/apikey
 ```
 
+For user-scoped coach-call storage on this branch, see
+[COACH_EVENTS.md](docs/COACH_EVENTS.md). It explains the #52 migration, metadata,
+privacy boundaries and connecting the sink to an authenticated coach caller.
+
 ### Checks
 
 Tests come in three layers (8 November design review, decision 4): unit tests for pure logic, with saved model replies instead of live calls; API mocking at the provider boundary, so timeouts, invalid JSON and rate limits are tested on purpose; and integration tests against a real PostgreSQL 16 that CI has run on every pull request since #67 (accounts, trials and billing), including authentication and the quiz and session Server Actions (#83; more in #79, PR #81). Each owner tests their own slice.
