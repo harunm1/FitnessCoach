@@ -31,6 +31,24 @@ export function framingForm(area: Area, file?: File) {
   return data;
 }
 
+// Resolves true once the browser can draw the image, false if it can't
+// (for example a text file renamed to .jpg, or a link that has expired).
+export function canShowImage(
+  src: string,
+  createImage: () => HTMLImageElement = () => new Image(),
+): Promise<boolean> {
+  return new Promise((resolve) => {
+    const image = createImage();
+    image.onload = () => resolve(true);
+    image.onerror = () => resolve(false);
+    image.src = src;
+  });
+}
+
+const NOT_AN_IMAGE = "That file isn't an image we can read.";
+const CANT_LOAD =
+  "Your photo couldn't be loaded. Refresh the page, or choose the photo again.";
+
 // What the editor is showing: a newly chosen photo, or the current one.
 type Editing =
   | { kind: "new"; file: File; preview: string }
@@ -63,10 +81,15 @@ export function ProfilePhotoForm({
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [area, setArea] = useState<Area | null>(null);
-  const busy = uploading || editing || removing;
-  const error = [uploadState, editState, removeState].find(
-    (state) => state.status === "error",
-  )?.message;
+  const [checking, setChecking] = useState(false);
+  // A problem found in the browser, before anything is sent to the server.
+  const [localError, setLocalError] = useState<string | null>(null);
+  const busy = uploading || editing || removing || checking;
+  const error =
+    localError ??
+    [uploadState, editState, removeState].find(
+      (state) => state.status === "error",
+    )?.message;
 
   // Free a chosen photo's memory when it is replaced or the page closes.
   useEffect(() => {
@@ -75,7 +98,18 @@ export function ProfilePhotoForm({
     };
   }, [current]);
 
-  function open(next: Editing) {
+  // Opens the editor only once the photo has loaded, so it is never blank.
+  async function open(next: Editing) {
+    setLocalError(null);
+    setChecking(true);
+    const loads = await canShowImage(next.preview);
+    setChecking(false);
+    if (!loads) {
+      if (next.kind === "new") URL.revokeObjectURL(next.preview);
+      if (input.current) input.current.value = "";
+      setLocalError(next.kind === "new" ? NOT_AN_IMAGE : CANT_LOAD);
+      return;
+    }
     setCurrent(next);
     setPosition({ x: 0, y: 0 });
     setZoom(1);
@@ -108,7 +142,13 @@ export function ProfilePhotoForm({
         className={styles.secondaryButton}
         aria-disabled={busy || undefined}
       >
-        {uploading ? "Uploading…" : hasPhoto ? "Change photo" : "Add photo"}
+        {uploading
+          ? "Uploading…"
+          : checking
+            ? "Opening…"
+            : hasPhoto
+              ? "Change photo"
+              : "Add photo"}
         <input
           ref={input}
           type="file"
@@ -119,7 +159,11 @@ export function ProfilePhotoForm({
           onChange={(event) => {
             const file = event.currentTarget.files?.[0];
             if (file) {
-              open({ kind: "new", file, preview: URL.createObjectURL(file) });
+              void open({
+                kind: "new",
+                file,
+                preview: URL.createObjectURL(file),
+              });
             }
           }}
         />
@@ -130,7 +174,7 @@ export function ProfilePhotoForm({
           type="button"
           disabled={busy}
           className={styles.secondaryButton}
-          onClick={() => open({ kind: "existing", preview: editUrl })}
+          onClick={() => void open({ kind: "existing", preview: editUrl })}
         >
           {editing ? "Saving…" : "Edit photo"}
         </button>

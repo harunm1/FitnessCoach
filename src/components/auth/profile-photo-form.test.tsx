@@ -5,7 +5,11 @@ vi.mock("@/app/account/profile-photo-actions", () => ({
   editProfilePhoto: vi.fn(),
   removeProfilePhoto: vi.fn(),
 }));
-import { framingForm, ProfilePhotoForm } from "./profile-photo-form";
+import {
+  canShowImage,
+  framingForm,
+  ProfilePhotoForm,
+} from "./profile-photo-form";
 
 const EDIT_URL = "https://r2.example/me.original.webp";
 
@@ -79,5 +83,36 @@ describe("framingForm", () => {
     const data = framingForm(area);
     expect(data.has("photo")).toBe(false);
     expect(data.get("cropWidth")).toBe("300");
+  });
+});
+
+describe("canShowImage", () => {
+  // A stand-in for the browser's Image: it "loads" only the given address.
+  function fakeImage(loads: string) {
+    return () => {
+      const image = {} as HTMLImageElement;
+      Object.defineProperty(image, "src", {
+        set(value: string) {
+          queueMicrotask(() =>
+            value === loads
+              ? image.onload?.(new Event("load"))
+              : image.onerror?.(new Event("error")),
+          );
+        },
+      });
+      return image;
+    };
+  }
+
+  it("is true when the photo can be drawn", async () => {
+    expect(await canShowImage("blob:photo", fakeImage("blob:photo"))).toBe(
+      true,
+    );
+  });
+
+  it("is false for a file the browser can't draw", async () => {
+    expect(await canShowImage("blob:text", fakeImage("blob:photo"))).toBe(
+      false,
+    );
   });
 });
