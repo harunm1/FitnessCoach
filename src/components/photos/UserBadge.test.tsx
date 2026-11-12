@@ -21,6 +21,14 @@ describe("UserBadge", () => {
     expect(html).not.toContain("<img");
   });
 
+  it("links to the account page, where the user can sign out", () => {
+    const html = renderToStaticMarkup(
+      <UserBadge name="Free Demo" imageUrl={null} />,
+    );
+    expect(html).toContain('href="/account"');
+    expect(html).toContain('aria-label="Your account (Free Demo)"');
+  });
+
   it("hides the picture from screen readers, since the name is right beside it", () => {
     const html = renderToStaticMarkup(
       <UserBadge name="Free Demo" imageUrl="https://example.com/me.png" />,

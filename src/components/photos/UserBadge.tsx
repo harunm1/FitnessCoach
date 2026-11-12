@@ -1,5 +1,8 @@
+import Link from "next/link";
+
 // The signed-in user's name with their profile photo, or a person icon
-// when they haven't added one.
+// when they haven't added one. Links to the account page, where they can
+// manage their account and sign out.
 export function UserBadge({
   name,
   imageUrl,
@@ -8,7 +11,11 @@ export function UserBadge({
   imageUrl: string | null;
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-2">
+    <Link
+      href="/account"
+      aria-label={`Your account (${name})`}
+      className="flex min-h-11 min-w-0 items-center gap-2 hover:opacity-80"
+    >
       {imageUrl ? (
         // Signed links expire, so the image optimizer can't cache them.
         // eslint-disable-next-line @next/next/no-img-element
@@ -38,6 +45,6 @@ export function UserBadge({
         </span>
       )}
       <span className="truncate text-sm font-medium">{name}</span>
-    </div>
+    </Link>
   );
 }
