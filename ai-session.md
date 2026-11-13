@@ -396,6 +396,16 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Did with it:** I decided how the flow and the demo accounts should work. I got the app running locally, fixed the three errors and told it what I saw when something else broke. Near the end I asked it to check the work against every requirement in the issue. The automated checks passed in a clean workspace, including the database and browser tests. I repaired the local migration history after taking a backup, and no app data was deleted. The demo passwords are in my private env file, not in the repo, and the offline PRO account only exists for local testing.
 
+### Exercise-coach sign-in and private history (issue #104)
+
+**Before asking:** I wanted to check my assigned issues and whether I needed code from another branch before continuing. The review found that the body-map coach still used the shared demo user after the quiz/session work merged. I chose to fix that privacy issue first and keep it separate from the tier and plan-limit work.
+
+**Asked:** to check the existing flow, use the signed-in account for exercise chat, and test that one person's questions never appear in another person's history. I also wanted to remove the unused shared demo seed without deleting existing users or workouts.
+
+**Got:** help understanding why the exercise coach bypassed sign-in and how the shared demo account mixed users' chat histories, and help with specific code changes and regression tests. The guidance covered where to check the session, how to scope conversations by the signed-in user's ID, and how to test requests that supply someone else's details.
+
+**Did with it:** I chose to fix #104 first and keep it separate from my #51 work. I directed the change to use the signed-in account and asked for checks that users could not share chat history. AI helped implement the changes, write the regression tests and work through the failing checks. I used the results to check the fix against the issue. The shared demo seed was removed without deleting existing data, and the setup docs were updated. The optional four-tier demo logins remain available.
+
 ### 10 November 2026, quiz plans with run days (issue #85)
 
 **Before asking:** the quiz plan came from `buildDefaultPlan`, so it never had a run day and the session screen had nothing to show for runs, although `buildHybridWeek` and `saveWeek` could already store them. I decided the quiz asks for training mode, strength by default, and that only running and both take the new path, so a strength quiz stays as it is. The quiz action is Mohammad's file, so I kept my change there to one early branch and put the rest in my own files.
