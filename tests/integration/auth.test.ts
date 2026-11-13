@@ -155,6 +155,34 @@ describe("Better Auth with PostgreSQL", () => {
       "Renamed Athlete",
     );
   });
+  it("does not let account API input set or clear a coach request reservation", async () => {
+    expect(
+      (await signup({ lastCoachPlanRequestedAt: "2099-01-01T00:00:00Z" }))
+        .status,
+    ).toBe(200);
+    const account = await db.user.findUniqueOrThrow({ where: { email } });
+    expect(account.lastCoachPlanRequestedAt).toBeNull();
+    await verify();
+    const cookie = cookies(await login());
+    const reservedAt = new Date();
+    await db.user.update({
+      where: { id: account.id },
+      data: { lastCoachPlanRequestedAt: reservedAt },
+    });
+    expect(
+      (
+        await post(
+          "/update-user",
+          { name: "Updated Athlete", lastCoachPlanRequestedAt: null },
+          cookie,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (await db.user.findUniqueOrThrow({ where: { id: account.id } }))
+        .lastCoachPlanRequestedAt,
+    ).toEqual(reservedAt);
+  });
   it("does not grant a session for a wrong password or invalid verification token", async () => {
     await signup();
     await auth.handler(
