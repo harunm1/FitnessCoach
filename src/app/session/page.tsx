@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import BodyMap from "@/components/BodyMap";
+import ExerciseCueDetails from "@/components/ExerciseCueDetails";
 import RestTimer from "@/components/RestTimer";
 import RunMetricsForm from "@/components/RunMetricsForm";
 import SetLogForm from "@/components/SetLogForm";
@@ -31,6 +32,8 @@ export default async function SessionPage() {
                   name: true,
                   equipment: true,
                   primaryMuscles: true,
+                  cues: true,
+                  commonMistakes: true,
                 },
               },
             },
@@ -190,6 +193,11 @@ export default async function SessionPage() {
                           {slot.exercise.equipment &&
                             ` · ${slot.exercise.equipment}`}
                         </p>
+                        <ExerciseCueDetails
+                          exerciseName={slot.exercise.name}
+                          cues={slot.exercise.cues}
+                          commonMistakes={slot.exercise.commonMistakes}
+                        />
                         {activeWorkout && (
                           <>
                             <p className="mt-3 mb-0 text-xs font-medium text-foreground/70">

@@ -18,6 +18,10 @@ export type LibraryExercise = {
   secondaryMuscles: string[];
 };
 
+// The starter plan needs each exercise's category to skip stretches (#71), so code that
+// passes the library to it requires the field: TypeScript flags a caller that does not load it.
+export type CategorisedExercise = LibraryExercise & { category: string };
+
 export type VerifyProfile = {
   daysPerWeek: number;
   equipment: string[];
