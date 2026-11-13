@@ -358,6 +358,16 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 
 **Did with it:** updated the timer to highlight while running and show explicit “Resting”, “Paused”, and “Rest complete” states; verified in the browser that clicking Start rest changes the button to Pause timer and the countdown decreases. Styled the UI with Tailwind utility classes. No shadcn/ui components were used.
 
+### 10 November 2026, exercise cue library (issue #8)
+
+**Before asking:** the exercise library already contained 876 records, while its `cues` and `commonMistakes` fields were empty. Issue #8 asks for original, concise form guidance on 30 beginner or intermediate strength exercises across the main movement patterns.
+
+**Asked:** to select eligible seeded exercises, review one source for each, and write three to five form cues and two to three common mistakes per exercise. I also asked for AI assistance to be recorded transparently in this session log.
+
+**Got:** AI-assisted summaries of setup, movement and common technique errors from exercise-specific ExRx pages and the upstream Free Exercise DB records used by our seed. Candidate IDs and their category, level and equipment were checked against the seeded database. Where an external page did not provide a usable or matching description, the source list cites the exact upstream library record instead.
+
+**Did with it:** reviewed the exercise and equipment matches, kept the cue wording original rather than copying source text, and added 30 entries with the required cue and mistake counts. Tests validate the cue counts and missing-ID checker; the seed checks every curated ID against the downloaded library before writing, reports how many entries received cues, and clears stale cue arrays when the JSON no longer contains an exercise. Running the seed twice confirmed the cue arrays remain stable. The session page displays form guidance in a closed-by-default disclosure for each exercise that has cues, with a render test for populated and empty guidance. Formatting, lint, typecheck, and the unit suite passed.
+
 ## Shubham
 
 I worked on accounts, access tiers and Stripe test-mode billing, which meant the UI, the application code, the data models and the tests, plus the account policies and the Stripe and local service setup. I used AI mostly to talk through the flow before I built something, to understand parts I hadn't used before, to help me read errors, and to double-check things afterwards. Where it gave me a draft, I treated it as a starting point and went through it and changed it. The entries below are a few representative examples.
