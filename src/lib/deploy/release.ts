@@ -6,21 +6,21 @@ type Env = Record<string, string | undefined>;
 // Production and preview deployments migrate; VERCEL_ENV is set at build and run time
 // (Vercel system environment variables, checked 10 Nov 2026).
 const MIGRATING_ENVS = new Set(["production", "preview"]);
-const VERCEL_ENVS = new Set(["production", "preview", "development"]);
 
 function isHostedBuild(env: Env): boolean {
   return MIGRATING_ENVS.has(env.VERCEL_ENV ?? "");
 }
 
 /**
- * VERCEL=1 and VERCEL_ENV are system environment variables (Vercel docs, checked 11 Nov
- * 2026). A Vercel build that sees VERCEL but no known VERCEL_ENV would skip migrations
- * without a word, so it stops instead and names the project setting to turn on.
- * Off Vercel (local, CI) VERCEL is unset and nothing is checked.
+ * VERCEL and VERCEL_ENV are both system environment variables (Vercel docs, checked
+ * 13 Nov 2026), so a project with that setting off shows neither, and a build would
+ * skip migrations without a word. scripts/vercel-build.ts runs only as the Vercel build
+ * command and in CI, which sets VERCEL_ENV=preview, so it stops whenever VERCEL_ENV is
+ * not one that migrates and names the setting. Local builds use `npm run build`.
  */
 export function vercelEnvProblem(env: Env): string | undefined {
-  if (!env.VERCEL || VERCEL_ENVS.has(env.VERCEL_ENV ?? "")) return undefined;
-  return 'VERCEL is set but VERCEL_ENV is not production, preview or development; turn on "Enable access to System Environment Variables" in the Vercel project (README, Deploy step 5)';
+  if (isHostedBuild(env)) return undefined;
+  return 'VERCEL_ENV is not production or preview; turn on "Enable access to System Environment Variables" in the Vercel project (README, Deploy step 5), or build locally with npm run build';
 }
 
 /**
@@ -64,10 +64,15 @@ function parseUrl(url: string): URL | undefined {
   }
 }
 
-/** "host/database" for a log line; never the user name or password. */
+/**
+ * "host/database" for a log line; never the user name or password. An unencoded "/" in
+ * a password makes the parser read the user part as the host and leaves the rest, with
+ * its "@", in the path, so such a URL is reported as unreadable.
+ */
 export function databaseTarget(url: string): string {
   const parsed = parseUrl(url);
-  return parsed ? `${parsed.host}${parsed.pathname}` : "an unreadable URL";
+  if (!parsed || parsed.pathname.includes("@")) return "an unreadable URL";
+  return `${parsed.host}${parsed.pathname}`;
 }
 
 // Neon's pooled host carries "-pooler"; the direct host for the same branch does not.

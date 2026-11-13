@@ -135,33 +135,38 @@ describe("hostedDatabaseProblems", () => {
 });
 
 describe("vercelEnvProblem", () => {
-  // Without System Environment Variables exposed, a Vercel build would skip migrations
-  // silently (11 Nov review). VERCEL and VERCEL_ENV are system variables (Vercel docs, 11 Nov 2026).
+  const PROBLEM =
+    /^VERCEL_ENV is not production or preview; turn on "Enable access to System Environment Variables"/;
+
+  // VERCEL and VERCEL_ENV are both system variables, so a Vercel project with that
+  // setting off shows neither. The build script runs only on Vercel and in CI, which
+  // sets VERCEL_ENV, so no VERCEL_ENV always stops it (13 Nov review).
+  it("stops a build that can see neither VERCEL nor VERCEL_ENV", () => {
+    expect(vercelEnvProblem({})).toMatch(PROBLEM);
+  });
+
   it("stops a Vercel build that cannot see VERCEL_ENV", () => {
-    expect(vercelEnvProblem({ VERCEL: "1" })).toBe(
-      'VERCEL is set but VERCEL_ENV is not production, preview or development; turn on "Enable access to System Environment Variables" in the Vercel project (README, Deploy step 5)',
-    );
+    expect(vercelEnvProblem({ VERCEL: "1" })).toMatch(PROBLEM);
   });
 
-  it("stops a Vercel build with an unknown VERCEL_ENV", () => {
-    expect(vercelEnvProblem({ VERCEL: "1", VERCEL_ENV: "staging" })).toMatch(
-      /^VERCEL is set but VERCEL_ENV is not production, preview or development/,
-    );
-  });
+  it.each(["staging", "development", ""])(
+    "stops a build with VERCEL_ENV=%j, which never migrates",
+    (vercelEnv) => {
+      expect(vercelEnvProblem({ VERCEL: "1", VERCEL_ENV: vercelEnv })).toMatch(
+        PROBLEM,
+      );
+    },
+  );
 
-  it.each(["production", "preview", "development"])(
-    "accepts a Vercel build with VERCEL_ENV=%s",
+  it.each(["production", "preview"])(
+    "accepts a build with VERCEL_ENV=%s, on Vercel or in CI",
     (vercelEnv) => {
       expect(
         vercelEnvProblem({ VERCEL: "1", VERCEL_ENV: vercelEnv }),
       ).toBeUndefined();
+      expect(vercelEnvProblem({ VERCEL_ENV: vercelEnv })).toBeUndefined();
     },
   );
-
-  it("checks nothing off Vercel, where VERCEL is unset (local and CI)", () => {
-    expect(vercelEnvProblem({})).toBeUndefined();
-    expect(vercelEnvProblem({ VERCEL_ENV: "preview" })).toBeUndefined();
-  });
 });
 
 describe("testMigrationEnv", () => {
@@ -206,6 +211,13 @@ describe("databaseTarget", () => {
 
   it("says when a URL cannot be read", () => {
     expect(databaseTarget("not a url")).toBe("an unreadable URL");
+  });
+
+  // An unencoded "/" in a password moves where the URL parser thinks the host starts.
+  it("never prints part of a password that holds a slash", () => {
+    const target = databaseTarget("postgresql://user:12/34@host.neon.tech/db");
+    expect(target).toBe("an unreadable URL");
+    expect(target).not.toContain("34");
   });
 });
 

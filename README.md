@@ -246,15 +246,21 @@ One-time setup:
 
    On the same page, keep **Enable access to System Environment Variables** turned
    on: the build reads `VERCEL_ENV` to decide whether to migrate, and stops with that
-   setting named if it runs on Vercel without it.
+   setting named whenever `VERCEL_ENV` is not `production` or `preview`.
 
 6. Deploy. Each push to `main` redeploys production and applies any new migration to
    the Neon `main` branch; each pull request gets its own preview URL and applies its
    migrations to the `preview` branch first. A build stops before any step, with the
    variable named, if `VERCEL_ENV` is missing, a database URL is missing or unreadable,
    the direct URL is the pooled one, or the two point at different branches.
+   Request size: a Vercel Function accepts a request body of at most 4.5 MB and answers
+   anything larger with `413 FUNCTION_PAYLOAD_TOO_LARGE`
+   ([Vercel Functions limits](https://vercel.com/docs/functions/limitations), checked
+   13 Nov 2026). Server Actions are function requests, so an upload sent through one
+   (photos, #16) must stay under that size on the hosted app, whatever
+   `serverActions.bodySizeLimit` says locally.
 7. Deployment Protection: new Vercel projects protect preview URLs with a Vercel login,
-   and a Hobby account can share them with only one outside user. Previews are for
+   and a Hobby account can create only one shareable link in total. Previews are for
    checking the build and the migrations: auth is not configured on them
    (`BETTER_AUTH_URL` and `BETTER_AUTH_SECRET` are Production only), so pages that need
    a session show the error page there. Sign-in works on production only; use the
