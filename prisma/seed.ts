@@ -1,10 +1,10 @@
 // Seeds the exercise library from free-exercise-db (public domain, docs/RESEARCH.md)
-// and one demo user, so everyone on the team starts from the same data:
+// and optional local tier logins, so everyone starts from the same exercise data:
 //   npx prisma db seed
-// Safe to re-run: every write is an upsert keyed on the dataset's own ids.
+// Safe to re-run: exercises use dataset IDs and existing local accounts are preserved.
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient, Level, Tier } from "../src/generated/prisma/client";
+import { PrismaClient, Level } from "../src/generated/prisma/client";
 import {
   EXERCISE_CUE_IDS,
   getExerciseCueFields,
@@ -96,36 +96,15 @@ async function seedExercises() {
   return { exerciseCount: exercises.length, cueCount };
 }
 
-async function seedDemoUser() {
-  return prisma.user.upsert({
-    where: { email: "demo@fitnesscoach.local" },
-    create: {
-      email: "demo@fitnesscoach.local",
-      name: "Demo User",
-      tier: Tier.TRIAL,
-      profile: {
-        create: {
-          goal: "MUSCLE",
-          level: Level.BEGINNER,
-          daysPerWeek: 3,
-          equipment: ["barbell", "dumbbell", "body only"],
-        },
-      },
-    },
-    update: {},
-  });
-}
-
 async function main() {
   const { exerciseCount, cueCount } = await seedExercises();
-  const user = await seedDemoUser();
   if (cueCount !== EXERCISE_CUE_IDS.length) {
     throw new Error(
       `Seeded ${cueCount} exercises with cues; expected ${EXERCISE_CUE_IDS.length}.`,
     );
   }
   console.log(
-    `Seeded ${exerciseCount} exercises (${cueCount} with cues and common mistakes) and demo user ${user.email}`,
+    `Seeded ${exerciseCount} exercises (${cueCount} with cues and common mistakes)`,
   );
   const demoUsers = await seedLocalDemoUsers(prisma, {
     password: process.env.DEMO_PASSWORD,

@@ -12,12 +12,22 @@ vi.mock("next/navigation", () => ({ redirect }));
 vi.mock("@/lib/auth", () => ({
   getAuth: async () => ({ api: { getSession } }),
 }));
-import { requireUser } from "./session";
+import { getVerifiedUser, requireUser } from "./session";
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
 describe("protected-page authorization", () => {
+  it("returns null without redirecting signed-out route callers", async () => {
+    getSession.mockResolvedValue(null);
+    expect(await getVerifiedUser()).toBeNull();
+    expect(redirect).not.toHaveBeenCalled();
+  });
+  it("does not return unverified users to route callers", async () => {
+    getSession.mockResolvedValue({ user: { emailVerified: false } });
+    expect(await getVerifiedUser()).toBeNull();
+    expect(redirect).not.toHaveBeenCalled();
+  });
   it("redirects signed-out visitors before returning account information", async () => {
     getSession.mockResolvedValue(null);
     await expect(requireUser()).rejects.toThrow("redirect:/sign-in");

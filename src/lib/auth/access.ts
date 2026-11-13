@@ -1,10 +1,12 @@
 import "server-only";
 import { redirect } from "next/navigation";
-import { requireUser } from "./session";
+import type { Tier } from "@/generated/prisma/enums";
+import { getVerifiedUser } from "./session";
 import { resolveAccess, type Permission } from "./access-policy";
 
-export async function requireAccount() {
-  const user = await requireUser();
+async function getAccount(now?: Date) {
+  const user = await getVerifiedUser();
+  if (!user) return null;
   const { prisma } = await import("@/lib/prisma");
   const account = await prisma.user.findUnique({
     where: { id: user.id },
@@ -15,8 +17,37 @@ export async function requireAccount() {
       billing: { select: { status: true, paidUntil: true } },
     },
   });
-  if (!account?.emailVerified) redirect("/sign-in");
-  return { user, access: resolveAccess(account) };
+  if (!account?.emailVerified) return null;
+  return { user, access: resolveAccess(account, now) };
+}
+
+export async function requireAccount() {
+  const account = await getAccount();
+  if (!account) redirect("/sign-in");
+  return account;
+}
+
+// Expected denials are values: routes return JSON and actions return error states.
+// A database outage still throws; callers must stop without starting model work.
+export async function requireTier(allowed: readonly Tier[], now?: Date) {
+  const account = await getAccount(now);
+  if (!account) {
+    return {
+      ok: false as const,
+      status: 401 as const,
+      code: "UNAUTHENTICATED" as const,
+      message: "Sign in with a verified account to continue.",
+    };
+  }
+  if (!allowed.includes(account.access.effectiveTier)) {
+    return {
+      ok: false as const,
+      status: 403 as const,
+      code: "FORBIDDEN" as const,
+      message: "Your account does not have access to this feature.",
+    };
+  }
+  return { ok: true as const, ...account };
 }
 
 export class AccessDeniedError extends Error {
