@@ -325,14 +325,20 @@ describe("coachReply follow-ups", () => {
     });
   });
 
-  it.each(["Why is that?", "what do you mean by smooth?", "tell me more"])(
-    "answers a short follow-up: %s",
-    async (text) => {
-      const model = vi.fn<CoachChatModel>().mockResolvedValue("Sure.");
-      const turn = await coachReply(model, ctx, benchTurn, text);
-      expect(turn.source).toBe("COACH");
-    },
-  );
+  // Four words or more each: shorter messages are allowed before the follow-up rule runs.
+  it.each([
+    "can you explain why",
+    "what do you mean by smooth?",
+    "what does that mean",
+    "what do you mean by 'smooth'?",
+    'what do you mean by "smooth"?',
+    "what do you mean by that exactly?",
+    "can you explain that again please?",
+  ])("answers a short follow-up: %s", async (text) => {
+    const model = vi.fn<CoachChatModel>().mockResolvedValue("Sure.");
+    const turn = await coachReply(model, ctx, benchTurn, text);
+    expect(turn.source).toBe("COACH");
+  });
 
   // "What do you mean by X" is a follow-up only when X is in the coach's last reply;
   // otherwise it is a way to ask about anything (review of 11 Nov).

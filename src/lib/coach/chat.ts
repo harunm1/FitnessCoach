@@ -11,7 +11,8 @@
 //   3. the reply goes through checkCoachReply before anyone sees it
 //   4. if no provider answers, the user gets a short fixed reply and the rest of the
 //      app keeps working (Section 2.5: a failure degrades one capability)
-// Each model call writes one coachLog record (#41) with no user text or reply in it.
+// Each model call writes one coachLog record (#41) with no user text or reply in it;
+// a failure is recorded by a provider's own fixed message or by the error's name.
 // Only the model call itself is caught: a bug while building the prompt throws.
 import {
   okOutcome,
@@ -26,7 +27,11 @@ import {
   REPLIES,
   type ChatMessage,
 } from "./guardrails";
-import type { CoachChatModel, ProviderEvent } from "./providers";
+import {
+  ProviderError,
+  type CoachChatModel,
+  type ProviderEvent,
+} from "./providers";
 import { screenUserMessage, type SafetyClassifier } from "./safetyScreen";
 
 export type ChatSource = "COACH" | "GUARDRAIL" | "UNAVAILABLE";
@@ -90,10 +95,12 @@ export const EMPTY_REPLY =
 // through checkCoachReply.
 const MAX_FOLLOW_UP_WORDS = 8;
 const LEAD = String.raw`(?:(?:ok|okay|so|and|but|hmm)[ ,]+)?`;
+// Polite or emphatic words people add at the end; they change nothing about the ask.
+const TAIL = String.raw`(?: (?:again|please|exactly))*[ ?.!]*$`;
 const FOLLOW_UP = new RegExp(
   [
-    String.raw`^${LEAD}(?:(?:can|could|would) you (?:please )?|please )?(?:explain|clarify|elaborate)(?: (?:that|this|it|more|further|again|a bit more|why|how|what you (?:mean|said)))?[ ?.!]*$`,
-    String.raw`^${LEAD}(?:why|why is that|why is it|how come|how so|what do you mean(?: by (?<term>[\w' -]{1,30}))?|what does (?:that|this|it) mean|tell me more|say more|go on|and then|what about (?:that|this|it|the (?:last|next|first) one))[ ?.!]*$`,
+    String.raw`^${LEAD}(?:(?:can|could|would) you (?:please )?|please )?(?:explain|clarify|elaborate)(?: (?:that|this|it|more|further|again|a bit more|why|how|what you (?:mean|said)))?${TAIL}`,
+    String.raw`^${LEAD}(?:why|why is that|why is it|how come|how so|what do you mean(?: by (?<term>[\w'" -]{1,30}?))?|what does (?:that|this|it) mean|tell me more|say more|go on|and then|what about (?:that|this|it|the (?:last|next|first) one))${TAIL}`,
   ].join("|"),
   "i",
 );
@@ -102,7 +109,8 @@ const FOLLOW_UP = new RegExp(
 // "that", "this" and "it" point at the reply as a whole, so they always count.
 const POINTS_AT_REPLY: ReadonlySet<string> = new Set(["that", "this", "it"]);
 function termFromReply(match: RegExpExecArray, reply: string): boolean {
-  const term = match.groups?.term?.trim().toLowerCase();
+  // Quotes around the term are the user's, not the coach's.
+  const term = match.groups?.term?.replace(/['"]/g, "").trim().toLowerCase();
   return (
     !term || POINTS_AT_REPLY.has(term) || reply.toLowerCase().includes(term)
   );
@@ -207,6 +215,14 @@ export async function coachReply(
   return askModel(model, messages, options);
 }
 
+// What a failed call is recorded as. A ProviderError's message is a fixed string from
+// providers.ts; any other error (a JSON parse error quotes the body it could not read)
+// is recorded by name only, so no reply text reaches a record (practice 6).
+function errorLabel(e: unknown): string {
+  if (e instanceof ProviderError) return e.message;
+  return e instanceof Error ? e.name : "unknown error";
+}
+
 // The one model call of a turn, its reply check, and its record. The record carries
 // labels and timings only, never the messages or the reply.
 async function askModel(
@@ -231,7 +247,7 @@ async function askModel(
       outcome: "error",
       ...served,
       providerEvents,
-      error: e instanceof Error ? e.message : String(e),
+      error: errorLabel(e),
     });
     return { reply: UNAVAILABLE_REPLY, source: "UNAVAILABLE" };
   }

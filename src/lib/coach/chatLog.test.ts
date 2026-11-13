@@ -158,6 +158,32 @@ describe("coachReply records each model call", () => {
     expect(record).not.toContain("bench press");
   });
 
+  it("records only the error's name when a provider reply would not parse", async () => {
+    // A JSON parse error quotes the start of the body it could not read.
+    const model = vi
+      .fn<CoachChatModel>()
+      .mockRejectedValue(
+        new SyntaxError(
+          `Unexpected token '<', "<html>my knee hurts"... is not valid JSON`,
+        ),
+      );
+    const { records, options } = logged([]);
+    const turn = await coachReply(model, ctx, [], QUESTION, undefined, options);
+    expect(turn.source).toBe("UNAVAILABLE");
+    expect(records).toHaveLength(1);
+    expect(records[0].error).toBe("SyntaxError");
+    expect(JSON.stringify(records)).not.toContain("knee");
+  });
+
+  it("keeps a provider error's own fixed message in the record", async () => {
+    const model = vi
+      .fn<CoachChatModel>()
+      .mockRejectedValue(new ProviderError("Groq returned 503", "Groq", 503));
+    const { records, options } = logged([]);
+    await coachReply(model, ctx, [], QUESTION, undefined, options);
+    expect(records[0].error).toBe("Groq returned 503");
+  });
+
   it("answers even when the sink throws", async () => {
     const model = vi.fn<CoachChatModel>().mockResolvedValue("Add 2 kg.");
     const turn = await coachReply(model, ctx, [], QUESTION, undefined, {
