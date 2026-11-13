@@ -5,6 +5,7 @@ import {
   cliDatabaseUrl,
   databaseTarget,
   hostedDatabaseProblems,
+  testMigrationEnv,
   vercelEnvProblem,
 } from "./release";
 
@@ -160,6 +161,40 @@ describe("vercelEnvProblem", () => {
   it("checks nothing off Vercel, where VERCEL is unset (local and CI)", () => {
     expect(vercelEnvProblem({})).toBeUndefined();
     expect(vercelEnvProblem({ VERCEL_ENV: "preview" })).toBeUndefined();
+  });
+});
+
+describe("testMigrationEnv", () => {
+  const shell = {
+    PATH: "/usr/bin",
+    VERCEL: "1",
+    VERCEL_ENV: "preview",
+    DATABASE_URL: POOLED,
+    DATABASE_URL_UNPOOLED: DIRECT,
+  };
+
+  // A preview VERCEL_ENV and a Neon direct URL left in the shell used to send
+  // npm run db:migrate:test to Neon (11 Nov review).
+  it("points the Prisma CLI at the test database whatever the shell holds", () => {
+    expect(cliDatabaseUrl(testMigrationEnv(shell, TEST_DB))).toBe(TEST_DB);
+  });
+
+  // Empty, not deleted: dotenv (prisma.config.ts) fills only keys that are absent, so a
+  // value in .env cannot come back.
+  it("blanks the hosted-build variables instead of deleting them", () => {
+    expect(testMigrationEnv(shell, TEST_DB)).toEqual({
+      PATH: "/usr/bin",
+      VERCEL: "",
+      VERCEL_ENV: "",
+      DATABASE_URL: TEST_DB,
+      DATABASE_URL_UNPOOLED: "",
+    });
+  });
+
+  it("leaves the caller's environment unchanged", () => {
+    const before = { ...shell };
+    testMigrationEnv(shell, TEST_DB);
+    expect(shell).toEqual(before);
   });
 });
 

@@ -27,13 +27,33 @@ export function vercelEnvProblem(env: Env): string | undefined {
  * The Prisma CLI needs a direct connection for schema changes; the app uses the pooled
  * one (Neon's Prisma guide, checked 5 Nov 2026). The direct URL counts only on a hosted
  * build: locally, scripts/migrate-test.ts points the CLI at the test database through
- * DATABASE_URL, and a Neon string left in the shell or .env must not redirect it.
+ * testMigrationEnv, and a Neon string left in the shell or .env must not redirect it.
  */
 export function cliDatabaseUrl(env: Env): string | undefined {
   if (isHostedBuild(env) && env.DATABASE_URL_UNPOOLED) {
     return env.DATABASE_URL_UNPOOLED;
   }
   return env.DATABASE_URL;
+}
+
+/**
+ * The environment for `npm run db:migrate:test`: DATABASE_URL is the test database and
+ * the hosted-build variables are blanked, so cliDatabaseUrl returns the test database
+ * whatever the shell holds. Blank, not deleted: dotenv (prisma.config.ts) fills only
+ * keys that are absent, so a value in .env cannot come back. Returns a copy of the
+ * same type, so process.env can be passed to spawnSync.
+ */
+export function testMigrationEnv<E extends Env>(
+  env: E,
+  testDatabaseUrl: string,
+): E {
+  return {
+    ...env,
+    VERCEL: "",
+    VERCEL_ENV: "",
+    DATABASE_URL: testDatabaseUrl,
+    DATABASE_URL_UNPOOLED: "",
+  };
 }
 
 function parseUrl(url: string): URL | undefined {
