@@ -3,7 +3,7 @@
 // equipment and days, even with the LLM down during the demo.
 import {
   fitsProfile,
-  type LibraryExercise,
+  type CategorisedExercise,
   type VerifyProfile,
 } from "./verify";
 import type { PlanInput } from "./schema";
@@ -35,7 +35,7 @@ const SPLITS: Record<number, { name: string; muscles: string[] }[]> = {
 
 export function buildDefaultPlan(
   profile: VerifyProfile,
-  library: LibraryExercise[],
+  library: CategorisedExercise[],
 ): PlanInput {
   // More than three days repeats the three-day split, so 5 days is Push, Pull, Legs, Push, Pull.
   const base = SPLITS[Math.min(profile.daysPerWeek, 3)];
@@ -43,7 +43,12 @@ export function buildDefaultPlan(
     { length: profile.daysPerWeek },
     (_, i) => base[i % base.length],
   );
-  const usable = library.filter((e) => fitsProfile(e, profile));
+  // Strength exercises only: free-exercise-db lists stretches under the same muscles,
+  // and the dataset order puts some of them first (#71, found on #15). The `?.` skips,
+  // rather than crashes on, an exercise an untyped caller passes without a category.
+  const usable = library.filter(
+    (e) => e.category?.toLowerCase() === "strength" && fitsProfile(e, profile),
+  );
 
   return {
     name: `${profile.daysPerWeek}-day starter plan`,

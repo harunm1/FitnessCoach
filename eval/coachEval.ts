@@ -19,6 +19,7 @@ import {
   fitsProfile,
   verifyPlan,
   type LibraryExercise,
+  type CategorisedExercise,
 } from "../src/lib/coach/verify";
 
 const EXERCISES_URL =
@@ -52,7 +53,7 @@ async function main() {
     name: string;
     category: string;
   })[];
-  const library: LibraryExercise[] = all.map((e) => ({
+  const library: CategorisedExercise[] = all.map((e) => ({
     id: e.id,
     name: e.name,
     category: e.category,

@@ -17,6 +17,7 @@ import {
   verifyPlan,
   type LibraryExercise,
   type VerifyProfile,
+  type CategorisedExercise,
 } from "./verify";
 
 // What the coach needs from a model: given a prompt, return parsed JSON (or throw).
@@ -116,7 +117,7 @@ export type GenerateOptions = {
 export async function generatePlan(
   model: PlanModel,
   profile: VerifyProfile,
-  library: LibraryExercise[],
+  library: CategorisedExercise[],
   { log, takeProviderEvents = () => [], now = Date.now }: GenerateOptions = {},
 ): Promise<GeneratedPlan> {
   const usable = library.filter((e) => fitsProfile(e, profile));
