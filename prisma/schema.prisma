@@ -48,6 +48,7 @@ model User {
   workouts      Workout[]
   conversations Conversation[]
   photos        ProgressPhoto[]
+  coachEvents   CoachEvent[]
 }
 
 // ---------------------------------------------------------------------------
@@ -258,8 +259,46 @@ model RunLog {
 }
 
 // ---------------------------------------------------------------------------
-// Coach conversations
+// Coach records and conversations
 // ---------------------------------------------------------------------------
+
+enum CoachEventKind {
+  plan
+  chat
+}
+
+// Keep in sync with CoachOutcome in src/lib/coach/coachLog.ts.
+enum CoachEventOutcome {
+  ok
+  retried
+  switched
+  rejected
+  error
+  rule_based
+}
+
+// One record per coach call. Prompt/profile input is deliberately not stored.
+model CoachEvent {
+  id               Int               @id @default(autoincrement())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind             CoachEventKind
+  promptVersion    String
+  attempt          Int
+  latencyMs        Int
+  outcome          CoachEventOutcome
+  provider         String?
+  model            String?
+  inputTokens      Int?
+  outputTokens     Int?
+  guardrailVerdict String?
+  providerEvents   Json
+  problems         Json?
+  raw              Json?
+  createdAt        DateTime          @default(now())
+
+  @@index([userId, createdAt])
+}
 
 enum MessageRole {
   USER

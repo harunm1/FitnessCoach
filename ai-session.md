@@ -386,6 +386,16 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Did with it:** I decided how the flow and the demo accounts should work. I got the app running locally, fixed the three errors and told it what I saw when something else broke. Near the end I asked it to check the work against every requirement in the issue. The automated checks passed in a clean workspace, including the database and browser tests. I repaired the local migration history after taking a backup, and no app data was deleted. The demo passwords are in my private env file, not in the repo, and the offline PRO account only exists for local testing.
 
+### Storing coach-call records (issue #52)
+
+**Before asking:** I was working on the schema and code for coach-event storage and wanted feedback on whether the structure fit the project. I needed to check my changes against issue #52, understand how they should connect to the existing coach logger, and find out whether any dependency branches were missing.
+
+**Asked:** to check the schema and related code against the issue, point out problems with the relationships, ownership and stored fields, and help with the remaining implementation and tests. I also wanted to understand how to keep prompts out of the database and handle failed writes without breaking the coach response.
+
+**Got:** feedback and help with specific schema, sink and test changes. The main points were to take the owner from the server, include the metadata requested in the issue comment, distinguish unknown token counts from zero, and handle missing JSON values correctly. The review also identified that the pending `cached` outcome would need a matching schema update when it lands.
+
+**Did with it:** I used the feedback while working through the schema and code changes, for implementation, troubleshooting and verification. I kept the work on its own #52 branch. The migration and tests ran on an isolated database: 852 unit tests, 86 integration tests and 17 browser tests passed, along with formatting, lint, TypeScript and the build. The 14 sink cases check storage, separate users, deletion and failures. The setup notes explain how callers should use the sink and what still needs coordinating with the pending coach changes.
+
 ### 10 November 2026, quiz plans with run days (issue #85)
 
 **Before asking:** the quiz plan came from `buildDefaultPlan`, so it never had a run day and the session screen had nothing to show for runs, although `buildHybridWeek` and `saveWeek` could already store them. I decided the quiz asks for training mode, strength by default, and that only running and both take the new path, so a strength quiz stays as it is. The quiz action is Mohammad's file, so I kept my change there to one early branch and put the rest in my own files.
