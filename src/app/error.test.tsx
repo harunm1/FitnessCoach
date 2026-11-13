@@ -33,6 +33,15 @@ describe("root error.tsx", () => {
     expect(html).not.toContain("relation Plan does not exist");
   });
 
+  it("announces the message to screen readers as an alert", () => {
+    const html = renderToStaticMarkup(
+      <RouteError error={new Error("x")} retry={() => {}} />,
+    );
+    expect(html).toMatch(
+      /<p[^>]*role="alert"[^>]*>This page could not load\. Try again in a moment\.<\/p>/,
+    );
+  });
+
   it("calls retry once when Try again is pressed", () => {
     const retry = vi.fn();
     const button = findTryAgain(RouteError({ error: new Error("x"), retry }));
