@@ -20,14 +20,18 @@ async function largePhoto() {
 
 test("a photo over Vercel's 4.5 MB limit is shrunk in the browser and reaches the server", async ({
   page,
-  request,
 }) => {
   const db = new Client({ connectionString: testDatabaseURL() });
   const email = `photos-browser-${randomUUID()}@example.test`;
   const password = "Photos-browser-password-123!";
+  const ip = `2001:db8:${randomUUID().slice(0, 4)}::2`;
   await db.connect();
   try {
-    const signup = await request.post("/api/auth/sign-up/email", {
+    // The earlier tests sign in many times from the same address, which uses
+    // up the sign-in rate limit; a separate address keeps this test apart,
+    // like quiz-session.spec.ts.
+    await page.context().setExtraHTTPHeaders({ "x-forwarded-for": ip });
+    const signup = await page.request.post("/api/auth/sign-up/email", {
       headers: { origin: "http://127.0.0.1:13100" },
       data: { name: "Photo Athlete", email, password },
     });
