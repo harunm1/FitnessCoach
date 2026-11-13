@@ -416,6 +416,16 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Did with it:** each of those inputs is now a test that failed first and stays a crisis. The jump exception needs a pool named just before the jump or a plyo box, and does nothing when the message has a height ("bridge", "below", "from here") or "can't swim". The scheduling exceptions need a training object or the end of the sentence. "Kms" is a unit only after "prefer" or a "miles vs" pair. Load units after "pills ... 20 more" stop counting when ingestion words follow. The diagnosis list gained pec, biceps, triceps, quads and groin, and a lift name no longer hides "squatting" or "pressing". Left to the model check, not coded: "kms today", "kms for real", "on the roof i'm jumping", and a roof or bridge jump into water. Lint, typecheck, 903 unit tests and the format check pass. Tools for the targeted help: skill `agentic-sdlc:testing-vitest`, skill `backend-design:error-handling-as-design` (not run, see the log), and a fresh review agent (`pr-review-toolkit:code-reviewer`).
 
+### 13 November 2026, getting the core-path pull requests mergeable (issues #11, #71, #63; pull requests #53, #73, #96)
+
+**Before asking:** the chat turn (#53) and the strength-only starter plan (#73) conflicted with `main`, and the chat screen (#96) sits on #53, so none of the three could merge before the 15 November checkpoint. My plan was to merge `main` into each branch rather than rebase, apply the fixes my 11 November re-review had found but not pushed, and have each branch checked by a reviewer that had not seen the work before I pushed it. I had already decided that the injury text a user types must not reach a model, and that a refusal must never be the only thing a person in crisis reads.
+
+**Asked:** for the merges and the fixes, each with its failing test first, and for an independent review of each branch before the push.
+
+**Got:** the review of #53 found that a failed model call could put the first characters of a provider's reply into a log record, and that natural follow-ups such as "what do you mean by that exactly?" were being redirected. The review of #96 found that a message over a rate cap got "wait a moment" even when it held crisis wording. My own reading found that `/coach` would load a body-map exercise chat as the coach conversation, because both are stored as conversations of the same user. The review of #73 ran the real starter plan on the full 876-exercise library for 67,914 quiz profiles and found none that lost a plan.
+
+**Did with it:** kept the fixes small and in my own files. Failed chat calls are recorded by the provider's fixed message or the error's name. The follow-up rule accepts a quoted term and a trailing "please", "again" or "exactly". `/coach` loads only the untitled conversation. The coach gets muscles to avoid from the injury text by the same code rule onboarding uses. Only replies that mean the person needs help replace a cap message. I corrected a test count I had first reported for #53 (956, not 1,057: stale copies of test files in my local folder had been counted). Tools: the pr-review-toolkit code-reviewer agent for the independent reviews and the checks on the changed lines.
+
 ## Farnaz
 
 ### 8 November 2026, progress logic (issue #16)
