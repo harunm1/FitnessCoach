@@ -12,8 +12,8 @@ export type CoachOutcome =
   | "ok" // first try, verified
   | "retried" // verified after a provider retry or a regeneration
   | "switched" // verified after moving to the other provider
-  | "rejected" // the reply failed the verifier; problems listed
-  | "error" // no usable reply (transport failure or not JSON)
+  | "rejected" // the reply failed the plan verifier or the chat reply check; problems listed
+  | "error" // no usable reply (transport failure, not JSON, or a chat reply with no text)
   | "rule_based"; // both attempts failed; the user got the default plan
 
 export type CoachRecord = {

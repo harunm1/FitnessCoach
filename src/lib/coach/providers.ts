@@ -3,11 +3,12 @@
 // the other one is the fallback (D4). Both ask for JSON mode and return the parsed
 // object. Keys come from the environment and never appear in an error message.
 //
-// Two kinds of failure, handled in two places:
+// Three kinds of failure, handled in two places:
 //   - transport (429 rate limit, 5xx, network): retried here with backoff, then the
 //     other provider is tried (withRetry, withFallback);
 //   - content (not JSON, or a plan the verifier rejects): generatePlan retries once
-//     with the problems listed, then uses the rule-based plan.
+//     with the problems listed, then uses the rule-based plan;
+//   - a chat reply with no text: not retried on the same provider; the other one is tried.
 // Trade-offs and measurements: docs/COACH_EVAL.md, round 2.
 import type { PlanModel } from "./generatePlan";
 
