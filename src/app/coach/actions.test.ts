@@ -117,7 +117,11 @@ const { requirePermission, AccessDeniedError, revalidatePath, chatModel, db } =
 vi.mock("@/lib/auth/access", () => ({ requirePermission, AccessDeniedError }));
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
 vi.mock("next/cache", () => ({ revalidatePath }));
-vi.mock("@/lib/coach/providers", () => ({ coachChatModel: () => chatModel }));
+// Only the model factory is replaced; chat.ts needs the real ProviderError class.
+vi.mock("@/lib/coach/providers", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/coach/providers")>()),
+  coachChatModel: () => chatModel,
+}));
 import { sendCoachMessage, type CoachActionState } from "./actions";
 import { coachAttempts } from "./limits";
 

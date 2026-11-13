@@ -10,7 +10,7 @@ import {
   saveExchange,
   userMessagesSince,
 } from "@/lib/coach/conversation";
-import { coachChatModel, type ChatModel } from "@/lib/coach/providers";
+import { coachChatModel, type CoachChatModel } from "@/lib/coach/providers";
 import { groqSafetyClassifier } from "@/lib/coach/safetyModel";
 import { prisma } from "@/lib/prisma";
 import {
@@ -50,7 +50,7 @@ const DAY_MS = 24 * 60 * MINUTE_MS;
 
 // No provider key means no chat model: the turn then gets the "coach can't answer"
 // reply from coachReply instead of an error page.
-function chatModel(): ChatModel {
+function chatModel(): CoachChatModel {
   try {
     return coachChatModel(process.env);
   } catch {
