@@ -1,7 +1,7 @@
 # Runs on every push and pull request. A PR cannot be merged until this passes
 # once we make it a required check in branch protection (same setup as my AI-M repo).
-# The four steps mirror the npm scripts, so what passes locally passes here.
-
+# The steps mirror the npm scripts, and the build runs the same script Vercel uses,
+# so what passes locally passes here.
 name: CI
 
 on:
@@ -42,7 +42,14 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run test:integration
-      - run: npm run build
+      # The Vercel build script as a preview build runs it: the URL checks, prisma
+      # migrate deploy (already applied above, so it changes nothing), then next build,
+      # all against the CI test database.
+      - run: npx --no-install tsx scripts/vercel-build.ts
+        env:
+          VERCEL_ENV: preview
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+          DATABASE_URL_UNPOOLED: ${{ env.TEST_DATABASE_URL }}
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v4
