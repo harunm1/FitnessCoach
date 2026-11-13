@@ -233,10 +233,11 @@ model Workout {
   run  RunLog?
 
   // The session screen and actions find the open workout and count finished ones:
-  // where userId, planId and finishedAt (#76). No startedAt column: Postgres does not
-  // treat finishedAt IS NULL as an equality, so the startedAt sort runs on the few
-  // matched rows either way (one open workout per user and plan in practice). The lookups by plan.active (no planId) seek on userId
-  // and check finishedAt inside the index.
+  // where userId, planId and finishedAt (#76). No startedAt column: for sort order
+  // Postgres does not treat finishedAt IS NULL as an equality, so the startedAt sort
+  // runs on the few matched rows either way (one open workout per user and plan in
+  // practice; code, not the database, keeps it so). The lookups by plan.active (no
+  // planId) seek on userId and check finishedAt inside the index.
   @@index([userId, planId, finishedAt])
 }
 
