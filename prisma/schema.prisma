@@ -256,10 +256,11 @@ model Workout {
   // findFirst({ where: { planId, finishedAt: null } }).
   @@unique([planId], where: { finishedAt: null }, map: "Workout_one_open_per_plan")
   // The session screen and actions find the open workout and count finished ones:
-  // where userId, planId and finishedAt (#76). No startedAt column: Postgres does not
-  // treat finishedAt IS NULL as an equality, so the startedAt sort runs on the few
-  // matched rows either way (one open workout per plan, held above). The lookups by
-  // plan.active (no planId) seek on userId and check finishedAt inside the index.
+  // where userId, planId and finishedAt (#76). No startedAt column: for sort order
+  // Postgres does not treat finishedAt IS NULL as an equality, so the startedAt sort
+  // runs on the few matched rows either way (one open workout per plan, held above).
+  // The lookups by plan.active (no planId) seek on userId and check finishedAt inside
+  // the index.
   @@index([userId, planId, finishedAt])
   // Deleting a plan or a plan day sets these to null; the indexes let Postgres find
   // the workouts without scanning the table (#76). Workout_one_open_per_plan covers
