@@ -447,3 +447,13 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Got:** An implementation approach using `react-easy-crop`, with drag-and-zoom controls, upload/edit/remove actions restricted to the signed-in user's profile photo, and a way to retain the original image alongside the cropped version; as well as 65 tests covering the new functionality.
 
 **Did with it:** Reviewed the implementation and checked that it reused our existing storage and photo processing modules. Ran tests, lint, typecheck, and Prettier locally, then tested adding, changing, editing, and removing a photo on localhost, including uploading a non-image file. Checked R2 to verify that both the original and cropped images were stored correctly and that both were deleted when a photo was changed or removed. When the editor initially opened blank, I investigated the issue and traced it to a photo uploaded before original-image storage was introduced. This meant the issue was limited to older photos and did not affect newly uploaded ones. I also found that a non-image file opened a blank editor, and asked for a check before the editor opens.
+
+### 13 November 2026, review fixes for photos and profile photos (issues #16, #109, #110)
+
+**Before asking:** Nabeegh reviewed #109 and #110 and left comments about upload size, ownership checks, error logging, photo limits, accessibility, and tests. I wanted to address the feedback while keeping uploads flexible for users.
+
+**Asked:** How to address each review comment, including handling large phone photos under Vercel's 4.5 MB request limit and preventing two tabs from overwriting each other's profile photo.
+
+**Got:** Implementation examples and suggestions for browser-side image resizing (up to 50 MB), ownership checks, error logging, a 1,000-photo limit with a paginated gallery, accessibility improvements, and handling changes across tabs. AI also generated tests, including photo editor interaction tests using jsdom and Testing Library.
+
+**Did with it:** Reviewed the suggestions and implementation, decided to keep the upload and photo limits generous, and added notes to the page explaining them. Ran tests, lint, typecheck, and Prettier locally. Tested large photos, non-image files, error handling, and the two-tab case on localhost. Found and fixed an issue where an edit in one tab could overwrite a photo saved in another. Checked R2 for leftover files.
