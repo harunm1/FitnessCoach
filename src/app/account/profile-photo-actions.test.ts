@@ -5,7 +5,7 @@ import { MemoryStorage } from "@/lib/storage/memory";
 const { requireUser, revalidatePath, database, storage } = vi.hoisted(() => ({
   requireUser: vi.fn(),
   revalidatePath: vi.fn(),
-  database: { user: { findUnique: vi.fn(), update: vi.fn() } },
+  database: { user: { findUnique: vi.fn(), updateMany: vi.fn() } },
   storage: { current: undefined as unknown },
 }));
 vi.mock("server-only", () => ({}));
@@ -20,9 +20,12 @@ import {
 } from "./profile-photo-actions";
 
 const idle = { status: "idle" as const };
-const OLD = "profile/session-owner/old.webp";
-const OLD_ORIGINAL = "profile/session-owner/old.original.webp";
+const OLD = "profile/session-owner/0b9c1f0e-5d1a-4c5e-9f7a-2a1b3c4d5e6f.webp";
+const OLD_ORIGINAL = OLD.replace(".webp", ".original.webp");
+const OTHER_TAB =
+  "profile/session-owner/7d4e2a10-3b6c-4f8e-9a1d-5c2b8e0f4a7d.webp";
 let files: MemoryStorage;
+let logged: ReturnType<typeof vi.spyOn>;
 
 function solid(width: number, height: number, background = "#4a7") {
   return sharp({ create: { width, height, channels: 3, background } });
@@ -74,7 +77,8 @@ beforeEach(async () => {
   await files.put(OLD_ORIGINAL, Buffer.from("old original"), "image/webp");
   requireUser.mockResolvedValue({ id: "session-owner" });
   database.user.findUnique.mockResolvedValue({ image: null });
-  database.user.update.mockResolvedValue({});
+  database.user.updateMany.mockResolvedValue({ count: 1 });
+  logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
 });
 
 describe("uploadProfilePhoto", () => {
@@ -86,8 +90,8 @@ describe("uploadProfilePhoto", () => {
     expect(key).toMatch(/^profile\/session-owner\/[0-9a-f-]{36}\.webp$/);
     const out = await sharp(files.files.get(key)?.body).metadata();
     expect([out.format, out.width, out.height]).toEqual(["webp", 512, 512]);
-    expect(database.user.update).toHaveBeenCalledWith({
-      where: { id: "session-owner" },
+    expect(database.user.updateMany).toHaveBeenCalledWith({
+      where: { id: "session-owner", image: null },
       data: { image: key },
     });
     expect(revalidatePath).toHaveBeenCalledWith("/account");
@@ -125,7 +129,7 @@ describe("uploadProfilePhoto", () => {
       message: "That framing couldn't be used. Try again.",
     });
     expect(newKeys()).toHaveLength(0);
-    expect(database.user.update).not.toHaveBeenCalled();
+    expect(database.user.updateMany).not.toHaveBeenCalled();
   });
 
   it("deletes the old photo and its original only after the new one is saved", async () => {
@@ -139,6 +143,7 @@ describe("uploadProfilePhoto", () => {
   it.each([
     ["a web address", "https://example.com/me.png"],
     ["another user's file", "profile/someone-else/me.webp"],
+    ["a file not named by the app", "profile/session-owner/me.webp"],
   ])("never deletes %s", async (_name, image) => {
     database.user.findUnique.mockResolvedValue({ image });
     const remove = vi.spyOn(files, "delete");
@@ -152,8 +157,10 @@ describe("uploadProfilePhoto", () => {
     expect(
       newKeys().every((key) => key.startsWith("profile/session-owner/")),
     ).toBe(true);
-    expect(database.user.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: "session-owner" } }),
+    expect(database.user.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: "session-owner" }),
+      }),
     );
   });
 
@@ -163,7 +170,7 @@ describe("uploadProfilePhoto", () => {
       "redirect:/sign-in",
     );
     expect(newKeys()).toHaveLength(0);
-    expect(database.user.update).not.toHaveBeenCalled();
+    expect(database.user.updateMany).not.toHaveBeenCalled();
   });
 
   it("asks for a photo when none is sent", async () => {
@@ -179,7 +186,7 @@ describe("uploadProfilePhoto", () => {
       status: "error",
       message: "That file isn't an image we can read.",
     });
-    expect(database.user.update).not.toHaveBeenCalled();
+    expect(database.user.updateMany).not.toHaveBeenCalled();
   });
 
   it("explains, without details, when storage is unavailable", async () => {
@@ -188,7 +195,7 @@ describe("uploadProfilePhoto", () => {
       status: "error",
       message: "Your photo can't be saved right now. Try again later.",
     });
-    expect(database.user.update).not.toHaveBeenCalled();
+    expect(database.user.updateMany).not.toHaveBeenCalled();
   });
 
   it("removes the original again if saving the photo fails", async () => {
@@ -203,7 +210,7 @@ describe("uploadProfilePhoto", () => {
 
   it("keeps the old photo and removes the new files if the database save fails", async () => {
     database.user.findUnique.mockResolvedValue({ image: OLD });
-    database.user.update.mockRejectedValue(new Error("private details"));
+    database.user.updateMany.mockRejectedValue(new Error("private details"));
     expect(await uploadProfilePhoto(idle, await photoForm())).toEqual({
       status: "error",
       message: "Your photo can't be saved right now. Try again later.",
@@ -219,17 +226,76 @@ describe("uploadProfilePhoto", () => {
     expect(await uploadProfilePhoto(idle, await photoForm())).toEqual({
       status: "saved",
     });
+    expect(logged).toHaveBeenCalledWith(
+      "[photos] profile removing old files failed",
+      expect.objectContaining({ userId: "session-owner", storageKey: OLD }),
+    );
+  });
+
+  it("keeps the other tab's photo when it saved one meanwhile", async () => {
+    database.user.findUnique.mockResolvedValue({ image: OLD });
+    // Another tab replaced OLD after this upload read it.
+    database.user.updateMany.mockResolvedValue({ count: 0 });
+    expect(await uploadProfilePhoto(idle, await photoForm())).toEqual({
+      status: "error",
+      message:
+        "Your photo was changed in another tab. Refresh the page and try again.",
+    });
+    expect(database.user.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "session-owner", image: OLD },
+      }),
+    );
+    // This upload's files are removed, so nothing is left behind unseen.
+    expect(newKeys()).toHaveLength(0);
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("logs what failed when storage is down, without showing it", async () => {
+    vi.spyOn(files, "put").mockRejectedValue(new Error("R2 timed out"));
+    await uploadProfilePhoto(idle, await photoForm());
+    expect(logged).toHaveBeenCalledWith(
+      "[photos] profile upload: saving to storage failed",
+      expect.objectContaining({
+        userId: "session-owner",
+        storageKey: expect.stringMatching(/^profile\/session-owner\//),
+        error: expect.objectContaining({ message: "R2 timed out" }),
+      }),
+    );
+  });
+
+  it("logs a failed database save", async () => {
+    database.user.updateMany.mockRejectedValue(new Error("db down"));
+    await uploadProfilePhoto(idle, await photoForm());
+    expect(logged).toHaveBeenCalledWith(
+      "[photos] profile upload: saving the photo failed",
+      expect.objectContaining({ userId: "session-owner" }),
+    );
+  });
+
+  it("doesn't log a photo the user can fix, such as a non-image", async () => {
+    await uploadProfilePhoto(
+      idle,
+      form({ photo: new File(["hello"], "fake.jpg") }),
+    );
+    expect(logged).not.toHaveBeenCalled();
   });
 });
 
 describe("editProfilePhoto", () => {
+  // An edit names the photo it was framed on.
+  const editForm = (fields: Record<string, string>) =>
+    form({ photoKey: OLD, ...fields });
+
   beforeEach(async () => {
     database.user.findUnique.mockResolvedValue({ image: OLD });
     await files.put(OLD_ORIGINAL, await redAndBlue(), "image/webp");
   });
 
   it("reframes the photo from its full original", async () => {
-    expect(await editProfilePhoto(idle, form(framing(160, 20, 120)))).toEqual({
+    expect(
+      await editProfilePhoto(idle, editForm(framing(160, 20, 120))),
+    ).toEqual({
       status: "saved",
     });
     const [red, , blue] = await colourOf(files.files.get(OLD)?.body);
@@ -240,8 +306,8 @@ describe("editProfilePhoto", () => {
   });
 
   it("keeps the same key and the original, so nothing else changes", async () => {
-    await editProfilePhoto(idle, form(framing(0, 0, 200)));
-    expect(database.user.update).not.toHaveBeenCalled();
+    await editProfilePhoto(idle, editForm(framing(0, 0, 200)));
+    expect(database.user.updateMany).not.toHaveBeenCalled();
     expect(files.files.has(OLD_ORIGINAL)).toBe(true);
     expect(newKeys()).toHaveLength(0);
     expect(revalidatePath).toHaveBeenCalledWith("/account");
@@ -252,7 +318,7 @@ describe("editProfilePhoto", () => {
     ["no framing", {}],
     ["broken framing", { ...framing(0, 0, 100), cropWidth: "0" }],
   ])("rejects %s", async (_name, fields) => {
-    expect(await editProfilePhoto(idle, form(fields))).toEqual({
+    expect(await editProfilePhoto(idle, editForm(fields))).toEqual({
       status: "error",
       message: "That framing couldn't be used. Try again.",
     });
@@ -263,10 +329,11 @@ describe("editProfilePhoto", () => {
     ["no photo", null],
     ["a web address", "https://example.com/me.png"],
     ["another user's file", "profile/someone-else/me.webp"],
+    ["a path that climbs out of the folder", "profile/session-owner/../x.webp"],
   ])("refuses to edit %s", async (_name, image) => {
     database.user.findUnique.mockResolvedValue({ image });
     const put = vi.spyOn(files, "put");
-    expect(await editProfilePhoto(idle, form(framing(0, 0, 100)))).toEqual({
+    expect(await editProfilePhoto(idle, editForm(framing(0, 0, 100)))).toEqual({
       status: "error",
       message: "There's no photo to edit.",
     });
@@ -275,7 +342,7 @@ describe("editProfilePhoto", () => {
 
   it("asks to choose the photo again when its original is missing", async () => {
     await files.delete(OLD_ORIGINAL);
-    expect(await editProfilePhoto(idle, form(framing(0, 0, 100)))).toEqual({
+    expect(await editProfilePhoto(idle, editForm(framing(0, 0, 100)))).toEqual({
       status: "error",
       message: "This photo can't be edited. Choose it again to reframe it.",
     });
@@ -283,15 +350,51 @@ describe("editProfilePhoto", () => {
 
   it("explains, without details, when storage is unavailable", async () => {
     vi.spyOn(files, "put").mockRejectedValue(new Error("secret R2 details"));
-    expect(await editProfilePhoto(idle, form(framing(0, 0, 100)))).toEqual({
+    expect(await editProfilePhoto(idle, editForm(framing(0, 0, 100)))).toEqual({
       status: "error",
       message: "Your photo can't be saved right now. Try again later.",
     });
     expect(revalidatePath).not.toHaveBeenCalled();
+    expect(logged).toHaveBeenCalledWith(
+      "[photos] profile edit: saving to storage failed",
+      expect.objectContaining({ userId: "session-owner", storageKey: OLD }),
+    );
+  });
+
+  it("removes its file again if another tab replaced the photo meanwhile", async () => {
+    database.user.findUnique
+      .mockResolvedValueOnce({ image: OLD })
+      .mockResolvedValueOnce({ image: OTHER_TAB });
+    expect(await editProfilePhoto(idle, editForm(framing(0, 0, 100)))).toEqual({
+      status: "error",
+      message:
+        "Your photo was changed in another tab. Refresh the page and try again.",
+    });
+    expect(files.files.has(OLD)).toBe(false);
+    expect(files.files.has(OLD_ORIGINAL)).toBe(false);
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["a newer photo saved in another tab", OTHER_TAB],
+    ["no photo named", undefined],
+  ])("won't apply the framing to %s", async (_name, photoKey) => {
+    const put = vi.spyOn(files, "put");
+    const fields = { ...framing(0, 0, 100), ...(photoKey ? { photoKey } : {}) };
+    expect(await editProfilePhoto(idle, form(fields))).toEqual({
+      status: "error",
+      message:
+        "Your photo was changed in another tab. Refresh the page and try again.",
+    });
+    expect(put).not.toHaveBeenCalled();
+    expect(files.files.get(OLD)?.body.toString()).toBe("old");
   });
 
   it("uses only the signed-in user's photo", async () => {
-    await editProfilePhoto(idle, form({ ...framing(0, 0, 100), userId: "x" }));
+    await editProfilePhoto(
+      idle,
+      editForm({ ...framing(0, 0, 100), userId: "x" }),
+    );
     expect(database.user.findUnique).toHaveBeenCalledWith({
       where: { id: "session-owner" },
       select: { image: true },
@@ -302,7 +405,7 @@ describe("editProfilePhoto", () => {
     requireUser.mockRejectedValue(new Error("redirect:/sign-in"));
     const put = vi.spyOn(files, "put");
     await expect(
-      editProfilePhoto(idle, form(framing(0, 0, 100))),
+      editProfilePhoto(idle, editForm(framing(0, 0, 100))),
     ).rejects.toThrow("redirect:/sign-in");
     expect(put).not.toHaveBeenCalled();
   });
@@ -312,8 +415,8 @@ describe("removeProfilePhoto", () => {
   it("clears the photo and deletes it with its original", async () => {
     database.user.findUnique.mockResolvedValue({ image: OLD });
     expect(await removeProfilePhoto()).toEqual({ status: "removed" });
-    expect(database.user.update).toHaveBeenCalledWith({
-      where: { id: "session-owner" },
+    expect(database.user.updateMany).toHaveBeenCalledWith({
+      where: { id: "session-owner", image: OLD },
       data: { image: null },
     });
     expect(files.files.has(OLD)).toBe(false);
@@ -324,7 +427,7 @@ describe("removeProfilePhoto", () => {
 
   it("does nothing when there is no photo", async () => {
     expect(await removeProfilePhoto()).toEqual({ status: "removed" });
-    expect(database.user.update).not.toHaveBeenCalled();
+    expect(database.user.updateMany).not.toHaveBeenCalled();
   });
 
   it("clears a web address without trying to delete it", async () => {
@@ -333,7 +436,7 @@ describe("removeProfilePhoto", () => {
       image: "https://example.com/me.png",
     });
     expect(await removeProfilePhoto()).toEqual({ status: "removed" });
-    expect(database.user.update).toHaveBeenCalled();
+    expect(database.user.updateMany).toHaveBeenCalled();
     expect(remove).not.toHaveBeenCalled();
   });
 
@@ -341,22 +444,38 @@ describe("removeProfilePhoto", () => {
     database.user.findUnique.mockResolvedValue({ image: OLD });
     storage.current = undefined;
     expect(await removeProfilePhoto()).toEqual({ status: "removed" });
-    expect(database.user.update).toHaveBeenCalled();
+    expect(database.user.updateMany).toHaveBeenCalled();
   });
 
   it("explains, without details, when the database fails", async () => {
     database.user.findUnique.mockResolvedValue({ image: OLD });
-    database.user.update.mockRejectedValue(new Error("private details"));
+    database.user.updateMany.mockRejectedValue(new Error("private details"));
     expect(await removeProfilePhoto()).toEqual({
       status: "error",
       message: "Your photo couldn't be removed. Try again.",
     });
     expect(files.files.has(OLD)).toBe(true);
+    expect(logged).toHaveBeenCalledWith(
+      "[photos] profile remove failed",
+      expect.objectContaining({ userId: "session-owner" }),
+    );
+  });
+
+  it("keeps the files when another tab changed the photo meanwhile", async () => {
+    database.user.findUnique.mockResolvedValue({ image: OLD });
+    database.user.updateMany.mockResolvedValue({ count: 0 });
+    expect(await removeProfilePhoto()).toEqual({
+      status: "error",
+      message:
+        "Your photo was changed in another tab. Refresh the page and try again.",
+    });
+    expect(files.files.has(OLD)).toBe(true);
+    expect(revalidatePath).not.toHaveBeenCalled();
   });
 
   it("does nothing for a signed-out user and keeps the sign-in redirect", async () => {
     requireUser.mockRejectedValue(new Error("redirect:/sign-in"));
     await expect(removeProfilePhoto()).rejects.toThrow("redirect:/sign-in");
-    expect(database.user.update).not.toHaveBeenCalled();
+    expect(database.user.updateMany).not.toHaveBeenCalled();
   });
 });

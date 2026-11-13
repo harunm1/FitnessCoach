@@ -255,6 +255,7 @@ export default async function AccountPage({
               <ProfilePhotoForm
                 hasPhoto={avatar !== null}
                 editUrl={avatar?.editUrl ?? null}
+                editKey={avatar?.editKey ?? null}
               />
               <dl className={styles.profileList}>
                 <div>

@@ -8,15 +8,17 @@ vi.mock("@/app/account/profile-photo-actions", () => ({
 import {
   canShowImage,
   framingForm,
+  latestResult,
   ProfilePhotoForm,
 } from "./profile-photo-form";
 
 const EDIT_URL = "https://r2.example/me.original.webp";
+const EDIT_KEY = "profile/u1/0b9c1f0e-5d1a-4c5e-9f7a-2a1b3c4d5e6f.webp";
 
 describe("profile photo form", () => {
   it("offers only to add a photo when there is none", () => {
     const html = renderToStaticMarkup(
-      <ProfilePhotoForm hasPhoto={false} editUrl={null} />,
+      <ProfilePhotoForm hasPhoto={false} editUrl={null} editKey={null} />,
     );
     expect(html).toContain("Add photo");
     expect(html).not.toContain("Edit photo");
@@ -25,7 +27,7 @@ describe("profile photo form", () => {
 
   it("offers to change, edit or remove an existing photo", () => {
     const html = renderToStaticMarkup(
-      <ProfilePhotoForm hasPhoto editUrl={EDIT_URL} />,
+      <ProfilePhotoForm hasPhoto editUrl={EDIT_URL} editKey={EDIT_KEY} />,
     );
     expect(html).toContain("Change photo");
     expect(html).toContain("Edit photo");
@@ -34,7 +36,7 @@ describe("profile photo form", () => {
 
   it("hides the edit button when the photo can't be edited", () => {
     const html = renderToStaticMarkup(
-      <ProfilePhotoForm hasPhoto editUrl={null} />,
+      <ProfilePhotoForm hasPhoto editUrl={null} editKey={null} />,
     );
     expect(html).toContain("Change photo");
     expect(html).not.toContain("Edit photo");
@@ -42,14 +44,14 @@ describe("profile photo form", () => {
 
   it("only lets the user choose the image types the server accepts", () => {
     const html = renderToStaticMarkup(
-      <ProfilePhotoForm hasPhoto={false} editUrl={null} />,
+      <ProfilePhotoForm hasPhoto={false} editUrl={null} editKey={null} />,
     );
     expect(html).toContain('accept="image/jpeg,image/png,image/webp"');
   });
 
   it("has a closed editor with a zoom control and a labelled title", () => {
     const html = renderToStaticMarkup(
-      <ProfilePhotoForm hasPhoto={false} editUrl={null} />,
+      <ProfilePhotoForm hasPhoto={false} editUrl={null} editKey={null} />,
     );
     expect(html).toMatch(/<dialog[^>]*aria-labelledby="[^"]+-title"/);
     expect(html).not.toMatch(/<dialog[^>]* open/);
@@ -60,9 +62,65 @@ describe("profile photo form", () => {
 
   it("shows no message before anything happens", () => {
     const html = renderToStaticMarkup(
-      <ProfilePhotoForm hasPhoto editUrl={EDIT_URL} />,
+      <ProfilePhotoForm hasPhoto editUrl={EDIT_URL} editKey={EDIT_KEY} />,
     );
     expect(html).not.toContain('role="alert"');
+    // The status area is there, empty, so screen readers announce saves.
+    expect(html).toMatch(/<p role="status"[^>]*><\/p>/);
+  });
+
+  it("tells users big photos are fine", () => {
+    const html = renderToStaticMarkup(
+      <ProfilePhotoForm hasPhoto={false} editUrl={null} editKey={null} />,
+    );
+    expect(html).toContain("up to 50 MB");
+  });
+});
+
+describe("latestResult", () => {
+  const idle = { status: "idle" as const };
+  const failed = { status: "error" as const, message: "Upload failed." };
+
+  it("shows nothing before any action", () => {
+    expect(
+      latestResult(null, { upload: failed, edit: idle, remove: idle }),
+    ).toBeNull();
+  });
+
+  it("shows only the latest action, not an older error", () => {
+    expect(
+      latestResult("edit", {
+        upload: failed,
+        edit: { status: "saved" },
+        remove: idle,
+      }),
+    ).toEqual({ kind: "status", text: "Photo saved." });
+  });
+
+  it("shows the latest action's error", () => {
+    expect(
+      latestResult("upload", { upload: failed, edit: idle, remove: idle }),
+    ).toEqual({ kind: "error", text: "Upload failed." });
+  });
+
+  it("confirms a removal", () => {
+    expect(
+      latestResult("remove", {
+        upload: idle,
+        edit: idle,
+        remove: { status: "removed" },
+      }),
+    ).toEqual({ kind: "status", text: "Photo removed." });
+  });
+
+  it("gives a general message if an error has none", () => {
+    expect(
+      latestResult("edit", {
+        upload: idle,
+        edit: { status: "error" },
+        remove: idle,
+      }),
+    ).toEqual({ kind: "error", text: "Something went wrong. Try again." });
   });
 });
 
@@ -71,17 +129,19 @@ describe("framingForm", () => {
 
   it("sends a new photo with its framing", () => {
     const file = new File(["photo"], "me.jpg");
-    const data = framingForm(area, file);
+    const data = framingForm(area, { file });
     expect(data.get("photo")).toBe(file);
+    expect(data.has("photoKey")).toBe(false);
     expect(data.get("cropLeft")).toBe("10.5");
     expect(data.get("cropTop")).toBe("20");
     expect(data.get("cropWidth")).toBe("300");
     expect(data.get("cropHeight")).toBe("300");
   });
 
-  it("sends only the framing when editing the current photo", () => {
-    const data = framingForm(area);
+  it("sends the framing and which photo it is for when editing", () => {
+    const data = framingForm(area, { key: EDIT_KEY });
     expect(data.has("photo")).toBe(false);
+    expect(data.get("photoKey")).toBe(EDIT_KEY);
     expect(data.get("cropWidth")).toBe("300");
   });
 });
