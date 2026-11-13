@@ -152,6 +152,12 @@ describe("progress photos page", () => {
     expect(await render()).toContain("you can keep up to 1,000 photos");
   });
 
+  it("links back to the progress page", async () => {
+    const html = await render();
+    expect(html).toContain('href="/progress"');
+    expect(html).toContain("Back to progress");
+  });
+
   it("invites a first photo when there are none", async () => {
     expect(await render()).toContain("No photos yet.");
   });

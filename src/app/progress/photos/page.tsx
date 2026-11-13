@@ -83,10 +83,10 @@ export default async function ProgressPhotosPage({
           <div className="flex min-w-0 items-center gap-4">
             <UserBadge name={user.name} imageUrl={avatarUrl} />
             <Link
-              href="/session"
+              href="/progress"
               className="shrink-0 text-xs text-foreground/60 underline underline-offset-4"
             >
-              Back to training
+              Back to progress
             </Link>
           </div>
         </header>
