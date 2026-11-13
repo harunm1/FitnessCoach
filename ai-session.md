@@ -196,6 +196,16 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 
 **Did with it:** checked that every earlier case still passes, wrote the decision as D15 in `docs/ARCHITECTURE.md` with the option it beat, and kept the check-in wording short with 9-8-8 and 911 in it. Nothing in the app calls the screen yet; the chat code (#53) does next. A second fresh review found more missed crisis and cardiac wordings, a distress reading from the model replacing the eating-support and pain-stop replies, and crisis messages softened to the check-in by any gym word. I kept the design and tightened it: a reply that already gives specific help now outranks a distress reading; exaggeration counts only when tied to the session and nothing states intent; any message with crisis words that would get the off-topic redirect gets the check-in; and every new wording became a test that failed first (64).
 
+### 8 November 2026, indexes from the session queries (issue #76)
+
+**Before asking:** the design review listed six indexes. I wanted each one tied to a query that runs on `main` today, not added in case it is needed, and a before-and-after query plan on realistic row counts, because on the seeded demo data every table is small enough that Postgres scans it whatever indexes exist.
+
+**Asked:** to list every Prisma read on `main` with its filter and sort, to capture the SQL Prisma actually sends for the session queries, and to check the current Prisma 7 and PostgreSQL docs on `@@index`, migrations and foreign-key indexing.
+
+**Got:** nine reads on `Plan` and `Workout` in `src/app/session/` (six in `actions.ts`, three in `page.tsx`), all sequential scans at 5,000 users and 100,000 workouts; no query on `main` touches `Conversation` or `ProgressPhoto`, and `SetLog.exerciseId` and `PlanExercise.exerciseId` are only reached through unique constraints that already lead with `workoutId` or `planDayId`; the PostgreSQL 16 docs confirm a foreign key gets no index of its own.
+
+**Did with it:** added the two composite indexes the queries justify in one migration, kept the other four out until a pull request adds a query that needs them, and recorded `EXPLAIN ANALYZE` before and after in the pull request. Every session query now reads through an index; the sorts left run on one to four rows.
+
 ### 10 November 2026, board and docs upkeep (issues #70, #73 to #77)
 
 **Before asking:** pull requests #70, #73, #74 and #77 were not on the project board, #75 and #76 still said In progress while they waited for review, #76, #77 and #78 had no enhancement label or assignee, and the Mohammad heading in this file sat above my entries from 27 October on. I decided the board, labels and section order myself and wanted only the mechanical edits done and checked.
