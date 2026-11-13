@@ -156,8 +156,10 @@ export async function saveExchange(
   });
 }
 
-// How many messages the user has sent the coach since a time, across their own
-// conversations only (the per-user cap in the coach Server Action).
+// How many messages the user has sent since a time, across all their own conversations
+// (the per-user cap in the coach Server Action). Exercise chats from the body map are
+// conversations of the same user, so once those are per user they count here too: the
+// cap is on model calls per person, whichever screen they come from.
 export async function userMessagesSince(
   db: Db,
   userId: string,

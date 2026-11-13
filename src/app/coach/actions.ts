@@ -3,13 +3,14 @@
 
 import { revalidatePath } from "next/cache";
 import { AccessDeniedError, requirePermission } from "@/lib/auth/access";
-import { coachReply } from "@/lib/coach/chat";
+import { coachReply, MAX_MESSAGE_CHARS } from "@/lib/coach/chat";
 import {
   coachContextFor,
   loadConversation,
   saveExchange,
   userMessagesSince,
 } from "@/lib/coach/conversation";
+import { checkUserMessage } from "@/lib/coach/guardrails";
 import { coachChatModel, type CoachChatModel } from "@/lib/coach/providers";
 import { groqSafetyClassifier } from "@/lib/coach/safetyModel";
 import { prisma } from "@/lib/prisma";
@@ -53,7 +54,12 @@ const DAY_MS = 24 * 60 * MINUTE_MS;
 function chatModel(): CoachChatModel {
   try {
     return coachChatModel(process.env);
-  } catch {
+  } catch (error) {
+    // The message names a missing key or a bad COACH_PROVIDER value, never user text.
+    console.error(
+      "coach: chat model not configured",
+      error instanceof Error ? error.message : "unknown",
+    );
     return async () => {
       throw new Error("no chat provider configured");
     };
@@ -66,6 +72,20 @@ function errorCode(error: unknown): string {
   return typeof error === "object" && error !== null && "code" in error
     ? String(error.code)
     : "unknown";
+}
+
+// A refusal here (too long, or over a cap) comes before coachReply's safety screen, so
+// the word list is run on the message first: a crisis, red-flag or pain message gets
+// its fixed reply instead of the refusal (review of 13 Nov). No model call. Only the
+// two ends of a long message are read, as coachReply does.
+function refusal(text: string, message: string): CoachActionState {
+  const ends =
+    text.length > 2 * MAX_MESSAGE_CHARS
+      ? `${text.slice(0, MAX_MESSAGE_CHARS)} ${text.slice(-MAX_MESSAGE_CHARS)}`
+      : text;
+  const guard = checkUserMessage(ends);
+  const safety = guard.action !== "ALLOW" && guard.action !== "OFF_TOPIC";
+  return { status: "error", message: safety ? guard.reply : message };
 }
 
 export async function sendCoachMessage(
@@ -92,7 +112,7 @@ export async function sendCoachMessage(
     return { status: "error", message: EMPTY_MESSAGE };
   }
   if (text.length > MAX_STORED_CHARS) {
-    return { status: "error", message: TOO_LONG_MESSAGE };
+    return refusal(text, TOO_LONG_MESSAGE);
   }
 
   let loaded;
@@ -112,14 +132,14 @@ export async function sendCoachMessage(
   const [context, conversation, lastMinute, lastDay] = loaded;
   if (!context) return { status: "error", message: NO_PROFILE_MESSAGE };
   if (lastMinute >= COACH_LIMITS.perMinute) {
-    return { status: "error", message: RATE_MINUTE_MESSAGE };
+    return refusal(text, RATE_MINUTE_MESSAGE);
   }
   if (lastDay >= COACH_LIMITS.perDay) {
-    return { status: "error", message: RATE_DAY_MESSAGE };
+    return refusal(text, RATE_DAY_MESSAGE);
   }
   // Synchronous, so of several sends in flight only the first ones get through.
   const refused = coachAttempts.take(userId);
-  if (refused) return { status: "error", message: RATE_MESSAGES[refused] };
+  if (refused) return refusal(text, RATE_MESSAGES[refused]);
 
   const history = (conversation?.messages ?? []).map((m) => ({
     role: m.role === "USER" ? ("user" as const) : ("assistant" as const),

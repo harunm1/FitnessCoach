@@ -357,6 +357,61 @@ describe("sendCoachMessage", () => {
     expect(db.messages).toHaveLength(5);
   });
 
+  // A refusal must never be the only thing a person in crisis reads (review of 13 Nov).
+  it("gives the crisis reply, not the cap message, to a crisis message at the minute cap", async () => {
+    db.conversations.push({ id: 1, userId: "owner", updatedAt: new Date() });
+    for (let i = 0; i < 5; i++) {
+      db.messages.push({
+        id: i + 1,
+        conversationId: 1,
+        role: "USER",
+        content: `q${i}`,
+        createdAt: new Date(),
+      });
+    }
+
+    const result = await sendCoachMessage(
+      idle,
+      form({ message: "I want to kill myself" }),
+    );
+
+    expect(result).toEqual({ status: "error", message: REPLIES.CRISIS });
+    expect(chatModel).not.toHaveBeenCalled();
+    expect(db.messages).toHaveLength(5);
+  });
+
+  it("gives the crisis reply to a crisis message past the daily cap", async () => {
+    db.conversations.push({ id: 1, userId: "owner", updatedAt: new Date() });
+    const earlier = new Date(Date.now() - 2 * 3_600_000);
+    for (let i = 0; i < 50; i++) {
+      db.messages.push({
+        id: i + 1,
+        conversationId: 1,
+        role: "USER",
+        content: `q${i}`,
+        createdAt: earlier,
+      });
+    }
+
+    const result = await sendCoachMessage(
+      idle,
+      form({ message: "I want to kill myself" }),
+    );
+
+    expect(result).toEqual({ status: "error", message: REPLIES.CRISIS });
+    expect(chatModel).not.toHaveBeenCalled();
+  });
+
+  it("gives the crisis reply when a message too long to send ends in crisis wording", async () => {
+    const result = await sendCoachMessage(
+      idle,
+      form({ message: `${"a ".repeat(6_000)}I want to kill myself` }),
+    );
+
+    expect(result).toEqual({ status: "error", message: REPLIES.CRISIS });
+    expect(chatModel).not.toHaveBeenCalled();
+  });
+
   it("refuses a message past the daily cap", async () => {
     db.conversations.push({ id: 1, userId: "owner", updatedAt: new Date() });
     const earlier = new Date(Date.now() - 2 * 3_600_000);
