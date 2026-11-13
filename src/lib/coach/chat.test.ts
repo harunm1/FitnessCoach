@@ -369,6 +369,21 @@ describe("coachReply follow-ups", () => {
     });
   });
 
+  // "that", "this" and "it" point at the reply itself, so they need not be words in it.
+  it.each([
+    "What do you mean by that?",
+    "what do you mean by this",
+    "so what do you mean by it?",
+  ])("answers a pronoun follow-up: %s", async (text) => {
+    const model = vi.fn<CoachChatModel>().mockResolvedValue("Sure.");
+    const history: ChatMessage[] = [
+      { role: "user", content: "how hard should my squat sets be?" },
+      { role: "assistant", content: "Keep your squat sets at about rpe 7." },
+    ];
+    const turn = await coachReply(model, ctx, history, text);
+    expect(turn.source).toBe("COACH");
+  });
+
   it("still redirects 'Can you explain that?' with no earlier training turn", async () => {
     const model = vi.fn<CoachChatModel>();
     const turn = await coachReply(model, ctx, [], "Can you explain that?");

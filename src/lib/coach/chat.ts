@@ -85,7 +85,7 @@ export const EMPTY_REPLY =
 //     off-topic replies all mention "training" or "exercise" and are no context);
 //   - in "what do you mean by X", X is words from that reply, so "what do you mean by
 //     RPE" after a reply that used RPE is a follow-up and "what do you mean by bitcoin
-//     price today" is not (review of 11 Nov).
+//     price today" is not (review of 11 Nov); "what do you mean by that" always is.
 // The system prompt still limits the model to this user's training, and the reply goes
 // through checkCoachReply.
 const MAX_FOLLOW_UP_WORDS = 8;
@@ -99,9 +99,13 @@ const FOLLOW_UP = new RegExp(
 );
 
 // The words after "what do you mean by", if any, must appear in the coach's reply.
+// "that", "this" and "it" point at the reply as a whole, so they always count.
+const POINTS_AT_REPLY: ReadonlySet<string> = new Set(["that", "this", "it"]);
 function termFromReply(match: RegExpExecArray, reply: string): boolean {
   const term = match.groups?.term?.trim().toLowerCase();
-  return !term || reply.toLowerCase().includes(term);
+  return (
+    !term || POINTS_AT_REPLY.has(term) || reply.toLowerCase().includes(term)
+  );
 }
 
 // Everything the app says without asking the model. Compared in full, so a fixed reply
