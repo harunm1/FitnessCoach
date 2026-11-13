@@ -182,7 +182,8 @@ The hosted preview runs on Vercel (Hobby) with PostgreSQL on Neon (Free); why is
 decision D19 in `docs/ARCHITECTURE.md`. `vercel.json` sets the build command to
 `scripts/vercel-build.ts`. On production and preview deployments it first checks that
 `DATABASE_URL` and `DATABASE_URL_UNPOOLED` are both set and point at the same Neon
-branch, then runs `prisma migrate deploy` and `next build`; elsewhere it only builds.
+branch, then runs `prisma migrate deploy` and `next build`. With any other `VERCEL_ENV` it
+stops and names the setting to turn on; a local build is `npm run build`.
 Production uses the Neon `main` branch and pull request previews use a separate
 `preview` branch, so a pull request never reads or changes the production database.
 

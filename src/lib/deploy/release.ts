@@ -56,23 +56,23 @@ export function testMigrationEnv<E extends Env>(
   };
 }
 
+// A connection string carries its credentials before an "@". An unencoded "/", "?" or
+// "#" in the password ends the host early: the parser then reads the user name as the
+// host and finds no user at all. Such a URL counts as unreadable, so neither a log line
+// nor a comparison ever works with a "host" that is really the user and password.
 function parseUrl(url: string): URL | undefined {
   try {
-    return new URL(url);
+    const parsed = new URL(url);
+    return url.includes("@") && parsed.username === "" ? undefined : parsed;
   } catch {
     return undefined;
   }
 }
 
-/**
- * "host/database" for a log line; never the user name or password. An unencoded "/" in
- * a password makes the parser read the user part as the host and leaves the rest, with
- * its "@", in the path, so such a URL is reported as unreadable.
- */
+/** "host/database" for a log line; never the user name or password (see parseUrl). */
 export function databaseTarget(url: string): string {
   const parsed = parseUrl(url);
-  if (!parsed || parsed.pathname.includes("@")) return "an unreadable URL";
-  return `${parsed.host}${parsed.pathname}`;
+  return parsed ? `${parsed.host}${parsed.pathname}` : "an unreadable URL";
 }
 
 // Neon's pooled host carries "-pooler"; the direct host for the same branch does not.
@@ -155,8 +155,9 @@ export function hostedDatabaseProblems(env: Env): string[] {
  * Production and preview deployments apply committed migrations before building, each
  * to its own Neon branch (Production- and Preview-scoped variables), so a pull request
  * that adds a migration is previewed against a migrated schema. hostedDatabaseProblems
- * checks the two URLs agree before anything runs. Without VERCEL_ENV (local
- * development) it only builds; CI sets VERCEL_ENV=preview to run the hosted path.
+ * checks the two URLs agree before anything runs. For any other VERCEL_ENV this
+ * returns the build alone, but the build script never gets that far: vercelEnvProblem
+ * stops it first. CI sets VERCEL_ENV=preview to run the hosted path.
  */
 export function buildSteps(env: Env): string[] {
   return isHostedBuild(env)

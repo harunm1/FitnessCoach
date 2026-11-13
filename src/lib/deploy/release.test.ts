@@ -219,6 +219,29 @@ describe("databaseTarget", () => {
     expect(target).toBe("an unreadable URL");
     expect(target).not.toContain("34");
   });
+
+  // After the slash, a "?" or "#" moves the rest of the password and the real host
+  // into the query or the fragment, where a path check would not see them.
+  it.each([
+    "postgresql://owner:4321/Hidden?Tail@ep-x-pooler.neon.tech/neondb?sslmode=require",
+    "postgresql://owner:4321/Hidden#Tail@ep-x.neon.tech/neondb",
+  ])("never prints the user or password of %s", (url) => {
+    const target = databaseTarget(url);
+    expect(target).toBe("an unreadable URL");
+  });
+
+  it("stops the build for such a URL instead of comparing user names as hosts", () => {
+    const url =
+      "postgresql://owner:4321/Hidden?Tail@ep-x.neon.tech/neondb?sslmode=require";
+    const problems = hostedDatabaseProblems({
+      VERCEL_ENV: "preview",
+      DATABASE_URL: url,
+      DATABASE_URL_UNPOOLED: url,
+    });
+    expect(problems.length).toBeGreaterThan(0);
+    expect(problems.join(" ")).not.toContain("owner");
+    expect(problems.join(" ")).not.toContain("4321");
+  });
 });
 
 describe("buildSteps", () => {
@@ -236,11 +259,11 @@ describe("buildSteps", () => {
     ]);
   });
 
-  it("only builds in local development", () => {
+  it("returns only next build for VERCEL_ENV=development", () => {
     expect(buildSteps({ VERCEL_ENV: "development" })).toEqual(["next build"]);
   });
 
-  it("only builds when VERCEL_ENV is unset", () => {
+  it("returns only next build when VERCEL_ENV is unset", () => {
     expect(buildSteps({})).toEqual(["next build"]);
   });
 });
