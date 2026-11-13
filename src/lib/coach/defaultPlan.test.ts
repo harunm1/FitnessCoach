@@ -54,4 +54,12 @@ describe("buildDefaultPlan", () => {
       "Not enough compatible exercises for Full body",
     );
   });
+
+  it("sets an RPE target of 7 on every exercise (#65)", () => {
+    const plan = buildDefaultPlan(profile, library);
+
+    for (const exercise of plan.days.flatMap((day) => day.exercises)) {
+      expect(exercise.rpe).toBe(7);
+    }
+  });
 });

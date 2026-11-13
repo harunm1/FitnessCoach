@@ -6,7 +6,7 @@ import type { ProviderEvent } from "./providers";
 
 // Bump when the plan prompt's wording or shape changes, so records from different
 // prompts are never compared as if they were the same experiment.
-export const PLAN_PROMPT_VERSION = "plan-v2";
+export const PLAN_PROMPT_VERSION = "plan-v3";
 
 export type CoachOutcome =
   | "ok" // first try, verified

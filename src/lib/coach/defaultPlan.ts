@@ -8,6 +8,9 @@ import {
 } from "./verify";
 import type { PlanInput } from "./schema";
 
+// The fallback asks for a moderate effort: 7 is "about three reps left" (#65).
+const DEFAULT_RPE = 7;
+
 // One split per number of training days; each day lists the muscle groups it covers.
 const SPLITS: Record<number, { name: string; muscles: string[] }[]> = {
   1: [
@@ -69,6 +72,7 @@ export function buildDefaultPlan(
           sets: 3,
           reps: 10,
           restSeconds: 90,
+          rpe: DEFAULT_RPE,
         })),
       };
     }),

@@ -9,6 +9,11 @@ export const LIMITS = {
   sets: { min: 1, max: 6 },
   reps: { min: 1, max: 30 },
   restSeconds: { min: 30, max: 300 },
+  // Target effort per exercise (#65), on the reps-in-reserve RPE scale (Helms et al.
+  // 2016, Strength Cond J 38(4), Table 1: 10 = max, 9 = 1 rep left, 7 = 3 left): 6 to 9
+  // is hard enough to train, never a true max. Validated here, not stored: PlanExercise
+  // has no rpe column and the issue asks for no migration.
+  rpe: { min: 6, max: 9 },
   exercisesPerDay: { min: 2, max: 8 },
   daysPerWeek: { min: 1, max: 7 },
 } as const;
@@ -22,6 +27,7 @@ export const planExerciseSchema = z.object({
     .int()
     .min(LIMITS.restSeconds.min)
     .max(LIMITS.restSeconds.max),
+  rpe: z.number().int().min(LIMITS.rpe.min).max(LIMITS.rpe.max),
 });
 
 export const planDaySchema = z.object({

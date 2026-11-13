@@ -33,6 +33,21 @@ const library: LibraryExercise[] = JSON.parse(
 );
 const byId = new Map(library.map((e) => [e.id, e]));
 
+// The 30 October replies were recorded before plans carried an RPE target (#65), so
+// the replay adds rpe 7 to each exercise slot. Everything else in a reply is exactly
+// what the model returned; the recorded file is not edited.
+function withRpe(reply: unknown): unknown {
+  const days = (reply as { days?: unknown }).days;
+  if (!Array.isArray(days)) return reply;
+  return {
+    ...(reply as object),
+    days: days.map((day: { exercises?: object[] }) => ({
+      ...day,
+      exercises: day.exercises?.map((slot) => ({ rpe: 7, ...slot })),
+    })),
+  };
+}
+
 function replay(calls: Row["calls"]): PlanModel {
   let i = 0;
   return async () => {
@@ -40,7 +55,7 @@ function replay(calls: Row["calls"]): PlanModel {
     if (!call || call.reply === undefined) {
       throw new Error(call?.error ?? "no recorded reply");
     }
-    return call.reply;
+    return withRpe(call.reply);
   };
 }
 
