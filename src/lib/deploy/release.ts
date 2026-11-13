@@ -58,12 +58,18 @@ export function testMigrationEnv<E extends Env>(
 
 // A connection string carries its credentials before an "@". An unencoded "/", "?" or
 // "#" in the password ends the host early: the parser then reads the user name as the
-// host and finds no user at all. Such a URL counts as unreadable, so neither a log line
-// nor a comparison ever works with a "host" that is really the user and password.
+// host and finds no user at all, or, when the password also holds an "@", leaves the real
+// "@host" in the path, query or fragment. Either way the URL counts as unreadable, so
+// neither a log line nor a comparison ever works with a "host" that is really part of
+// the user and password. The cost: an "@" in a database name or a query value is
+// refused too; encode it as %40.
 function parseUrl(url: string): URL | undefined {
   try {
     const parsed = new URL(url);
-    return url.includes("@") && parsed.username === "" ? undefined : parsed;
+    const afterHost = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    const misread =
+      (url.includes("@") && parsed.username === "") || afterHost.includes("@");
+    return misread ? undefined : parsed;
   } catch {
     return undefined;
   }

@@ -225,6 +225,10 @@ describe("databaseTarget", () => {
   it.each([
     "postgresql://owner:4321/Hidden?Tail@ep-x-pooler.neon.tech/neondb?sslmode=require",
     "postgresql://owner:4321/Hidden#Tail@ep-x.neon.tech/neondb",
+    // An "@" before the "/", "?" or "#": the user name parses, the host is still wrong.
+    "postgresql://owner:Sec@ret/Pass@ep-x.neon.tech/db",
+    "postgresql://owner:Sec@ret?Pass@ep-x.neon.tech/db",
+    "postgresql://owner:Sec@ret#Pass@ep-x.neon.tech/db",
   ])("never prints the user or password of %s", (url) => {
     const target = databaseTarget(url);
     expect(target).toBe("an unreadable URL");
