@@ -5,10 +5,38 @@ import {
   uploadProgressPhoto,
   type PhotoActionState,
 } from "@/app/progress/photos/actions";
+import { MAX_PICKED_BYTES, MAX_UPLOAD_BYTES } from "@/lib/photos/limits";
+import { shrinkPhoto } from "@/lib/photos/shrink";
+
+const TOO_LARGE = "That photo is too large to upload. Try a smaller one.";
+
+// Shrinks the photo in the browser, then uploads it. Without this, phone
+// photos over 4.5 MB would be rejected by Vercel before reaching the server.
+export async function shrinkThenUpload(
+  previous: PhotoActionState,
+  formData: FormData,
+  upload: typeof uploadProgressPhoto = uploadProgressPhoto,
+  shrink: (file: File) => Promise<File> = shrinkPhoto,
+): Promise<PhotoActionState> {
+  const photo = formData.get("photo");
+  if (photo instanceof File && photo.size > 0) {
+    if (photo.size > MAX_PICKED_BYTES) {
+      return { status: "error", message: "Photos can be up to 50 MB." };
+    }
+    const smaller = await shrink(photo);
+    // Still too big (the browser couldn't read it): stop here, since the
+    // server would refuse a request this large without a clear message.
+    if (smaller.size > MAX_UPLOAD_BYTES) {
+      return { status: "error", message: TOO_LARGE };
+    }
+    formData.set("photo", smaller);
+  }
+  return upload(previous, formData);
+}
 
 export function PhotoUploadForm() {
   const [state, action, pending] = useActionState<PhotoActionState, FormData>(
-    uploadProgressPhoto,
+    (previous, formData) => shrinkThenUpload(previous, formData),
     { status: "idle" },
   );
 
@@ -28,7 +56,9 @@ export function PhotoUploadForm() {
           className="text-sm file:mr-3 file:min-h-11 file:border file:border-foreground/30 file:bg-transparent file:px-4 file:text-sm"
         />
         <span className="text-xs text-foreground/60">
-          JPEG, PNG or WebP, up to 10 MB. Location data is removed.
+          JPEG, PNG or WebP, up to 50 MB. Photos are saved at up to 1600 px, so
+          large ones may look a little less sharp than the original. Location
+          data is removed.
         </span>
       </label>
 

@@ -70,10 +70,11 @@ describe("processPhoto", () => {
     );
   });
 
-  it("rejects files over 10 MB before reading them", async () => {
+  it("rejects files over 4 MB before reading them", async () => {
+    expect(MAX_UPLOAD_BYTES).toBe(4 * 1024 * 1024);
     await expect(
       processPhoto(Buffer.alloc(MAX_UPLOAD_BYTES + 1)),
-    ).rejects.toThrow("Photos can be up to 10 MB.");
+    ).rejects.toThrow("That photo is too large to upload. Try a smaller one.");
   });
 
   it("rejects a file that is not an image", async () => {

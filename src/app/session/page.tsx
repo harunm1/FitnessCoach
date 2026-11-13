@@ -118,12 +118,20 @@ export default async function SessionPage() {
           <Link className="text-sm font-bold tracking-[0.12em]" href="/">
             FORM
           </Link>
-          <Link
-            className="text-xs text-foreground/60 underline underline-offset-4"
-            href="/onboarding"
-          >
-            Edit profile
-          </Link>
+          <nav aria-label="Your pages" className="flex items-center gap-4">
+            <Link
+              className="text-xs text-foreground/60 underline underline-offset-4"
+              href="/progress/photos"
+            >
+              Progress photos
+            </Link>
+            <Link
+              className="text-xs text-foreground/60 underline underline-offset-4"
+              href="/onboarding"
+            >
+              Edit profile
+            </Link>
+          </nav>
         </header>
 
         {plan && sessionDay ? (

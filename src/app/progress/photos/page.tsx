@@ -8,6 +8,7 @@ import {
   signPhotos,
   type GalleryPhoto,
 } from "@/lib/photos/gallery";
+import { GALLERY_PAGE_SIZE, MAX_PHOTOS_PER_USER } from "@/lib/photos/limits";
 import { prisma } from "@/lib/prisma";
 import { getPhotoStorage } from "@/lib/storage";
 
@@ -19,9 +20,23 @@ const dateFormat = new Intl.DateTimeFormat("en-CA", {
   dateStyle: "medium",
 });
 
-export default async function ProgressPhotosPage() {
+type SearchParams = Promise<{ show?: string | string[] }>;
+
+// How many photos to show: a page at first, more after each "Show more".
+export function photosToShow(value: string | string[] | undefined): number {
+  const asked = Number(Array.isArray(value) ? value[0] : value);
+  if (!Number.isInteger(asked)) return GALLERY_PAGE_SIZE;
+  return Math.min(Math.max(asked, GALLERY_PAGE_SIZE), MAX_PHOTOS_PER_USER);
+}
+
+export default async function ProgressPhotosPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
   const user = await requireUser();
-  const [profile, rows] = await Promise.all([
+  const shown = photosToShow((await searchParams).show);
+  const [profile, found] = await Promise.all([
     prisma.user.findUnique({
       where: { id: user.id },
       select: { image: true },
@@ -29,6 +44,8 @@ export default async function ProgressPhotosPage() {
     prisma.progressPhoto.findMany({
       where: { userId: user.id },
       orderBy: { takenAt: "desc" },
+      // One extra, to know whether there are more to show.
+      take: shown + 1,
       select: {
         id: true,
         storageKey: true,
@@ -38,6 +55,8 @@ export default async function ProgressPhotosPage() {
       },
     }),
   ]);
+  const rows = found.slice(0, shown);
+  const hasMore = found.length > shown;
 
   let photos: GalleryPhoto[] | null;
   let avatarUrl: string | null = null;
@@ -45,10 +64,15 @@ export default async function ProgressPhotosPage() {
     const storage = getPhotoStorage();
     [photos, avatarUrl] = await Promise.all([
       signPhotos(rows, storage),
-      signAvatar(profile?.image ?? null, storage),
+      signAvatar(user.id, profile?.image ?? null, storage),
     ]);
-  } catch {
-    photos = null; // storage not set up or unreachable; show the icon
+  } catch (error) {
+    // Storage not set up or unreachable: the page shows a message and the icon.
+    console.error("[photos] gallery: couldn't sign photo links", {
+      userId: user.id,
+      error,
+    });
+    photos = null;
   }
 
   return (
@@ -75,7 +99,8 @@ export default async function ProgressPhotosPage() {
             Progress photos
           </h1>
           <p className="mt-3 text-sm text-foreground/70">
-            Only you can see these. Each photo is stored privately.
+            Only you can see these. Each photo is stored privately, and you can
+            keep up to {MAX_PHOTOS_PER_USER.toLocaleString("en-CA")} photos.
           </p>
         </section>
 
@@ -109,10 +134,22 @@ export default async function ProgressPhotosPage() {
                     </p>
                     {photo.note && <p className="mt-1">{photo.note}</p>}
                   </div>
-                  <DeletePhotoButton photoId={photo.id} />
+                  <DeletePhotoButton
+                    photoId={photo.id}
+                    takenOn={dateFormat.format(photo.takenAt)}
+                  />
                 </li>
               ))}
             </ul>
+          )}
+          {photos !== null && hasMore && (
+            <Link
+              href={`/progress/photos?show=${shown + GALLERY_PAGE_SIZE}`}
+              scroll={false}
+              className="mt-6 inline-flex min-h-11 items-center border border-foreground/30 px-4 text-sm"
+            >
+              Show more photos
+            </Link>
           )}
         </section>
       </div>
