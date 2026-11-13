@@ -34,6 +34,12 @@ export default defineConfig({
         SMTP_FROM: "FitnessCoach <noreply@example.test>",
         SMTP_USER: "",
         SMTP_PASSWORD: "",
+        // Browser fixtures must never inherit a developer's R2 bucket, so photo
+        // uploads fail safely ("can't be saved right now") instead of storing.
+        R2_ACCOUNT_ID: "",
+        R2_ACCESS_KEY_ID: "",
+        R2_SECRET_ACCESS_KEY: "",
+        R2_BUCKET: "",
         // Browser fixtures must never inherit a developer's Stripe sandbox keys.
         STRIPE_SECRET_KEY: "",
         STRIPE_PRICE_ID: "",

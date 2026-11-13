@@ -67,6 +67,8 @@ export async function uploadProgressPhoto(
 
   try {
     const { prisma } = await import("@/lib/prisma");
+    // Counted before saving, so two uploads at the same moment can go a photo
+    // or two past the cap. That's harmless at this scale and avoids locking.
     const saved = await prisma.progressPhoto.count({
       where: { userId: user.id },
     });

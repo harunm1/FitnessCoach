@@ -15,7 +15,9 @@ export const MAX_PICKED_BYTES = 50 * 1024 * 1024; // 50 MB
 export const SHRINK_SIDE = 2048;
 
 // Progress photos per account. Generous (about one a day for three years),
-// but it stops a script from filling the bucket.
+// but it stops a script from filling the bucket. At about 300 KB a photo, a
+// full account uses about 300 MB, so roughly 33 full accounts would fill R2's
+// 10 GB free tier (see D3 in docs/ARCHITECTURE.md).
 export const MAX_PHOTOS_PER_USER = 1000;
 
 // Photos the gallery shows at first, and how many more each "Show more" adds.
