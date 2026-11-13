@@ -1,6 +1,11 @@
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
-import { MAX_UPLOAD_BYTES, PhotoError, processPhoto } from "./process";
+import {
+  clampCrop,
+  MAX_UPLOAD_BYTES,
+  PhotoError,
+  processPhoto,
+} from "./process";
 
 // Makes a plain test image, so no photo files are needed in the repo.
 function image(width: number, height: number) {
@@ -103,5 +108,123 @@ describe("processPhoto", () => {
     await expect(processPhoto(Buffer.from("x"))).rejects.toBeInstanceOf(
       PhotoError,
     );
+  });
+
+  describe("square option, for profile photos", () => {
+    it("crops a wide photo to a square of the given size", async () => {
+      const photo = await processPhoto(
+        await image(4000, 2000).png().toBuffer(),
+        { square: true, maxSide: 512 },
+      );
+      expect([photo.width, photo.height]).toEqual([512, 512]);
+      // Cropped, not shrunk with empty bars: every pixel is still the photo's
+      // colour, so the green channel never drops to the black of a bar.
+      const { channels } = await sharp(photo.body).stats();
+      expect(channels[1].min).toBeGreaterThan(100);
+    });
+
+    it("fills the square even when the photo is small", async () => {
+      const photo = await processPhoto(await image(100, 50).png().toBuffer(), {
+        square: true,
+        maxSide: 512,
+      });
+      expect([photo.width, photo.height]).toEqual([512, 512]);
+    });
+
+    it("still turns the photo upright and removes hidden data", async () => {
+      const input = await image(40, 20)
+        .jpeg()
+        .withMetadata({ orientation: 6 })
+        .withExif({
+          IFD3: { GPSLatitudeRef: "N", GPSLatitude: "43/1 39/1 0/1" },
+        })
+        .toBuffer();
+      const photo = await processPhoto(input, { square: true, maxSide: 64 });
+      const out = await sharp(photo.body).metadata();
+      expect(out.exif).toBeUndefined();
+      expect(out.orientation).toBeUndefined();
+      expect([photo.width, photo.height]).toEqual([64, 64]);
+    });
+  });
+
+  describe("crop option, from the photo editor", () => {
+    // 40 x 20 as stored: red left half, blue right half. Saved sideways
+    // (orientation 6), so upright it is 20 x 40 with red on top.
+    async function sideways() {
+      const red = await sharp({
+        create: { width: 20, height: 20, channels: 3, background: "#f00" },
+      })
+        .png()
+        .toBuffer();
+      return sharp({
+        create: { width: 40, height: 20, channels: 3, background: "#00f" },
+      })
+        .composite([{ input: red, left: 0, top: 0 }])
+        .jpeg()
+        .withMetadata({ orientation: 6 })
+        .toBuffer();
+    }
+
+    async function colourOf(body: Buffer) {
+      const { channels } = await sharp(body).stats();
+      return channels.map((channel) => Math.round(channel.mean));
+    }
+
+    it("keeps only the framed part, measured on the upright photo", async () => {
+      const top = await processPhoto(await sideways(), {
+        square: true,
+        maxSide: 16,
+        crop: { left: 0, top: 0, width: 20, height: 20 },
+      });
+      const bottom = await processPhoto(await sideways(), {
+        square: true,
+        maxSide: 16,
+        crop: { left: 0, top: 20, width: 20, height: 20 },
+      });
+      const [topRed, , topBlue] = await colourOf(top.body);
+      const [bottomRed, , bottomBlue] = await colourOf(bottom.body);
+      expect(topRed).toBeGreaterThan(200);
+      expect(topBlue).toBeLessThan(60);
+      expect(bottomBlue).toBeGreaterThan(200);
+      expect(bottomRed).toBeLessThan(60);
+    });
+
+    it("still makes a square of the given size", async () => {
+      const photo = await processPhoto(await image(300, 200).png().toBuffer(), {
+        square: true,
+        maxSide: 128,
+        crop: { left: 50, top: 0, width: 200, height: 200 },
+      });
+      expect([photo.width, photo.height]).toEqual([128, 128]);
+    });
+
+    it("does not fail when the crop reaches past the edge", async () => {
+      const photo = await processPhoto(await image(300, 200).png().toBuffer(), {
+        square: true,
+        maxSide: 64,
+        crop: { left: 250, top: 150, width: 200, height: 200 },
+      });
+      expect([photo.width, photo.height]).toEqual([64, 64]);
+    });
+  });
+});
+
+describe("clampCrop", () => {
+  it("rounds to whole pixels", () => {
+    expect(
+      clampCrop({ left: 10.4, top: 9.6, width: 50.5, height: 49.5 }, 300, 200),
+    ).toEqual({ left: 10, top: 10, width: 51, height: 50 });
+  });
+
+  it("keeps the crop inside the photo", () => {
+    expect(
+      clampCrop({ left: -5, top: 190, width: 400, height: 50 }, 300, 200),
+    ).toEqual({ left: 0, top: 190, width: 300, height: 10 });
+  });
+
+  it("never gives an empty crop", () => {
+    expect(
+      clampCrop({ left: 500, top: 500, width: 0, height: 0 }, 300, 200),
+    ).toEqual({ left: 299, top: 199, width: 1, height: 1 });
   });
 });
