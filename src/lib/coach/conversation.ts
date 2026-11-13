@@ -5,7 +5,13 @@ import type { CoachContext } from "./chat";
 
 type Db = Pick<
   PrismaClient,
-  "conversation" | "message" | "profile" | "plan" | "workout" | "$transaction"
+  | "conversation"
+  | "message"
+  | "profile"
+  | "plan"
+  | "workout"
+  | "exercise"
+  | "$transaction"
 >;
 
 // The screen shows the latest turns; the model sees fewer (MAX_HISTORY_MESSAGES).
@@ -22,13 +28,15 @@ export type StoredMessage = {
 
 export type Conversation = { id: number; messages: StoredMessage[] };
 
-// The user's latest conversation, oldest message first; null before the first message.
+// The user's latest coach conversation, oldest message first; null before the first
+// message. Exercise chats from the body map (#70) are conversations too, with a title
+// ("body-map:..."); the coach conversation has none, so the title keeps them apart.
 export async function loadConversation(
   db: Db,
   userId: string,
 ): Promise<Conversation | null> {
   const found = await db.conversation.findFirst({
-    where: { userId },
+    where: { userId, title: null },
     orderBy: { updatedAt: "desc" },
     select: {
       id: true,
@@ -60,7 +68,29 @@ export async function coachContextFor(
     },
   });
   if (!profile) return null;
-  return { ...profile, sessionLines: await nextSessionLines(db, userId) };
+  const [avoidMuscles, sessionLines] = await Promise.all([
+    musclesToAvoid(db, profile.injuries),
+    nextSessionLines(db, userId),
+  ]);
+  return { ...profile, avoidMuscles, sessionLines };
+}
+
+// The injury text never goes to a model (practice 6). Code picks the library's muscle
+// names that appear in it, the same rule onboarding uses for the plan, and only those
+// names reach the prompt.
+async function musclesToAvoid(
+  db: Db,
+  injuries: string | null,
+): Promise<string[]> {
+  const text = (injuries ?? "").trim().toLowerCase();
+  if (text === "") return [];
+  const library = await db.exercise.findMany({
+    select: { primaryMuscles: true, secondaryMuscles: true },
+  });
+  const names = new Set(
+    library.flatMap((e) => [...e.primaryMuscles, ...e.secondaryMuscles]),
+  );
+  return [...names].filter((muscle) => text.includes(muscle.toLowerCase()));
 }
 
 async function nextSessionLines(db: Db, userId: string): Promise<string[]> {
