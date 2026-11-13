@@ -65,8 +65,9 @@ describe("profile photo form", () => {
       <ProfilePhotoForm hasPhoto editUrl={EDIT_URL} editKey={EDIT_KEY} />,
     );
     expect(html).not.toContain('role="alert"');
-    // The status area is there, empty, so screen readers announce saves.
-    expect(html).toMatch(/<p role="status"[^>]*><\/p>/);
+    // No empty status either: the account page's own status (the trial
+    // message) must stay the only one until a photo is saved.
+    expect(html).not.toContain('role="status"');
   });
 
   it("tells users big photos are fine", () => {

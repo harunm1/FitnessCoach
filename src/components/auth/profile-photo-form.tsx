@@ -285,10 +285,13 @@ export function ProfilePhotoForm({
           {result.text}
         </p>
       )}
-      {/* Always present, so screen readers announce the confirmation. */}
-      <p role="status" className={styles.trialFormStatus}>
-        {result?.kind === "status" ? result.text : ""}
-      </p>
+      {/* Only when there is something to say, like the trial button, so the
+          page never has an empty status for screen readers or tests to find. */}
+      {result?.kind === "status" && (
+        <p role="status" className={styles.trialFormStatus}>
+          {result.text}
+        </p>
+      )}
 
       <dialog
         ref={dialog}

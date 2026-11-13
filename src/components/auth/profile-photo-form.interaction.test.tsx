@@ -169,7 +169,7 @@ describe("errors", () => {
     expect(screen.getByRole("alert").textContent).toBe(
       "Your photo can't be saved right now. Try again later.",
     );
-    expect(screen.getByRole("status").textContent).toBe("");
+    expect(screen.queryByRole("status")).toBeNull();
   });
 
   it("clears an old error once a later save works", async () => {
