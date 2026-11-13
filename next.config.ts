@@ -2,8 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   experimental: {
-    // Progress photos are up to 10 MB; the rest is room for the form fields.
-    serverActions: { bodySizeLimit: "11mb" },
+    // Photos arrive under 4 MB (the browser shrinks them first); the rest is
+    // room for the form fields. Vercel rejects anything over 4.5 MB.
+    serverActions: { bodySizeLimit: "4.5mb" },
   },
 };
 

@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/session";
+import { MAX_PHOTOS_PER_USER } from "@/lib/photos/limits";
 import { PhotoError, processPhoto } from "@/lib/photos/process";
 import { getPhotoStorage } from "@/lib/storage";
 
@@ -27,6 +28,12 @@ const detailsSchema = z.object({
 });
 
 const photoIdSchema = z.coerce.number().int().positive();
+
+// Records what failed for whoever runs the app; the user only sees a friendly
+// message. Never pass settings or keys from .env here.
+function logFailure(step: string, details: Record<string, unknown>) {
+  console.error(`[photos] ${step}`, details);
+}
 
 // A blank form field means "not given".
 function optionalText(value: FormDataEntryValue | null) {
@@ -58,10 +65,30 @@ export async function uploadProgressPhoto(
     };
   }
 
+  try {
+    const { prisma } = await import("@/lib/prisma");
+    const saved = await prisma.progressPhoto.count({
+      where: { userId: user.id },
+    });
+    if (saved >= MAX_PHOTOS_PER_USER) {
+      return {
+        status: "error",
+        message: `You can keep up to ${MAX_PHOTOS_PER_USER.toLocaleString("en-CA")} photos. Delete some to add more.`,
+      };
+    }
+  } catch (error) {
+    logFailure("upload: couldn't count photos", { userId: user.id, error });
+    return { status: "error", message: UNAVAILABLE };
+  }
+
   let photo: Awaited<ReturnType<typeof processPhoto>>;
   try {
     photo = await processPhoto(Buffer.from(await file.arrayBuffer()));
   } catch (error) {
+    // A PhotoError is the user's file; anything else is worth looking into.
+    if (!(error instanceof PhotoError)) {
+      logFailure("upload: processing failed", { userId: user.id, error });
+    }
     return {
       status: "error",
       message:
@@ -77,7 +104,12 @@ export async function uploadProgressPhoto(
   try {
     storage = getPhotoStorage();
     await storage.put(storageKey, photo.body, photo.contentType);
-  } catch {
+  } catch (error) {
+    logFailure("upload: saving to storage failed", {
+      userId: user.id,
+      storageKey,
+      error,
+    });
     return { status: "error", message: UNAVAILABLE };
   }
 
@@ -91,9 +123,20 @@ export async function uploadProgressPhoto(
         note: details.data.note,
       },
     });
-  } catch {
+  } catch (error) {
+    logFailure("upload: saving the photo row failed", {
+      userId: user.id,
+      storageKey,
+      error,
+    });
     // Without a row nobody can reach the file, so remove it again.
-    await storage.delete(storageKey).catch(() => undefined);
+    await storage.delete(storageKey).catch((cleanupError: unknown) => {
+      logFailure("upload: removing the unsaved file failed", {
+        userId: user.id,
+        storageKey,
+        error: cleanupError,
+      });
+    });
     return { status: "error", message: UNAVAILABLE };
   }
 
@@ -112,6 +155,7 @@ export async function deleteProgressPhoto(
     return { status: "error", message: NOT_FOUND };
   }
 
+  let storageKey: string | undefined;
   try {
     const { prisma } = await import("@/lib/prisma");
     // Only the owner's photos match, so nobody can delete someone else's.
@@ -122,14 +166,21 @@ export async function deleteProgressPhoto(
     if (!photo) {
       return { status: "error", message: NOT_FOUND };
     }
+    storageKey = photo.storageKey;
 
+    // The file goes first. If that fails, the row stays, the photo stays in
+    // the gallery and the user can try again, so no file is left behind
+    // unseen. Deleting a file that's already gone succeeds, so a retry after
+    // a database failure finishes the job.
+    await getPhotoStorage().delete(photo.storageKey);
     await prisma.progressPhoto.delete({ where: { id: photo.id } });
-    // The row is gone, so the photo is already hidden. If removing the file
-    // fails, the user still sees it deleted; the file stays private in R2.
-    await getPhotoStorage()
-      .delete(photo.storageKey)
-      .catch(() => undefined);
-  } catch {
+  } catch (error) {
+    logFailure("delete failed", {
+      userId: user.id,
+      photoId: photoId.data,
+      storageKey,
+      error,
+    });
     return {
       status: "error",
       message: "That photo couldn't be deleted. Try again.",

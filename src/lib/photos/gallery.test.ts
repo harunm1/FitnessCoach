@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MemoryStorage } from "@/lib/storage/memory";
 import {
+  isOwnProfileKey,
   signAvatar,
   signPhotos,
   VIEW_LINK_SECONDS,
@@ -33,7 +34,7 @@ describe("signPhotos", () => {
     });
   });
 
-  it("does not send the storage key to the page", async () => {
+  it("sends only the expiring link, not the key as its own field", async () => {
     const [photo] = await signPhotos([row], new MemoryStorage());
     expect(photo).not.toHaveProperty("storageKey");
   });
@@ -63,20 +64,57 @@ describe("signPhotos", () => {
   });
 });
 
-describe("signAvatar", () => {
-  it("has no link when the user has no profile photo", async () => {
-    expect(await signAvatar(null, new MemoryStorage())).toBeNull();
-    expect(await signAvatar("", new MemoryStorage())).toBeNull();
+const KEY = "profile/u1/0b9c1f0e-5d1a-4c5e-9f7a-2a1b3c4d5e6f.webp";
+
+describe("isOwnProfileKey", () => {
+  it("accepts a profile photo in the user's own folder", () => {
+    expect(isOwnProfileKey("u1", KEY)).toBe(true);
   });
 
-  it("signs a stored profile photo like a progress photo", async () => {
-    expect(await signAvatar("profile/u1/a.webp", new MemoryStorage())).toBe(
-      "memory://profile/u1/a.webp?expires=300",
+  it.each([
+    ["another user's photo", "u2", KEY],
+    ["a user id that only starts the same", "u", KEY],
+    ["a progress photo", "u1", KEY.replace("profile/", "progress/")],
+    ["a path that climbs out of the folder", "u1", "profile/u1/../u2/x.webp"],
+    [
+      "a nested folder",
+      "u1",
+      "profile/u1/x/0b9c1f0e-5d1a-4c5e-9f7a-2a1b3c4d5e6f.webp",
+    ],
+    ["a name that isn't a random id", "u1", "profile/u1/me.webp"],
+    ["the full-size original", "u1", KEY.replace(".webp", ".original.webp")],
+    ["another file type", "u1", KEY.replace(".webp", ".png")],
+    [
+      "an empty user id",
+      "",
+      "profile//0b9c1f0e-5d1a-4c5e-9f7a-2a1b3c4d5e6f.webp",
+    ],
+  ])("refuses %s", (_name, userId, key) => {
+    expect(isOwnProfileKey(userId, key)).toBe(false);
+  });
+});
+
+describe("signAvatar", () => {
+  it("has no link when the user has no profile photo", async () => {
+    expect(await signAvatar("u1", null, new MemoryStorage())).toBeNull();
+    expect(await signAvatar("u1", "", new MemoryStorage())).toBeNull();
+  });
+
+  it("signs the user's own profile photo like a progress photo", async () => {
+    expect(await signAvatar("u1", KEY, new MemoryStorage())).toBe(
+      `memory://${KEY}?expires=300`,
     );
+  });
+
+  it("refuses to sign another user's photo set as the image", async () => {
+    expect(await signAvatar("u2", KEY, new MemoryStorage())).toBeNull();
+    expect(
+      await signAvatar("u1", "progress/u2/a.webp", new MemoryStorage()),
+    ).toBeNull();
   });
 
   it("uses a full web address as it is", async () => {
     const url = "https://example.com/me.png";
-    expect(await signAvatar(url, new MemoryStorage())).toBe(url);
+    expect(await signAvatar("u1", url, new MemoryStorage())).toBe(url);
   });
 });

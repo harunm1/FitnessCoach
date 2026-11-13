@@ -20,8 +20,9 @@ export type GalleryPhoto = {
   note: string | null;
 };
 
-// Gives each saved photo a fresh, short-lived link. The storage key itself
-// never leaves the server.
+// Gives each saved photo a fresh, short-lived link. The page gets only the
+// link: the storage key is part of it, but the link stops working after
+// VIEW_LINK_SECONDS.
 export function signPhotos(
   rows: PhotoRow[],
   storage: PhotoStorage,
@@ -37,14 +38,30 @@ export function signPhotos(
   );
 }
 
-// The profile photo link for the page header. Profile photos are stored like
-// progress photos, so a storage key gets a short-lived link; a full web
-// address (for example from a sign-in provider) is used as it is.
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+// True only for a profile photo the app saved in this user's own folder:
+// exactly profile/<userId>/<uuid>.webp. Anything else, such as another
+// user's key or a path with "..", is refused.
+export function isOwnProfileKey(userId: string, key: string): boolean {
+  const folder = `profile/${userId}/`;
+  if (!userId || !key.startsWith(folder) || !key.endsWith(".webp")) {
+    return false;
+  }
+  return UUID.test(key.slice(folder.length, -".webp".length));
+}
+
+// The profile photo link for the page header. Users can change User.image
+// themselves through the sign-in library, so only a key in their own folder
+// is signed; a full web address (for example from a sign-in provider) is
+// used as it is.
 export async function signAvatar(
+  userId: string,
   image: string | null,
   storage: PhotoStorage,
 ): Promise<string | null> {
   if (!image) return null;
   if (/^https?:\/\//.test(image)) return image;
+  if (!isOwnProfileKey(userId, image)) return null;
   return storage.signedUrl(image, VIEW_LINK_SECONDS);
 }

@@ -436,7 +436,7 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Got:** step-by-step instructions and explanations that cleared up my doubts; the initial code for those files, including the 5-minute signed links; 77 tests; and a checklist for testing.
 
-**Did with it:** followed the instructions to set up the private R2 bucket and its key, reviewed the generated code to make sure it met our project requirements, ran tests, lint, typecheck and Prettier locally, and went through the checklist on localhost: upload, rejected files, delete, an expired link and signing out. I also left body measurements as a suggestion on #16, since they need a schema change.
+**Did with it:** followed the instructions to set up the private R2 bucket and its key, reviewed the generated code to make sure it met our project requirements, ran tests, lint, typecheck and Prettier locally, and went through the checklist on localhost: upload, rejected files, delete, an expired link and signing out. I also left body measurements as a suggestion on #16, since they need a schema change. After Shubham's review, I had the delete order changed so the R2 file is removed before the database row, and a failed file delete now shows "Try again" instead of hiding the photo. The updated failure test and a new retry test were AI-generated; I checked them and reran the suite, so there are now 78 tests.
 
 ### 12 November 2026, profile photos (issue #16)
 

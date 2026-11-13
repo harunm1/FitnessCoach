@@ -1,6 +1,7 @@
 import sharp, { type Metadata } from "sharp";
+import { MAX_UPLOAD_BYTES } from "./limits";
 
-export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
+export { MAX_UPLOAD_BYTES };
 const MAX_PIXELS = 40_000_000; // about a 48-megapixel phone photo
 const MAX_SIDE = 1600;
 const ALLOWED_FORMATS = new Set(["jpeg", "png", "webp"]);
@@ -62,7 +63,9 @@ export async function processPhoto(
     throw new PhotoError("Choose a photo to upload.");
   }
   if (input.length > MAX_UPLOAD_BYTES) {
-    throw new PhotoError("Photos can be up to 10 MB.");
+    throw new PhotoError(
+      "That photo is too large to upload. Try a smaller one.",
+    );
   }
 
   // Check what the file really is, not what its name or type claims.

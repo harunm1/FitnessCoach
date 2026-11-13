@@ -6,7 +6,12 @@ const { requireUser, revalidatePath, database, storage } = vi.hoisted(() => ({
   requireUser: vi.fn(),
   revalidatePath: vi.fn(),
   database: {
-    progressPhoto: { create: vi.fn(), findFirst: vi.fn(), delete: vi.fn() },
+    progressPhoto: {
+      count: vi.fn(),
+      create: vi.fn(),
+      findFirst: vi.fn(),
+      delete: vi.fn(),
+    },
   },
   storage: { current: undefined as unknown },
 }));
@@ -19,6 +24,7 @@ import { deleteProgressPhoto, uploadProgressPhoto } from "./actions";
 
 const idle = { status: "idle" as const };
 let files: MemoryStorage;
+let logged: ReturnType<typeof vi.spyOn>;
 
 async function jpeg() {
   return sharp({
@@ -48,6 +54,8 @@ beforeEach(() => {
   files = new MemoryStorage();
   storage.current = files;
   requireUser.mockResolvedValue({ id: "session-owner" });
+  logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  database.progressPhoto.count.mockResolvedValue(0);
   database.progressPhoto.create.mockResolvedValue({ id: 1 });
   database.progressPhoto.findFirst.mockResolvedValue({
     id: 7,
@@ -120,11 +128,11 @@ describe("uploadProgressPhoto", () => {
     expect(files.files.size).toBe(0);
   });
 
-  it("rejects a file over 10 MB", async () => {
-    const big = new File([new Uint8Array(10 * 1024 * 1024 + 1)], "big.jpg");
+  it("rejects a file over 4 MB", async () => {
+    const big = new File([new Uint8Array(4 * 1024 * 1024 + 1)], "big.jpg");
     expect(await uploadProgressPhoto(idle, form({ photo: big }))).toEqual({
       status: "error",
-      message: "Photos can be up to 10 MB.",
+      message: "That photo is too large to upload. Try a smaller one.",
     });
     expect(files.files.size).toBe(0);
   });
@@ -193,6 +201,78 @@ describe("uploadProgressPhoto", () => {
     expect(files.files.size).toBe(0);
     expect(revalidatePath).not.toHaveBeenCalled();
   });
+
+  it("stops at 1,000 photos, before reading the file", async () => {
+    database.progressPhoto.count.mockResolvedValue(1000);
+    expect(await uploadProgressPhoto(idle, await photoForm())).toEqual({
+      status: "error",
+      message: "You can keep up to 1,000 photos. Delete some to add more.",
+    });
+    expect(database.progressPhoto.count).toHaveBeenCalledWith({
+      where: { userId: "session-owner" },
+    });
+    expect(files.files.size).toBe(0);
+  });
+
+  it("still accepts the 1,000th photo", async () => {
+    database.progressPhoto.count.mockResolvedValue(999);
+    expect(await uploadProgressPhoto(idle, await photoForm())).toEqual({
+      status: "saved",
+    });
+  });
+
+  it("logs what failed when storage is down, without showing it", async () => {
+    storage.current = {
+      put: vi.fn().mockRejectedValue(new Error("R2 timed out")),
+      delete: vi.fn(),
+      signedUrl: vi.fn(),
+    };
+    await uploadProgressPhoto(idle, await photoForm());
+    expect(logged).toHaveBeenCalledWith(
+      "[photos] upload: saving to storage failed",
+      expect.objectContaining({
+        userId: "session-owner",
+        storageKey: expect.stringMatching(/^progress\/session-owner\//),
+        error: expect.objectContaining({ message: "R2 timed out" }),
+      }),
+    );
+  });
+
+  it("logs a failed database save and a failed cleanup", async () => {
+    database.progressPhoto.create.mockRejectedValue(new Error("db down"));
+    storage.current = {
+      put: vi.fn(),
+      delete: vi.fn().mockRejectedValue(new Error("R2 down")),
+      signedUrl: vi.fn(),
+    };
+    await uploadProgressPhoto(idle, await photoForm());
+    expect(logged).toHaveBeenCalledWith(
+      "[photos] upload: saving the photo row failed",
+      expect.objectContaining({ userId: "session-owner" }),
+    );
+    expect(logged).toHaveBeenCalledWith(
+      "[photos] upload: removing the unsaved file failed",
+      expect.objectContaining({ userId: "session-owner" }),
+    );
+  });
+
+  it("logs when the photo count can't be read", async () => {
+    database.progressPhoto.count.mockRejectedValue(new Error("db down"));
+    expect(await uploadProgressPhoto(idle, await photoForm())).toEqual({
+      status: "error",
+      message: "Photos can't be saved right now. Try again later.",
+    });
+    expect(logged).toHaveBeenCalledWith(
+      "[photos] upload: couldn't count photos",
+      expect.objectContaining({ userId: "session-owner" }),
+    );
+  });
+
+  it("doesn't log a photo the user can fix, such as a non-image", async () => {
+    const text = new File(["hello"], "fake.jpg", { type: "image/jpeg" });
+    await uploadProgressPhoto(idle, form({ photo: text }));
+    expect(logged).not.toHaveBeenCalled();
+  });
 });
 
 describe("deleteProgressPhoto", () => {
@@ -256,17 +336,37 @@ describe("deleteProgressPhoto", () => {
       status: "error",
       message: "That photo couldn't be deleted. Try again.",
     });
-    expect(files.files.size).toBe(1);
+    expect(revalidatePath).not.toHaveBeenCalled();
   });
 
-  it("still reports the photo deleted if removing the file fails", async () => {
-    storage.current = {
-      put: vi.fn(),
-      delete: vi.fn().mockRejectedValue(new Error("R2 is down")),
-      signedUrl: vi.fn(),
-    };
+  it("finishes the job when the user retries after a database failure", async () => {
+    database.progressPhoto.delete.mockRejectedValueOnce(new Error("db down"));
+    await deleteProgressPhoto(idle, form({ photoId: "7" }));
+    // The file is already gone; deleting it again succeeds, then the row goes.
     expect(await deleteProgressPhoto(idle, form({ photoId: "7" }))).toEqual({
       status: "deleted",
     });
+    expect(database.progressPhoto.delete).toHaveBeenCalledTimes(2);
+    expect(files.files.size).toBe(0);
+  });
+
+  it("keeps the photo so the user can retry if removing the file fails", async () => {
+    const remove = vi.fn().mockRejectedValue(new Error("R2 is down"));
+    storage.current = { put: vi.fn(), delete: remove, signedUrl: vi.fn() };
+    expect(await deleteProgressPhoto(idle, form({ photoId: "7" }))).toEqual({
+      status: "error",
+      message: "That photo couldn't be deleted. Try again.",
+    });
+    expect(remove).toHaveBeenCalledWith("progress/session-owner/a.webp");
+    expect(database.progressPhoto.delete).not.toHaveBeenCalled();
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(logged).toHaveBeenCalledWith(
+      "[photos] delete failed",
+      expect.objectContaining({
+        userId: "session-owner",
+        photoId: 7,
+        storageKey: "progress/session-owner/a.webp",
+      }),
+    );
   });
 });
