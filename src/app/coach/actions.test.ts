@@ -380,6 +380,26 @@ describe("sendCoachMessage", () => {
     expect(db.messages).toHaveLength(5);
   });
 
+  it("still gives the cap message to an out-of-scope question at the minute cap", async () => {
+    db.conversations.push({ id: 1, userId: "owner", updatedAt: new Date() });
+    for (let i = 0; i < 5; i++) {
+      db.messages.push({
+        id: i + 1,
+        conversationId: 1,
+        role: "USER",
+        content: `q${i}`,
+        createdAt: new Date(),
+      });
+    }
+
+    const result = await sendCoachMessage(
+      idle,
+      form({ message: "how many calories should I eat a day" }),
+    );
+
+    expect(result).toEqual({ status: "error", message: RATE_MINUTE_MESSAGE });
+  });
+
   it("gives the crisis reply to a crisis message past the daily cap", async () => {
     db.conversations.push({ id: 1, userId: "owner", updatedAt: new Date() });
     const earlier = new Date(Date.now() - 2 * 3_600_000);

@@ -75,17 +75,25 @@ function errorCode(error: unknown): string {
 }
 
 // A refusal here (too long, or over a cap) comes before coachReply's safety screen, so
-// the word list is run on the message first: a crisis, red-flag or pain message gets
-// its fixed reply instead of the refusal (review of 13 Nov). No model call. Only the
-// two ends of a long message are read, as coachReply does.
+// the word list is run on the message first: a message that says the person needs help
+// (crisis, red flag, check-in, eating support, pain stop) gets that fixed reply instead
+// of the refusal (review of 13 Nov). Scope redirects such as nutrition do not replace
+// it. No model call. Only the two ends of a long message are read, as coachReply does.
+const NEEDS_HELP: ReadonlySet<string> = new Set([
+  "CRISIS",
+  "RED_FLAG",
+  "CHECK_IN",
+  "EATING_SUPPORT",
+  "PAIN_STOP",
+]);
 function refusal(text: string, message: string): CoachActionState {
   const ends =
     text.length > 2 * MAX_MESSAGE_CHARS
-      ? `${text.slice(0, MAX_MESSAGE_CHARS)} ${text.slice(-MAX_MESSAGE_CHARS)}`
+      ? `${text.slice(0, MAX_MESSAGE_CHARS)} … ${text.slice(-MAX_MESSAGE_CHARS)}`
       : text;
   const guard = checkUserMessage(ends);
-  const safety = guard.action !== "ALLOW" && guard.action !== "OFF_TOPIC";
-  return { status: "error", message: safety ? guard.reply : message };
+  const help = guard.action !== "ALLOW" && NEEDS_HELP.has(guard.action);
+  return { status: "error", message: help ? guard.reply : message };
 }
 
 export async function sendCoachMessage(
