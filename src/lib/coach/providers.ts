@@ -8,6 +8,8 @@
 //     other provider is tried (withRetry, withFallback);
 //   - content (not JSON, or a plan the verifier rejects): generatePlan retries once
 //     with the problems listed, then uses the rule-based plan.
+// Demo mode (COACH_DEMO_MODE=1, D12 and #59) drops the retry waits and cuts each call
+// to DEMO_TIMEOUT_MS, so a failure reaches the fallback without a wait.
 // Trade-offs and measurements: docs/COACH_EVAL.md, round 2.
 import type { PlanModel } from "./generatePlan";
 
@@ -29,6 +31,13 @@ const geminiUrl = (model: string) =>
 // that a stalled call moves on in a demo.
 const TIMEOUT_MS = 30_000;
 
+// Demo mode (D12, #59): Groq's slowest plan in the 30 October eval took 5.6 s, so 8 s
+// lets a working Groq answer and treats a stalled provider as down.
+export const DEMO_TIMEOUT_MS = 8_000;
+
+// Per-call settings for the adapters. timeoutMs defaults to TIMEOUT_MS.
+export type CallOptions = { timeoutMs?: number };
+
 type Env = Record<string, string | undefined>;
 
 // A failure of the call itself rather than of the reply's content. status is
@@ -47,7 +56,8 @@ export class ProviderError extends Error {
 
   // Worth trying the same provider again: rate limits, server errors and network
   // drops are transient (Groq and Gemini error docs). 400, 401, 403 and 413 are not:
-  // the same request fails the same way. A timeout already cost 30 s, so it goes
+  // the same request fails the same way. A timeout already cost the call limit (30 s,
+  // or 8 s in demo mode), so it goes
   // straight to the fallback instead of waiting again.
   get retryable(): boolean {
     if (this.timedOut) return false;
@@ -92,6 +102,7 @@ async function postJson(
   url: string,
   headers: Record<string, string>,
   body: unknown,
+  timeoutMs = TIMEOUT_MS,
 ): Promise<unknown> {
   let res: Response;
   try {
@@ -99,7 +110,7 @@ async function postJson(
       method: "POST",
       headers: { "Content-Type": "application/json", ...headers },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (e) {
     const timedOut = (e as Error).name === "TimeoutError";
@@ -120,7 +131,24 @@ async function postJson(
       retryAfterMs(res, text),
     );
   }
-  return res.json();
+  // The limit also covers reading the body; a body that stalls or breaks after the
+  // headers is a failed call, so it reaches the other provider like any other.
+  try {
+    return await res.json();
+  } catch (e) {
+    const timedOut = (e as Error).name === "TimeoutError";
+    // A body that is not JSON (an HTML error page with 200) fails the same way
+    // again, so it keeps the status and is not retried; a connection that breaks
+    // mid-read is a network drop, retried like any other.
+    const notJson = e instanceof SyntaxError;
+    throw new ProviderError(
+      `${provider} reply ${timedOut ? "timed out" : "could not be read"}`,
+      provider,
+      notJson ? res.status : undefined,
+      undefined,
+      timedOut,
+    );
+  }
 }
 
 function parseReply(provider: string, text: unknown): unknown {
@@ -138,7 +166,11 @@ function parseReply(provider: string, text: unknown): unknown {
 // prompt, which buildPlanPrompt already has. Low reasoning effort: picking from a
 // given list needs little planning, and fewer output tokens keep a full-library
 // request inside the free tier's tokens-per-minute limit.
-export function groqModel(apiKey: string, model = GROQ_MODEL): PlanModel {
+export function groqModel(
+  apiKey: string,
+  model = GROQ_MODEL,
+  { timeoutMs }: CallOptions = {},
+): PlanModel {
   return async (prompt) => {
     const data = (await postJson(
       "Groq",
@@ -150,6 +182,7 @@ export function groqModel(apiKey: string, model = GROQ_MODEL): PlanModel {
         response_format: { type: "json_object" },
         reasoning_effort: "low",
       },
+      timeoutMs,
     )) as { choices?: { message?: { content?: unknown } }[] };
     return parseReply("Groq", data.choices?.[0]?.message?.content);
   };
@@ -157,7 +190,11 @@ export function groqModel(apiKey: string, model = GROQ_MODEL): PlanModel {
 
 // Gemini's own REST format. Thinking models can return thought parts first, so take the
 // first part that is the answer.
-export function geminiModel(apiKey: string, model = GEMINI_MODEL): PlanModel {
+export function geminiModel(
+  apiKey: string,
+  model = GEMINI_MODEL,
+  { timeoutMs }: CallOptions = {},
+): PlanModel {
   return async (prompt) => {
     const data = (await postJson(
       "Gemini",
@@ -167,6 +204,7 @@ export function geminiModel(apiKey: string, model = GEMINI_MODEL): PlanModel {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: { responseMimeType: "application/json" },
       },
+      timeoutMs,
     )) as {
       candidates?: {
         content?: { parts?: { text?: unknown; thought?: boolean }[] };
@@ -187,6 +225,7 @@ function parseTextReply(provider: string, text: unknown): string {
 export function groqChatModel(
   apiKey: string,
   model = GROQ_MODEL,
+  { timeoutMs }: CallOptions = {},
 ): CoachChatModel {
   return async (messages) => {
     const data = (await postJson(
@@ -199,6 +238,7 @@ export function groqChatModel(
         temperature: 0.3,
         max_tokens: 300,
       },
+      timeoutMs,
     )) as { choices?: { message?: { content?: unknown } }[] };
     return parseTextReply("Groq", data.choices?.[0]?.message?.content);
   };
@@ -207,6 +247,7 @@ export function groqChatModel(
 export function geminiChatModel(
   apiKey: string,
   model = GEMINI_MODEL,
+  { timeoutMs }: CallOptions = {},
 ): CoachChatModel {
   return async (messages) => {
     const systemInstruction = messages.find(
@@ -229,6 +270,7 @@ export function geminiChatModel(
         contents,
         generationConfig: { temperature: 0.3, maxOutputTokens: 300 },
       },
+      timeoutMs,
     )) as {
       candidates?: {
         content?: { parts?: { text?: unknown; thought?: boolean }[] };
@@ -247,7 +289,7 @@ export type ProviderEvent = {
   model?: string; // on "served": the model that answered
 };
 
-export type RetryOptions = {
+export type RetryOptions = CallOptions & {
   retries?: number; // extra tries after the first
   baseDelayMs?: number;
   maxDelayMs?: number; // a longer Retry-After goes to the fallback instead
@@ -342,13 +384,36 @@ function requireKey(env: Env, name: string): string {
   return key;
 }
 
+// Demo mode is one setting, COACH_DEMO_MODE=1 (or true), turned on for the demo only.
+export function isDemoMode(env: Env = process.env): boolean {
+  const value = (env.COACH_DEMO_MODE ?? "").trim().toLowerCase();
+  return value === "1" || value === "true";
+}
+
+// In demo mode nothing waits for a retry and each call stops at DEMO_TIMEOUT_MS, so a
+// rate limit, a server error or a dropped network reaches the other provider, then the
+// cache, at once (D12). Options passed in explicitly win over these defaults.
+export function retryOptionsFor(
+  env: Env = process.env,
+  options: RetryOptions = {},
+): RetryOptions {
+  if (!isDemoMode(env)) return options;
+  return {
+    ...options,
+    retries: options.retries ?? 0,
+    timeoutMs: options.timeoutMs ?? DEMO_TIMEOUT_MS,
+  };
+}
+
 // Builds the coach's model from the environment: the provider named by COACH_PROVIDER
 // (Groq by default, D4 in docs/ARCHITECTURE.md) with retries, then the other provider
 // with retries when its key is also set.
 export function coachModel(
   env: Env = process.env,
-  options: RetryOptions = {},
+  given: RetryOptions = {},
 ): PlanModel {
+  const options = retryOptionsFor(env, given);
+  const call = { timeoutMs: options.timeoutMs };
   const lead = (env.COACH_PROVIDER ?? "groq").trim().toLowerCase();
   if (lead !== "groq" && lead !== "gemini") {
     throw new Error(`COACH_PROVIDER must be groq or gemini, not "${lead}"`);
@@ -361,7 +426,7 @@ export function coachModel(
         : env.GEMINI_MODEL || GEMINI_MODEL;
     return servedBy(
       withRetry(
-        name === "groq" ? groqModel(key, id) : geminiModel(key, id),
+        name === "groq" ? groqModel(key, id, call) : geminiModel(key, id, call),
         options,
       ),
       name === "groq" ? "Groq" : "Gemini",
@@ -392,8 +457,10 @@ function asPlanModel(model: CoachChatModel): PlanModel {
 
 export function coachChatModel(
   env: Env = process.env,
-  options: RetryOptions = {},
+  given: RetryOptions = {},
 ): CoachChatModel {
+  const options = retryOptionsFor(env, given);
+  const call = { timeoutMs: options.timeoutMs };
   const lead = (env.COACH_PROVIDER ?? "groq").trim().toLowerCase();
   if (lead !== "groq" && lead !== "gemini") {
     throw new Error(`COACH_PROVIDER must be groq or gemini, not "${lead}"`);
@@ -406,8 +473,8 @@ export function coachChatModel(
         : env.GEMINI_MODEL || GEMINI_MODEL;
     const chat =
       name === "groq"
-        ? groqChatModel(key, modelName)
-        : geminiChatModel(key, modelName);
+        ? groqChatModel(key, modelName, call)
+        : geminiChatModel(key, modelName, call);
     return servedBy(
       withRetry(asPlanModel(chat), options),
       name === "groq" ? "Groq" : "Gemini",

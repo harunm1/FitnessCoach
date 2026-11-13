@@ -9,7 +9,8 @@ import {
   type CoachSink,
 } from "./coachLog";
 import { buildDefaultPlan } from "./defaultPlan";
-import type { ProviderEvent } from "./providers";
+import type { CachedPlan } from "./demoPlans";
+import { ProviderError, type ProviderEvent } from "./providers";
 import type { PlanInput } from "./schema";
 import {
   fitsProfile,
@@ -25,6 +26,9 @@ export type GeneratedPlan = {
   plan: PlanInput;
   source: "COACH" | "DEFAULT"; // matches the PlanSource enum in prisma/schema.prisma
   attempts: number;
+  // A pre-generated coach plan served in demo mode (D12): a model wrote it and the
+  // verifier passed it, so it is a COACH plan, but the screen must not call it new.
+  cached: boolean;
 };
 
 const MAX_ATTEMPTS = 2;
@@ -110,27 +114,44 @@ export type GenerateOptions = {
   log?: CoachSink; // one record per model call (#41)
   takeProviderEvents?: () => ProviderEvent[]; // from providerEventCollector
   now?: () => number;
+  // Demo mode (D12, #59), from demoPlans(): one attempt only, so a failure of any
+  // kind reaches these plans at once; they are tried before the rule-based plan.
+  demoPlans?: CachedPlan[];
 };
 
 export async function generatePlan(
   model: PlanModel,
   profile: VerifyProfile,
   library: LibraryExercise[],
-  { log, takeProviderEvents = () => [], now = Date.now }: GenerateOptions = {},
+  {
+    log,
+    takeProviderEvents = () => [],
+    now = Date.now,
+    demoPlans,
+  }: GenerateOptions = {},
 ): Promise<GeneratedPlan> {
   const usable = library.filter((e) => fitsProfile(e, profile));
   const byId = new Map(library.map((e) => [e.id, e]));
   let problems: string[] = [];
+  let attempts = 0;
   const base = { kind: "plan" as const, promptVersion: PLAN_PROMPT_VERSION };
+  // In demo mode a cached plan, already verified, beats a regeneration that costs
+  // another wait; the worst case stays one pass through the provider chain.
+  const maxAttempts = demoPlans ? 1 : MAX_ATTEMPTS;
 
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    attempts = attempt;
     const started = now();
     let raw: unknown;
     try {
       raw = await model(buildPlanPrompt(profile, usable, problems));
     } catch (e) {
-      // A failed call or unparseable reply counts as a failed attempt.
-      problems = ["the reply was not valid JSON for the plan shape"];
+      // A failed call or unparseable reply counts as a failed attempt. A provider
+      // failure is not a fault in a reply, so there is nothing to tell the model.
+      problems =
+        e instanceof ProviderError
+          ? []
+          : ["the reply was not valid JSON for the plan shape"];
       const { served, providerEvents } = splitServed(takeProviderEvents());
       await writeRecord(log, {
         ...base,
@@ -156,7 +177,12 @@ export async function generatePlan(
         ...served,
         raw,
       });
-      return { plan: result.plan, source: "COACH", attempts: attempt };
+      return {
+        plan: result.plan,
+        source: "COACH",
+        attempts: attempt,
+        cached: false,
+      };
     }
     problems = result.problems;
     await writeRecord(log, {
@@ -171,19 +197,44 @@ export async function generatePlan(
     });
   }
 
+  const cachedPlan = demoPlans && fromCache(demoPlans, profile, usable, byId);
   await writeRecord(log, {
     ...base,
-    attempt: MAX_ATTEMPTS,
+    attempt: attempts,
     latencyMs: 0,
-    outcome: "rule_based",
+    outcome: cachedPlan ? "cached" : "rule_based",
     providerEvents: [],
     problems,
+    ...(cachedPlan ? { cachedProfileId: cachedPlan.profileId } : {}),
   });
+  if (cachedPlan) {
+    return { plan: cachedPlan.plan, source: "COACH", attempts, cached: true };
+  }
   return {
     plan: buildDefaultPlan(profile, library),
     source: "DEFAULT",
-    attempts: MAX_ATTEMPTS,
+    attempts,
+    cached: false,
   };
+}
+
+// The first cached plan that passes the verifier for this user's own equipment,
+// avoided muscles and days. A plan naming an exercise the user cannot do maps to no
+// id in their usable list, so the verifier rejects it.
+function fromCache(
+  plans: CachedPlan[],
+  profile: VerifyProfile,
+  usable: LibraryExercise[],
+  byId: Map<string, LibraryExercise>,
+): { plan: PlanInput; profileId: string } | undefined {
+  return plans
+    .map((cached) => ({
+      profileId: cached.profileId,
+      result: verifyPlan(namesToIds(cached.reply, usable), profile, byId),
+    }))
+    .flatMap(({ profileId, result }) =>
+      result.ok ? [{ plan: result.plan, profileId }] : [],
+    )[0];
 }
 
 // The "served" event names the provider and model; the rest stay as the call's events.
