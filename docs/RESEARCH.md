@@ -35,7 +35,7 @@ None is documented as asking follow-up questions about where a movement is felt.
 | Coach plan and verifier  | AI SDK structured output with a Zod schema           | Plan JSON checked against one schema               |
 | Forms                    | One Zod schema per form, browser and Server Action   | Validation written once                            |
 | File processing          | `sharp`                                              | Resize and strip metadata, including GPS           |
-| Loading and error states | `loading.tsx`, `error.tsx` per route                 | No hand-written spinners or error pages            |
+| Loading and error states | `error.tsx`; `<Suspense>` in the page (D16)          | No hand-written spinners or error pages            |
 | Demo evidence            | One Playwright test of quiz, plan, logged set, in CI | Proof the demo path works                          |
 | Shared data              | `prisma db seed`                                     | Exercise library and a demo user in one command    |
 
