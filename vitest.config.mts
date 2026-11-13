@@ -1,3 +1,4 @@
+// Vitest config: resolves the "@/*" import alias to src/, keeps integration and e2e tests out of the unit run.
 import { fileURLToPath } from "node:url";
 import { configDefaults, defineConfig } from "vitest/config";
 
