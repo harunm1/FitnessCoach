@@ -1,0 +1,461 @@
+import { randomUUID } from "node:crypto";
+import { hashPassword } from "better-auth/crypto";
+import { renderToStaticMarkup } from "react-dom/server";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
+import { createAuth } from "@/lib/auth/core";
+
+const request = vi.hoisted(() => ({ headers: new Headers() }));
+vi.mock("server-only", () => ({}));
+vi.mock("next/headers", () => ({ headers: async () => request.headers }));
+vi.mock("next/navigation", () => ({
+  redirect: (path: string) => {
+    throw new Error(`redirect:${path}`);
+  },
+}));
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("@/lib/prisma", async () => {
+  const { testDatabase } = await import("../helpers/database");
+  return { prisma: testDatabase() };
+});
+vi.mock("@/lib/auth", () => ({ getAuth: async () => auth }));
+
+import { prisma as db } from "@/lib/prisma";
+import { requireUser } from "@/lib/auth/session";
+import { saveQuizProfile } from "@/app/onboarding/actions";
+import OnboardingPage from "@/app/onboarding/page";
+import SessionPage from "@/app/session/page";
+import {
+  finishWorkout,
+  logSet,
+  saveRunMetrics,
+  startOrResumeWorkout,
+} from "@/app/session/actions";
+
+const prefix = `quiz-session-${randomUUID()}`;
+const password = "Quiz-session-test-password-123!";
+const baseURL = "http://localhost:3000";
+const exercises = [`${prefix}-press`, `${prefix}-squat`];
+const idle = { status: "idle" as const, message: "" };
+let auth: ReturnType<typeof createAuth>;
+let first: { id: string; email: string };
+let second: { id: string; email: string };
+let passwordHash: string;
+
+function form(values: Record<string, string>) {
+  const data = new FormData();
+  for (const [key, value] of Object.entries(values)) data.set(key, value);
+  return data;
+}
+
+async function athlete(label: string) {
+  const id = randomUUID();
+  return db.user.create({
+    data: {
+      id,
+      name: label,
+      email: `${prefix}-${label}-${id}@example.test`,
+      emailVerified: true,
+      accounts: {
+        create: {
+          accountId: id,
+          providerId: "credential",
+          password: passwordHash,
+        },
+      },
+    },
+  });
+}
+
+async function signIn(user: { email: string }) {
+  const response = await auth.handler(
+    new Request(`${baseURL}/api/auth/sign-in/email`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        origin: baseURL,
+        "x-forwarded-for": `2001:db8:${randomUUID().slice(0, 4)}::1`,
+      },
+      body: JSON.stringify({ email: user.email, password }),
+    }),
+  );
+  expect(response.status).toBe(200);
+  request.headers = new Headers({
+    cookie: response.headers
+      .getSetCookie()
+      .map((value) => value.split(";", 1)[0])
+      .join("; "),
+  });
+}
+
+async function plan(userId: string, name: string, exerciseId = exercises[0]) {
+  return db.plan.create({
+    data: {
+      userId,
+      name,
+      source: "DEFAULT",
+      days: {
+        create: {
+          name: `${name} day`,
+          dayIndex: 0,
+          exercises: {
+            create: {
+              exerciseId,
+              order: 0,
+              sets: 3,
+              reps: 10,
+              restSeconds: 90,
+            },
+          },
+        },
+      },
+    },
+    include: { days: true },
+  });
+}
+
+async function workout(
+  userId: string,
+  savedPlan: Awaited<ReturnType<typeof plan>>,
+) {
+  return db.workout.create({
+    data: { userId, planId: savedPlan.id, planDayId: savedPlan.days[0].id },
+  });
+}
+
+beforeAll(async () => {
+  passwordHash = await hashPassword(password);
+  await db.exercise.createMany({
+    data: exercises.map((id, i) => ({
+      id,
+      name: `${prefix} ${i ? "Squat" : "Press"}`,
+      level: "BEGINNER",
+      category: "strength",
+      equipment: "body only",
+      primaryMuscles: [i ? "quadriceps" : "chest"],
+      secondaryMuscles: [],
+      instructions: [],
+      images: [],
+      cues: [],
+      commonMistakes: [],
+    })),
+  });
+});
+
+beforeEach(async () => {
+  request.headers = new Headers();
+  auth = createAuth(
+    db,
+    {
+      baseURL,
+      secret: "quiz-session-integration-secret-at-least-32-characters",
+    },
+    async () => {},
+  );
+  first = await athlete("first");
+  second = await athlete("second");
+});
+
+afterEach(async () => {
+  request.headers = new Headers();
+  await db.user.deleteMany({ where: { email: { startsWith: prefix } } });
+});
+
+afterAll(async () => {
+  await db.exercise.deleteMany({ where: { id: { in: exercises } } });
+  await db.$disconnect();
+});
+
+describe("quiz and session authorization with PostgreSQL", () => {
+  it.each([
+    ["quiz action", () => saveQuizProfile(idle, new FormData())],
+    ["set action", () => logSet(exercises[0], idle, new FormData())],
+    ["run action", () => saveRunMetrics(idle, new FormData())],
+    ["start action", () => startOrResumeWorkout()],
+    ["finish action", () => finishWorkout()],
+    ["quiz page", () => OnboardingPage()],
+    ["session page", () => SessionPage()],
+  ] as const)(
+    "redirects a signed-out caller of the %s before processing data",
+    async (_label, call) => {
+      await expect(call()).rejects.toThrow("redirect:/sign-in");
+      expect(
+        await db.workout.count({
+          where: { userId: { in: [first.id, second.id] } },
+        }),
+      ).toBe(0);
+    },
+  );
+
+  it.each(["revoked", "expired", "unverified"])(
+    "rejects a %s session at the action boundary",
+    async (state) => {
+      await signIn(first);
+      if (state === "revoked")
+        await db.session.deleteMany({ where: { userId: first.id } });
+      if (state === "expired")
+        await db.session.updateMany({
+          where: { userId: first.id },
+          data: { expiresAt: new Date(0) },
+        });
+      if (state === "unverified")
+        await db.user.update({
+          where: { id: first.id },
+          data: { emailVerified: false },
+        });
+      await expect(saveQuizProfile(idle, new FormData())).rejects.toThrow(
+        "redirect:/sign-in",
+      );
+    },
+  );
+
+  it.each(["FREE", "TRIAL", "PRO", "ADMIN"] as const)(
+    "keeps the quiz and session available to a verified %s user",
+    async (tier) => {
+      // Even an expired trial can still use the rule-based plan and logging.
+      await db.user.update({
+        where: { id: first.id },
+        data: { tier, trialEndsAt: tier === "TRIAL" ? new Date(0) : null },
+      });
+      await signIn(first);
+      await expect(OnboardingPage()).resolves.toBeDefined();
+      await expect(SessionPage()).resolves.toBeDefined();
+    },
+  );
+
+  it("returns current tier and trial fields from the verified session", async () => {
+    await signIn(first);
+    expect(await requireUser()).toMatchObject({
+      id: first.id,
+      tier: "FREE",
+      trialEndsAt: null,
+    });
+    const trialEndsAt = new Date(Date.now() + 86400000);
+    await db.user.update({
+      where: { id: first.id },
+      data: { tier: "TRIAL", trialEndsAt },
+    });
+    expect(await requireUser()).toMatchObject({
+      id: first.id,
+      tier: "TRIAL",
+      trialEndsAt,
+    });
+  });
+
+  it("saves the signed-in user's quiz and plan without replacing another user's data", async () => {
+    const ownPlan = await plan(first.id, "First old plan");
+    const otherPlan = await plan(second.id, "Second private plan");
+    const otherProfile = await db.profile.create({
+      data: {
+        userId: second.id,
+        goal: "STRENGTH",
+        level: "EXPERT",
+        daysPerWeek: 4,
+        equipment: ["barbell"],
+      },
+    });
+    await signIn(first);
+    const answers = form({
+      goal: "MUSCLE",
+      level: "BEGINNER",
+      daysPerWeek: "3",
+      equipment: "body only",
+      injuries: "",
+      userId: second.id,
+      email: second.email,
+      planId: String(otherPlan.id),
+    });
+    expect((await saveQuizProfile(idle, answers)).status).toBe("success");
+    expect(
+      await db.profile.findUnique({ where: { userId: second.id } }),
+    ).toEqual(otherProfile);
+    expect(
+      (await db.plan.findUniqueOrThrow({ where: { id: otherPlan.id } })).active,
+    ).toBe(true);
+    expect(
+      (await db.plan.findUniqueOrThrow({ where: { id: ownPlan.id } })).active,
+    ).toBe(false);
+    expect(
+      await db.plan.count({ where: { userId: first.id, active: true } }),
+    ).toBe(1);
+    expect(
+      (await db.profile.findUniqueOrThrow({ where: { userId: first.id } }))
+        .goal,
+    ).toBe("MUSCLE");
+  });
+
+  it("shows only the signed-in user's plan on the session page", async () => {
+    await plan(first.id, "First visible plan");
+    await plan(second.id, "Second private plan");
+    await signIn(first);
+    const html = renderToStaticMarkup(await SessionPage());
+    expect(html).toContain("First visible plan");
+    expect(html).not.toContain("Second private plan");
+  });
+
+  it("does not borrow another user's plan when the caller has none", async () => {
+    await plan(second.id, "Second private plan");
+    await signIn(first);
+    const html = renderToStaticMarkup(await SessionPage());
+    expect(html).not.toContain("Second private plan");
+    await expect(startOrResumeWorkout()).rejects.toThrow(
+      "redirect:/onboarding",
+    );
+    expect(await db.workout.count({ where: { userId: first.id } })).toBe(0);
+  });
+
+  it("starts and resumes only the owner's workout", async () => {
+    const ownPlan = await plan(first.id, "First plan");
+    const otherPlan = await plan(second.id, "Second plan");
+    const otherWorkout = await workout(second.id, otherPlan);
+    await signIn(first);
+    await expect(startOrResumeWorkout()).rejects.toThrow("redirect:/session");
+    await expect(startOrResumeWorkout()).rejects.toThrow("redirect:/session");
+    const saved = await db.workout.findMany({ where: { userId: first.id } });
+    expect(saved).toHaveLength(1);
+    expect(saved[0]).toMatchObject({
+      planId: ownPlan.id,
+      planDayId: ownPlan.days[0].id,
+    });
+    expect(
+      await db.workout.findUnique({ where: { id: otherWorkout.id } }),
+    ).toEqual(otherWorkout);
+  });
+
+  it("ignores forged owner and workout fields when logging a set", async () => {
+    const ownWorkout = await workout(
+      first.id,
+      await plan(first.id, "First plan"),
+    );
+    const otherWorkout = await workout(
+      second.id,
+      await plan(second.id, "Second plan"),
+    );
+    await signIn(first);
+    await expect(
+      logSet(
+        exercises[0],
+        idle,
+        form({
+          setNumber: "1",
+          reps: "8",
+          weightKg: "12",
+          userId: second.id,
+          workoutId: String(otherWorkout.id),
+        }),
+      ),
+    ).rejects.toThrow("redirect:/session");
+    expect(
+      await db.setLog.count({ where: { workoutId: otherWorkout.id } }),
+    ).toBe(0);
+    expect(
+      await db.setLog.findFirst({ where: { workoutId: ownWorkout.id } }),
+    ).toMatchObject({ reps: 8, setNumber: 1 });
+  });
+
+  it("cannot log an exercise that is only on another user's plan", async () => {
+    await workout(first.id, await plan(first.id, "First plan"));
+    const otherWorkout = await workout(
+      second.id,
+      await plan(second.id, "Second plan", exercises[1]),
+    );
+    await signIn(first);
+    expect(
+      (
+        await logSet(
+          exercises[1],
+          idle,
+          form({ setNumber: "1", reps: "8", weightKg: "12" }),
+        )
+      ).status,
+    ).toBe("error");
+    expect(
+      await db.setLog.count({ where: { workoutId: otherWorkout.id } }),
+    ).toBe(0);
+  });
+
+  it("cannot use another user's active workout to log sets or a run", async () => {
+    const otherWorkout = await workout(
+      second.id,
+      await plan(second.id, "Second plan"),
+    );
+    await signIn(first);
+    expect(
+      (
+        await logSet(
+          exercises[0],
+          idle,
+          form({ setNumber: "1", reps: "8", weightKg: "12" }),
+        )
+      ).status,
+    ).toBe("error");
+    expect(
+      (
+        await saveRunMetrics(
+          idle,
+          form({
+            distanceKm: "5",
+            durationMinutes: "30",
+            durationSeconds: "15",
+          }),
+        )
+      ).status,
+    ).toBe("error");
+    expect(
+      await db.workout.findUnique({ where: { id: otherWorkout.id } }),
+    ).toEqual(otherWorkout);
+    expect(
+      await db.setLog.count({ where: { workoutId: otherWorkout.id } }),
+    ).toBe(0);
+    await expect(finishWorkout()).rejects.toThrow("redirect:/session");
+    expect(
+      (await db.workout.findUniqueOrThrow({ where: { id: otherWorkout.id } }))
+        .finishedAt,
+    ).toBeNull();
+  });
+
+  it("saves run metrics and finishes only the owner's workout", async () => {
+    const ownWorkout = await workout(
+      first.id,
+      await plan(first.id, "First plan"),
+    );
+    const otherWorkout = await workout(
+      second.id,
+      await plan(second.id, "Second plan"),
+    );
+    await signIn(first);
+    await expect(
+      saveRunMetrics(
+        idle,
+        form({
+          distanceKm: "5.25",
+          durationMinutes: "30",
+          durationSeconds: "15",
+          workoutId: String(otherWorkout.id),
+          userId: second.id,
+        }),
+      ),
+    ).rejects.toThrow("redirect:/session");
+    const saved = await db.workout.findUniqueOrThrow({
+      where: { id: ownWorkout.id },
+    });
+    expect(saved.distanceKm?.toString()).toBe("5.25");
+    expect(saved.durationSeconds).toBe(1815);
+    await expect(finishWorkout()).rejects.toThrow("redirect:/session");
+    expect(
+      (await db.workout.findUniqueOrThrow({ where: { id: ownWorkout.id } }))
+        .finishedAt,
+    ).not.toBeNull();
+    expect(
+      await db.workout.findUnique({ where: { id: otherWorkout.id } }),
+    ).toEqual(otherWorkout);
+  });
+});

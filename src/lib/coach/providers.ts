@@ -3,17 +3,21 @@
 // the other one is the fallback (D4). Both ask for JSON mode and return the parsed
 // object. Keys come from the environment and never appear in an error message.
 //
-// Two kinds of failure, handled in two places:
+// Three kinds of failure, handled in two places:
 //   - transport (429 rate limit, 5xx, network): retried here with backoff, then the
 //     other provider is tried (withRetry, withFallback);
 //   - content (not JSON, or a plan the verifier rejects): generatePlan retries once
-//     with the problems listed, then uses the rule-based plan.
+//     with the problems listed, then uses the rule-based plan;
+//   - a chat reply with no text: not retried on the same provider; the other one is tried.
 // Trade-offs and measurements: docs/COACH_EVAL.md, round 2.
 import type { PlanModel } from "./generatePlan";
-import type { ChatMessage } from "./guardrails";
 
-// The chat side of the coach: given the conversation, return the reply text.
-export type ChatModel = (messages: ChatMessage[]) => Promise<string>;
+export type CoachChatMessage = {
+  role: "system" | "user" | "assistant";
+  content: string;
+};
+
+export type CoachChatModel = (messages: CoachChatMessage[]) => Promise<string>;
 
 export const GROQ_MODEL = "openai/gpt-oss-120b";
 export const GEMINI_MODEL = "gemini-3.5-flash";
@@ -174,51 +178,60 @@ export function geminiModel(apiKey: string, model = GEMINI_MODEL): PlanModel {
   };
 }
 
-function replyText(provider: string, text: unknown): string {
+// A chat reply with no text is no answer at all, unlike a plan reply that will not
+// parse (generatePlan asks again for that). It is a ProviderError so the chat chain
+// moves to the other provider; status 200 makes it non-retryable on this one.
+function parseTextReply(provider: string, text: unknown): string {
   if (typeof text !== "string" || text.trim() === "") {
-    throw new Error(`${provider} reply had no text`);
+    throw new ProviderError(`${provider} reply had no text`, provider, 200);
   }
   return text.trim();
 }
 
-// Chat replies are plain text, so no JSON mode. The system prompt stays the first
-// message (Groq) or the systemInstruction (Gemini); user text is never merged into it.
-export function groqChat(apiKey: string, model = GROQ_MODEL): ChatModel {
+export function groqChatModel(
+  apiKey: string,
+  model = GROQ_MODEL,
+): CoachChatModel {
   return async (messages) => {
     const data = (await postJson(
       "Groq",
       GROQ_URL,
       { Authorization: `Bearer ${apiKey}` },
-      { model, messages, reasoning_effort: "low" },
+      {
+        model,
+        messages: messages.map(({ role, content }) => ({ role, content })),
+        temperature: 0.3,
+        max_tokens: 300,
+      },
     )) as { choices?: { message?: { content?: unknown } }[] };
-    return replyText("Groq", data.choices?.[0]?.message?.content);
+    return parseTextReply("Groq", data.choices?.[0]?.message?.content);
   };
 }
 
-function answerText(parts: { text?: unknown; thought?: boolean }[]): string {
-  return parts
-    .filter((p) => !p.thought && typeof p.text === "string")
-    .map((p) => p.text as string)
-    .join("");
-}
-
-export function geminiChat(apiKey: string, model = GEMINI_MODEL): ChatModel {
+export function geminiChatModel(
+  apiKey: string,
+  model = GEMINI_MODEL,
+): CoachChatModel {
   return async (messages) => {
-    const system = messages.find((m) => m.role === "system");
+    const systemInstruction = messages.find(
+      (message) => message.role === "system",
+    )?.content;
+    const contents = messages
+      .filter((message) => message.role !== "system")
+      .map((message) => ({
+        role: message.role === "assistant" ? "model" : "user",
+        parts: [{ text: message.content }],
+      }));
     const data = (await postJson(
       "Gemini",
       geminiUrl(model),
       { "x-goog-api-key": apiKey },
       {
-        ...(system && {
-          systemInstruction: { parts: [{ text: system.content }] },
-        }),
-        contents: messages
-          .filter((m) => m.role !== "system")
-          .map((m) => ({
-            role: m.role === "assistant" ? "model" : "user",
-            parts: [{ text: m.content }],
-          })),
+        ...(systemInstruction
+          ? { systemInstruction: { parts: [{ text: systemInstruction }] } }
+          : {}),
+        contents,
+        generationConfig: { temperature: 0.3, maxOutputTokens: 300 },
       },
     )) as {
       candidates?: {
@@ -226,10 +239,14 @@ export function geminiChat(apiKey: string, model = GEMINI_MODEL): ChatModel {
       }[];
     };
     const parts = data.candidates?.[0]?.content?.parts ?? [];
-    // A reply can arrive in several text parts. Part.thought marks a thought part (Gemini
-    // API reference, generateContent, checked 10 Nov 2026); the answer is every other
-    // text part, in order.
-    return replyText("Gemini", answerText(parts));
+    // A reply can arrive in several text parts; Part.thought marks a thought part
+    // (Gemini API reference, generateContent, checked 10 Nov 2026). The answer is every
+    // other text part, in order.
+    const answer = parts
+      .filter((part) => !part.thought && typeof part.text === "string")
+      .map((part) => part.text as string)
+      .join("");
+    return parseTextReply("Gemini", answer);
   };
 }
 
@@ -255,8 +272,8 @@ const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 // troubleshooting guide recommends for 429 and 503. A Retry-After from the provider
 // wins when it is short; when it is longer than maxDelayMs the error is passed on, so
 // the user isn't left waiting while the other provider is free.
-export function withRetry<A, R>(
-  model: (input: A) => Promise<R>,
+export function withRetry(
+  model: PlanModel,
   {
     retries = 2,
     baseDelayMs = 1_000,
@@ -264,11 +281,11 @@ export function withRetry<A, R>(
     sleep = wait,
     onEvent,
   }: RetryOptions = {},
-): (input: A) => Promise<R> {
-  return async (input) => {
+): PlanModel {
+  return async (prompt) => {
     for (let attempt = 0; ; attempt++) {
       try {
-        return await model(input);
+        return await model(prompt);
       } catch (e) {
         if (!(e instanceof ProviderError) || !e.retryable || attempt >= retries)
           throw e;
@@ -287,20 +304,21 @@ export function withRetry<A, R>(
   };
 }
 
-// Tries the second provider when the first fails at the transport level. A reply
-// that isn't valid JSON is not a provider outage, so it goes back to generatePlan.
-export function withFallback<A, R>(
-  primary: (input: A) => Promise<R>,
-  fallback: (input: A) => Promise<R>,
+// Tries the second provider when the first fails at the transport level, or when a
+// chat reply has no text. A plan reply that isn't valid JSON is not a provider outage,
+// so it goes back to generatePlan.
+export function withFallback(
+  primary: PlanModel,
+  fallback: PlanModel,
   onEvent?: (event: ProviderEvent) => void,
-): (input: A) => Promise<R> {
-  return async (input) => {
+): PlanModel {
+  return async (prompt) => {
     try {
-      return await primary(input);
+      return await primary(prompt);
     } catch (e) {
       if (!(e instanceof ProviderError)) throw e;
       onEvent?.({ provider: e.provider, action: "fallback", status: e.status });
-      return fallback(input);
+      return fallback(prompt);
     }
   };
 }
@@ -308,17 +326,17 @@ export function withFallback<A, R>(
 // Reports the provider and model that answered, so a log record can name them (#41).
 // A reply that arrived but would not parse also counts as answered: those are the
 // records most worth tracing. A ProviderError means no reply, so nothing is reported.
-export function servedBy<A, R>(
-  model: (input: A) => Promise<R>,
+export function servedBy(
+  model: PlanModel,
   provider: string,
   modelName: string,
   onEvent?: (event: ProviderEvent) => void,
-): (input: A) => Promise<R> {
+): PlanModel {
   const served = () =>
     onEvent?.({ provider, action: "served", model: modelName });
-  return async (input) => {
+  return async (prompt) => {
     try {
-      const reply = await model(input);
+      const reply = await model(prompt);
       served();
       return reply;
     } catch (e) {
@@ -336,19 +354,13 @@ function requireKey(env: Env, name: string): string {
   return key;
 }
 
-type Makers<M> = {
-  groq: (key: string, model?: string) => M;
-  gemini: (key: string, model?: string) => M;
-};
-
-// The provider named by COACH_PROVIDER (Groq by default, D4 in docs/ARCHITECTURE.md)
-// with retries, then the other provider with retries when its key is also set. Used
-// for both plans and chat, so the two always follow the same order.
-function chain<A, R>(
-  env: Env,
-  options: RetryOptions,
-  makers: Makers<(input: A) => Promise<R>>,
-): (input: A) => Promise<R> {
+// Builds the coach's model from the environment: the provider named by COACH_PROVIDER
+// (Groq by default, D4 in docs/ARCHITECTURE.md) with retries, then the other provider
+// with retries when its key is also set.
+export function coachModel(
+  env: Env = process.env,
+  options: RetryOptions = {},
+): PlanModel {
   const lead = (env.COACH_PROVIDER ?? "groq").trim().toLowerCase();
   if (lead !== "groq" && lead !== "gemini") {
     throw new Error(`COACH_PROVIDER must be groq or gemini, not "${lead}"`);
@@ -361,7 +373,7 @@ function chain<A, R>(
         : env.GEMINI_MODEL || GEMINI_MODEL;
     return servedBy(
       withRetry(
-        name === "groq" ? makers.groq(key, id) : makers.gemini(key, id),
+        name === "groq" ? groqModel(key, id) : geminiModel(key, id),
         options,
       ),
       name === "groq" ? "Groq" : "Gemini",
@@ -378,16 +390,61 @@ function chain<A, R>(
     : primary;
 }
 
-export function coachModel(
-  env: Env = process.env,
-  options: RetryOptions = {},
-): PlanModel {
-  return chain(env, options, { groq: groqModel, gemini: geminiModel });
+function asPlanModel(model: CoachChatModel): PlanModel {
+  return async (serializedMessages) => {
+    let messages: CoachChatMessage[];
+    try {
+      messages = JSON.parse(serializedMessages) as CoachChatMessage[];
+    } catch {
+      throw new Error("Invalid serialized coach chat messages");
+    }
+    return { reply: await model(messages) };
+  };
 }
 
 export function coachChatModel(
   env: Env = process.env,
   options: RetryOptions = {},
-): ChatModel {
-  return chain(env, options, { groq: groqChat, gemini: geminiChat });
+): CoachChatModel {
+  const lead = (env.COACH_PROVIDER ?? "groq").trim().toLowerCase();
+  if (lead !== "groq" && lead !== "gemini") {
+    throw new Error(`COACH_PROVIDER must be groq or gemini, not "${lead}"`);
+  }
+
+  const build = (name: "groq" | "gemini", key: string): PlanModel => {
+    const modelName =
+      name === "groq"
+        ? env.GROQ_MODEL || GROQ_MODEL
+        : env.GEMINI_MODEL || GEMINI_MODEL;
+    const chat =
+      name === "groq"
+        ? groqChatModel(key, modelName)
+        : geminiChatModel(key, modelName);
+    return servedBy(
+      withRetry(asPlanModel(chat), options),
+      name === "groq" ? "Groq" : "Gemini",
+      modelName,
+      options.onEvent,
+    );
+  };
+
+  const other = lead === "groq" ? "gemini" : "groq";
+  const keyName = (name: string) => `${name.toUpperCase()}_API_KEY`;
+  const primary = build(lead, requireKey(env, keyName(lead)));
+  const otherKey = env[keyName(other)];
+  const chain = otherKey
+    ? withFallback(primary, build(other, otherKey), options.onEvent)
+    : primary;
+
+  return async (messages) => {
+    const result = await chain(JSON.stringify(messages));
+    if (
+      !result ||
+      typeof result !== "object" ||
+      typeof (result as { reply?: unknown }).reply !== "string"
+    ) {
+      throw new Error("Coach chat returned an invalid response");
+    }
+    return (result as { reply: string }).reply;
+  };
 }

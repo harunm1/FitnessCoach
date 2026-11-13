@@ -5,16 +5,27 @@
 // 600 tokens, static text first and the user's message last
 // (console.groq.com/docs/model/openai/gpt-oss-safeguard-20b, checked 6 Nov 2026). The model is in preview, so the caller
 // treats any failure as "no reading" and the word list decides (safetyScreen.ts).
-import type { SafetyCategory, SafetyClassifier } from "./safetyScreen";
+// This call does not go through providers.ts, by a recorded exception (D15): it is a
+// different model with no fallback provider and its own 3-second limit, and it runs
+// before, and independently of, the coach's provider chain.
+import { z } from "zod";
+import {
+  SAFETY_TIMEOUT_MS,
+  type SafetyCategory,
+  type SafetyClassifier,
+} from "./safetyScreen";
 
 export const SAFETY_MODEL = "openai/gpt-oss-safeguard-20b";
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const CATEGORIES: readonly SafetyCategory[] = [
-  "CRISIS",
-  "MEDICAL",
-  "DISTRESS",
-  "NONE",
-];
+
+// The category in the model's JSON, read case- and space-insensitively: a reasoning
+// model can answer "crisis" or "CRISIS " and still mean CRISIS (10 November review).
+const Reading = z.object({
+  category: z
+    .string()
+    .transform((value) => value.trim().toUpperCase())
+    .pipe(z.enum(["CRISIS", "MEDICAL", "DISTRESS", "NONE"])),
+});
 
 export const SAFETY_POLICY = `# Instructions
 You screen one message a user sent to a strength and running coach app. Classify it into exactly one category below and answer with JSON only: {"category": "...", "rationale": "one short sentence"}. When two categories fit, choose the more serious one (CRISIS, then MEDICAL, then DISTRESS, then NONE).
@@ -45,6 +56,10 @@ export function groqSafetyClassifier(
   apiKey: string,
   model = SAFETY_MODEL,
 ): SafetyClassifier {
+  // An empty key would send "Bearer " and fail on every call, silently, as no reading.
+  if (apiKey.trim() === "") {
+    throw new Error("safety check needs a Groq API key");
+  }
   return async (text, signal) => {
     const res = await fetch(GROQ_URL, {
       method: "POST",
@@ -61,17 +76,17 @@ export function groqSafetyClassifier(
         response_format: { type: "json_object" },
         reasoning_effort: "low",
       }),
-      signal: signal ?? AbortSignal.timeout(5000),
+      // The screen always passes its own signal; alone, the same limit applies.
+      signal: signal ?? AbortSignal.timeout(SAFETY_TIMEOUT_MS),
     });
     if (!res.ok) throw new Error(`safety check returned HTTP ${res.status}`);
     const body = (await res.json()) as {
       choices?: { message?: { content?: string } }[];
     };
-    const parsed = JSON.parse(body.choices?.[0]?.message?.content ?? "") as {
-      category?: unknown;
-    };
-    const category = CATEGORIES.find((c) => c === parsed.category);
-    if (!category) throw new Error("safety check gave no known category");
-    return category;
+    const parsed = Reading.safeParse(
+      JSON.parse(body.choices?.[0]?.message?.content ?? ""),
+    );
+    if (!parsed.success) throw new Error("safety check gave no known category");
+    return parsed.data.category satisfies SafetyCategory;
   };
 }
