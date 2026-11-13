@@ -338,6 +338,16 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 
 **Did with it:** fixed each with its test first: the build command now stops unless it is a production or preview build; the root and coach loading files are gone and a browser test asserts the 307; decision D16 now puts loading states inside the page after its sign-in check; both pull requests that set the Node range use the same one. The review of the deploy change needed three rounds, because my first two fixes for keeping a misread connection string out of the build log each left a case open; I stopped at three and say so in the pull request. I filed one issue for a teammate instead of touching his file (the quiz saves "kettlebell", the library says "kettlebells"). Four of my earlier entries in this file sit under Shubham's heading; I left them there for now so his open pull requests do not conflict, and will move them once those merge. Tools: Playwright for the walk-through, a local PostgreSQL instance, the pr-review-toolkit code-reviewer agent and the backend-design schema-reviewer agent for the independent reviews, and the Next.js and Vercel documentation for the two platform rules.
 
+### 13 November 2026, afternoon: approved pull requests onto main and the open reviews closed (pull requests #105, #107, #109, #102, #53, #96, #73)
+
+**Before asking:** I set the merge order from the morning walk-through: Shubham's sign-in and coach-tier pull requests first, then Farnaz's photo storage, then my three core-path pull requests, which were past the three-day review window. My rules for it: merge commits so every commit keeps its author, main green after each merge, a teammate's code gets a comment and is never edited, and every review gets two independent passes, the second from a reviewer that had not seen the first.
+
+**Asked:** for a review of the one commit Farnaz pushed after my approval on #109, checked against the 4.5 MB Vercel request limit; for a full re-review of Mohammad's #102 against my two 11 November comments and issue #111; and for my own branches to be brought up to date with main and checked.
+
+**Got:** both #109 passes found nothing blocking. The photo form now shrinks images in the browser, the server takes at most 4 MiB, and Vercel's limits page confirmed the 4.5 MB cap. Both #102 passes found every 11 November point closed and #111 fixed in that pull request. One integration test failed on three different branches, including #73, which does not touch the coach. The cause is on main: the exercise coach saves the question and the answer in one transaction, so both rows share a timestamp, and the history query orders by timestamp alone.
+
+**Did with it:** merged #105, #107 and #109, with main green after each, and approved #102 for Mohammad to merge. I filed the timestamp fault as #112 for Shubham, with the fix (break ties by id), rather than editing his file; my coach chat already breaks the tie that way. #110 needs more than a conflict resolution after #109 (a changed function signature and the new upload limit), so I left Farnaz a comment instead of editing her branch. My three pull requests are up to date with main, green, and have their self-review comments. Their merge waits on the branch-protection step, since none has a teammate's approval yet. I also caught a wrong unit-test count in my own #53 comment and corrected it: stale local copies of old test files had inflated it. Tools: the pr-review-toolkit and agent-protocols code-reviewer agents for the independent passes, the GitHub CLI, and the Vercel documentation for the request limit.
+
 ## Mohammad
 
 ### 31 October 2026, onboarding quiz validation edge cases
@@ -359,6 +369,16 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 **Got:** suggestions to give the countdown stronger visual emphasis and display a clear status label as it changes state.
 
 **Did with it:** updated the timer to highlight while running and show explicit “Resting”, “Paused”, and “Rest complete” states; verified in the browser that clicking Start rest changes the button to Pause timer and the countdown decreases. Styled the UI with Tailwind utility classes. No shadcn/ui components were used.
+
+### 10 November 2026, exercise cue library (issue #8)
+
+**Before asking:** the exercise library already contained 876 records, while its `cues` and `commonMistakes` fields were empty. Issue #8 asks for original, concise form guidance on 30 beginner or intermediate strength exercises across the main movement patterns.
+
+**Asked:** to select eligible seeded exercises, review one source for each, and write three to five form cues and two to three common mistakes per exercise. I also asked for AI assistance to be recorded transparently in this session log.
+
+**Got:** AI-assisted summaries of setup, movement and common technique errors from exercise-specific ExRx pages and the upstream Free Exercise DB records used by our seed. Candidate IDs and their category, level and equipment were checked against the seeded database. Where an external page did not provide a usable or matching description, the source list cites the exact upstream library record instead.
+
+**Did with it:** reviewed the exercise and equipment matches, kept the cue wording original rather than copying source text, and added 30 entries with the required cue and mistake counts. Tests validate the cue counts and missing-ID checker; the seed checks every curated ID against the downloaded library before writing, reports how many entries received cues, and clears stale cue arrays when the JSON no longer contains an exercise. Running the seed twice confirmed the cue arrays remain stable. The session page displays form guidance in a closed-by-default disclosure for each exercise that has cues, with a render test for populated and empty guidance. Formatting, lint, typecheck, and the unit suite passed.
 
 ## Shubham
 
@@ -479,3 +499,14 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Got:** keep the current week from breaking a streak until it's over; compute days in Toronto time because workouts are stored in UTC; skip stretching and cardio when counting muscles. Plus 28 tests.
 
 **Did with it:** reviewed each function against my design, ran tests, lint, typecheck and Prettier locally, and chose to leave runs out of the muscle-share total so the percentages describe strength work. After Nabeegh's review I added tests for daylight saving, workout order, other lifting categories, workouts without a plan and ties in muscle share, so there are now 33.
+
+### 12 November 2026, progress photo storage (issue #16)
+
+**Before asking:** I chose Cloudflare R2 for photos (D3). Phone photos carry GPS data, so I proposed on #16 to upload through a Server Action that removes it, instead of a signed upload link; Nabeegh and Shubham agreed.
+
+**Asked:** I had never set up R2, so I asked for step-by-step instructions with explanations so I'd understand each step. I also asked for the initial code and tests for the new files, based on the design I had in mind: the storage module, photo processing, upload and delete actions, and the page. I wasn't sure how to set up 5-minute signed links, so I asked for guidance on that, and for a list of checks for the UI and R2 so I wouldn't miss anything, on top of the checks I had planned myself.
+
+**Got:** step-by-step instructions and explanations that cleared up my doubts; the initial code for those files, including the 5-minute signed links; 77 tests; and a checklist for testing.
+
+**Did with it:** followed the instructions to set up the private R2 bucket and its key, reviewed the generated code to make sure it met our project requirements, ran tests, lint, typecheck and Prettier locally, and went through the checklist on localhost: upload, rejected files, delete, an expired link and signing out. I also left body measurements as a suggestion on #16, since they need a schema change. After Shubham’s review, I had the delete order changed so the R2 file is removed before the database row, and a failed file delete now shows “Try again” instead of hiding the photo.
+I checked them and reran the suite, so there are now 78 tests.

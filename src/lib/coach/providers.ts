@@ -3,11 +3,12 @@
 // the other one is the fallback (D4). Both ask for JSON mode and return the parsed
 // object. Keys come from the environment and never appear in an error message.
 //
-// Two kinds of failure, handled in two places:
+// Three kinds of failure, handled in two places:
 //   - transport (429 rate limit, 5xx, network): retried here with backoff, then the
 //     other provider is tried (withRetry, withFallback);
 //   - content (not JSON, or a plan the verifier rejects): generatePlan retries once
-//     with the problems listed, then uses the rule-based plan.
+//     with the problems listed, then uses the rule-based plan;
+//   - a chat reply with no text: not retried on the same provider; the other one is tried.
 // Trade-offs and measurements: docs/COACH_EVAL.md, round 2.
 import type { PlanModel } from "./generatePlan";
 
@@ -177,9 +178,12 @@ export function geminiModel(apiKey: string, model = GEMINI_MODEL): PlanModel {
   };
 }
 
+// A chat reply with no text is no answer at all, unlike a plan reply that will not
+// parse (generatePlan asks again for that). It is a ProviderError so the chat chain
+// moves to the other provider; status 200 makes it non-retryable on this one.
 function parseTextReply(provider: string, text: unknown): string {
   if (typeof text !== "string" || text.trim() === "") {
-    throw new Error(`${provider} reply had no text`);
+    throw new ProviderError(`${provider} reply had no text`, provider, 200);
   }
   return text.trim();
 }
@@ -235,7 +239,14 @@ export function geminiChatModel(
       }[];
     };
     const parts = data.candidates?.[0]?.content?.parts ?? [];
-    return parseTextReply("Gemini", parts.find((part) => !part.thought)?.text);
+    // A reply can arrive in several text parts; Part.thought marks a thought part
+    // (Gemini API reference, generateContent, checked 10 Nov 2026). The answer is every
+    // other text part, in order.
+    const answer = parts
+      .filter((part) => !part.thought && typeof part.text === "string")
+      .map((part) => part.text as string)
+      .join("");
+    return parseTextReply("Gemini", answer);
   };
 }
 
@@ -293,8 +304,9 @@ export function withRetry(
   };
 }
 
-// Tries the second provider when the first fails at the transport level. A reply
-// that isn't valid JSON is not a provider outage, so it goes back to generatePlan.
+// Tries the second provider when the first fails at the transport level, or when a
+// chat reply has no text. A plan reply that isn't valid JSON is not a provider outage,
+// so it goes back to generatePlan.
 export function withFallback(
   primary: PlanModel,
   fallback: PlanModel,
