@@ -12,8 +12,13 @@ import {
   vi,
 } from "vitest";
 import { createAuth } from "@/lib/auth/core";
+import type { CoachChatMessage } from "@/lib/coach/providers";
 
 const request = vi.hoisted(() => ({ headers: new Headers() }));
+const exerciseCoach = vi.hoisted(() => ({
+  model: vi.fn<(messages: CoachChatMessage[]) => Promise<string>>(),
+  factory: vi.fn(),
+}));
 vi.mock("server-only", () => ({}));
 vi.mock("next/headers", () => ({ headers: async () => request.headers }));
 vi.mock("next/navigation", () => ({
@@ -27,12 +32,17 @@ vi.mock("@/lib/prisma", async () => {
   return { prisma: testDatabase() };
 });
 vi.mock("@/lib/auth", () => ({ getAuth: async () => auth }));
+vi.mock("@/lib/coach/providers", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/coach/providers")>()),
+  coachChatModel: exerciseCoach.factory,
+}));
 
 import { prisma as db } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth/session";
 import { saveQuizProfile } from "@/app/onboarding/actions";
 import OnboardingPage from "@/app/onboarding/page";
 import SessionPage from "@/app/session/page";
+import { askExerciseCoach } from "@/app/session/bodyMapActions";
 import {
   finishWorkout,
   logSet,
@@ -152,6 +162,10 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   request.headers = new Headers();
+  exerciseCoach.model.mockReset();
+  exerciseCoach.model.mockResolvedValue("Keep the movement controlled.");
+  exerciseCoach.factory.mockReset();
+  exerciseCoach.factory.mockReturnValue(exerciseCoach.model);
   auth = createAuth(
     db,
     {
@@ -181,6 +195,20 @@ describe("quiz and session authorization with PostgreSQL", () => {
     ["run action", () => saveRunMetrics(idle, new FormData())],
     ["start action", () => startOrResumeWorkout()],
     ["finish action", () => finishWorkout()],
+    [
+      "exercise coach action",
+      () =>
+        askExerciseCoach(
+          "chest",
+          exercises[0],
+          idle,
+          form({ question: "How do I keep the movement controlled?" }),
+        ),
+    ],
+    [
+      "exercise coach action with invalid input",
+      () => askExerciseCoach("unsupported", exercises[0], idle, new FormData()),
+    ],
     ["quiz page", () => OnboardingPage()],
     ["session page", () => SessionPage()],
   ] as const)(
@@ -189,6 +217,13 @@ describe("quiz and session authorization with PostgreSQL", () => {
       await expect(call()).rejects.toThrow("redirect:/sign-in");
       expect(
         await db.workout.count({
+          where: { userId: { in: [first.id, second.id] } },
+        }),
+      ).toBe(0);
+      expect(exerciseCoach.factory).not.toHaveBeenCalled();
+      expect(exerciseCoach.model).not.toHaveBeenCalled();
+      expect(
+        await db.conversation.count({
           where: { userId: { in: [first.id, second.id] } },
         }),
       ).toBe(0);
@@ -214,6 +249,16 @@ describe("quiz and session authorization with PostgreSQL", () => {
       await expect(saveQuizProfile(idle, new FormData())).rejects.toThrow(
         "redirect:/sign-in",
       );
+      await expect(
+        askExerciseCoach(
+          "chest",
+          exercises[0],
+          idle,
+          form({ question: "How do I keep the movement controlled?" }),
+        ),
+      ).rejects.toThrow("redirect:/sign-in");
+      expect(exerciseCoach.factory).not.toHaveBeenCalled();
+      expect(exerciseCoach.model).not.toHaveBeenCalled();
     },
   );
 
@@ -248,6 +293,194 @@ describe("quiz and session authorization with PostgreSQL", () => {
       tier: "TRIAL",
       trialEndsAt,
     });
+  });
+
+  it.each([
+    ["FREE", false, false],
+    ["TRIAL", false, false],
+    ["TRIAL", true, true],
+    ["PRO", false, false],
+    ["PRO", true, true],
+    ["ADMIN", false, true],
+  ] as const)(
+    "checks exercise-chat access for %s with active entitlement %s",
+    async (tier, active, allowed) => {
+      await db.user.update({
+        where: { id: first.id },
+        data: {
+          tier,
+          trialEndsAt:
+            tier === "TRIAL"
+              ? new Date(active ? Date.now() + 86400000 : 0)
+              : null,
+        },
+      });
+      if (tier === "PRO" && active) {
+        await db.billingAccount.create({
+          data: {
+            userId: first.id,
+            stripeCustomerId: `cus_coach_${randomUUID()}`,
+            status: "active",
+            paidUntil: new Date(Date.now() + 86400000),
+          },
+        });
+      }
+      await signIn(first);
+      const result = await askExerciseCoach(
+        "chest",
+        exercises[0],
+        idle,
+        form({ question: "How do I keep the movement controlled?" }),
+      );
+      expect(result.status).toBe(allowed ? "success" : "error");
+      expect(exerciseCoach.factory).toHaveBeenCalledTimes(allowed ? 1 : 0);
+      expect(exerciseCoach.model).toHaveBeenCalledTimes(allowed ? 1 : 0);
+      expect(await db.conversation.count({ where: { userId: first.id } })).toBe(
+        allowed ? 1 : 0,
+      );
+      expect(
+        await db.user.findUniqueOrThrow({ where: { id: first.id } }),
+      ).toMatchObject({ lastCoachPlanRequestedAt: null });
+    },
+  );
+
+  it("rechecks exercise-chat access without a new login after trial or billing expiry", async () => {
+    await db.user.update({
+      where: { id: first.id },
+      data: { tier: "TRIAL", trialEndsAt: new Date(Date.now() + 86400000) },
+    });
+    await signIn(first);
+    const ask = () =>
+      askExerciseCoach(
+        "chest",
+        exercises[0],
+        idle,
+        form({ question: "How do I keep the movement controlled?" }),
+      );
+    expect((await ask()).status).toBe("success");
+    await db.user.update({
+      where: { id: first.id },
+      data: { trialEndsAt: new Date(0) },
+    });
+    expect((await ask()).status).toBe("error");
+    expect(exerciseCoach.model).toHaveBeenCalledTimes(1);
+    await db.user.update({ where: { id: first.id }, data: { tier: "PRO" } });
+    await db.billingAccount.create({
+      data: {
+        userId: first.id,
+        stripeCustomerId: `cus_coach_${randomUUID()}`,
+        status: "active",
+        paidUntil: new Date(Date.now() + 86400000),
+      },
+    });
+    expect((await ask()).status).toBe("success");
+    await db.billingAccount.update({
+      where: { userId: first.id },
+      data: { paidUntil: new Date(0) },
+    });
+    expect((await ask()).status).toBe("error");
+    expect(exerciseCoach.model).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps exercise-chat history and model context separate for each signed-in user", async () => {
+    await db.user.updateMany({
+      where: { id: { in: [first.id, second.id] } },
+      data: { tier: "TRIAL", trialEndsAt: new Date(Date.now() + 86400000) },
+    });
+    const firstQuestion = "How should I position my wrists for this press?";
+    const secondQuestion = "How slowly should I lower this press?";
+    const firstReply = "Keep your wrists stacked over your elbows.";
+    const secondReply = "Lower the weight with control.";
+    exerciseCoach.model
+      .mockResolvedValueOnce(firstReply)
+      .mockResolvedValueOnce(secondReply);
+
+    await signIn(first);
+    const firstResult = await askExerciseCoach(
+      "chest",
+      exercises[0],
+      idle,
+      form({ question: firstQuestion, userId: second.id }),
+    );
+    expect(firstResult).toMatchObject({
+      status: "success",
+      turns: [
+        { role: "USER", content: firstQuestion },
+        { role: "ASSISTANT", content: firstReply },
+      ],
+    });
+    const firstConversation = await db.conversation.findFirstOrThrow({
+      where: { userId: first.id },
+      include: { messages: true },
+    });
+
+    await signIn(second);
+    const secondResult = await askExerciseCoach(
+      "chest",
+      exercises[0],
+      { ...idle, turns: firstResult.turns },
+      form({
+        question: secondQuestion,
+        userId: first.id,
+        conversationId: String(firstConversation.id),
+      }),
+    );
+    expect(secondResult).toMatchObject({
+      status: "success",
+      turns: [
+        { role: "USER", content: secondQuestion },
+        { role: "ASSISTANT", content: secondReply },
+      ],
+    });
+    expect(exerciseCoach.model.mock.calls[1][0]).toHaveLength(2);
+    expect(JSON.stringify(exerciseCoach.model.mock.calls[1][0])).not.toContain(
+      firstQuestion,
+    );
+    expect(
+      await db.conversation.findUniqueOrThrow({
+        where: { id: firstConversation.id },
+        include: { messages: true },
+      }),
+    ).toEqual(firstConversation);
+    const secondConversation = await db.conversation.findFirstOrThrow({
+      where: { userId: second.id },
+      include: { messages: true },
+    });
+    expect(secondConversation.id).not.toBe(firstConversation.id);
+    expect(secondConversation.messages).toHaveLength(2);
+
+    await signIn(first);
+    const followUp = await askExerciseCoach(
+      "chest",
+      exercises[0],
+      idle,
+      form({ question: "Where should my elbows point?" }),
+    );
+    expect(followUp.status).toBe("success");
+    expect(followUp.turns).toHaveLength(4);
+    expect(followUp.turns?.slice(0, 2)).toEqual(firstResult.turns);
+    expect(JSON.stringify(exerciseCoach.model.mock.calls[2][0])).not.toContain(
+      secondQuestion,
+    );
+    expect(exerciseCoach.model.mock.calls[2][0]).toContainEqual({
+      role: "user",
+      content: firstQuestion,
+    });
+    expect(
+      await db.conversation.count({
+        where: { userId: { in: [first.id, second.id] } },
+      }),
+    ).toBe(2);
+    expect(
+      await db.message.count({
+        where: { conversation: { userId: first.id } },
+      }),
+    ).toBe(4);
+    expect(
+      await db.message.count({
+        where: { conversation: { userId: second.id } },
+      }),
+    ).toBe(2);
   });
 
   it("saves the signed-in user's quiz and plan without replacing another user's data", async () => {
