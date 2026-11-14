@@ -1,8 +1,13 @@
 @import "tailwindcss";
 
-@theme inline {
+/* Not inline, so a page can switch these two for dark mode (#16). In light mode
+   the generated colours are exactly the same as before. */
+@theme {
   --color-background: #f5f6f2;
   --color-foreground: #19211d;
+}
+
+@theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

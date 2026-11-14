@@ -1,0 +1,34 @@
+/* Dark mode for the progress pages (#16). The account page's AccountTheme sets
+   data-theme and remembers the choice, so the theme follows the user between
+   /account, /progress and /progress/photos. These pages are built from two
+   Tailwind colours, so switching those two switches everything. */
+.progressTheme {
+  --map-worked: #2f6345;
+  --map-neutral: #d6d9d1;
+}
+
+.progressTheme[data-theme="dark"] {
+  --color-background: #0a0a0a;
+  --color-foreground: #ededed;
+  --map-worked: #6dbb87;
+  --map-neutral: #34352f;
+}
+
+@media (prefers-color-scheme: dark) {
+  .progressTheme[data-theme="system"] {
+    --color-background: #0a0a0a;
+    --color-foreground: #ededed;
+    --map-worked: #6dbb87;
+    --map-neutral: #34352f;
+  }
+}
+
+/* The body diagram sets its colours as SVG attributes; CSS takes priority. The
+   values match WORKED and NEUTRAL in MuscleMap.tsx. */
+.progressTheme path[fill="#2f6345"] {
+  fill: var(--map-worked);
+}
+
+.progressTheme path[fill="#d6d9d1"] {
+  fill: var(--map-neutral);
+}

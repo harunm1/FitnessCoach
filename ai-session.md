@@ -510,3 +510,13 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Did with it:** followed the instructions to set up the private R2 bucket and its key, reviewed the generated code to make sure it met our project requirements, ran tests, lint, typecheck and Prettier locally, and went through the checklist on localhost: upload, rejected files, delete, an expired link and signing out. I also left body measurements as a suggestion on #16, since they need a schema change. After Shubham’s review, I had the delete order changed so the R2 file is removed before the database row, and a failed file delete now shows “Try again” instead of hiding the photo.
 I checked them and reran the suite, so there are now 78 tests.
+
+### 13 November 2026, progress page (issue #16)
+
+**Before asking:** I designed the progress page around the workout logic from #82. My plan was to include a calendar of completed workouts with each day's details, two weekly streaks, a body map showing which muscles were trained during the month and how often, and the latest progress photos. I also wanted the page to be mobile-friendly and consistent with the account page's dark mode.
+
+**Asked:** How to structure the page and its components based on my design, how to implement hover labels for the body map, and how to create realistic demo workout data to test the page. I also asked for implementation examples and tests for the components.
+
+**Got:** Example implementations for some page components, a demo data script, guidance and code for the body map's hover labels, and tests for the page. The dark mode approach reuses Shubham's existing theme toggle and requires a shared change in `globals.css` to keep colours consistent across pages.
+
+**Did with it:** Reviewed the implementation against my original design and the #82 workout logic. Ran tests, lint, typecheck, and Prettier locally. Tested the page on localhost using the demo data, including the calendar, daily details, body map hover labels, page links, dark mode, and mobile layout.

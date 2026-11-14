@@ -124,9 +124,9 @@ export default async function SessionPage() {
           <nav aria-label="Your pages" className="flex items-center gap-4">
             <Link
               className="text-xs text-foreground/60 underline underline-offset-4"
-              href="/progress/photos"
+              href="/progress"
             >
-              Progress photos
+              Progress
             </Link>
             <Link
               className="text-xs text-foreground/60 underline underline-offset-4"
