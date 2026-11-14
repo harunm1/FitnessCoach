@@ -43,7 +43,7 @@ export function DeletePhotoButton({
         {pending ? "Deleting…" : "Delete"}
       </button>
       {state.status === "error" && (
-        <p role="alert" className="text-xs text-red-600">
+        <p role="alert" className="text-xs text-[var(--error)]">
           {state.message}
         </p>
       )}

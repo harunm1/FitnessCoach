@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { AccountTheme, ThemeToggle } from "@/components/auth/account-theme";
+import theme from "@/components/progress/progress-theme.module.css";
 import ActivityCalendar, {
   type CalendarDay,
 } from "@/components/progress/ActivityCalendar";
@@ -17,7 +19,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_TIME_ZONE, dayKey } from "@/lib/progress/dates";
 import { loadFinishedWorkouts } from "@/lib/progress/load";
-import { slugsFor } from "@/lib/progress/muscleSlugs";
+import { regionLabels, slugsFor } from "@/lib/progress/muscleSlugs";
 import { muscleShare, musclesWorked } from "@/lib/progress/muscles";
 import { activeStreakWeeks, goalMetStreak } from "@/lib/progress/streaks";
 import type { ProgressWorkout } from "@/lib/progress/types";
@@ -191,12 +193,15 @@ export default async function ProgressPage({
   const mapLabel = `Muscles worked in ${monthName(month)}`;
 
   return (
-    <main className="min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12">
+    <AccountTheme
+      className={`${theme.progressTheme} min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12`}
+    >
       <div className="mx-auto max-w-3xl">
         <header className="mb-10 flex items-center justify-between gap-4 border-b border-foreground/15 pb-5">
           <p className="text-sm font-bold tracking-[0.12em]">FORM</p>
-          <div className="flex min-w-0 items-center gap-4">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4 max-sm:[&_button>span]:hidden">
             <UserBadge name={user.name} imageUrl={avatarUrl} />
+            <ThemeToggle />
             <Link
               className="shrink-0 text-xs text-foreground/60 underline underline-offset-4"
               href="/session"
@@ -210,7 +215,7 @@ export default async function ProgressPage({
           Your progress
         </p>
         <h1 className="mt-3 mb-8 text-3xl font-semibold sm:text-4xl">
-          Consistency, week by week
+          Consistency is key!
         </h1>
 
         <div className="grid gap-10">
@@ -254,6 +259,7 @@ export default async function ProgressPage({
             </div>
             <MuscleMap
               label={mapLabel}
+              labels={regionLabels(shares, strengthWorkouts, monthName(month))}
               slugs={slugsFor([...worked.primary, ...worked.secondary])}
             />
             <MuscleStats shares={shares} workouts={strengthWorkouts} />
@@ -262,6 +268,6 @@ export default async function ProgressPage({
           <PhotoStrip photos={photos} total={photoCount} />
         </div>
       </div>
-    </main>
+    </AccountTheme>
   );
 }

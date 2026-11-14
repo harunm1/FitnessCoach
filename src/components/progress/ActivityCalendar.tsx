@@ -105,7 +105,9 @@ export default function ActivityCalendar({
                         dayActivity
                           ? "bg-foreground font-semibold text-background"
                           : "text-foreground/70 hover:bg-foreground/5",
-                        selected ? "ring-2 ring-foreground ring-offset-2" : "",
+                        selected
+                          ? "ring-2 ring-foreground ring-offset-2 ring-offset-background"
+                          : "",
                         day === today && !dayActivity
                           ? "border border-foreground/40"
                           : "",

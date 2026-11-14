@@ -90,6 +90,13 @@ describe("progress page", () => {
     });
   });
 
+  it("follows the saved theme and offers to switch it", async () => {
+    const html = await render();
+    // On the server the saved choice isn't known yet, so it follows the system.
+    expect(html).toContain('data-theme="system"');
+    expect(html).toContain('aria-label="Switch to dark mode"');
+  });
+
   it("shows the user's name and invites a first workout", async () => {
     const html = await render();
     expect(html).toContain("Free Demo");

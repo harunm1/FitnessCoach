@@ -132,12 +132,18 @@ describe("MuscleStats", () => {
 describe("MuscleMap", () => {
   it("draws the front and back with the given label", () => {
     const html = render(
-      <MuscleMap label="Muscles worked in November 2026" slugs={["chest"]} />,
+      <MuscleMap
+        label="Muscles worked in November 2026"
+        labels={{ chest: "Chest · 1 of 1 workouts (100%)" }}
+        slugs={["chest"]}
+      />,
     );
     expect(html).toContain('aria-label="Muscles worked in November 2026"');
     expect(html).toContain(">front<");
     expect(html).toContain(">back<");
     expect(html).toContain("<svg");
+    // The hover label appears only once a muscle is pointed at.
+    expect(html).not.toContain('role="tooltip"');
   });
 });
 

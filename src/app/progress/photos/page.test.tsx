@@ -152,6 +152,13 @@ describe("progress photos page", () => {
     expect(await render()).toContain("you can keep up to 1,000 photos");
   });
 
+  it("follows the saved theme and offers to switch it", async () => {
+    const html = await render();
+    // On the server the saved choice isn't known yet, so it follows the system.
+    expect(html).toContain('data-theme="system"');
+    expect(html).toContain('aria-label="Switch to dark mode"');
+  });
+
   it("links back to the progress page", async () => {
     const html = await render();
     expect(html).toContain('href="/progress"');
