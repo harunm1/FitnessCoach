@@ -360,6 +360,66 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 
 **Did with it:** merged #105, #107 and #109, with main green after each, and approved #102 for Mohammad to merge. I filed the timestamp fault as #112 for Shubham, with the fix (break ties by id), rather than editing his file; my coach chat already breaks the tie that way. #110 needs more than a conflict resolution after #109 (a changed function signature and the new upload limit), so I left Farnaz a comment instead of editing her branch. My three pull requests are up to date with main, green, and have their self-review comments. Their merge waits on the branch-protection step, since none has a teammate's approval yet. I also caught a wrong unit-test count in my own #53 comment and corrected it: stale local copies of old test files had inflated it. Tools: the pr-review-toolkit and agent-protocols code-reviewer agents for the independent passes, the GitHub CLI, and the Vercel documentation for the request limit.
 
+### 10 November 2026, quiz plans with run days (issue #85)
+
+**Before asking:** the quiz plan came from `buildDefaultPlan`, so it never had a run day and the session screen had nothing to show for runs, although `buildHybridWeek` and `saveWeek` could already store them. I decided the quiz asks for training mode, strength by default, and that only running and both take the new path, so a strength quiz stays as it is. The quiz action is Mohammad's file, so I kept my change there to one early branch and put the rest in my own files.
+
+**Asked:** the test-first slices (a both-mode quiz saves a run day, running-only saves runs, strength-only is unchanged), the Next.js Server Action form handling, and an independent review of the branch.
+
+**Got:** the review found that the profile and the plan were saved in two steps, so a failed plan save would leave the profile saying running with the old strength plan active, and that the hybrid week was saved without running either verifier, against D9. It also found tests that would pass without the change, and the new-runner default missing from the docs.
+
+**Did with it:** `saveWeek` takes a hook that runs inside its transaction, so the profile is saved with the plan or not at all; a test makes the plan fail and checks the profile is unchanged. The strength and running verifiers run before saving. I tightened the running-only test to two runs and two strength days, and added tests for the saved mode, one-day running and the refusal paths. The new-runner default and the options it beat are in the D9 note in `ARCHITECTURE.md`. Lint, typecheck, 850 unit tests, 54 integration tests on PostgreSQL 16 and the format check pass (pull request #97). Tools for the targeted help: skills `agentic-sdlc:testing-vitest` and `hzblj-skills:functions`, Context7 for the Next.js Server Action and `useActionState` form docs (checked 10 November 2026), and a fresh review agent (`pr-review-toolkit:code-reviewer`).
+
+### 10 November 2026, bringing the chat pull request current after #48 merged (issue #11, pull request #53)
+
+**Before asking:** #48 was squashed, so the chat branch still carried the guardrail commits it had merged one by one, and git reported add/add conflicts in the guardrail files. I decided to merge the #43 branch first, so the chat changes kept their place, and then main, instead of taking main's copy of every guardrail file, which would have dropped the chat branch's `mentionsTraining`.
+
+**Asked:** the merge, and an independent review of the result against main.
+
+**Got:** the typecheck failed after the merge: main already has its own chat model (`coachChatModel`), which duplicated the one in this branch. The review found no blocking issue and noted that the route must pass history from stored rows, not the request body.
+
+**Did with it:** I dropped the duplicate chat model and used main's. Main's Gemini chat reply kept only the first text part, the bug Shubham found, so I re-applied the join-all-parts fix there; the test failed first. Lint, typecheck, 991 unit tests, 46 integration tests on PostgreSQL 16 and the format check pass. Tools for the targeted help: `pr-review-toolkit:code-reviewer` (fresh context) and git.
+
+### 10 November 2026, guardrail false positives and misses left from #48 (issue #43)
+
+**Before asking:** the review of #48 left a list: training talk the crisis word list still mistook for a crisis (a rep or load count after "pills", "kms" as a distance unit, "won't be here tomorrow so I can't train", jumps into a pool or onto a box) and three diagnosis questions it let through ("did i break my back squatting", "did i tear my shoulder pressing", "did i tear my pec"). I decided every fix stays inside the guardrail module, that each case gets a failing test first, and that if a fix would turn an existing crisis test red the crisis reading wins and the case is logged for the model check instead.
+
+**Asked:** the test-first slices, the narrowing of each pattern, and an independent review of the branch that had not seen the work.
+
+**Got:** the review ran the same probes against main and against the branch and found my first fix too wide: a swim word anywhere let "i can't swim, i'm on the bridge and i'm gonna jump into the water" through, a jump onto a "platform" or "step" from a roof stopped being a crisis, the "so i can't train" and "so i need to reschedule" exceptions accepted any words after them ("...so i need to reschedule my funeral"), and "using kms" and "school vs kms" were let through.
+
+**Did with it:** each of those inputs is now a test that failed first and stays a crisis. The jump exception needs a pool named just before the jump or a plyo box, and does nothing when the message has a height ("bridge", "below", "from here") or "can't swim". The scheduling exceptions need a training object or the end of the sentence. "Kms" is a unit only after "prefer" or a "miles vs" pair. Load units after "pills ... 20 more" stop counting when ingestion words follow. The diagnosis list gained pec, biceps, triceps, quads and groin, and a lift name no longer hides "squatting" or "pressing". Left to the model check, not coded: "kms today", "kms for real", "on the roof i'm jumping", and a roof or bridge jump into water. Lint, typecheck, 903 unit tests and the format check pass. Tools for the targeted help: skill `agentic-sdlc:testing-vitest`, skill `backend-design:error-handling-as-design` (not run, see the log), and a fresh review agent (`pr-review-toolkit:code-reviewer`).
+
+### 13 November 2026, getting the core-path pull requests mergeable (issues #11, #71, #63; pull requests #53, #73, #96)
+
+**Before asking:** the chat turn (#53) and the strength-only starter plan (#73) conflicted with `main`, and the chat screen (#96) sits on #53, so none of the three could merge before the 15 November checkpoint. My plan was to merge `main` into each branch rather than rebase, apply the fixes my 11 November re-review had found but not pushed, and have each branch checked by a reviewer that had not seen the work before I pushed it. I had already decided that the injury text a user types must not reach a model, and that a refusal must never be the only thing a person in crisis reads.
+
+**Asked:** for the merges and the fixes, each with its failing test first, and for an independent review of each branch before the push.
+
+**Got:** the review of #53 found that a failed model call could put the first characters of a provider's reply into a log record, and that natural follow-ups such as "what do you mean by that exactly?" were being redirected. The review of #96 found that a message over a rate cap got "wait a moment" even when it held crisis wording. My own reading found that `/coach` would load a body-map exercise chat as the coach conversation, because both are stored as conversations of the same user. The review of #73 ran the real starter plan on the full 876-exercise library for 67,914 quiz profiles and found none that lost a plan.
+
+**Did with it:** kept the fixes small and in my own files. Failed chat calls are recorded by the provider's fixed message or the error's name. The follow-up rule accepts a quoted term and a trailing "please", "again" or "exactly". `/coach` loads only the untitled conversation. The coach gets muscles to avoid from the injury text by the same code rule onboarding uses. Only replies that mean the person needs help replace a cap message. I corrected a test count I had first reported for #53 (956, not 1,057: stale copies of test files in my local folder had been counted). Tools: the pr-review-toolkit code-reviewer agent for the independent reviews and the checks on the changed lines.
+
+### 15 November 2026, checkpoint 1 audit and the Lecture 9 practices
+
+**Before asking:** the checkpoint needs a list of where each core-path step and course requirement stands on `main`, each tied to a commit or PR, plus the Lecture 9 practices written down so reviews can use them.
+
+**Asked:** an AI assistant (Claude Code) to draft the execution audit from `git log`, the GitHub PRs, reviews and issues, and the CI runs; to turn Lecture 9 into numbered practice rows with slide references; and to check `main`, the open photo PRs and #115 against those rows.
+
+**Got:** the audit (`docs/audits/2026-11-15-execution-audit.md`), rows 8 to 19 in `docs/ENGINEERING_PRACTICES.md`, and draft review comments for #113, #114 and #115. It found no gap on `main` against the new rows. Main CI failed again on the exercise-chat ordering test (#112).
+
+**Did with it:** checked each row against the slide it cites and against the code before committing. Checked the Next.js `bodySizeLimit` docs and the new dependency's npm record before the #113 and #114 comments. Dropped one draft review point (duplicate React keys) after reading `groupByExercise` showed it could not happen. Posted the reviews as comments; the live walk-through is still owed because the laptop did not have enough memory. Tools: Claude Code, Context7 for the Next.js docs, `npm view`, `pdftotext` for the lecture slides.
+
+### 15 November 2026, review passes before pushing #77, #74 and #61 (issues #75, #72, #57)
+
+**Before asking:** three of my pull requests had `main` merged in locally, and I wanted each one checked by a reviewer that had not seen my reasoning before I pushed.
+
+**Asked:** an AI assistant (Claude Code) to run separate review passes, one after another, on each diff and its pull request description, against the issue, `docs/ENGINEERING_PRACTICES.md` and the source code.
+
+**Got:** most findings were wrong statements in the descriptions and docs rather than in the code. On #77, the docs and then the description said no screen on `main` uses the rounded-corner classes, but `/coach` does. On #74, it described a coach loading file that #96 never added. On #61, one pass found that my first fix to the deploy steps did not work: in Windows PowerShell 5.1, setting a variable to an empty string removes it, so the seed would still read the demo password from the local env file.
+
+**Did with it:** checked each finding against the code before changing anything, and re-ran the PowerShell behaviour myself. Fixed the docs and descriptions, added `/progress/photos` to the signed-out redirect test on #74, and pushed only after a pass with no errors. One wording suggestion on #61 (single quotes for the connection string) is listed as a follow-up on the pull request. Tools: Claude Code and its code-reviewer agents, `gh`, Prettier and ESLint.
+
 ## Mohammad
 
 ### 31 October 2026, onboarding quiz validation edge cases
@@ -459,66 +519,6 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Got:** help with specific code changes and tests for fresh sessions, effective tiers and an atomic database reservation. The reservation counts failed attempts as well as successful requests, and concurrent requests cannot both claim the same slot. The review also identified that the general chat route and personalization action are still pending in other coach work.
 
 **Did with it:** I continued with a separate #51 branch, preserving the old commits in a backup and building on the #104 fix. AI helped update the implementation, migration and regression tests. The existing exercise coach now checks the shared tier guard before model setup. The checks passed: 891 unit tests, 91 PostgreSQL integration tests, 17 browser tests, formatting, lint, TypeScript and the production build. The older migration-name recovery was also tested on a disposable database, without using my development database. The documentation explains setup and the remaining callers. I am keeping #51 open until those callers are integrated and tested.
-
-### 10 November 2026, quiz plans with run days (issue #85)
-
-**Before asking:** the quiz plan came from `buildDefaultPlan`, so it never had a run day and the session screen had nothing to show for runs, although `buildHybridWeek` and `saveWeek` could already store them. I decided the quiz asks for training mode, strength by default, and that only running and both take the new path, so a strength quiz stays as it is. The quiz action is Mohammad's file, so I kept my change there to one early branch and put the rest in my own files.
-
-**Asked:** the test-first slices (a both-mode quiz saves a run day, running-only saves runs, strength-only is unchanged), the Next.js Server Action form handling, and an independent review of the branch.
-
-**Got:** the review found that the profile and the plan were saved in two steps, so a failed plan save would leave the profile saying running with the old strength plan active, and that the hybrid week was saved without running either verifier, against D9. It also found tests that would pass without the change, and the new-runner default missing from the docs.
-
-**Did with it:** `saveWeek` takes a hook that runs inside its transaction, so the profile is saved with the plan or not at all; a test makes the plan fail and checks the profile is unchanged. The strength and running verifiers run before saving. I tightened the running-only test to two runs and two strength days, and added tests for the saved mode, one-day running and the refusal paths. The new-runner default and the options it beat are in the D9 note in `ARCHITECTURE.md`. Lint, typecheck, 850 unit tests, 54 integration tests on PostgreSQL 16 and the format check pass (pull request #97). Tools for the targeted help: skills `agentic-sdlc:testing-vitest` and `hzblj-skills:functions`, Context7 for the Next.js Server Action and `useActionState` form docs (checked 10 November 2026), and a fresh review agent (`pr-review-toolkit:code-reviewer`).
-
-### 10 November 2026, bringing the chat pull request current after #48 merged (issue #11, pull request #53)
-
-**Before asking:** #48 was squashed, so the chat branch still carried the guardrail commits it had merged one by one, and git reported add/add conflicts in the guardrail files. I decided to merge the #43 branch first, so the chat changes kept their place, and then main, instead of taking main's copy of every guardrail file, which would have dropped the chat branch's `mentionsTraining`.
-
-**Asked:** the merge, and an independent review of the result against main.
-
-**Got:** the typecheck failed after the merge: main already has its own chat model (`coachChatModel`), which duplicated the one in this branch. The review found no blocking issue and noted that the route must pass history from stored rows, not the request body.
-
-**Did with it:** I dropped the duplicate chat model and used main's. Main's Gemini chat reply kept only the first text part, the bug Shubham found, so I re-applied the join-all-parts fix there; the test failed first. Lint, typecheck, 991 unit tests, 46 integration tests on PostgreSQL 16 and the format check pass. Tools for the targeted help: `pr-review-toolkit:code-reviewer` (fresh context) and git.
-
-### 10 November 2026, guardrail false positives and misses left from #48 (issue #43)
-
-**Before asking:** the review of #48 left a list: training talk the crisis word list still mistook for a crisis (a rep or load count after "pills", "kms" as a distance unit, "won't be here tomorrow so I can't train", jumps into a pool or onto a box) and three diagnosis questions it let through ("did i break my back squatting", "did i tear my shoulder pressing", "did i tear my pec"). I decided every fix stays inside the guardrail module, that each case gets a failing test first, and that if a fix would turn an existing crisis test red the crisis reading wins and the case is logged for the model check instead.
-
-**Asked:** the test-first slices, the narrowing of each pattern, and an independent review of the branch that had not seen the work.
-
-**Got:** the review ran the same probes against main and against the branch and found my first fix too wide: a swim word anywhere let "i can't swim, i'm on the bridge and i'm gonna jump into the water" through, a jump onto a "platform" or "step" from a roof stopped being a crisis, the "so i can't train" and "so i need to reschedule" exceptions accepted any words after them ("...so i need to reschedule my funeral"), and "using kms" and "school vs kms" were let through.
-
-**Did with it:** each of those inputs is now a test that failed first and stays a crisis. The jump exception needs a pool named just before the jump or a plyo box, and does nothing when the message has a height ("bridge", "below", "from here") or "can't swim". The scheduling exceptions need a training object or the end of the sentence. "Kms" is a unit only after "prefer" or a "miles vs" pair. Load units after "pills ... 20 more" stop counting when ingestion words follow. The diagnosis list gained pec, biceps, triceps, quads and groin, and a lift name no longer hides "squatting" or "pressing". Left to the model check, not coded: "kms today", "kms for real", "on the roof i'm jumping", and a roof or bridge jump into water. Lint, typecheck, 903 unit tests and the format check pass. Tools for the targeted help: skill `agentic-sdlc:testing-vitest`, skill `backend-design:error-handling-as-design` (not run, see the log), and a fresh review agent (`pr-review-toolkit:code-reviewer`).
-
-### 13 November 2026, getting the core-path pull requests mergeable (issues #11, #71, #63; pull requests #53, #73, #96)
-
-**Before asking:** the chat turn (#53) and the strength-only starter plan (#73) conflicted with `main`, and the chat screen (#96) sits on #53, so none of the three could merge before the 15 November checkpoint. My plan was to merge `main` into each branch rather than rebase, apply the fixes my 11 November re-review had found but not pushed, and have each branch checked by a reviewer that had not seen the work before I pushed it. I had already decided that the injury text a user types must not reach a model, and that a refusal must never be the only thing a person in crisis reads.
-
-**Asked:** for the merges and the fixes, each with its failing test first, and for an independent review of each branch before the push.
-
-**Got:** the review of #53 found that a failed model call could put the first characters of a provider's reply into a log record, and that natural follow-ups such as "what do you mean by that exactly?" were being redirected. The review of #96 found that a message over a rate cap got "wait a moment" even when it held crisis wording. My own reading found that `/coach` would load a body-map exercise chat as the coach conversation, because both are stored as conversations of the same user. The review of #73 ran the real starter plan on the full 876-exercise library for 67,914 quiz profiles and found none that lost a plan.
-
-**Did with it:** kept the fixes small and in my own files. Failed chat calls are recorded by the provider's fixed message or the error's name. The follow-up rule accepts a quoted term and a trailing "please", "again" or "exactly". `/coach` loads only the untitled conversation. The coach gets muscles to avoid from the injury text by the same code rule onboarding uses. Only replies that mean the person needs help replace a cap message. I corrected a test count I had first reported for #53 (956, not 1,057: stale copies of test files in my local folder had been counted). Tools: the pr-review-toolkit code-reviewer agent for the independent reviews and the checks on the changed lines.
-
-### 15 November 2026, checkpoint 1 audit and the Lecture 9 practices
-
-**Before asking:** the checkpoint needs a list of where each core-path step and course requirement stands on `main`, each tied to a commit or PR, plus the Lecture 9 practices written down so reviews can use them.
-
-**Asked:** an AI assistant (Claude Code) to draft the execution audit from `git log`, the GitHub PRs, reviews and issues, and the CI runs; to turn Lecture 9 into numbered practice rows with slide references; and to check `main` and the open photo PRs against those rows.
-
-**Got:** the audit (`docs/audits/2026-11-15-execution-audit.md`), rows 8 to 19 in `docs/ENGINEERING_PRACTICES.md`, and draft review comments for #113, #114 and #115. It found no gap on `main` against the new rows. Main CI failed again on the exercise-chat ordering test (#112).
-
-**Did with it:** checked each row against the slide it cites and against the code before committing. Checked the Next.js `bodySizeLimit` docs and the new dependency's npm record before the #113 and #114 comments. Dropped one draft review point (duplicate React keys) after reading `groupByExercise` showed it could not happen. Posted the reviews as comments; the live walk-through is still owed because the laptop did not have enough memory.
-
-### 15 November 2026, review passes before pushing #77, #74 and #61 (issues #75, #72, #57)
-
-**Before asking:** three of my pull requests had `main` merged in locally, and I wanted each one checked by a reviewer that had not seen my reasoning before I pushed.
-
-**Asked:** an AI assistant (Claude Code) to run separate review passes, one after another, on each diff and its pull request description, against the issue, `docs/ENGINEERING_PRACTICES.md` and the source code.
-
-**Got:** most findings were wrong statements in the descriptions rather than in the code. On #77, the description said no screen on `main` uses the rounded-corner classes, but `/coach` does. On #74, it described a coach loading file that #96 never added. On #61, one pass found that my first fix to the deploy steps did not work: in Windows PowerShell 5.1, setting a variable to an empty string removes it, so the seed would still read the demo password from the local env file.
-
-**Did with it:** checked each finding against the code before changing anything, and re-ran the PowerShell behaviour myself. Fixed the docs and descriptions, added `/progress/photos` to the signed-out redirect test on #74, and pushed only after a pass with no errors. One wording suggestion on #61 (single quotes for the connection string) is listed as a follow-up on the pull request.
 
 ## Farnaz
 
