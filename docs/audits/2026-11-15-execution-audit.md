@@ -86,3 +86,16 @@ Other dirty worktrees predate Friday (`../FitnessCoach-m108`: Shubham's #108 mer
 2. Review #115 first: it turns `main` green again.
 3. Review #113 and #114 against the practices list, including the Lecture 9 rows.
 4. Run the walk-through on `main` once the laptop has room for the database, the app and a browser; until then, the steps above are verified by CI tests only.
+
+## Lecture 10 (Fri 20 Nov): DigitalOcean Spaces and Better Auth
+
+Lecture 10 covers DigitalOcean Spaces and Better Auth (course page "lecture-10"; Better Auth docs at better-auth.com/docs/introduction). It matters to two parts of our code. No code changes until after the lecture.
+
+- **Better Auth** (Shubham's, #67; version 1.7.14 in `package.json`): `src/lib/auth/core.ts` (server instance), `src/lib/auth/client.ts` (browser client used by `src/components/auth/auth-form.tsx` and `change-password-dialog.tsx`), `src/app/api/auth/[...all]/route.ts` (the Route Handler), `src/lib/auth/session.ts` (`requireUser`, used by every Server Action), and the tier and access files in `src/lib/auth/` (#107). Anything the lecture recommends goes to Shubham as a comment.
+- **DigitalOcean Spaces**: we use Cloudflare R2 (#109, D3). Only `src/lib/storage/r2.ts` talks to the S3 API (practices row 14), so moving to Spaces would mean new settings and that one module, plus the ACL difference in row 15.
+
+## Addendum, 15 Nov 13:35 to 13:45
+
+- Lecture 9 rows 8 to 19 added to `docs/ENGINEERING_PRACTICES.md` (ef89498). Checking `main` against them found no real gap, so no issue was opened (details in the rows' last column).
+- Reviews posted as comments: #115, #113 and #114, none blocking. #115 still needs one approval.
+- Main CI on ef89498 (run 43747873093) failed on the same flaky test as before (#112). #115 fixes it.
