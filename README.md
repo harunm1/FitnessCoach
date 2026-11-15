@@ -208,21 +208,20 @@ One-time setup:
 2. Apply the migrations and seed the `main` branch from your machine. On your machine
    the Prisma CLI and the seed both read `DATABASE_URL` (the direct string is used
    only on Vercel), so set that one variable to the direct string. Demo users are for
-   local databases only, so blank `DEMO_PASSWORD` too: the seed reads `.env`, which
-   does not override a variable already set in the shell, and a `DEMO_PASSWORD` there
-   would stop the seed partway on a Neon database. In PowerShell:
+   local databases only: if your `.env` sets `DEMO_PASSWORD`, comment that line out
+   first and restore it afterwards, or the seed stops partway on Neon. (The seed reads
+   `.env`, and setting the variable to an empty string in PowerShell removes it, so
+   `.env` would fill it in again.) In PowerShell:
 
    ```powershell
    $env:DATABASE_URL="<direct string>"
-   $env:DEMO_PASSWORD=""
    npx prisma migrate deploy
    npx prisma db seed
    Remove-Item Env:DATABASE_URL
-   Remove-Item Env:DEMO_PASSWORD
    ```
 
-   In bash: `export DATABASE_URL="<direct string>" DEMO_PASSWORD=""`, the two `npx`
-   commands, then `unset DATABASE_URL DEMO_PASSWORD`.
+   In bash: `export DATABASE_URL="<direct string>"`, the two `npx` commands, then
+   `unset DATABASE_URL`.
 
 3. In Neon, create a branch named `seed` from `main` now, while `main` holds only the
    seed, and connect nothing to it. Then create a branch named `preview` from `seed`, not
