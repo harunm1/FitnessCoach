@@ -110,7 +110,8 @@ docker compose ps
 ```
 
 Wait until the `postgres` service reports `healthy`, then apply migrations, seed
-the exercise dataset and demo user, and start the application:
+the exercise dataset, and start the application. Optional local tier logins are
+created when `DEMO_PASSWORD` is configured:
 
 For a database used with an older accounts branch, complete the
 [auth migration history update](docs/ACCOUNTS.md#migration-name-update) before
@@ -149,6 +150,8 @@ access.
 
 The [signed-in quiz/session guide](docs/QUIZ_SESSION_AUTH.md) covers user-owned
 plans and logs, plus optional local demo logins for all four tiers.
+The [coach-access guide](docs/COACH_ACCESS.md) covers effective tier checks,
+exercise-chat permissions and the database-backed AI plan request reservation.
 
 ### Coach keys
 
