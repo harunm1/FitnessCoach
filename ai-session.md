@@ -500,6 +500,26 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Did with it:** kept the fixes small and in my own files. Failed chat calls are recorded by the provider's fixed message or the error's name. The follow-up rule accepts a quoted term and a trailing "please", "again" or "exactly". `/coach` loads only the untitled conversation. The coach gets muscles to avoid from the injury text by the same code rule onboarding uses. Only replies that mean the person needs help replace a cap message. I corrected a test count I had first reported for #53 (956, not 1,057: stale copies of test files in my local folder had been counted). Tools: the pr-review-toolkit code-reviewer agent for the independent reviews and the checks on the changed lines.
 
+### 15 November 2026, checkpoint 1 audit and the Lecture 9 practices
+
+**Before asking:** the checkpoint needs a list of where each core-path step and course requirement stands on `main`, each tied to a commit or PR, plus the Lecture 9 practices written down so reviews can use them.
+
+**Asked:** an AI assistant (Claude Code) to draft the execution audit from `git log`, the GitHub PRs, reviews and issues, and the CI runs; to turn Lecture 9 into numbered practice rows with slide references; and to check `main` and the open photo PRs against those rows.
+
+**Got:** the audit (`docs/audits/2026-11-15-execution-audit.md`), rows 8 to 19 in `docs/ENGINEERING_PRACTICES.md`, and draft review comments for #113, #114 and #115. It found no gap on `main` against the new rows. Main CI failed again on the exercise-chat ordering test (#112).
+
+**Did with it:** checked each row against the slide it cites and against the code before committing. Checked the Next.js `bodySizeLimit` docs and the new dependency's npm record before the #113 and #114 comments. Dropped one draft review point (duplicate React keys) after reading `groupByExercise` showed it could not happen. Posted the reviews as comments; the live walk-through is still owed because the laptop did not have enough memory.
+
+### 15 November 2026, review passes before pushing #77, #74 and #61 (issues #75, #72, #57)
+
+**Before asking:** three of my pull requests had `main` merged in locally, and I wanted each one checked by a reviewer that had not seen my reasoning before I pushed.
+
+**Asked:** an AI assistant (Claude Code) to run separate review passes, one after another, on each diff and its pull request description, against the issue, `docs/ENGINEERING_PRACTICES.md` and the source code.
+
+**Got:** most findings were wrong statements in the descriptions rather than in the code. On #77, the description said no screen on `main` uses the rounded-corner classes, but `/coach` does. On #74, it described a coach loading file that #96 never added. On #61, one pass found that my first fix to the deploy steps did not work: in Windows PowerShell 5.1, setting a variable to an empty string removes it, so the seed would still read the demo password from the local env file.
+
+**Did with it:** checked each finding against the code before changing anything, and re-ran the PowerShell behaviour myself. Fixed the docs and descriptions, added `/progress/photos` to the signed-out redirect test on #74, and pushed only after a pass with no errors. One wording suggestion on #61 (single quotes for the connection string) is listed as a follow-up on the pull request.
+
 ## Farnaz
 
 ### 8 November 2026, progress logic (issue #16)
