@@ -10,7 +10,7 @@ As of 10 November 2026, checked against `main`, the open pull requests and the p
 
 **Merged on main.** The proposal (#13). The Next.js skeleton, the Prisma schema for strength and running, the seeded exercise library and CI, which replays recorded coach replies. The coach's plan generation with the verifier, Groq-to-Gemini fallback, rule-based running and hybrid weeks, saving a week as the active plan, per-call logging in code (the table that stores it, #52, is not built), and guardrails for pain, diagnosis and off-topic requests (#48). Sign-in, access tiers and Stripe test mode (#67, #68), and the session screen, body map and signed-in quiz and sessions (#39, #70, #83).
 
-**In review (open pull requests).** Coach chat (#53), streamed replies (#56), the deployed preview (#61), the strength-only starter plan (#73), root loading and error states (#74), shadcn/ui (#77), query indexes (#78), integration tests for the core path (#81), guardrail false positives (#100), the progress streak and muscle logic (#82), the eval repeat runner (#87), the "Why this plan" panel (#88), quiz run days (#97), model-call record fields (#98) and demo mode with cached coach plans (#99). Drafts: schema constraints (#89) and the coach chat screen (#96).
+**In review (open pull requests).** Coach chat (#53), streamed replies (#56), the deployed preview (#61), the strength-only starter plan (#73), the root error state (#74), shadcn/ui (#77), query indexes (#78), integration tests for the core path (#81), guardrail false positives (#100), the progress streak and muscle logic (#82), the eval repeat runner (#87), the "Why this plan" panel (#88), quiz run days (#97), model-call record fields (#98) and demo mode with cached coach plans (#99). Drafts: schema constraints (#89) and the coach chat screen (#96).
 
 **Next (board columns Ready and In progress).** Ready: the curated exercise library (#8), logging and chat that survive a dropped connection (#42), the coach-call table (#52), "Personalize with the coach" (#58) and the body-map follow-up questions (#60). In progress: progress and photos (#16), the hybrid week (#46), the per-user coach limit (#51), the chat screen (#63), an RPE target per exercise (#65), integration tests for the core path (#79) and quiz run days (#85). Core path working end to end by Sunday 15 November; demo-feature freeze Monday 23 November; final report Sunday 6 December.
 
@@ -110,7 +110,8 @@ docker compose ps
 ```
 
 Wait until the `postgres` service reports `healthy`, then apply migrations, seed
-the exercise dataset and demo user, and start the application:
+the exercise dataset, and start the application. Optional local tier logins are
+created when `DEMO_PASSWORD` is configured:
 
 For a database used with an older accounts branch, complete the
 [auth migration history update](docs/ACCOUNTS.md#migration-name-update) before
@@ -149,6 +150,8 @@ access.
 
 The [signed-in quiz/session guide](docs/QUIZ_SESSION_AUTH.md) covers user-owned
 plans and logs, plus optional local demo logins for all four tiers.
+The [coach-access guide](docs/COACH_ACCESS.md) covers effective tier checks,
+exercise-chat permissions and the database-backed AI plan request reservation.
 
 ### Coach keys
 

@@ -215,6 +215,7 @@ describe("PostgreSQL coach record sink", () => {
       {
         id: "press",
         name: "Press",
+        category: "strength",
         equipment: "body only",
         primaryMuscles: ["chest"],
         secondaryMuscles: [],
@@ -222,6 +223,7 @@ describe("PostgreSQL coach record sink", () => {
       {
         id: "squat",
         name: "Squat",
+        category: "strength",
         equipment: "body only",
         primaryMuscles: ["quadriceps"],
         secondaryMuscles: [],

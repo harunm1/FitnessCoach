@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildHybridWeek, interleave, splitDays } from "./hybridWeek";
-import { verifyPlan, type LibraryExercise } from "./verify";
+import { verifyPlan, type CategorisedExercise } from "./verify";
 import { verifyRunningPlan } from "./verifyRunning";
 import type { HybridProfile } from "./hybridWeek";
 
@@ -17,8 +17,9 @@ const MUSCLES = [
   "lats",
   "biceps",
 ];
-const library: LibraryExercise[] = MUSCLES.map((m) => ({
+const library: CategorisedExercise[] = MUSCLES.map((m) => ({
   id: m.replace(" ", "_"),
+  category: "strength",
   equipment: "body only",
   primaryMuscles: [m],
   secondaryMuscles: [],

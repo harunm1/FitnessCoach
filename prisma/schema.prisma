@@ -36,6 +36,7 @@ model User {
   image         String?
   tier          Tier      @default(FREE)
   trialEndsAt   DateTime?
+  lastCoachPlanRequestedAt DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
