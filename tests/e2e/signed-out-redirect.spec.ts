@@ -4,7 +4,12 @@ import { expect, test } from "@playwright/test";
 // A loading boundary above a page that redirects makes Next.js start streaming a 200
 // before the page runs, so the redirect then arrives only as a refresh inside the body.
 const TEMPORARY_REDIRECT = 307;
-const GUARDED_PATHS = ["/account", "/session", "/onboarding"];
+const GUARDED_PATHS = [
+  "/account",
+  "/session",
+  "/onboarding",
+  "/progress/photos",
+];
 
 GUARDED_PATHS.forEach((path) => {
   test(`signed-out GET ${path} answers 307 to /sign-in`, async ({
