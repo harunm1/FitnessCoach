@@ -69,6 +69,15 @@ describe("quizProfileSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("accepts the exercise library's kettlebells equipment value", () => {
+    expect(
+      quizProfileSchema.safeParse({
+        ...validProfile,
+        equipment: ["kettlebells"],
+      }).success,
+    ).toBe(true);
+  });
+
   it("accepts a 500-character injury note and rejects a longer note", () => {
     const maxLengthResult = quizProfileSchema.safeParse({
       ...validProfile,

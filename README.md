@@ -110,7 +110,8 @@ docker compose ps
 ```
 
 Wait until the `postgres` service reports `healthy`, then apply migrations, seed
-the exercise dataset and demo user, and start the application:
+the exercise dataset, and start the application. Optional local tier logins are
+created when `DEMO_PASSWORD` is configured:
 
 For a database used with an older accounts branch, complete the
 [auth migration history update](docs/ACCOUNTS.md#migration-name-update) before
@@ -149,6 +150,8 @@ access.
 
 The [signed-in quiz/session guide](docs/QUIZ_SESSION_AUTH.md) covers user-owned
 plans and logs, plus optional local demo logins for all four tiers.
+The [coach-access guide](docs/COACH_ACCESS.md) covers effective tier checks,
+exercise-chat permissions and the database-backed AI plan request reservation.
 
 ### Coach keys
 
@@ -228,19 +231,20 @@ One-time setup:
    production domain from **Settings > Domains** (usually `<project>.vercel.app`).
 5. Add these under **Settings > Environment Variables**, each scoped as listed:
 
-   | Name                                      | Environment         | Value                                                                                               |
-   | ----------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------- |
-   | `DATABASE_URL`                            | Production          | Neon `main` pooled string                                                                           |
-   | `DATABASE_URL_UNPOOLED`                   | Production          | Neon `main` direct string                                                                           |
-   | `DATABASE_URL`                            | Preview             | Neon `preview` pooled string                                                                        |
-   | `DATABASE_URL_UNPOOLED`                   | Preview             | Neon `preview` direct string                                                                        |
-   | `BETTER_AUTH_SECRET`                      | Production          | a random secret of 32 or more characters (the `node -e` line in `.env.example`)                     |
-   | `BETTER_AUTH_URL`                         | Production          | the production origin, `https://<project>.vercel.app`, with no path                                 |
-   | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`   | Production          | a hosted SMTP service with a verified sender; port 465 with `SMTP_SECURE=true`, or 587 with `false` |
-   | `SMTP_FROM`, `SMTP_USER`, `SMTP_PASSWORD` | Production          | the verified sender address, and the service's login (user and password set together)               |
-   | `COACH_PROVIDER`                          | Production, Preview | `groq`                                                                                              |
-   | `GROQ_API_KEY`                            | Production, Preview | from console.groq.com                                                                               |
-   | `GEMINI_API_KEY`                          | Production, Preview | from aistudio.google.com                                                                            |
+   | Name                                                                     | Environment         | Value                                                                                               |
+   | ------------------------------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------- |
+   | `DATABASE_URL`                                                           | Production          | Neon `main` pooled string                                                                           |
+   | `DATABASE_URL_UNPOOLED`                                                  | Production          | Neon `main` direct string                                                                           |
+   | `DATABASE_URL`                                                           | Preview             | Neon `preview` pooled string                                                                        |
+   | `DATABASE_URL_UNPOOLED`                                                  | Preview             | Neon `preview` direct string                                                                        |
+   | `BETTER_AUTH_SECRET`                                                     | Production          | a random secret of 32 or more characters (the `node -e` line in `.env.example`)                     |
+   | `BETTER_AUTH_URL`                                                        | Production          | the production origin, `https://<project>.vercel.app`, with no path                                 |
+   | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`                                  | Production          | a hosted SMTP service with a verified sender; port 465 with `SMTP_SECURE=true`, or 587 with `false` |
+   | `SMTP_FROM`, `SMTP_USER`, `SMTP_PASSWORD`                                | Production          | the verified sender address, and the service's login (user and password set together)               |
+   | `COACH_PROVIDER`                                                         | Production, Preview | `groq`                                                                                              |
+   | `GROQ_API_KEY`                                                           | Production, Preview | from console.groq.com                                                                               |
+   | `GEMINI_API_KEY`                                                         | Production, Preview | from aistudio.google.com                                                                            |
+   | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | Production          | the private progress-photo bucket and an Object Read & Write token (D3; names in `.env.example`)    |
 
    Sign-up needs a working email: the app requires a verified address, and Mailpit
    (the local mail catcher) does not exist on Vercel, which also blocks outbound port 25. Stripe stays unset unless billing is configured as in `docs/BILLING.md`.
