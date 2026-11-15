@@ -396,6 +396,16 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Did with it:** I chose to fix #104 first and keep it separate from my #51 work. I directed the change to use the signed-in account and asked for checks that users could not share chat history. AI helped implement the changes, write the regression tests and work through the failing checks. I used the results to check the fix against the issue. The shared demo seed was removed without deleting existing data, and the setup docs were updated. The optional four-tier demo logins remain available.
 
+### Coach tiers and plan-request limits (issue #51)
+
+**Before asking:** I wanted to continue my coach-access task after the exercise-chat privacy fix. The older branch already had tier helpers and a cooldown, but it needed to fit the sign-in and Stripe code now on main. I wanted my existing #104 work preserved and the remaining coach-owner integration kept clear.
+
+**Asked:** to check the current branches and requirements, refresh the helpers, and test that expired access or repeated requests cannot reach the model. The policy stays the same: every tier can request a plan, while coach chat needs an active trial, PRO entitlement or ADMIN access.
+
+**Got:** help with specific code changes and tests for fresh sessions, effective tiers and an atomic database reservation. The reservation counts failed attempts as well as successful requests, and concurrent requests cannot both claim the same slot. The review also identified that the general chat route and personalization action are still pending in other coach work.
+
+**Did with it:** I continued with a separate #51 branch, preserving the old commits in a backup and building on the #104 fix. AI helped update the implementation, migration and regression tests. The existing exercise coach now checks the shared tier guard before model setup. The checks passed: 891 unit tests, 91 PostgreSQL integration tests, 17 browser tests, formatting, lint, TypeScript and the production build. The older migration-name recovery was also tested on a disposable database, without using my development database. The documentation explains setup and the remaining callers. I am keeping #51 open until those callers are integrated and tested.
+
 ### 10 November 2026, quiz plans with run days (issue #85)
 
 **Before asking:** the quiz plan came from `buildDefaultPlan`, so it never had a run day and the session screen had nothing to show for runs, although `buildHybridWeek` and `saveWeek` could already store them. I decided the quiz asks for training mode, strength by default, and that only running and both take the new path, so a strength quiz stays as it is. The quiz action is Mohammad's file, so I kept my change there to one early branch and put the rest in my own files.

@@ -113,6 +113,10 @@ migration rename.
   It returns identity, stored tier and trial expiry from the fresh server session;
   effective permissions still come from the shared access policy.
   API handlers should validate sessions and return appropriate 401/403 responses.
+  `getVerifiedUser()` returns a nullable identity for those callers, while
+  `requireTier(allowed)` returns denial values using fresh billing entitlements.
+  See [COACH_ACCESS.md](COACH_ACCESS.md) for the caller contracts, exercise-chat
+  integration and plan-request migration setup.
 - The browser client uses HttpOnly session cookies. Tier and trial fields cannot
   be supplied through signup/update requests. Cookie session caching is disabled.
 - Verification and reset links expire after one hour. Password reset revokes all

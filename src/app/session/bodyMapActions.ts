@@ -10,6 +10,8 @@ import {
 } from "@/lib/coach/exerciseChat";
 import { coachChatModel } from "@/lib/coach/providers";
 import { requireUser } from "@/lib/auth/session";
+import { requireTier } from "@/lib/auth/access";
+import { COACH_TIERS } from "@/lib/auth/tier";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -22,6 +24,21 @@ export async function askExerciseCoach(
   formData: FormData,
 ): Promise<ExerciseChatActionState> {
   const user = await requireUser();
+  try {
+    const account = await requireTier(COACH_TIERS);
+    if (!account.ok) {
+      return {
+        status: "error",
+        message:
+          "An active trial or PRO membership is required for coach chat.",
+      };
+    }
+  } catch {
+    return {
+      status: "error",
+      message: "The coach is temporarily unavailable. Please try again.",
+    };
+  }
   const parsedQuestion = questionSchema.safeParse(formData.get("question"));
   if (!parsedQuestion.success) {
     return {

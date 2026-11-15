@@ -26,7 +26,9 @@ input validation or model setup. Conversations are looked up and created using
 the session's user ID and the selected exercise/muscle. History comes from those
 stored messages, never from submitted turns or client-supplied owner/conversation
 IDs. Signed-out, unverified, expired and revoked sessions cannot call the model
-or write messages. Shared tier enforcement remains the separate work in #51.
+or write messages. The action also uses #51's tier guard: an active trial,
+effective PRO entitlement or ADMIN access is required before model setup.
+See [COACH_ACCESS.md](COACH_ACCESS.md) for the remaining coach integrations.
 
 The old `demo@fitnesscoach.local` lookup is gone from these pages and actions.
 Existing demo workouts stay with that user; they are not reassigned to someone

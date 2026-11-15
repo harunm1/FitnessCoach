@@ -150,6 +150,8 @@ access.
 
 The [signed-in quiz/session guide](docs/QUIZ_SESSION_AUTH.md) covers user-owned
 plans and logs, plus optional local demo logins for all four tiers.
+The [coach-access guide](docs/COACH_ACCESS.md) covers effective tier checks,
+exercise-chat permissions and the database-backed AI plan request reservation.
 
 ### Coach keys
 

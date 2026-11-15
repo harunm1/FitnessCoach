@@ -295,7 +295,98 @@ describe("quiz and session authorization with PostgreSQL", () => {
     });
   });
 
+  it.each([
+    ["FREE", false, false],
+    ["TRIAL", false, false],
+    ["TRIAL", true, true],
+    ["PRO", false, false],
+    ["PRO", true, true],
+    ["ADMIN", false, true],
+  ] as const)(
+    "checks exercise-chat access for %s with active entitlement %s",
+    async (tier, active, allowed) => {
+      await db.user.update({
+        where: { id: first.id },
+        data: {
+          tier,
+          trialEndsAt:
+            tier === "TRIAL"
+              ? new Date(active ? Date.now() + 86400000 : 0)
+              : null,
+        },
+      });
+      if (tier === "PRO" && active) {
+        await db.billingAccount.create({
+          data: {
+            userId: first.id,
+            stripeCustomerId: `cus_coach_${randomUUID()}`,
+            status: "active",
+            paidUntil: new Date(Date.now() + 86400000),
+          },
+        });
+      }
+      await signIn(first);
+      const result = await askExerciseCoach(
+        "chest",
+        exercises[0],
+        idle,
+        form({ question: "How do I keep the movement controlled?" }),
+      );
+      expect(result.status).toBe(allowed ? "success" : "error");
+      expect(exerciseCoach.factory).toHaveBeenCalledTimes(allowed ? 1 : 0);
+      expect(exerciseCoach.model).toHaveBeenCalledTimes(allowed ? 1 : 0);
+      expect(await db.conversation.count({ where: { userId: first.id } })).toBe(
+        allowed ? 1 : 0,
+      );
+      expect(
+        await db.user.findUniqueOrThrow({ where: { id: first.id } }),
+      ).toMatchObject({ lastCoachPlanRequestedAt: null });
+    },
+  );
+
+  it("rechecks exercise-chat access without a new login after trial or billing expiry", async () => {
+    await db.user.update({
+      where: { id: first.id },
+      data: { tier: "TRIAL", trialEndsAt: new Date(Date.now() + 86400000) },
+    });
+    await signIn(first);
+    const ask = () =>
+      askExerciseCoach(
+        "chest",
+        exercises[0],
+        idle,
+        form({ question: "How do I keep the movement controlled?" }),
+      );
+    expect((await ask()).status).toBe("success");
+    await db.user.update({
+      where: { id: first.id },
+      data: { trialEndsAt: new Date(0) },
+    });
+    expect((await ask()).status).toBe("error");
+    expect(exerciseCoach.model).toHaveBeenCalledTimes(1);
+    await db.user.update({ where: { id: first.id }, data: { tier: "PRO" } });
+    await db.billingAccount.create({
+      data: {
+        userId: first.id,
+        stripeCustomerId: `cus_coach_${randomUUID()}`,
+        status: "active",
+        paidUntil: new Date(Date.now() + 86400000),
+      },
+    });
+    expect((await ask()).status).toBe("success");
+    await db.billingAccount.update({
+      where: { userId: first.id },
+      data: { paidUntil: new Date(0) },
+    });
+    expect((await ask()).status).toBe("error");
+    expect(exerciseCoach.model).toHaveBeenCalledTimes(2);
+  });
+
   it("keeps exercise-chat history and model context separate for each signed-in user", async () => {
+    await db.user.updateMany({
+      where: { id: { in: [first.id, second.id] } },
+      data: { tier: "TRIAL", trialEndsAt: new Date(Date.now() + 86400000) },
+    });
     const firstQuestion = "How should I position my wrists for this press?";
     const secondQuestion = "How slowly should I lower this press?";
     const firstReply = "Keep your wrists stacked over your elbows.";
