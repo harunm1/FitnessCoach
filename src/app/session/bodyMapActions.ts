@@ -9,10 +9,12 @@ import {
   type ExerciseChatTurn,
 } from "@/lib/coach/exerciseChat";
 import { coachChatModel } from "@/lib/coach/providers";
+import { requireUser } from "@/lib/auth/session";
+import { requireTier } from "@/lib/auth/access";
+import { COACH_TIERS } from "@/lib/auth/tier";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
-const demoEmail = "demo@fitnesscoach.local";
 const questionSchema = z.string().trim().min(1).max(500);
 
 export async function askExerciseCoach(
@@ -21,6 +23,22 @@ export async function askExerciseCoach(
   _previousState: ExerciseChatActionState,
   formData: FormData,
 ): Promise<ExerciseChatActionState> {
+  const user = await requireUser();
+  try {
+    const account = await requireTier(COACH_TIERS);
+    if (!account.ok) {
+      return {
+        status: "error",
+        message:
+          "An active trial or PRO membership is required for coach chat.",
+      };
+    }
+  } catch {
+    return {
+      status: "error",
+      message: "The coach is temporarily unavailable. Please try again.",
+    };
+  }
   const parsedQuestion = questionSchema.safeParse(formData.get("question"));
   if (!parsedQuestion.success) {
     return {
@@ -53,17 +71,6 @@ export async function askExerciseCoach(
   }
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { email: demoEmail },
-      select: { id: true },
-    });
-    if (!user) {
-      return {
-        status: "error",
-        message: "The demo user could not be found. Seed the database first.",
-      };
-    }
-
     const exercise = await prisma.exercise.findUnique({
       where: { id: exerciseId },
       select: {
@@ -151,7 +158,7 @@ export async function askExerciseCoach(
         },
       }),
       prisma.conversation.update({
-        where: { id: savedConversation.id },
+        where: { id: savedConversation.id, userId: user.id },
         data: { updatedAt: new Date() },
       }),
     ]);

@@ -7,7 +7,7 @@ export const equipmentOptions = [
   { value: "barbell", label: "Barbell" },
   { value: "cable", label: "Cable machine" },
   { value: "machine", label: "Weight machines" },
-  { value: "kettlebell", label: "Kettlebells" },
+  { value: "kettlebells", label: "Kettlebells" },
 ] as const;
 
 export const quizProfileSchema = z.object({
