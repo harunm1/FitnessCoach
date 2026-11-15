@@ -89,7 +89,7 @@ What init installed: `@base-ui/react`, `class-variance-authority`, `lucide-react
 
 Two changes to what init wrote. It set `--font-sans: var(--font-sans)`, which refers to itself, so it points at the Geist font from `layout.tsx` again. It added `outline-ring/50` to every element, which would recolour the browser's focus outline on the existing screens, so that line is left out; the shadcn components draw their own focus ring. Background, foreground and primary keep the app's existing colours, and the focus-ring colour is the same ink, since the preset's light grey ring falls below 3:1 contrast on a white card.
 
-Two effects that reach later screens: the preset redefines the radius scale, so every `rounded-*` class grows slightly (`rounded-lg` goes from 0.5rem to 0.625rem; no screen on `main` uses one yet), and `dark:` now follows a `.dark` class instead of the system colour scheme (nothing uses `dark:` yet).
+Two effects that reach later screens: the preset redefines the radius scale, so every `rounded-*` class grows slightly (`rounded-md` goes from 0.375rem to 0.5rem and `rounded-lg` from 0.5rem to 0.625rem; on `main` that rounds the corners of the `/coach` message box, chat bubbles and unsaved-reply notice by about 2px, the only screen that uses them), and `dark:` now follows a `.dark` class instead of the system colour scheme (nothing uses `dark:` yet).
 
 ## Questions from the early meetings
 
