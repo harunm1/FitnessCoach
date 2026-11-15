@@ -114,7 +114,6 @@ describe("PostgreSQL coach record sink", () => {
     });
     await prismaCoachSink(second.id)({
       ...record,
-      kind: "chat",
       raw: { reply: "Second private reply" },
     });
     const firstRows = await db.coachEvent.findMany({
@@ -126,6 +125,21 @@ describe("PostgreSQL coach record sink", () => {
     expect(JSON.stringify(firstRows)).not.toContain("Second private reply");
     expect(await db.coachEvent.count({ where: { userId: second.id } })).toBe(1);
   });
+
+  it.each(["Your knee injury may need attention.", null, { value: BigInt(1) }])(
+    "stores chat metadata with SQL NULL raw regardless of the reply",
+    async (raw) => {
+      const user = await athlete();
+      await prismaCoachSink(user.id)({ ...record, kind: "chat", raw });
+      const [saved] = await db.$queryRaw<
+        { kind: string; outcome: string; absent: boolean }[]
+      >`
+        SELECT "kind", "outcome", "raw" IS NULL AS "absent"
+        FROM "CoachEvent" WHERE "userId" = ${user.id}
+      `;
+      expect(saved).toEqual({ kind: "chat", outcome: "ok", absent: true });
+    },
+  );
 
   it.each([
     "ok",
@@ -227,7 +241,9 @@ describe("PostgreSQL coach record sink", () => {
         },
       ],
     };
-    const model = vi.fn(async () => plan);
+    const model = vi.fn<(prompt: string) => Promise<typeof plan>>(
+      async () => plan,
+    );
     const result = await generatePlan(
       model,
       { daysPerWeek: 1, equipment: ["body only"], avoidMuscles: [] },
@@ -250,6 +266,10 @@ describe("PostgreSQL coach record sink", () => {
       model: "fixture-model",
       raw: plan,
     });
-    expect(saved[0]).not.toHaveProperty("prompt");
+    const prompt = model.mock.calls[0]?.[0];
+    expect(prompt).toContain("Build a 1-day weekly strength plan");
+    expect(JSON.stringify(saved[0])).not.toContain(
+      "Build a 1-day weekly strength plan",
+    );
   });
 });

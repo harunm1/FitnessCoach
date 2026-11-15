@@ -46,7 +46,11 @@ export function prismaCoachSink(userId: string): CoachSink {
           record.problems === undefined
             ? Prisma.DbNull
             : jsonValue(record.problems),
-        raw: record.raw === undefined ? Prisma.DbNull : jsonValue(record.raw),
+        // Chat replies can repeat private health details from the conversation.
+        raw:
+          record.kind === "chat" || record.raw === undefined
+            ? Prisma.DbNull
+            : jsonValue(record.raw),
       },
     });
   };

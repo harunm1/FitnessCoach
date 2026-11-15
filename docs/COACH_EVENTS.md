@@ -19,14 +19,16 @@ The outcome enum matches the current `CoachOutcome`: `ok`, `retried`, `switched`
 
 The sink maps these fields explicitly. It does not store a prompt, the profile
 input, the whole record object or its error text. A `userId` added to a record
-cannot override the owner bound to the sink. `raw` is the model reply, not the
-request; replies can still contain user-related information and need the same
-private access as the user's other records.
+cannot override the owner bound to the sink. For plans, `raw` is the model reply,
+not the request, and needs the same private access as the user's other records.
+For chat, `raw` is always SQL NULL: replies can repeat private health details
+from the conversation, which must stay out of logs (engineering practice 6).
 
 Missing token counts and verdicts stay null; zero token counts remain zero.
-Absent optional JSON fields use SQL NULL. An explicit `raw: null` is JSON null.
-Non-JSON values such as BigInt or circular objects fail the write; they are not
-coerced into a partial record.
+Absent optional JSON fields use SQL NULL. For plans, an explicit `raw: null` is
+JSON null. Chat replies are discarded before serialization, including explicit
+null and non-JSON replies. Non-JSON values such as BigInt or circular objects in
+stored fields fail the write; they are not coerced into a partial record.
 
 ## Local setup
 

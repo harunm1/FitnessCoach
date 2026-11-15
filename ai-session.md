@@ -386,6 +386,16 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Did with it:** I decided how the flow and the demo accounts should work. I got the app running locally, fixed the three errors and told it what I saw when something else broke. Near the end I asked it to check the work against every requirement in the issue. The automated checks passed in a clean workspace, including the database and browser tests. I repaired the local migration history after taking a backup, and no app data was deleted. The demo passwords are in my private env file, not in the repo, and the offline PRO account only exists for local testing.
 
+### 14 November 2026, coach-event review corrections (issue #52)
+
+**Before asking:** my PR had an approving review, with five non-blocking comments. I wanted to know which ones I should fix now and which could wait, so I went through them against issue #52 and the existing code and asked for guidance.
+
+**Asked:** whether the review comments matched what issue #52 requires, what the remaining privacy and test concerns were, and how to correct them. I also asked which items were fine to leave as follow-ups.
+
+**Got:** advice on three fixes: keeping chat replies out of the logs, testing for the actual prompt text instead of a column that doesn't exist, and fixing the wording in the README. I also learned that PR #99 is still open, so the cached-outcome migration has to wait on merge order. A fixed error category is future work.
+
+**Did with it:** I made the changes in the code, tests and docs myself, using the guidance as a reference. The sink now stores SQL NULL for chat replies before serialization. The tests now cover chat privacy and check saved records for actual prompt text. All 852 unit tests, TypeScript, lint and formatting pass. I couldn't run the database integration tests because TEST_DATABASE_URL isn't set and the Docker daemon isn't available. I didn't use a development database.
+
 ### Storing coach-call records (issue #52)
 
 **Before asking:** I was working on the schema and code for coach-event storage and wanted feedback on whether the structure fit the project. I needed to check my changes against issue #52, understand how they should connect to the existing coach logger, and find out whether any dependency branches were missing.

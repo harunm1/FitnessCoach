@@ -160,7 +160,7 @@ GROQ_API_KEY=""     # console.groq.com/keys
 GEMINI_API_KEY=""   # aistudio.google.com/apikey
 ```
 
-For user-scoped coach-call storage on this branch, see
+For user-scoped coach-call storage, see
 [COACH_EVENTS.md](docs/COACH_EVENTS.md). It explains the #52 migration, metadata,
 privacy boundaries and connecting the sink to an authenticated coach caller.
 
