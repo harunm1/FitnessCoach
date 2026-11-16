@@ -108,7 +108,7 @@ export async function askExerciseCoach(
       orderBy: { updatedAt: "desc" },
       include: {
         messages: {
-          orderBy: { createdAt: "desc" },
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           take: 8,
           select: { role: true, content: true },
         },

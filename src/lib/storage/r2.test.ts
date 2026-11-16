@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   DeleteObjectCommand,
+  GetObjectCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -71,6 +72,36 @@ describe("R2Storage", () => {
       Body: body,
       ContentType: "image/webp",
     });
+  });
+
+  it("reads a file from the bucket", async () => {
+    const send = vi.spyOn(S3Client.prototype, "send").mockResolvedValue({
+      Body: { transformToByteArray: async () => new Uint8Array([1, 2, 3]) },
+    } as never);
+    const body = await new R2Storage(config).get("photos/u1/a.webp");
+
+    expect([...(body ?? [])]).toEqual([1, 2, 3]);
+    const command = send.mock.calls[0][0];
+    expect(command).toBeInstanceOf(GetObjectCommand);
+    expect(command.input).toEqual({
+      Bucket: "test-bucket",
+      Key: "photos/u1/a.webp",
+    });
+  });
+
+  it("returns null when the file does not exist", async () => {
+    const missing = Object.assign(new Error("gone"), { name: "NoSuchKey" });
+    vi.spyOn(S3Client.prototype, "send").mockRejectedValue(missing);
+    expect(await new R2Storage(config).get("photos/u1/a.webp")).toBeNull();
+  });
+
+  it("passes other read errors on", async () => {
+    vi.spyOn(S3Client.prototype, "send").mockRejectedValue(
+      new Error("R2 is down"),
+    );
+    await expect(new R2Storage(config).get("photos/u1/a.webp")).rejects.toThrow(
+      "R2 is down",
+    );
   });
 
   it("deletes the key from the bucket", async () => {

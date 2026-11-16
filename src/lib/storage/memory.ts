@@ -9,6 +9,10 @@ export class MemoryStorage implements PhotoStorage {
     this.files.set(key, { body, contentType });
   }
 
+  async get(key: string): Promise<Buffer | null> {
+    return this.files.get(key)?.body ?? null;
+  }
+
   async delete(key: string): Promise<void> {
     this.files.delete(key);
   }
