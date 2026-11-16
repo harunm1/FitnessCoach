@@ -500,6 +500,26 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Did with it:** I decided how the flow and the demo accounts should work. I got the app running locally, fixed the three errors and told it what I saw when something else broke. Near the end I asked it to check the work against every requirement in the issue. The automated checks passed in a clean workspace, including the database and browser tests. I repaired the local migration history after taking a backup, and no app data was deleted. The demo passwords are in my private env file, not in the repo, and the offline PRO account only exists for local testing.
 
+### 14 November 2026, coach-event review corrections (issue #52)
+
+**Before asking:** my PR had an approving review, with five non-blocking comments. I wanted to know which ones I should fix now and which could wait, so I went through them against issue #52 and the existing code and asked for guidance.
+
+**Asked:** whether the review comments matched what issue #52 requires, what the remaining privacy and test concerns were, and how to correct them. I also asked which items were fine to leave as follow-ups.
+
+**Got:** advice on three fixes: keeping chat replies out of the logs, testing for the actual prompt text instead of a column that doesn't exist, and fixing the wording in the README. I also learned that PR #99 is still open, so the cached-outcome migration has to wait on merge order. A fixed error category is future work.
+
+**Did with it:** I made the changes in the code, tests and docs myself, using the guidance as a reference. The sink now stores SQL NULL for chat replies before serialization. The tests now cover chat privacy and check saved records for actual prompt text. All 852 unit tests, TypeScript, lint and formatting pass. I couldn't run the database integration tests because TEST_DATABASE_URL isn't set and the Docker daemon isn't available. I didn't use a development database.
+
+### Storing coach-call records (issue #52)
+
+**Before asking:** I was working on the schema and code for coach-event storage and wanted feedback on whether the structure fit the project. I needed to check my changes against issue #52, understand how they should connect to the existing coach logger, and find out whether any dependency branches were missing.
+
+**Asked:** to check the schema and related code against the issue, point out problems with the relationships, ownership and stored fields, and help with the remaining implementation and tests. I also wanted to understand how to keep prompts out of the database and handle failed writes without breaking the coach response.
+
+**Got:** feedback and help with specific schema, sink and test changes. The main points were to take the owner from the server, include the metadata requested in the issue comment, distinguish unknown token counts from zero, and handle missing JSON values correctly. The review also identified that the pending `cached` outcome would need a matching schema update when it lands.
+
+**Did with it:** I used the feedback while working through the schema and code changes, for implementation, troubleshooting and verification. I kept the work on its own #52 branch. The migration and tests ran on an isolated database: 852 unit tests, 86 integration tests and 17 browser tests passed, along with formatting, lint, TypeScript and the build. The 14 sink cases check storage, separate users, deletion and failures. The setup notes explain how callers should use the sink and what still needs coordinating with the pending coach changes.
+
 ### Exercise-coach sign-in and private history (issue #104)
 
 **Before asking:** I wanted to check my assigned issues and whether I needed code from another branch before continuing. The review found that the body-map coach still used the shared demo user after the quiz/session work merged. I chose to fix that privacy issue first and keep it separate from the tier and plan-limit work.
