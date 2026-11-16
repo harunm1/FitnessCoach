@@ -102,6 +102,16 @@ describe("durations and pace", () => {
     expect(pace(5, 1920)).toBe("6:24 /km");
     expect(pace(null, 1920)).toBeNull();
   });
+
+  it("carries a rounded-up minute instead of showing :60", () => {
+    expect(clock(359.6)).toBe("6:00");
+    expect(clock(59.5)).toBe("1:00");
+    expect(clock(359.4)).toBe("5:59");
+    // 30:00 over 5.01 km is 359.28 s per km.
+    expect(pace(5.01, 1800)).toBe("5:59 /km");
+    // 30:00 over 5.005 km is 359.64 s per km, which used to show "5:60 /km".
+    expect(pace(5.005, 1800)).toBe("6:00 /km");
+  });
 });
 
 describe("groupByExercise", () => {

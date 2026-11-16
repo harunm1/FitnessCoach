@@ -141,8 +141,14 @@ export default async function ProgressPage({
       signPhotos(latestPhotos, storage),
       signAvatar(user.id, profile?.image ?? null, storage),
     ]);
-  } catch {
-    photos = null; // storage not set up or unreachable
+  } catch (error) {
+    // Storage not set up or unreachable: the page still shows progress and a
+    // message. The log keeps the cause, like the photos page.
+    console.error("[photos] progress: couldn't sign photo links", {
+      userId: user.id,
+      error,
+    });
+    photos = null;
   }
 
   const byDay = groupByDay(workouts);

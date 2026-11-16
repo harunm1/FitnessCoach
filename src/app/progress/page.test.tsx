@@ -198,6 +198,7 @@ describe("progress page", () => {
   });
 
   it("still shows progress when photo storage is unavailable", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
     storage.get.mockImplementation(() => {
       throw new Error("Missing: R2_BUCKET");
     });
@@ -206,6 +207,10 @@ describe("progress page", () => {
     expect(html).toContain("Photos can&#x27;t be shown right now.");
     expect(html).not.toContain("R2_BUCKET");
     expect(html).toContain("Muscles worked in November 2026");
+    expect(console.error).toHaveBeenCalledWith(
+      "[photos] progress: couldn't sign photo links",
+      expect.objectContaining({ userId: "session-owner" }),
+    );
   });
 
   it("does not render for a signed-out user", async () => {

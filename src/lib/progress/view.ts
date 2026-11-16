@@ -65,10 +65,12 @@ export function durationMinutes(workout: ProgressWorkout): number {
   return Math.max(1, Math.round(ms / 60000));
 }
 
-// "32:05" for a duration in seconds.
+// "32:05" for a duration in seconds. Rounds the total first, so 359.6 seconds
+// is "6:00", never "5:60".
 export function clock(seconds: number): string {
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}:${String(Math.round(seconds % 60)).padStart(2, "0")}`;
+  const total = Math.round(seconds);
+  const minutes = Math.floor(total / 60);
+  return `${minutes}:${String(total % 60).padStart(2, "0")}`;
 }
 
 // "6:24 /km", or null when the run has no usable distance or time.
