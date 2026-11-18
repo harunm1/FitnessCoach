@@ -43,13 +43,16 @@ jobs:
       - run: npm test
       - run: npm run test:integration
       # The Vercel build script as a preview build runs it: the URL checks, prisma
-      # migrate deploy (already applied above, so it changes nothing), then next build,
-      # all against the CI test database.
+      # migrate deploy, the exercise seed, then next build. It runs against its own
+      # empty database, so it checks migrate-from-empty plus seed as on a new Neon
+      # branch, and the seeded library never reaches the test database the browser
+      # tests use (their starter plans pick from the exercises they insert).
+      - run: psql "postgresql://fitnesscoach:fitnesscoach@localhost:5432/fitnesscoach_test" -c "CREATE DATABASE fitnesscoach_build"
       - run: npx --no-install tsx scripts/vercel-build.ts
         env:
           VERCEL_ENV: preview
-          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
-          DATABASE_URL_UNPOOLED: ${{ env.TEST_DATABASE_URL }}
+          DATABASE_URL: postgresql://fitnesscoach:fitnesscoach@localhost:5432/fitnesscoach_build?schema=public
+          DATABASE_URL_UNPOOLED: postgresql://fitnesscoach:fitnesscoach@localhost:5432/fitnesscoach_build?schema=public
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v4
