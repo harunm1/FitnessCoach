@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { EVAL_PROFILES } from "./evalProfiles";
 import { generatePlan, type PlanModel } from "./generatePlan";
-import { verifyPlan, type LibraryExercise } from "./verify";
+import { verifyPlan, type CategorisedExercise } from "./verify";
 
 type Row = {
   id: string;
@@ -28,7 +28,7 @@ const rows: Row[] = readFileSync(
 
 // Only the exercises those replies name, copied from free-exercise-db with the same
 // fields the app stores (eval/fixtures-library.json).
-const library: LibraryExercise[] = JSON.parse(
+const library: CategorisedExercise[] = JSON.parse(
   readFileSync("eval/fixtures-library.json", "utf8"),
 );
 const byId = new Map(library.map((e) => [e.id, e]));

@@ -16,7 +16,7 @@ import {
   withFallback,
   withRetry,
 } from "./providers";
-import type { LibraryExercise } from "./verify";
+import type { CategorisedExercise } from "./verify";
 
 const KEY = "test-key-not-real";
 const plan = { name: "P", days: [] };
@@ -163,6 +163,21 @@ describe("exercise coach chat providers", () => {
     });
   });
 
+  it("joins every Gemini text part and skips thought parts in a chat reply", async () => {
+    mockFetch(
+      200,
+      geminiReply([
+        { text: "thinking...", thought: true },
+        { text: "Keep your wrists " },
+        { text: "neutral." },
+      ]),
+    );
+
+    await expect(geminiChatModel(KEY)(messages)).resolves.toBe(
+      "Keep your wrists neutral.",
+    );
+  });
+
   it("uses COACH_PROVIDER and requires its API key", async () => {
     const fetchMock = mockFetch(200, groqReply("Breathe steadily."));
     await expect(coachChatModel({ GROQ_API_KEY: KEY })(messages)).resolves.toBe(
@@ -212,15 +227,17 @@ describe("coachModel", () => {
 describe("generatePlan with a provider", () => {
   it("falls back to the rule-based plan when the provider keeps failing", async () => {
     const fetchMock = mockFetch(500, {});
-    const library: LibraryExercise[] = [
+    const library: CategorisedExercise[] = [
       {
         id: "pushup",
+        category: "strength",
         equipment: "body only",
         primaryMuscles: ["chest"],
         secondaryMuscles: [],
       },
       {
         id: "squat",
+        category: "strength",
         equipment: "body only",
         primaryMuscles: ["quadriceps"],
         secondaryMuscles: [],
@@ -400,6 +417,46 @@ describe("withFallback and coachModel with both keys", () => {
       "not valid JSON",
     );
     expect(fallback).not.toHaveBeenCalled();
+  });
+
+  // A chat reply with no text is no answer, so the chat chain tries the other
+  // provider; it is not retried on the same one (review of 11 Nov).
+  it("moves a chat turn to Gemini when Groq answers with no text", async () => {
+    const fetchMock = queueFetch(
+      { status: 200, body: groqReply("") },
+      { status: 200, body: geminiReply([{ text: "Rest 90 seconds." }]) },
+    );
+    const events: ProviderEvent[] = [];
+    const model = coachChatModel(
+      { GROQ_API_KEY: KEY, GEMINI_API_KEY: KEY },
+      { sleep: noSleep, onEvent: (e) => events.push(e) },
+    );
+    await expect(
+      model([{ role: "user", content: "how long between sets?" }]),
+    ).resolves.toBe("Rest 90 seconds.");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(String(fetchMock.mock.calls[1][0])).toContain(
+      "generativelanguage.googleapis.com",
+    );
+    expect(events).toEqual([
+      { provider: "Groq", action: "fallback", status: 200 },
+      { provider: "Gemini", action: "served", model: GEMINI_MODEL },
+    ]);
+  });
+
+  // The plan path is unchanged: an empty plan reply goes back to generatePlan, which
+  // asks again with the problems listed, rather than to the other provider.
+  it("does not switch provider for an empty plan reply", async () => {
+    const fetchMock = queueFetch(
+      { status: 200, body: groqReply("") },
+      { status: 200, body: geminiReply([{ text: JSON.stringify(plan) }]) },
+    );
+    const model = coachModel(
+      { GROQ_API_KEY: KEY, GEMINI_API_KEY: KEY },
+      { sleep: noSleep },
+    );
+    await expect(model("x")).rejects.toThrow("Groq reply had no text");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("uses one provider when only its key is set", async () => {
