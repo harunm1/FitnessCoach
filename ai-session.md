@@ -420,6 +420,16 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 
 **Did with it:** checked each finding against the code before changing anything, and re-ran the PowerShell behaviour myself. Fixed the docs and descriptions, added `/progress/photos` to the signed-out redirect test on #74, and pushed only after a pass with no errors. One wording suggestion on #61 (single quotes for the connection string) is listed as a follow-up on the pull request. Tools: Claude Code and its code-reviewer agents, `gh`, Prettier and ESLint.
 
+### 17 November 2026, the deploy pull request after the team chose Vercel Storage for Neon (issue #57, pull request #61)
+
+**Before asking:** at the 17 November meeting the project went onto Mohammad's Vercel account with Neon connected through Vercel Storage, a database branch per preview. Main's build is plain `next build`, so nothing applied migrations or loaded the exercise library; that night a dashboard Build Command did both by hand. I wanted #61 to do it properly: bring it current with `main`, run the exercise seed after the migrations on every hosted build without ever creating demo logins, and make the README match the setup and the variable list we agreed.
+
+**Asked:** an AI assistant (Claude Code) to check the Neon integration's variable names and preview branching against Neon's current docs, to write the failing tests for the seed step first, then the change, and to have a reviewer that had not seen the work check the result.
+
+**Got:** Neon's docs (checked 17 Nov) confirm `DATABASE_URL` is pooled and `DATABASE_URL_UNPOOLED` direct, with preview values given to each deployment's build, so #61's rule (migrate over the direct URL on hosted builds) already fit. The review found one real fault: CI runs the build script against the test database, so the seeded library would have changed which exercises the browser test's starter plan picks. It also found that the script handing the blank demo password to the seed was untested, and that three doc statements were off: preview cleanup on Hobby is 30 days, not months; preview branches come from the default branch; Neon describes a custom variable prefix as added in front of `DATABASE_URL`.
+
+**Did with it:** gave the CI build its own empty database (which also checks migrate-from-empty plus seed), moved the step loop into a tested `runSteps` and checked that removing the blank password or the stop on failure makes a test fail, corrected the README and D19, and asked Mohammad to confirm the variable names in Vercel. Unpinned seed download left as a follow-up issue. Tools: Claude Code with the `vercel:deployments-cicd`, `opinionated-prisma:migration-safety` and `superpowers:verification-before-completion` skills, its code-reviewer agent (review and delta check) and workflow-guardian agent (CI change), Context7 and Firecrawl for the Neon docs, `gh`, Vitest, ESLint, Prettier.
+
 ## Mohammad
 
 ### 31 October 2026, onboarding quiz validation edge cases
