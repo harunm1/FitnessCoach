@@ -69,6 +69,20 @@ export class R2Storage implements PhotoStorage {
     );
   }
 
+  async get(key: string): Promise<Buffer | null> {
+    try {
+      const response = await this.client.send(
+        new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+      );
+      if (!response.Body) return null;
+      return Buffer.from(await response.Body.transformToByteArray());
+    } catch (error) {
+      // A missing file is an expected answer, not a failure.
+      if (error instanceof Error && error.name === "NoSuchKey") return null;
+      throw error;
+    }
+  }
+
   async delete(key: string): Promise<void> {
     await this.client.send(
       new DeleteObjectCommand({ Bucket: this.bucket, Key: key }),

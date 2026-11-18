@@ -1,7 +1,7 @@
 // One record per model call (#41), so a bad plan or a slow demo can be traced to the
 // call that produced it, and the ten-profile eval (#19) can report fallback rates.
-// The sink is passed in: tests collect records in memory; the app will write them
-// to a CoachEvent table once the schema has one (#41, after #44).
+// The sink is passed in: tests collect records in memory; server callers can use
+// prismaCoachSink(user.id) to persist records without storing the prompt (#52).
 import type { ProviderEvent } from "./providers";
 
 // Bump when the plan prompt's wording or shape changes, so records from different
