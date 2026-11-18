@@ -39,7 +39,7 @@ describe("whyThisPlan", () => {
       "No exercise works a muscle you reported trouble with.",
       "No exercise repeats on the same day.",
       "The number of training days matches your answer.",
-      "Sets, reps and rest are within the allowed ranges.",
+      "Sets, reps, rest and target effort (RPE 6 to 9) are within the allowed ranges.",
     ]);
   });
 
