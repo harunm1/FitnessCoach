@@ -298,11 +298,28 @@ describe("served events on streams", () => {
         onEvent,
       )([]),
     );
-    expect(out.join("").trim()).toBe("From Gemini.");
+    expect(out).toEqual(["\n", "From Gemini."]);
     expect(events).toEqual([
       { provider: "Groq", action: "fallback", status: HTTP_OK },
       { provider: "Gemini", action: "served", model: "g-model" },
     ]);
+  });
+
+  it("drops whitespace before the first sentence of a streamed turn", async () => {
+    // A provider that sends a newline and then fails, as requireText does.
+    const blank: ChatStream = async function* () {
+      yield "\n";
+      throw new ProviderError("Groq reply had no text", "Groq", HTTP_OK);
+    };
+    const out = await collect(
+      coachReplyStream(
+        withStreamFallback(blank, streamOf("From Gemini.")),
+        ctx,
+        [],
+        QUESTION,
+      ),
+    );
+    expect(out).toEqual(["From Gemini."]);
   });
 
   it("coachChatStream reports the configured model as served", async () => {

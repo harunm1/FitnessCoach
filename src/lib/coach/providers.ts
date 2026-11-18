@@ -460,7 +460,7 @@ export function coachChatModel(
 }
 
 // Streamed chat (#11, the real-time feature). A stream yields text pieces as the
-// provider sends them. Only a failure before the first piece moves to the other
+// provider sends them. Only a failure before the first piece with text moves to the other
 // provider; once text has been shown, switching would start a second, different reply.
 // A stream that ends with no text is a ProviderError, as a plain chat reply with no
 // text is (parseTextReply), so the other provider is tried.
@@ -681,9 +681,9 @@ export function withStreamFallback(
   };
 }
 
-// Reports the provider and model when the first piece with text arrives, so the turn's record
-// names who answered (#41), as servedBy does for a plain call. A stream that fails
-// before any text reports nothing.
+// Reports the provider and model when the first piece with text arrives, so the
+// turn's record names who answered (#41), as servedBy does for a plain call. A stream
+// that fails before any text reports nothing.
 export function servedStream(
   stream: ChatStream,
   provider: string,

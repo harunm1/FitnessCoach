@@ -80,6 +80,9 @@ export async function* coachReplyStream(
     try {
       for await (const piece of stream(turn.messages)) {
         pending += piece;
+        // Whitespace before the first sentence (a provider that sent only a newline
+        // before the fallback answered) would show as a blank first line.
+        if (!sent) pending = pending.trimStart();
         // Release every complete sentence; keep the unfinished tail.
         const end = sentencesEnd(pending);
         if (end >= 0) {
