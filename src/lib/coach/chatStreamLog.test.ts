@@ -238,6 +238,7 @@ describe("coachReplyStream records each model call", () => {
     );
     expect(out).toEqual([REPLIES.PAIN_STOP]);
     expect(records).toEqual([]);
+    expect(stream).not.toHaveBeenCalled();
   });
 });
 
@@ -273,6 +274,35 @@ describe("served events on streams", () => {
       withStreamFallback(groqChatStream("k"), streamOf("From Gemini."))([]),
     );
     expect(out).toEqual(["From Gemini."]);
+  });
+
+  // Verifier, 18 Nov: whitespace is no text, so it neither starts the reply nor
+  // names a provider as served; the other provider is still tried.
+  it("moves to the other provider when a stream sends only whitespace", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(
+            'data: {"choices":[{"delta":{"content":"\\n"}}]}\n\ndata: [DONE]\n\n',
+            { status: HTTP_OK },
+          ),
+      ),
+    );
+    const events: ProviderEvent[] = [];
+    const onEvent = (e: ProviderEvent) => events.push(e);
+    const out = await collect(
+      withStreamFallback(
+        servedStream(groqChatStream("k"), "Groq", "groq-model", onEvent),
+        servedStream(streamOf("From Gemini."), "Gemini", "g-model", onEvent),
+        onEvent,
+      )([]),
+    );
+    expect(out.join("").trim()).toBe("From Gemini.");
+    expect(events).toEqual([
+      { provider: "Groq", action: "fallback", status: HTTP_OK },
+      { provider: "Gemini", action: "served", model: "g-model" },
+    ]);
   });
 
   it("coachChatStream reports the configured model as served", async () => {

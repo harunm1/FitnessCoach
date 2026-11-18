@@ -659,7 +659,8 @@ async function* geminiPieces(
   }
 }
 
-// Falls back only when the primary fails before yielding anything.
+// Falls back only when the primary fails before sending any text. Whitespace is not
+// text (as parseTextReply trims a plain reply), so it does not count as started.
 export function withStreamFallback(
   primary: ChatStream,
   fallback: ChatStream,
@@ -669,7 +670,7 @@ export function withStreamFallback(
     let started = false;
     try {
       for await (const piece of primary(messages)) {
-        started = true;
+        if (piece.trim() !== "") started = true;
         yield piece;
       }
     } catch (e) {
@@ -680,7 +681,7 @@ export function withStreamFallback(
   };
 }
 
-// Reports the provider and model when the first piece arrives, so the turn's record
+// Reports the provider and model when the first piece with text arrives, so the turn's record
 // names who answered (#41), as servedBy does for a plain call. A stream that fails
 // before any text reports nothing.
 export function servedStream(
@@ -690,10 +691,12 @@ export function servedStream(
   onEvent?: (event: ProviderEvent) => void,
 ): ChatStream {
   return async function* (messages) {
-    let first = true;
+    let served = false;
     for await (const piece of stream(messages)) {
-      if (first) onEvent?.({ provider, action: "served", model: modelName });
-      first = false;
+      if (!served && piece.trim() !== "") {
+        served = true;
+        onEvent?.({ provider, action: "served", model: modelName });
+      }
       yield piece;
     }
   };

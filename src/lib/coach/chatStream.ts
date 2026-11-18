@@ -3,8 +3,9 @@
 // before each sentence goes out, so a diagnosis is caught before the user reads it, not
 // after. If the check trips, the stream stops and the fixed reply follows; if the
 // provider fails, the user sees the fixed unavailable line. Like coachReply, each model
-// call writes one coachLog record (#41) with no user text or reply in it, and only the
-// model call is caught: a bug while building the prompt throws.
+// call writes one coachLog record (#41) with no user text or reply in it. A bug while
+// building the prompt throws; once the stream is open, any error (the stream's or the
+// reply check's) ends the reply with the unavailable line and is recorded by name.
 import {
   UNAVAILABLE_REPLY,
   errorLabel,
