@@ -14,7 +14,26 @@ describe("quizProfileSchema", () => {
     expect(quizProfileSchema.parse(validProfile)).toEqual({
       ...validProfile,
       daysPerWeek: 3,
+      trainingMode: "GYM",
     });
+  });
+
+  it.each(["GYM", "RUNNING", "BOTH"])(
+    "accepts the training mode %s",
+    (trainingMode) => {
+      const result = quizProfileSchema.parse({ ...validProfile, trainingMode });
+
+      expect(result.trainingMode).toBe(trainingMode);
+    },
+  );
+
+  it("rejects an unknown training mode", () => {
+    const result = quizProfileSchema.safeParse({
+      ...validProfile,
+      trainingMode: "SWIMMING",
+    });
+
+    expect(result.success).toBe(false);
   });
 
   it("requires at least one equipment option", () => {
