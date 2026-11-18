@@ -1,17 +1,16 @@
-// Vercel build command (vercel.json): checks VERCEL_ENV and the database URLs, then runs the steps from buildSteps (migrate, seed, build), stopping at the first failure.
+// Vercel build command (vercel.json): checks VERCEL_ENV and the database URLs, then runs the steps from buildSteps (migrate, seed, build) through runSteps, stopping at the first failure.
 import { execSync } from "node:child_process";
 import {
   buildSteps,
   cliDatabaseUrl,
   databaseTarget,
   hostedDatabaseProblems,
-  stepEnv,
+  runSteps,
   vercelEnvProblem,
 } from "../src/lib/deploy/release";
 
 const env = process.env;
 const steps = buildSteps(env);
-const migrates = steps.includes("prisma migrate deploy");
 
 const envProblem = vercelEnvProblem(env);
 const problems = envProblem ? [envProblem] : hostedDatabaseProblems(env);
@@ -21,24 +20,29 @@ if (problems.length > 0) {
 }
 
 console.log(
-  `VERCEL_ENV=${env.VERCEL_ENV ?? "(unset)"}: migrations ${migrates ? "run first" : "skipped"}`,
+  `VERCEL_ENV=${env.VERCEL_ENV ?? "(unset)"}: steps ${steps.join(" -> ")}`,
 );
 
 const target = cliDatabaseUrl(env);
-if (migrates && target) console.log(`Migrating ${databaseTarget(target)}`);
+if (steps.includes("prisma migrate deploy") && target) {
+  console.log(`Migrating ${databaseTarget(target)}`);
+}
 
-steps.forEach((step) => {
-  console.log(`> ${step}`);
+// Runs one command with the inherited output; returns its exit status.
+function run(command: string, stepEnv: NodeJS.ProcessEnv): number {
+  console.log(`> ${command}`);
   try {
-    execSync(`npx --no-install ${step}`, {
-      stdio: "inherit",
-      env: stepEnv(step, env),
-    });
+    execSync(command, { stdio: "inherit", env: stepEnv });
+    return 0;
   } catch (error) {
-    const status = (error as { status?: number | null }).status;
-    console.error(
-      `Step failed: ${step} (exit ${status ?? "signal"}); later steps not run`,
-    );
-    process.exit(status ?? 1);
+    return (error as { status?: number | null }).status ?? 1;
   }
-});
+}
+
+const failed = runSteps(steps, env, run);
+if (failed) {
+  console.error(
+    `Step failed: ${failed.step} (exit ${failed.status}); later steps not run`,
+  );
+  process.exit(failed.status);
+}

@@ -1,5 +1,6 @@
 // Which database URL the Prisma CLI uses, and which steps a hosted build runs (#57, D19).
 import { describe, expect, it } from "vitest";
+import prismaConfig from "../../../prisma.config";
 import {
   buildSteps,
   cliDatabaseUrl,
@@ -7,6 +8,7 @@ import {
   stepEnv,
   databaseTarget,
   hostedDatabaseProblems,
+  runSteps,
   testMigrationEnv,
   vercelEnvProblem,
 } from "./release";
@@ -277,8 +279,56 @@ describe("buildSteps", () => {
 });
 
 describe("SEED_STEP", () => {
-  it("is the exercise seed that prisma.config.ts names", () => {
+  // Prisma 7 runs only the seed configured in prisma.config.ts migrations.seed.
+  it("runs the exercise seed that prisma.config.ts names", () => {
     expect(SEED_STEP).toBe("prisma db seed");
+    expect(prismaConfig.migrations?.seed).toBe("tsx prisma/seed.ts");
+  });
+});
+
+describe("runSteps", () => {
+  const hosted = {
+    VERCEL_ENV: "preview",
+    DATABASE_URL: POOLED,
+    DATABASE_URL_UNPOOLED: DIRECT,
+    DEMO_PASSWORD: "a-local-demo-password",
+  };
+  const steps = ["prisma migrate deploy", SEED_STEP, "next build"];
+
+  function recorder(failOn?: string, status = 1) {
+    const calls: { command: string; env: typeof hosted }[] = [];
+    const run = (command: string, env: typeof hosted) => {
+      calls.push({ command, env });
+      return failOn !== undefined && command.endsWith(failOn) ? status : 0;
+    };
+    return { calls, run };
+  }
+
+  it("runs every step in order through npx --no-install and reports no failure", () => {
+    const { calls, run } = recorder();
+    expect(runSteps(steps, hosted, run)).toBeUndefined();
+    expect(calls.map((c) => c.command)).toEqual([
+      "npx --no-install prisma migrate deploy",
+      "npx --no-install prisma db seed",
+      "npx --no-install next build",
+    ]);
+  });
+
+  it("hands the seed step a blank DEMO_PASSWORD and the other steps the environment as is", () => {
+    const { calls, run } = recorder();
+    runSteps(steps, hosted, run);
+    expect(calls[1].env.DEMO_PASSWORD).toBe("");
+    expect(calls[0].env.DEMO_PASSWORD).toBe("a-local-demo-password");
+    expect(calls[2].env.DEMO_PASSWORD).toBe("a-local-demo-password");
+  });
+
+  it("stops at the first failing step and names it with its exit status", () => {
+    const { calls, run } = recorder(SEED_STEP, 3);
+    expect(runSteps(steps, hosted, run)).toEqual({
+      step: SEED_STEP,
+      status: 3,
+    });
+    expect(calls).toHaveLength(2);
   });
 });
 

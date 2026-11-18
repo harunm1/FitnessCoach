@@ -1,5 +1,5 @@
-// Release rules for the hosted preview (#57, docs/ARCHITECTURE.md D19): which URL the
-// Prisma CLI uses, which steps a Vercel build runs, and what it checks first.
+// Release rules for hosted production and preview builds (#57, docs/ARCHITECTURE.md D19):
+// which URL the Prisma CLI uses, which steps a Vercel build runs, and what it checks first.
 
 type Env = Record<string, string | undefined>;
 
@@ -186,4 +186,28 @@ export function buildSteps(env: Env): string[] {
  */
 export function stepEnv<E extends Env>(step: string, env: E): E {
   return step === SEED_STEP ? { ...env, DEMO_PASSWORD: "" } : { ...env };
+}
+
+/** Runs one command with the given environment and returns its exit status (0 = ok). */
+export type RunCommand<E extends Env> = (command: string, env: E) => number;
+
+/**
+ * Runs the build steps in order, each as `npx --no-install <step>` with stepEnv's
+ * environment, and stops at the first that fails. Returns that step and its exit
+ * status, or undefined when all pass. The runner is passed in, so the order, the
+ * environment each step gets and the stop are tested without spawning anything.
+ */
+export function runSteps<E extends Env>(
+  steps: string[],
+  env: E,
+  run: RunCommand<E>,
+): { step: string; status: number } | undefined {
+  return steps.reduce<{ step: string; status: number } | undefined>(
+    (failed, step) => {
+      if (failed) return failed; // a step failed: later steps are not run
+      const status = run(`npx --no-install ${step}`, stepEnv(step, env));
+      return status === 0 ? undefined : { step, status };
+    },
+    undefined,
+  );
 }
