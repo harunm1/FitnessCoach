@@ -5,6 +5,18 @@ import { testDatabase } from "../helpers/database";
 const db = testDatabase();
 // The action imports the app's own client; point it at the test database.
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
+// The action is server-only and signed-in; sign in as this file's own user.
+vi.mock("server-only", () => ({}));
+vi.mock("next/navigation", () => ({
+  redirect: (path: string) => {
+    throw new Error(`redirect:${path}`);
+  },
+}));
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("@/lib/auth/session", () => ({
+  requireUser: async () =>
+    db.user.findUniqueOrThrow({ where: { email: DEMO_EMAIL } }),
+}));
 
 const DEMO_EMAIL = "demo@fitnesscoach.local";
 const PREFIX = "fc85-";
@@ -84,6 +96,7 @@ describe("saveQuizProfile with a training mode", () => {
 
     expect(result.status).toBe("success");
     const days = await savedDays();
+    expect(days).toHaveLength(4);
     const runs = days.filter((day) => day.kind === "RUN");
     expect(runs.length).toBeGreaterThanOrEqual(1);
     expect(runs.every((day) => day.run !== null)).toBe(true);

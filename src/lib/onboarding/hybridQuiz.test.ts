@@ -10,6 +10,11 @@ vi.mock("@/lib/coach/verify", async (original) => ({
   ...(await original<typeof import("@/lib/coach/verify")>()),
   verifyPlan,
 }));
+const verifyRunningPlan = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/coach/verifyRunning", async (original) => ({
+  ...(await original<typeof import("@/lib/coach/verifyRunning")>()),
+  verifyRunningPlan,
+}));
 
 // Any use of the database fails the test: these paths must refuse first.
 const untouchedDb = new Proxy(
@@ -48,6 +53,21 @@ const library = [
 ];
 
 describe("saveHybridQuizWeek", () => {
+  it("refuses with 'verify' when the run days fail the running verifier", async () => {
+    verifyPlan.mockReturnValue({ ok: true, problems: [] });
+    verifyRunningPlan.mockReturnValue({ ok: false, problems: ["too far"] });
+
+    const result = await saveHybridQuizWeek(
+      untouchedDb,
+      "u1",
+      quiz,
+      planProfile,
+      library,
+    );
+
+    expect(result).toEqual({ ok: false, reason: "verify" });
+  });
+
   it("refuses with 'verify' when the strength days fail the verifier", async () => {
     verifyPlan.mockReturnValue({ ok: false, problems: ["too many sets"] });
 
