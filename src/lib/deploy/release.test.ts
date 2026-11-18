@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   buildSteps,
   cliDatabaseUrl,
+  SEED_STEP,
+  stepEnv,
   databaseTarget,
   hostedDatabaseProblems,
   testMigrationEnv,
@@ -249,16 +251,18 @@ describe("databaseTarget", () => {
 });
 
 describe("buildSteps", () => {
-  it("migrates before building on a production deployment", () => {
+  it("migrates, then seeds the exercise library, before building on a production deployment", () => {
     expect(buildSteps({ VERCEL_ENV: "production" })).toEqual([
       "prisma migrate deploy",
+      SEED_STEP,
       "next build",
     ]);
   });
 
-  it("migrates before building on a preview deployment", () => {
+  it("migrates, then seeds the exercise library, before building on a preview deployment", () => {
     expect(buildSteps({ VERCEL_ENV: "preview" })).toEqual([
       "prisma migrate deploy",
+      SEED_STEP,
       "next build",
     ]);
   });
@@ -269,5 +273,55 @@ describe("buildSteps", () => {
 
   it("returns only next build when VERCEL_ENV is unset", () => {
     expect(buildSteps({})).toEqual(["next build"]);
+  });
+});
+
+describe("SEED_STEP", () => {
+  it("is the exercise seed that prisma.config.ts names", () => {
+    expect(SEED_STEP).toBe("prisma db seed");
+  });
+});
+
+describe("stepEnv", () => {
+  const hosted = {
+    VERCEL_ENV: "production",
+    DATABASE_URL: POOLED,
+    DATABASE_URL_UNPOOLED: DIRECT,
+    DEMO_PASSWORD: "a-local-demo-password",
+  };
+
+  // prisma/demo-users.ts throws when DEMO_PASSWORD is set off localhost, and the
+  // hosted seed must create no demo logins: the seed step gets it blanked, not
+  // deleted, so dotenv in prisma/seed.ts cannot fill it back from a .env file.
+  it("blanks DEMO_PASSWORD for the seed step", () => {
+    const env = stepEnv(SEED_STEP, hosted);
+    expect(env.DEMO_PASSWORD).toBe("");
+    expect("DEMO_PASSWORD" in env).toBe(true);
+  });
+
+  it("blanks DEMO_PASSWORD for the seed step even when it was never set", () => {
+    const withoutPassword: Record<string, string | undefined> = {
+      VERCEL_ENV: "preview",
+      DATABASE_URL: POOLED,
+      DATABASE_URL_UNPOOLED: DIRECT,
+    };
+    expect(stepEnv(SEED_STEP, withoutPassword).DEMO_PASSWORD).toBe("");
+  });
+
+  it("keeps the database URLs for the seed step", () => {
+    const env = stepEnv(SEED_STEP, hosted);
+    expect(env.DATABASE_URL).toBe(POOLED);
+    expect(env.DATABASE_URL_UNPOOLED).toBe(DIRECT);
+  });
+
+  it("does not change the caller's environment", () => {
+    const env = { ...hosted };
+    stepEnv(SEED_STEP, env);
+    expect(env.DEMO_PASSWORD).toBe("a-local-demo-password");
+  });
+
+  it("passes the environment through unchanged for the other steps", () => {
+    expect(stepEnv("prisma migrate deploy", hosted)).toEqual(hosted);
+    expect(stepEnv("next build", hosted)).toEqual(hosted);
   });
 });

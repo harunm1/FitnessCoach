@@ -1,10 +1,11 @@
-// Vercel build command (vercel.json): checks VERCEL_ENV and the database URLs, then runs the steps from buildSteps, stopping at the first failure.
+// Vercel build command (vercel.json): checks VERCEL_ENV and the database URLs, then runs the steps from buildSteps (migrate, seed, build), stopping at the first failure.
 import { execSync } from "node:child_process";
 import {
   buildSteps,
   cliDatabaseUrl,
   databaseTarget,
   hostedDatabaseProblems,
+  stepEnv,
   vercelEnvProblem,
 } from "../src/lib/deploy/release";
 
@@ -29,7 +30,10 @@ if (migrates && target) console.log(`Migrating ${databaseTarget(target)}`);
 steps.forEach((step) => {
   console.log(`> ${step}`);
   try {
-    execSync(`npx --no-install ${step}`, { stdio: "inherit" });
+    execSync(`npx --no-install ${step}`, {
+      stdio: "inherit",
+      env: stepEnv(step, env),
+    });
   } catch (error) {
     const status = (error as { status?: number | null }).status;
     console.error(

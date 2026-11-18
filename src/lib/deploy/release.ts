@@ -158,15 +158,32 @@ export function hostedDatabaseProblems(env: Env): string[] {
 }
 
 /**
- * Production and preview deployments apply committed migrations before building, each
- * to its own Neon branch (Production- and Preview-scoped variables), so a pull request
- * that adds a migration is previewed against a migrated schema. hostedDatabaseProblems
+ * The exercise library seed (prisma/seed.ts, named in prisma.config.ts). It upserts by
+ * dataset ID, so it is safe on every build; the app has no exercises without it.
+ */
+export const SEED_STEP = "prisma db seed";
+
+/**
+ * Production and preview deployments apply committed migrations, then seed the
+ * exercise library, then build, each against its own Neon branch (the integration
+ * gives every preview deployment its own branch), so a pull request that adds a
+ * migration is previewed against a migrated, seeded schema. hostedDatabaseProblems
  * checks the two URLs agree before anything runs. For any other VERCEL_ENV this
  * returns the build alone, but the build script never gets that far: vercelEnvProblem
  * stops it first. CI sets VERCEL_ENV=preview to run the hosted path.
  */
 export function buildSteps(env: Env): string[] {
   return isHostedBuild(env)
-    ? ["prisma migrate deploy", "next build"]
+    ? ["prisma migrate deploy", SEED_STEP, "next build"]
     : ["next build"];
+}
+
+/**
+ * The environment one build step runs with. The seed step gets DEMO_PASSWORD blank:
+ * a hosted database gets no demo logins, and prisma/demo-users.ts throws if the
+ * variable is set off localhost. Blank, not deleted, so dotenv cannot fill it back
+ * from a .env file. Every other step gets the environment unchanged. Returns a copy.
+ */
+export function stepEnv<E extends Env>(step: string, env: E): E {
+  return step === SEED_STEP ? { ...env, DEMO_PASSWORD: "" } : { ...env };
 }
