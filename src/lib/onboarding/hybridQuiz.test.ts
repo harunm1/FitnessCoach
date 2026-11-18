@@ -1,7 +1,7 @@
 // saveHybridQuizWeek (#85): refuses before touching the database when a verifier or the library says no.
 import { describe, expect, it, vi } from "vitest";
 import type { PrismaClient } from "@/generated/prisma/client";
-import type { LibraryExercise } from "@/lib/coach/verify";
+import type { CategorisedExercise } from "@/lib/coach/verify";
 import { saveHybridQuizWeek } from "./hybridQuiz";
 import type { QuizProfileInput } from "./schema";
 
@@ -34,8 +34,9 @@ const planProfile = {
   equipment: ["barbell"],
   avoidMuscles: [],
 };
-const exercise = (id: string, primary: string): LibraryExercise => ({
+const exercise = (id: string, primary: string): CategorisedExercise => ({
   id,
+  category: "strength",
   equipment: "barbell",
   primaryMuscles: [primary],
   secondaryMuscles: [],

@@ -3,7 +3,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { buildHybridWeek, splitDays } from "@/lib/coach/hybridWeek";
 import { saveWeek } from "@/lib/coach/saveWeek";
 import { verifyPlan } from "@/lib/coach/verify";
-import type { LibraryExercise, VerifyProfile } from "@/lib/coach/verify";
+import type { CategorisedExercise, VerifyProfile } from "@/lib/coach/verify";
 import { verifyRunningPlan } from "@/lib/coach/verifyRunning";
 import type { QuizProfileInput } from "./schema";
 
@@ -27,7 +27,7 @@ export async function saveHybridQuizWeek(
   userId: string,
   quiz: QuizProfileInput,
   planProfile: VerifyProfile,
-  library: LibraryExercise[],
+  library: CategorisedExercise[],
 ): Promise<HybridQuizResult> {
   const runProfile = { ...planProfile, ...NEW_RUNNER };
   let week;
@@ -59,7 +59,7 @@ function weekPassesVerifiers(
   week: ReturnType<typeof buildHybridWeek>,
   quiz: QuizProfileInput,
   planProfile: VerifyProfile,
-  library: LibraryExercise[],
+  library: CategorisedExercise[],
 ): boolean {
   const strength = week.days.flatMap((day) =>
     day.kind === "STRENGTH"
