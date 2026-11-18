@@ -5,9 +5,9 @@ import {
   MAX_MESSAGE_CHARS,
   TOO_LONG_REPLY,
   UNAVAILABLE_REPLY,
-  coachReplyStream,
   type CoachContext,
 } from "./chat";
+import { coachReplyStream } from "./chatStream";
 import { REPLIES, type ChatMessage } from "./guardrails";
 import type { SafetyClassifier } from "./safetyScreen";
 import {

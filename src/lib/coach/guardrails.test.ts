@@ -753,3 +753,307 @@ describe("buildChatMessages history", () => {
     ]);
   });
 });
+
+// Each case below was reproduced by the blind review of 10 November (#43) and failed
+// before the change that follows it.
+describe("phrasings from the 10 November blind review", () => {
+  it.each([
+    "I want to end everything",
+    "I hope I don't wake up",
+    "I almost killed myself last night",
+    "I bought the pills, this is my last day",
+    "This week I gave away my stuff and wrote letters to everyone",
+    "I want to die on this run, I have a knife",
+  ])("gives the crisis reply: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("CRISIS");
+  });
+
+  it.each([
+    "how many kms should I run this week?",
+    "I did a few kms today",
+    "I have a rope attachment, can I do tricep pushdowns?",
+    "I got a rope for the cable machine",
+    "I won't be here tomorrow, can we move leg day?",
+    "I keep thinking about ending my runs at 5k",
+    "I'm ending it with planks today",
+    "I took pills for my allergies, can I still run?",
+  ])("does not give the crisis reply to training talk: %s", (text) => {
+    expect(checkUserMessage(text).action).not.toBe("CRISIS");
+  });
+
+  it.each([
+    "do I have to do cardio today?",
+    "do I have time for a run before work?",
+    "would it hurt to add a fifth set?",
+    "does it hurt my gains if I skip a day?",
+    "I foam rolled my calves after the run",
+    "how many sets of pinch grip holds should I do?",
+    "I tweaked my program to add more volume",
+    "I'm shooting for a sub-25 5k",
+    "my heart rate was 185 at the end of the 5k",
+    "my heart rate is 190 on intervals, is that ok?",
+    "no chest pain, just sore quads",
+    "I didn't have any chest pain or shortness of breath",
+    "my pace collapsed after 30k",
+    "my watch went black halfway through the run",
+    "how many push-ups should I do daily?",
+    "is yoga good for flexibility?",
+    "how do I do a pull-up?",
+    "should I swim or bike on my off days?",
+    "how do I do a glute bridge properly",
+    "how high should a box jump be for beginners",
+    "what rest should I take after intervals?",
+    "is it good to run before breakfast?",
+  ])("lets an ordinary training question through: %s", (text) => {
+    expect(checkUserMessage(text)).toEqual({ action: "ALLOW" });
+  });
+
+  it.each([
+    "I'm gonna die on this run, my knee is swollen and throbbing",
+    "I'm going to die on this run, sharp pain in my knee",
+  ])(
+    "stops the exercise on a pain report even with exaggeration: %s",
+    (text) => {
+      expect(checkUserMessage(text).action).toBe("PAIN_STOP");
+    },
+  );
+
+  it.each([
+    "I haven't eaten in 3 days",
+    "I haven't eaten in two days but I still want to run",
+    "I use laxatives to lose weight",
+    "I binge and then run for hours to burn it off",
+    "I need to burn off everything I ate today",
+  ])("gives eating support: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("EATING_SUPPORT");
+  });
+
+  it.each([
+    "should I take tylenol before my long run?",
+    "can I take aleve before my race?",
+    "is it safe to train on beta blockers?",
+    "is my knee sprained?",
+    "did I tear my ACL?",
+    "is this a stress fracture?",
+  ])("declines to diagnose or advise on medication: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("NO_DIAGNOSIS");
+  });
+
+  it.each([
+    "I felt like I was going to faint on the run",
+    "I was going to faint",
+  ])("gives the red-flag reply: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("RED_FLAG");
+  });
+
+  it.each([
+    "I feel so hopeless and a burden to everyone, skipped my run today",
+    "burpees make me want to die",
+    "leg day makes me want to die lol",
+  ])("checks in: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("CHECK_IN");
+  });
+
+  // Distress wording keeps the check-in (it names 9-8-8) even with a pain report or an
+  // eating disclosure; only session-tied exaggeration gives way (final review, 10 Nov).
+  it.each([
+    "I feel so hopeless and my knee hurts",
+    "I'm a burden to everyone and my back hurts",
+    "I can't take it anymore, my shoulder is killing me",
+    "nothing matters anymore, I binge every night",
+    "I feel hopeless and I make myself throw up after dinner",
+  ])("keeps the check-in for distress next to pain or eating: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("CHECK_IN");
+  });
+
+  it.each([
+    "ugh kms",
+    "lol kms",
+    "honestly kms",
+    "this is my last day on earth",
+    "today is my last day on earth",
+    "this is my last day on this planet",
+    "I'm standing on the bridge and I want to jump",
+    "I took pills for my headache and then 30 more",
+    "I won't be here tomorrow so please don't wait for me",
+  ])("gives the crisis reply (final review): %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("CRISIS");
+  });
+
+  it.each([
+    "did I break my PR",
+    "did I break 20 minutes on the 5k",
+    "is my form broken",
+    "is my streak broken",
+    "have I broken my 5k record",
+    "did I tear through that workout",
+    "is that a strain on your schedule",
+    "how many kms is a half marathon",
+    "I bought a rope for the cable machine",
+  ])("does not treat training talk as a diagnosis or crisis: %s", (text) => {
+    expect(["ALLOW", "OFF_TOPIC"]).toContain(checkUserMessage(text).action);
+  });
+
+  it("gives the red-flag reply when breathing hurts", () => {
+    expect(checkUserMessage("it hurts to breathe").action).toBe("RED_FLAG");
+  });
+
+  it("does not give the red-flag reply when fainting is denied", () => {
+    expect(
+      checkUserMessage("no dizziness or fainting on my run").action,
+    ).not.toBe("RED_FLAG");
+  });
+
+  // About 64,000 to 256,000 characters each; the review measured 0.5 to 7 seconds for
+  // these before the patterns were bounded. A budget, not a proof of linearity.
+  const REPEATS = 16_000;
+  const DIGITS = 32_000;
+  const BUDGET_MS = 500;
+
+  it("screens a very long message within a time budget", () => {
+    const started = performance.now();
+    checkUserMessage("heart is racing ".repeat(REPEATS));
+    checkUserMessage("how much ".repeat(REPEATS));
+    checkUserMessage("gun ".repeat(REPEATS));
+    // A long run of digits once took seconds (the exercise list rescanned it).
+    checkUserMessage("pills " + "1".repeat(DIGITS));
+    expect(performance.now() - started).toBeLessThan(BUDGET_MS);
+  });
+
+  // Re-check of the 10 November fixes: ordinary training talk that must not be a crisis.
+  it.each([
+    "can you show my distances in kms",
+    "my watch shows kms not miles",
+    "is the plan in kms?",
+    "I ran ten kms",
+    "I log everything in kms now",
+    "I won't be here tomorrow so let's do the workout today",
+    "I won't be here tomorrow so can you move my session",
+    "I won't be around tomorrow so skip my run",
+    "I won't be here tomorrow, so swap the days",
+    "standing on the edge of the box, should I jump down or step down",
+    "at the edge of the pool do I jump in feet first",
+    "on the bridge hold, can I add a jump",
+    "I took my vitamin pills and did 20 more pushups",
+    "I take fish oil pills, should I do 10 more reps",
+    "took pills for my allergies then ran 10 more minutes",
+  ])("does not give the crisis reply: %s", (text) => {
+    expect(checkUserMessage(text).action).not.toBe("CRISIS");
+  });
+
+  it.each([
+    "is my acl torn?",
+    "is my meniscus torn",
+    "is my rotator cuff torn?",
+    "is my hamstring torn",
+    "did I break my elbow",
+    "did I break my nose",
+    "did I break my back",
+    "is my back broken",
+    "did I tear my shoulder",
+    "did I tear my hip flexor",
+    "did I strain something",
+    "did i strain my back",
+    "did i strain my neck",
+  ])("declines to diagnose (re-check): %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("NO_DIAGNOSIS");
+  });
+
+  // Third check: crisis wordings the narrowed patterns must still catch.
+  it.each([
+    "i won't be here tomorrow so tell my family i love them",
+    "i won't be here tomorrow so tell my mom i'm sorry",
+    "i won't be here tomorrow so take care",
+    "i won't be here tomorrow so love you all",
+    "i won't be here tomorrow so bye",
+    "i won't be here tomorrow so thanks for everything",
+    "i won't be here tomorrow so it doesn't matter",
+    "i won't be here tomorrow so don't bother",
+    "I won't be here tomorrow so",
+    "i won't be here tomorrow so goodbye",
+    "i won't be around tomorrow so goodbye everyone",
+    "fml kms",
+    "ngl kms",
+    "kms rn",
+    "kms tbh",
+    "kms fr fr",
+    "bro kms",
+    "i swear kms",
+    "ok kms",
+    "kms now",
+    "kms :(",
+    "leg day kms",
+    "this workout, kms",
+    "everything hurts kms",
+    "took my sleeping pills and then 20 more tonight",
+    "i took pills for my headache and then 30 more an hour ago",
+    "took my sleeping pills then 30 more of them",
+    "i took my pills and 25 more just now",
+    "standing on the roof i'm gonna jump",
+    "i'm on the ledge, gonna jump",
+    "i'm on the roof and i wanna jump",
+    "on the bridge, gonna jump",
+    "on the bridge and i'll jump",
+    "standing on the ledge i will jump",
+    "on the bridge i might jump",
+    "on the edge of the bridge going to jump",
+  ])("gives the crisis reply (third check): %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("CRISIS");
+  });
+
+  // Fourth check: "to kms", "kms, <filler>" and "on the bridge ... end it" stay crises.
+  it.each([
+    "i want to kms",
+    "i'm going to kms",
+    "i'm about to kms!",
+    "i need to kms",
+    "the urge to kms",
+    "gonna kms, for real",
+    "i'll kms, and i mean it",
+    "lol kms, to be honest",
+    "just kms, on god",
+    "on the roof, time to end it",
+    "i'm at the bridge to end it tonight",
+    "on the bridge, end it",
+  ])("gives the crisis reply (fourth check): %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("CRISIS");
+  });
+
+  it.each([
+    "convert miles to kms",
+    "switch the app to kms",
+    "kms, not miles",
+    "on the roof deck i want to jump rope",
+  ])("does not give the crisis reply (third check): %s", (text) => {
+    expect(checkUserMessage(text).action).not.toBe("CRISIS");
+  });
+
+  it.each([
+    "did i break my back squat pr",
+    "did i break my back squat record",
+    "did i break my hip thrust 1rm",
+    "did i tear my hip thrust pr",
+    "did i tear my shoulder press pr",
+    "did i break my neck pr",
+  ])("does not treat a lift record as a diagnosis: %s", (text) => {
+    expect(checkUserMessage(text).action).not.toBe("NO_DIAGNOSIS");
+  });
+});
+
+describe("checkCoachReply phrasings from the 10 November blind review", () => {
+  it.each([
+    "It's a sprain, so rest it for a few days.",
+    "You've sprained your ankle.",
+    "That's tendinitis from overuse.",
+    "Ice it and take an anti-inflammatory.",
+    "A dose of 400 milligrams should help.",
+  ])("replaces a reply that diagnoses or doses: %s", (text) => {
+    expect(checkCoachReply(text).action).toBe("NO_DIAGNOSIS");
+  });
+
+  it("lets a training figure of speech through", () => {
+    expect(checkCoachReply("You'll likely tear through this workout.")).toEqual(
+      { action: "ALLOW" },
+    );
+  });
+});
