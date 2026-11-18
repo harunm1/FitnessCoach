@@ -9,13 +9,13 @@ import { PlanSource, TrainingMode } from "@/generated/prisma/client";
 import { buildDefaultPlan } from "@/lib/coach/defaultPlan";
 import { saveHybridQuizWeek } from "@/lib/onboarding/hybridQuiz";
 import { verifyPlan } from "@/lib/coach/verify";
-
-const demoEmail = "demo@fitnesscoach.local";
+import { requireUser } from "@/lib/auth/session";
 
 export async function saveQuizProfile(
   _previousState: QuizActionState,
   formData: FormData,
 ): Promise<QuizActionState> {
+  const user = await requireUser();
   const parsed = quizProfileSchema.safeParse({
     goal: formData.get("goal"),
     level: formData.get("level"),
@@ -35,22 +35,10 @@ export async function saveQuizProfile(
   }
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { email: demoEmail },
-      select: { id: true },
-    });
-
-    if (!user) {
-      return {
-        status: "error",
-        message:
-          "The demo profile is not set up yet. Seed the database and try again.",
-      };
-    }
-
     const library = await prisma.exercise.findMany({
       select: {
         id: true,
+        category: true,
         equipment: true,
         primaryMuscles: true,
         secondaryMuscles: true,

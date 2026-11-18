@@ -1,34 +1,43 @@
 import { describe, expect, it, vi } from "vitest";
 import { generatePlan, type PlanModel } from "./generatePlan";
-import { verifyPlan, type LibraryExercise, type VerifyProfile } from "./verify";
+import {
+  verifyPlan,
+  type VerifyProfile,
+  type CategorisedExercise,
+} from "./verify";
 
-const library: LibraryExercise[] = [
+const library: CategorisedExercise[] = [
   {
     id: "bench",
+    category: "strength",
     equipment: "barbell",
     primaryMuscles: ["chest"],
     secondaryMuscles: [],
   },
   {
     id: "pushup",
+    category: "strength",
     equipment: "body only",
     primaryMuscles: ["chest"],
     secondaryMuscles: [],
   },
   {
     id: "squat",
+    category: "strength",
     equipment: "barbell",
     primaryMuscles: ["quadriceps"],
     secondaryMuscles: [],
   },
   {
     id: "row",
+    category: "strength",
     equipment: "barbell",
     primaryMuscles: ["middle back"],
     secondaryMuscles: [],
   },
   {
     id: "press",
+    category: "strength",
     equipment: "barbell",
     primaryMuscles: ["shoulders"],
     secondaryMuscles: [],
@@ -87,7 +96,7 @@ describe("generatePlan", () => {
 });
 
 describe("the full exercise list in the prompt", () => {
-  const named: LibraryExercise[] = [
+  const named: CategorisedExercise[] = [
     {
       id: "Barbell_Bench",
       name: "Barbell Bench",
