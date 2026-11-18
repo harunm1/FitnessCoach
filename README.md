@@ -267,8 +267,8 @@ the new schema: keep migrations additive (new tables and nullable columns), and 
 rename in a later change. A preview branch is made from the default branch, so it holds
 a copy of production's accounts: treat preview URLs as private and keep Deployment
 Protection on. Neon deletes a preview branch when its last Vercel deployment is
-deleted: on Hobby, Vercel keeps preview deployments 30 days by default, or delete one
-by hand to clean up at once
+deleted: on Hobby, Vercel keeps preview deployments 30 days by default, or delete all
+of that Git branch's preview deployments by hand to clean up at once
 ([preview branch cleanup](https://neon.com/docs/guides/vercel-branch-cleanup), checked
 17 Nov 2026); delete stale branches in the Neon console if the Free plan's branch limit
 is reached.
