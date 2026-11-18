@@ -12,10 +12,14 @@ import {
 import { EVAL_PROFILES } from "./evalProfiles";
 import { generatePlan, type PlanModel } from "./generatePlan";
 import { ProviderError } from "./providers";
-import { verifyPlan, type LibraryExercise, type VerifyProfile } from "./verify";
+import {
+  verifyPlan,
+  type CategorisedExercise,
+  type VerifyProfile,
+} from "./verify";
 
 // The exercises the 30 October replies name, with the fields the app stores.
-const library: LibraryExercise[] = JSON.parse(
+const library: CategorisedExercise[] = JSON.parse(
   readFileSync("eval/fixtures-library.json", "utf8"),
 );
 const byId = new Map(library.map((e) => [e.id, e]));

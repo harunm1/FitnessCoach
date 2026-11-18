@@ -5,7 +5,7 @@
 // still passes its own verifier. Decision D9 in docs/ARCHITECTURE.md.
 import { buildDefaultPlan } from "./defaultPlan";
 import { buildRunningPlan } from "./runningPlan";
-import type { LibraryExercise, VerifyProfile } from "./verify";
+import type { VerifyProfile, CategorisedExercise } from "./verify";
 import type { PlanDayInput, RunSessionInput } from "./schema";
 import type { RunProfile } from "./verifyRunning";
 
@@ -52,7 +52,7 @@ export function splitDays(
 
 export function buildHybridWeek(
   profile: HybridProfile,
-  library: LibraryExercise[],
+  library: CategorisedExercise[],
 ): { name: string; days: WeekDay[] } {
   const { strengthDays, runDays } = splitDays(
     profile.daysPerWeek,

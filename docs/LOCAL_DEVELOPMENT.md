@@ -98,8 +98,12 @@ npm run db:seed
 `npm install` generates the Prisma client through postinstall. If the schema/client
 needs refreshing, run `npx prisma generate`. Use `npm run db:migrate` when actually
 creating a schema migration; ordinary setup uses the committed migration files.
-The seed imports exercises and the legacy demo user. That demo is not a password-login
-account; register your own account. Seeding is not needed for each app restart.
+If you applied the old local #51 cooldown migration, follow the
+[coach migration history steps](COACH_ACCESS.md#setup-and-migration-history)
+before deploy; do not reset the database or add the same column twice.
+The seed imports exercises; register and verify your own account to sign in.
+It no longer creates the shared legacy demo user. Existing users and their data
+are not deleted by seeding. Seeding is not needed for each app restart.
 
 For optional verified local logins in all four tiers, set `DEMO_PASSWORD` in your
 private `.env` before seeding. These fixtures are restricted to localhost and
