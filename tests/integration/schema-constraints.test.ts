@@ -231,6 +231,7 @@ const coachWeek: { name: string; days: WeekDay[] } = {
           sets: VALID_SETS,
           reps: VALID_REPS,
           restSeconds: VALID_REST_SECONDS,
+          rpe: 7,
         },
       ],
     },

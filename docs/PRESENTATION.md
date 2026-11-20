@@ -46,3 +46,17 @@ From the course's presentation guidelines and rubric (read 3 November). Slides a
 
 - Who speaks each section and who drives the demo.
 - One full rehearsal with a timer, in the 24 to 26 Nov window.
+
+## Logistics confirmed in Lecture 10 (20 November)
+
+From `lecture-10.pdf`, slides 85-93.
+
+- **Dates:** project introduction 25 Nov; slides 26 Nov; presentations 27 Nov (Lecture 11) and 4 Dec (Lecture 12); final deliverable 6 Dec.
+- **4 December:** extended time 1:10 to 4:00pm, Room 6, C. David Naylor Building (NL).
+- **On the day:** class starts 13:10; arrive by 13:00 when presenting; the next three teams sit in the front row.
+- **Timing:** 6 minutes, strictly enforced, hand signal at 1 minute left, stop at 6; 2 minutes of Q&A; 1 minute to change over.
+- **Setup:** one laptop prepared in advance with slides, terminals, browser tabs and demo windows open; USB-C and HDMI in the room, bring an adapter if needed.
+- **Demo:** a meaningful live demo is required; an entirely pre-recorded demo is not allowed; short recordings may supplement it or serve as backup.
+- **Q&A topics:** architecture and technology choices; frontend-backend integration, data flow and state management; file handling and advanced features; trade-offs, limitations and remaining work. Every member answers.
+- **Peer evaluation:** fill in the form during each presentation session and submit it at the end.
+- **Slide outline** (deck in Google Slides): title (Mohammad Harun, Farnaz Moayyedian, Shubham Panchal, Nabeegh Khan); Overview and Web Stack; Frontend and Server Logic; Data and Storage; Live Demo; Completion Plan and Roadmap; Thank You and Q&A.

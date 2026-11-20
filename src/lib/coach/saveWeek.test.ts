@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import { buildHybridWeek, type HybridProfile } from "./hybridWeek";
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { saveWeek, weekToPlanData } from "./saveWeek";
-import type { LibraryExercise } from "./verify";
+import type { CategorisedExercise } from "./verify";
 
-const library: LibraryExercise[] = [
+const library: CategorisedExercise[] = [
   "quadriceps",
   "chest",
   "middle back",
@@ -17,6 +17,7 @@ const library: LibraryExercise[] = [
   "biceps",
 ].map((m) => ({
   id: m.replace(" ", "_"),
+  category: "strength",
   equipment: "body only",
   primaryMuscles: [m],
   secondaryMuscles: [],
@@ -200,5 +201,38 @@ describe("saveWeek when Postgres aborts it", () => {
     });
 
     expect(prisma.$transaction).toHaveBeenCalledOnce();
+  });
+
+  it("runs beforeSave in the retry too, inside the new transaction", async () => {
+    // Each attempt runs its callback against a fresh stand-in transaction; the first
+    // is aborted at the deactivate step, after beforeSave has run.
+    const beforeSave = vi.fn(async () => {});
+    let attempt = 0;
+    const $transaction = vi.fn(
+      async (run: (tx: Prisma.TransactionClient) => Promise<unknown>) => {
+        attempt += 1;
+        const aborted = attempt === 1;
+        const tx = {
+          $queryRaw: vi.fn(async () => []),
+          plan: {
+            updateMany: vi.fn(async () => {
+              if (aborted) throw knownError(ABORTED);
+              return { count: 0 };
+            }),
+            create: vi.fn(async () => ({ id: SAVED_PLAN_ID })),
+          },
+        } as unknown as Prisma.TransactionClient;
+        return run(tx);
+      },
+    );
+    const prisma = { $transaction } as unknown as PrismaClient;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await expect(
+      saveWeek(prisma, "u1", week, "COACH", beforeSave),
+    ).resolves.toEqual({ planId: SAVED_PLAN_ID });
+
+    expect(beforeSave).toHaveBeenCalledTimes(CALLS_WITH_ONE_RETRY);
+    warn.mockRestore();
   });
 });

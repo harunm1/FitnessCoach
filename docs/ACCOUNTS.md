@@ -40,7 +40,6 @@ For the complete ordered PowerShell/Bash setup and terminal layout, start with
 6. Open `/sign-up`, create an account using a password of 12–128 characters, and
    follow its verification email. Then sign in at `/sign-in` and open `/account`.
 
-The legacy exercise-demo user is not an email/password credential account.
 Register a new account, or opt into the four local-only tier logins described in
 [QUIZ_SESSION_AUTH.md](QUIZ_SESSION_AUTH.md#optional-local-demo-logins).
 
@@ -114,6 +113,10 @@ migration rename.
   It returns identity, stored tier and trial expiry from the fresh server session;
   effective permissions still come from the shared access policy.
   API handlers should validate sessions and return appropriate 401/403 responses.
+  `getVerifiedUser()` returns a nullable identity for those callers, while
+  `requireTier(allowed)` returns denial values using fresh billing entitlements.
+  See [COACH_ACCESS.md](COACH_ACCESS.md) for the caller contracts, exercise-chat
+  integration and plan-request migration setup.
 - The browser client uses HttpOnly session cookies. Tier and trial fields cannot
   be supplied through signup/update requests. Cookie session caching is disabled.
 - Verification and reset links expire after one hour. Password reset revokes all
@@ -188,9 +191,8 @@ npx tsx scripts/create-admin.ts --email admin@your-domain.com --confirm
 
 This grants ADMIN only to the selected existing, verified password account. It
 does not create users, set passwords or change trial dates. It is safe to repeat.
-There is no public admin signup or promotion endpoint. The legacy exercise demo
-is not an admin credential account; the optional tier fixtures are restricted to
-local development. Protect database and server access, since the operator
+There is no public admin signup or promotion endpoint. The optional tier fixtures
+are restricted to local development. Protect database and server access, since the operator
 command deliberately bypasses app permissions.
 
 Stripe checkout, signed webhooks and paid-tier reconciliation preserve trial dates
