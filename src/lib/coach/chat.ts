@@ -171,17 +171,24 @@ export function buildCoachSystemPrompt(ctx: CoachContext): string {
   ].join("\n");
 }
 
-export async function coachReply(
-  model: CoachChatModel,
+// Everything before the model call, shared by the plain and the streamed turn (#56
+// review, point 1): either a fixed reply, or the messages the model may see. The
+// checks run in this order: empty, length (with the ends screened), the layered safety
+// screen, then the off-topic relaxation for an in-context follow-up.
+export type PreparedTurn = { fixed: CoachTurn } | { messages: ChatMessage[] };
+
+export async function prepareTurn(
   ctx: CoachContext,
   history: ChatMessage[],
   userText: string,
   // The model safety check (D15); without it the word list decides alone.
   classify?: SafetyClassifier,
-  options: ChatOptions = {},
-): Promise<CoachTurn> {
+): Promise<PreparedTurn> {
+  const fixed = (reply: string): PreparedTurn => ({
+    fixed: { reply, source: "GUARDRAIL" },
+  });
   const text = userText.trim();
-  if (text === "") return { reply: EMPTY_REPLY, source: "GUARDRAIL" };
+  if (text === "") return fixed(EMPTY_REPLY);
   if (text.length > MAX_MESSAGE_CHARS) {
     // Too long to answer, but never too long to screen: the start and the end are
     // checked (a bounded input), so a long message that ends in crisis wording or
@@ -190,8 +197,8 @@ export async function coachReply(
     const ends = `${text.slice(0, MAX_MESSAGE_CHARS)} … ${text.slice(-MAX_MESSAGE_CHARS)}`;
     const safety = await screenUserMessage(ends, classify);
     return safety.action === "ALLOW" || safety.action === "OFF_TOPIC"
-      ? { reply: TOO_LONG_REPLY, source: "GUARDRAIL" }
-      : { reply: safety.reply, source: "GUARDRAIL" };
+      ? fixed(TOO_LONG_REPLY)
+      : fixed(safety.reply);
   }
   // Stored rows with no text are skipped; each turn is rebuilt as role and content.
   const recent = history
@@ -206,63 +213,89 @@ export async function coachReply(
   // Only the off-topic redirect is relaxed for an in-context follow-up; crisis,
   // red-flag, pain, diagnosis, eating, self-worth and nutrition replies stand.
   const followUp = guard.action === "OFF_TOPIC" && isFollowUp(text, recent);
-  if (guard.action !== "ALLOW" && !followUp) {
-    return { reply: guard.reply, source: "GUARDRAIL" };
-  }
+  if (guard.action !== "ALLOW" && !followUp) return fixed(guard.reply);
 
   // Built before the call, outside its catch: a bug here is the app's, not a provider's.
-  const messages = buildChatMessages(buildCoachSystemPrompt(ctx), recent, text);
-  return askModel(model, messages, options);
+  return {
+    messages: buildChatMessages(buildCoachSystemPrompt(ctx), recent, text),
+  };
+}
+
+export async function coachReply(
+  model: CoachChatModel,
+  ctx: CoachContext,
+  history: ChatMessage[],
+  userText: string,
+  // The model safety check (D15); without it the word list decides alone.
+  classify?: SafetyClassifier,
+  options: ChatOptions = {},
+): Promise<CoachTurn> {
+  const turn = await prepareTurn(ctx, history, userText, classify);
+  if ("fixed" in turn) return turn.fixed;
+  return askModel(model, turn.messages, options);
 }
 
 // What a failed call is recorded as. A ProviderError's message is a fixed string from
 // providers.ts; any other error (a JSON parse error quotes the body it could not read)
 // is recorded by name only, so no reply text reaches a record (practice 6).
-function errorLabel(e: unknown): string {
+export function errorLabel(e: unknown): string {
   if (e instanceof ProviderError) return e.message;
   return e instanceof Error ? e.name : "unknown error";
 }
 
-// The one model call of a turn, its reply check, and its record. The record carries
-// labels and timings only, never the messages or the reply.
+// How one model call ended: a reply the check allowed, a reply the check replaced
+// (problem names the check), or no usable reply (error is a fixed label).
+export type ChatCallResult =
+  { ok: true } | { ok: false; problem: string } | { error: string };
+
+// The one record of a model call, shared by the plain and the streamed turn. It
+// carries labels and timings only, never the messages or the reply.
+export async function recordChatCall(
+  { log, takeProviderEvents = () => [] }: ChatOptions,
+  latencyMs: number,
+  result: ChatCallResult,
+): Promise<void> {
+  const { served, providerEvents } = splitServed(takeProviderEvents());
+  const detail =
+    "error" in result
+      ? { outcome: "error" as const, error: result.error }
+      : result.ok
+        ? { outcome: okOutcome(1, providerEvents) }
+        : { outcome: "rejected" as const, problems: [result.problem] };
+  await writeRecord(log, {
+    kind: "chat",
+    promptVersion: CHAT_PROMPT_VERSION,
+    attempt: 1,
+    latencyMs,
+    ...served,
+    providerEvents,
+    ...detail,
+  });
+}
+
+// The one model call of a plain turn, its reply check, and its record.
 async function askModel(
   model: CoachChatModel,
   messages: ChatMessage[],
-  { log, takeProviderEvents = () => [], now = Date.now }: ChatOptions,
+  options: ChatOptions,
 ): Promise<CoachTurn> {
-  const base = {
-    kind: "chat" as const,
-    promptVersion: CHAT_PROMPT_VERSION,
-    attempt: 1,
-  };
+  const now = options.now ?? Date.now;
   const started = now();
   let reply: string;
   try {
     reply = await model(messages);
   } catch (e) {
-    const { served, providerEvents } = splitServed(takeProviderEvents());
-    await writeRecord(log, {
-      ...base,
-      latencyMs: now() - started,
-      outcome: "error",
-      ...served,
-      providerEvents,
-      error: errorLabel(e),
-    });
+    await recordChatCall(options, now() - started, { error: errorLabel(e) });
     return { reply: UNAVAILABLE_REPLY, source: "UNAVAILABLE" };
   }
   const latencyMs = now() - started;
-  const { served, providerEvents } = splitServed(takeProviderEvents());
   const checked = checkCoachReply(reply);
   const ok = checked.action === "ALLOW";
-  await writeRecord(log, {
-    ...base,
+  await recordChatCall(
+    options,
     latencyMs,
-    outcome: ok ? okOutcome(1, providerEvents) : "rejected",
-    ...served,
-    providerEvents,
-    ...(ok ? {} : { problems: [`reply check: ${checked.action}`] }),
-  });
+    ok ? { ok } : { ok, problem: `reply check: ${checked.action}` },
+  );
   return ok
     ? { reply, source: "COACH" }
     : { reply: checked.reply, source: "GUARDRAIL" };

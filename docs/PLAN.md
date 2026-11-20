@@ -48,7 +48,7 @@ The course's core technical requirements are mandatory for every project ([proje
 | Architecture A: Next.js full stack                   | Server Components read, Server Actions write (the auth Route Handler is in `src/app/api/auth`)                     | everyone            | done                                        | ARCHITECTURE.md    |
 | Advanced feature 1: authentication and authorization | Better Auth sign-in, access tiers                                                                                  | Shubham             | done                                        | #67, #50           |
 | Advanced feature 2: external API (cloud AI)          | the coach: plans and chat through Groq with Gemini fallback, checked in code                                       | Nabeegh             | plans and guardrails merged; chat in review | #11, #48, #53, #63 |
-| Loading and error states (proposal section 2)        | `loading.tsx` and `error.tsx` per route                                                                            | each route's owner  | root in review                              | #74, #15           |
+| Loading and error states (proposal section 2)        | root `error.tsx`; `<Suspense>` in each page (D16)                                                                  | each route's owner  | root in review                              | #74, #15           |
 
 **Core path working end to end by 15 Nov** (agreed at meeting 3): sign in (#67) → quiz (#39) → workout plan (#39, #73) → logged workout (#39) → one coach exchange (#63), with a progress photo stored in R2 (#16).
 

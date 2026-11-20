@@ -51,6 +51,7 @@ const slot = (exerciseId: string) => ({
   sets: 3,
   reps: 10,
   restSeconds: 90,
+  rpe: 7,
 });
 
 describe("verifyPlan", () => {
@@ -143,5 +144,48 @@ describe("verifyPlan", () => {
       expect(result.problems.join("\n")).toMatch(/appears twice/);
       expect(result.problems.join("\n")).toMatch(/asked for 2/);
     }
+  });
+
+  describe("RPE target (#65)", () => {
+    const planWith = (exercise: Record<string, unknown>) => ({
+      name: "P",
+      days: [{ name: "Day 1", exercises: [exercise, slot("pushup")] }],
+    });
+
+    it.each([6, 7, 8, 9])("accepts an RPE of %i", (rpe) => {
+      const result = verifyPlan(
+        planWith({ ...slot("bench"), rpe }),
+        profile,
+        library,
+      );
+      expect(result.ok).toBe(true);
+    });
+
+    it.each([5, 10, 0, -1])("rejects an RPE of %i", (rpe) => {
+      const result = verifyPlan(
+        planWith({ ...slot("bench"), rpe }),
+        profile,
+        library,
+      );
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.problems[0]).toMatch(/rpe/);
+    });
+
+    it("rejects a non-integer RPE", () => {
+      const result = verifyPlan(
+        planWith({ ...slot("bench"), rpe: 7.5 }),
+        profile,
+        library,
+      );
+      expect(result.ok).toBe(false);
+    });
+
+    it("rejects an exercise with no RPE", () => {
+      const withoutRpe: Record<string, unknown> = { ...slot("bench") };
+      delete withoutRpe.rpe;
+      const result = verifyPlan(planWith(withoutRpe), profile, library);
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.problems[0]).toMatch(/rpe/);
+    });
   });
 });
