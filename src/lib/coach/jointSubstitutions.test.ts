@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   findJointSubstitution,
+  parseReportedJoints,
   type ExerciseJointMapping,
 } from "./jointSubstitutions";
 
@@ -52,5 +53,26 @@ describe("findJointSubstitution", () => {
     expect(
       findJointSubstitution("original", ["alternative"], ["knee"], mapping),
     ).toBeUndefined();
+  });
+});
+
+describe("parseReportedJoints", () => {
+  it("parses joints mentioned with pain", () => {
+    expect(parseReportedJoints("pain in shoulder and elbow")).toEqual([
+      "shoulder",
+      "elbow",
+    ]);
+  });
+
+  it("parses lower back pain", () => {
+    expect(parseReportedJoints("lower-back pain")).toEqual(["lower back"]);
+  });
+
+  it("does not report a joint from unrelated text", () => {
+    expect(parseReportedJoints("the shoulder is fine")).toEqual([]);
+  });
+
+  it("ignores explicitly negated pain", () => {
+    expect(parseReportedJoints("no shoulder pain")).toEqual([]);
   });
 });

@@ -69,6 +69,33 @@ describe("buildDefaultPlan", () => {
       expect(exercise.rpe).toBe(7);
     }
   });
+
+  it("fails closed when shoulder pain has no suitable mapped push alternative", () => {
+    const jointProfile: VerifyProfile = {
+      ...profile,
+      reportedJoints: ["shoulder"],
+    };
+    const jointLibrary: CategorisedExercise[] = [
+      {
+        id: "Barbell_Bench_Press_-_Medium_Grip",
+        category: "strength",
+        equipment: "barbell",
+        primaryMuscles: ["chest"],
+        secondaryMuscles: ["triceps"],
+      },
+      {
+        id: "Incline_Push-Up",
+        category: "strength",
+        equipment: "body only",
+        primaryMuscles: ["chest"],
+        secondaryMuscles: ["triceps"],
+      },
+    ];
+
+    expect(() => buildDefaultPlan(jointProfile, jointLibrary)).toThrow(
+      "Not enough compatible exercises",
+    );
+  });
 });
 
 // Records copied from the seeded free-exercise-db library (dist/exercises.json, 8 Nov),

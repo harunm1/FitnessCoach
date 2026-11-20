@@ -7,6 +7,8 @@ import {
   type VerifyProfile,
 } from "./verify";
 import type { PlanInput } from "./schema";
+import { draftExerciseJointMappings } from "./exerciseJointMappings";
+import { findJointSubstitution } from "./jointSubstitutions";
 
 // The fallback asks for a moderate effort: 7 is "about three reps left" (#65).
 const DEFAULT_RPE = 7;
@@ -53,19 +55,48 @@ export function buildDefaultPlan(
     (e) => e.category?.toLowerCase() === "strength" && fitsProfile(e, profile),
   );
 
+  const resolveJointAware = (exerciseId: string): string | undefined => {
+    const reportedJoints = profile.reportedJoints ?? [];
+    if (reportedJoints.length === 0) return exerciseId;
+
+    const original = Object.hasOwn(draftExerciseJointMappings, exerciseId)
+      ? draftExerciseJointMappings[
+          exerciseId as keyof typeof draftExerciseJointMappings
+        ]
+      : undefined;
+    if (!original) return undefined;
+    if (!original.joints.some((joint) => reportedJoints.includes(joint))) {
+      return exerciseId;
+    }
+
+    return findJointSubstitution(
+      exerciseId,
+      usable.map((exercise) => exercise.id),
+      reportedJoints,
+      draftExerciseJointMappings,
+    );
+  };
+
   return {
     name: `${profile.daysPerWeek}-day starter plan`,
     days: days.map((day) => {
       const picked: string[] = [];
       for (const muscle of day.muscles) {
         const match = usable.find(
-          (e) => e.primaryMuscles.includes(muscle) && !picked.includes(e.id),
+          (e) =>
+            e.primaryMuscles.includes(muscle) &&
+            !picked.includes(e.id) &&
+            resolveJointAware(e.id) !== undefined,
         );
-        if (match) picked.push(match.id);
+        if (match) {
+          const resolved = resolveJointAware(match.id);
+          if (resolved && !picked.includes(resolved)) picked.push(resolved);
+        }
       }
       for (const exercise of usable) {
         if (picked.length >= 2) break;
-        if (!picked.includes(exercise.id)) picked.push(exercise.id);
+        const resolved = resolveJointAware(exercise.id);
+        if (resolved && !picked.includes(resolved)) picked.push(resolved);
       }
       if (picked.length < 2) {
         throw new Error(`Not enough compatible exercises for ${day.name}`);

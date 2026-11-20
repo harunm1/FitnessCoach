@@ -53,3 +53,30 @@ export function findJointSubstitution(
     );
   });
 }
+
+export function parseReportedJoints(text: string): Joint[] {
+  const normalized = text.toLowerCase();
+  const painPattern =
+    /\b(?:pain|hurts?|sore|ache|aches|aching|injur(?:y|ies)?|trouble|problem)\b/i;
+
+  return JOINTS.filter((joint) => {
+    const jointPattern =
+      joint === "lower back"
+        ? /\blower[\s-]+back\b/i
+        : new RegExp(`\\b${joint}\\b`, "i");
+    const match = jointPattern.exec(normalized);
+    if (!match) return false;
+
+    const before = normalized.slice(Math.max(0, match.index - 24), match.index);
+    const after = normalized.slice(
+      match.index + match[0].length,
+      match.index + match[0].length + 24,
+    );
+    const context = `${before} ${match[0]} ${after}`;
+    const negated =
+      /\b(?:no|not|without|denies?|none)\b[^,.;]*$/i.test(before) ||
+      /^\s*(?:no|not|without|denies?|none)\b/i.test(after);
+
+    return painPattern.test(context) && !negated;
+  });
+}
