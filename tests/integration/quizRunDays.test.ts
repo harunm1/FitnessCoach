@@ -151,6 +151,7 @@ describe("saveQuizProfile with a training mode", () => {
               sets: 3,
               reps: 10,
               restSeconds: 60,
+              rpe: 7,
             },
           ],
         },
