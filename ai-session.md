@@ -631,3 +631,13 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Got:** Implementation examples and suggestions for browser-side image resizing (up to 50 MB), ownership checks, error logging, a 1,000-photo limit with a paginated gallery, accessibility improvements, and handling changes across tabs. AI also generated tests, including photo editor interaction tests using jsdom and Testing Library.
 
 **Did with it:** Reviewed the suggestions and implementation, decided to keep the upload and photo limits generous, and added notes to the page explaining them. Ran tests, lint, typecheck, and Prettier locally. Tested large photos, non-image files, error handling, and the two-tab case on localhost. Found and fixed an issue where an edit in one tab could overwrite a photo saved in another. Checked R2 for leftover files.
+
+### 13 November 2026, progress page (issue #16)
+
+**Before asking:** I designed the progress page around the workout logic from #82. My plan was to include a calendar of completed workouts with each day's details, two weekly streaks, a body map showing which muscles were trained during the month and how often, and the latest progress photos. I also wanted the page to be mobile-friendly and consistent with the account page's dark mode.
+
+**Asked:** How to structure the page and its components based on my design, how to implement hover labels for the body map, and how to create realistic demo workout data to test the page. I also asked for implementation examples and tests for the components.
+
+**Got:** Example implementations for some page components, a demo data script, guidance and code for the body map's hover labels, and tests for the page. The dark mode approach reuses Shubham's existing theme toggle and requires a shared change in `globals.css` to keep colours consistent across pages.
+
+**Did with it:** Reviewed the implementation against my original design and the #82 workout logic. Ran tests, lint, typecheck, and Prettier locally. Tested the page on localhost using the demo data, including the calendar, daily details, body map hover labels, page links, dark mode, and mobile layout. After Nabeegh's and Shubham's reviews, I had the pace display fixed so it can't show "5:60 /km", and photo storage errors on the progress page are now logged. The fix tests were AI-generated; I checked them and reran the tests.
