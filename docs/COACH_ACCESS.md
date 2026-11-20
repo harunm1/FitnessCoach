@@ -7,10 +7,35 @@ The shared guards and database reservation are implemented. The existing
 access before model setup. Denied tiers receive its normal error state without
 a model call or chat write. Signed-out callers retain #104's sign-in redirect.
 
-The general chat route and AI-personalization Server Action are not on main yet.
-Those caller changes belong with #53/#56/#63 and #58. Keep #51 open until they
-adopt these helpers and are tested. This branch temporarily builds on PR #105
-to retain the private-history fix; update from main after that PR merges.
+`POST /api/coach` connects the streaming library to the coach screen. It checks
+`requireTier(COACH_TIERS)` before profile queries, model setup or streaming, with
+401 JSON for missing/unverified sessions and 403 JSON for denied effective tiers.
+The route requires a same-origin JSON request, bounds the body to 64,000 bytes,
+and accepts only `message`: user identity, history and conversation IDs come from
+the verified session and user-scoped database reads.
+
+The streaming route and existing Server Action share admission checks in
+`src/app/coach/request.ts`: a profile is required, the existing chat caps apply,
+and a safety refusal takes priority over a quota/length message when necessary.
+Chat retains its existing limits (5 messages/minute, 50/day); it does not consume
+the separate one-plan-per-60-seconds allowance. Saved-message counts work across
+instances, while failed/in-flight chat attempts are still limited per instance
+by the existing in-memory limiter. This is not an atomic global chat quota.
+
+The browser receives newline-delimited JSON: `delta` contains only checked text;
+`saved` is emitted after both messages are committed; `unsaved` keeps a partial
+reply available for retry after provider/save failures. A connection that ends
+without a terminal event is treated as interrupted. The browser does not retry
+automatically. If a connection drops just after a database commit, reload the
+conversation before retrying: exchange-level retry deduplication is not supplied
+by this change. Closing the reader closes the generator; unfinished exchanges
+are not saved. Model-call metadata uses the existing user-bound CoachEvent sink,
+which discards chat reply text; the conversation remains the private transcript.
+
+The AI-personalization Server Action is still #58's work. Its plan reservation
+integration and tests remain necessary before the original full #51 checklist
+can close. FREE users may request plans, but cannot open coach chat; a chat-limit
+demo must use an active TRIAL, PRO or ADMIN account.
 
 ## Tier and session contracts
 

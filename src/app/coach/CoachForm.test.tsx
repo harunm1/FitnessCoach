@@ -2,7 +2,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("./actions", () => ({ sendCoachMessage: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 import { MAX_MESSAGE_CHARS } from "@/lib/coach/chat";
 import CoachForm from "./CoachForm";
 import { MESSAGE_MAX_LENGTH } from "./copy";
