@@ -37,7 +37,7 @@ const STRENGTH_CHECKS = [
   "No exercise works a muscle you reported trouble with.",
   "No exercise repeats on the same day.",
   DAYS_CHECK,
-  "Sets, reps and rest are within the allowed ranges.",
+  "Sets, reps, rest and target effort (RPE 6 to 9) are within the allowed ranges.",
 ];
 
 // weeklyCapKm (verifyRunning.ts): 10% over last week's logged distance, or a starting volume
