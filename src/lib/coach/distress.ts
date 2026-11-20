@@ -53,9 +53,9 @@ export function withoutExaggeration(message: string): string {
 // Plain "water" counts only when a pool is named just before the jump; "on the bridge
 // I'll jump into the river" stays a crisis. Nothing is removed when the message states
 // intent or a means (INTENT), a height ("bridge", "below", "from here") or that the
-// person cannot swim.
+// person cannot swim, a roof or overpass, or a plan not to come back up.
 const HEIGHT_OR_NO_SWIM =
-  /\b(bridge|building|cliff|hotel|below|from here|head ?first|(can'?t|cannot|not) swim)\b/i;
+  /\b(bridge|building|cliff|hotel|roof(top)?|overpass|below|from here|head ?first|(can'?t|cannot|not) swim|(not|never|won'?t) come (back )?up)\b/i;
 const BOX_JUMP =
   /\bjump(s|ing)? (up )?(on|onto) (the |a |my )?(plyo |jump )?box\b/gi;
 const POOL_JUMP = /\bjump(s|ing)? (in|into) (the |a |my )?(pool|hot tub)\b/gi;
