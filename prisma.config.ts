@@ -3,6 +3,7 @@
 // longer lives in package.json.
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
+import { cliDatabaseUrl } from "./src/lib/deploy/release";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -11,6 +12,8 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // The direct Neon URL on a Vercel build (D19); everywhere else DATABASE_URL, so a
+    // test migration (scripts/migrate-test.ts) always reaches the test database.
+    url: cliDatabaseUrl(process.env),
   },
 });
