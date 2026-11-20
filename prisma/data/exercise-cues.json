@@ -1,0 +1,393 @@
+{
+  "Barbell_Squat": {
+    "cues": [
+      "Brace your trunk before lifting the bar from the rack.",
+      "Keep your feet planted as you bend your hips and knees.",
+      "Let your knees follow the direction of your toes.",
+      "Stand up by extending your hips and knees together."
+    ],
+    "commonMistakes": [
+      "Letting the heels rise during the descent.",
+      "Allowing the back to round under the bar.",
+      "Letting the knees collapse inward."
+    ]
+  },
+  "Barbell_Bench_Press_-_Medium_Grip": {
+    "cues": [
+      "Plant your feet and keep your upper back supported on the bench.",
+      "Grip the bar slightly wider than shoulder width.",
+      "Lower the bar under control toward your chest.",
+      "Press the bar upward until your arms extend."
+    ],
+    "commonMistakes": [
+      "Bouncing the bar off the chest.",
+      "Using a grip so wide that it restricts the movement.",
+      "Lifting the hips off the bench during the press."
+    ]
+  },
+  "Bent_Over_Barbell_Row": {
+    "cues": [
+      "Hinge at your hips with your knees slightly bent.",
+      "Keep your back steady while you hold the hinged position.",
+      "Draw the bar toward your upper waist.",
+      "Lower the bar with control until your arms extend."
+    ],
+    "commonMistakes": [
+      "Rounding the lower back while bent over.",
+      "Jerking the torso upward to move the bar.",
+      "Cutting the lowering phase short."
+    ]
+  },
+  "Pullups": {
+    "cues": [
+      "Grip the bar with your palms facing away from you.",
+      "Start from a controlled hang with your arms extended.",
+      "Pull your body upward until your chin clears the bar.",
+      "Lower yourself with control back to the starting position."
+    ],
+    "commonMistakes": [
+      "Swinging the legs to gain momentum.",
+      "Using a grip so wide that it limits the range of motion.",
+      "Dropping quickly instead of controlling the descent."
+    ]
+  },
+  "Barbell_Deadlift": {
+    "cues": [
+      "Set your feet under the bar and grip it around shoulder width.",
+      "Brace your trunk and keep the bar close to your legs.",
+      "Push through the floor as your hips and knees extend.",
+      "Stand tall without leaning back at the top.",
+      "Lower the bar under control by bending your hips and knees."
+    ],
+    "commonMistakes": [
+      "Letting the bar drift away from the legs.",
+      "Rounding the back while lifting.",
+      "Yanking the bar from the floor instead of building tension first."
+    ]
+  },
+  "Dumbbell_Lunges": {
+    "cues": [
+      "Stand tall with a dumbbell at each side.",
+      "Step forward and lower under control, keeping your torso upright.",
+      "Keep the front knee tracking in the same direction as your foot.",
+      "Push through the front foot to return to standing, then switch sides."
+    ],
+    "commonMistakes": [
+      "Letting the front heel lift as you lower.",
+      "Allowing the front knee to collapse inward.",
+      "Rushing the descent and losing balance."
+    ]
+  },
+  "Standing_Military_Press": {
+    "cues": [
+      "Stand with feet about shoulder width and hold the bar at your upper chest.",
+      "Brace your trunk before pressing.",
+      "Press the bar overhead until your arms extend.",
+      "Lower the bar under control to your collarbone."
+    ],
+    "commonMistakes": [
+      "Leaning back and flaring the ribs to move the bar.",
+      "Letting the bar drift far forward during the press.",
+      "Dropping the bar quickly on the way down."
+    ]
+  },
+  "Crunches": {
+    "cues": [
+      "Lie on your back with knees bent and feet supported.",
+      "Keep your lower back in contact with the floor.",
+      "Curl your shoulders off the floor by tightening your abdominals.",
+      "Lower slowly until your shoulders return to the floor."
+    ],
+    "commonMistakes": [
+      "Pulling on the head or neck with the hands.",
+      "Using momentum instead of a controlled curl.",
+      "Lifting the lower back and turning the crunch into a sit-up."
+    ]
+  },
+  "Bodyweight_Squat": {
+    "cues": [
+      "Stand with your feet about shoulder width apart and brace your trunk.",
+      "Bend your hips and knees together as you lower under control.",
+      "Keep your knees pointed in the same direction as your toes.",
+      "Stand by extending your hips and knees."
+    ],
+    "commonMistakes": [
+      "Letting the heels lift from the floor.",
+      "Allowing the knees to collapse inward.",
+      "Dropping quickly into the bottom position."
+    ]
+  },
+  "Dumbbell_Bench_Press": {
+    "cues": [
+      "Lie on the bench with a dumbbell at each side of your chest.",
+      "Keep your feet planted and upper back supported.",
+      "Press the dumbbells up until your arms extend, keeping them controlled.",
+      "Lower to the sides of your chest with a steady motion."
+    ],
+    "commonMistakes": [
+      "Bouncing the weights at the bottom of the press.",
+      "Letting the dumbbells drift far out of line with your elbows.",
+      "Dropping the weights instead of controlling the lowering phase."
+    ]
+  },
+  "Dumbbell_Shoulder_Press": {
+    "cues": [
+      "Sit against a supported bench with a dumbbell at each shoulder.",
+      "Keep your elbows below your wrists at the start.",
+      "Brace your trunk and press the dumbbells overhead.",
+      "Lower the weights under control to shoulder level."
+    ],
+    "commonMistakes": [
+      "Overarching the lower back to finish the press.",
+      "Starting with the weights far below shoulder level.",
+      "Dropping the dumbbells quickly on the way down."
+    ]
+  },
+  "One-Arm_Dumbbell_Row": {
+    "cues": [
+      "Support one hand and the same-side knee on a bench.",
+      "Keep your back steady as you hinge forward.",
+      "Pull the dumbbell toward the side of your chest.",
+      "Lower until your arm extends, then repeat on the other side."
+    ],
+    "commonMistakes": [
+      "Rotating the torso to swing the dumbbell upward.",
+      "Rounding the back while holding the hinged position.",
+      "Shortening the controlled lowering portion of the row."
+    ]
+  },
+  "Dumbbell_Squat": {
+    "cues": [
+      "Stand with a dumbbell at each side and feet about shoulder width apart.",
+      "Bend your hips and knees as you lower with your back steady.",
+      "Keep your knees tracking in the direction of your toes.",
+      "Push through your feet to stand back up."
+    ],
+    "commonMistakes": [
+      "Letting the heels lift as you descend.",
+      "Allowing the knees to collapse inward.",
+      "Rounding the back while holding the weights."
+    ]
+  },
+  "Front_Squat_Clean_Grip": {
+    "cues": [
+      "Rest the bar across the front of your shoulders with your elbows lifted.",
+      "Brace your trunk and keep your chest tall.",
+      "Lower between your legs while your knees follow your toes.",
+      "Drive through your feet and extend your hips and knees to stand."
+    ],
+    "commonMistakes": [
+      "Letting the elbows drop and the bar roll forward.",
+      "Allowing the knees to fall inward.",
+      "Shifting onto the toes and lifting the heels."
+    ]
+  },
+  "Romanian_Deadlift": {
+    "cues": [
+      "Stand with the bar close to your thighs and knees softly bent.",
+      "Brace your trunk and send your hips back to hinge.",
+      "Keep the bar close as it travels down your legs.",
+      "Stop when you feel a hamstring stretch, then drive your hips forward."
+    ],
+    "commonMistakes": [
+      "Rounding the back as the bar lowers.",
+      "Bending the knees so much that the hinge becomes a squat.",
+      "Letting the bar drift away from the legs."
+    ]
+  },
+  "Stiff-Legged_Dumbbell_Deadlift": {
+    "cues": [
+      "Hold a dumbbell at each side with a small bend in your knees.",
+      "Keep your back steady as you push your hips back.",
+      "Lower the weights along your legs until your hamstrings stretch.",
+      "Extend your hips to return to standing."
+    ],
+    "commonMistakes": [
+      "Rounding the back to reach lower.",
+      "Locking the knees rigidly during the hinge.",
+      "Turning the movement into a deep knee bend."
+    ]
+  },
+  "Butt_Lift_Bridge": {
+    "cues": [
+      "Lie on your back with knees bent and feet planted about shoulder width.",
+      "Brace gently and press through your heels to lift your hips.",
+      "Stop when your torso and thighs form a straight line.",
+      "Lower your hips slowly back to the floor."
+    ],
+    "commonMistakes": [
+      "Arching the lower back to lift the hips higher.",
+      "Pushing mainly through the toes as the heels rise.",
+      "Letting the knees drift inward."
+    ]
+  },
+  "Barbell_Walking_Lunge": {
+    "cues": [
+      "Stand tall with the bar settled across your upper back.",
+      "Step forward and lower until your rear knee approaches the floor.",
+      "Keep your torso upright and front knee aligned with your foot.",
+      "Push through the lead foot and step through to the next repetition."
+    ],
+    "commonMistakes": [
+      "Taking steps so narrow that balance is lost.",
+      "Letting the front knee collapse inward.",
+      "Rushing between steps without regaining a stable stance."
+    ]
+  },
+  "Barbell_Lunge": {
+    "cues": [
+      "Set the bar across your upper back and stand with a stable stance.",
+      "Step forward and lower under control with your torso upright.",
+      "Let the front knee follow the direction of your foot.",
+      "Push through the front foot to return, then change legs."
+    ],
+    "commonMistakes": [
+      "Leaning the torso far forward during the descent.",
+      "Allowing the front knee to fall inward.",
+      "Rising by pushing mostly from the rear foot."
+    ]
+  },
+  "Dumbbell_Rear_Lunge": {
+    "cues": [
+      "Stand upright with a dumbbell at each side.",
+      "Step one leg back and lower your rear knee toward the floor.",
+      "Keep your torso upright and the front knee tracking over your foot.",
+      "Push through the front foot to stand, then switch legs."
+    ],
+    "commonMistakes": [
+      "Taking a step so short that balance or depth is limited.",
+      "Letting the front knee collapse inward.",
+      "Twisting the torso as you step back."
+    ]
+  },
+  "Incline_Push-Up": {
+    "cues": [
+      "Place your hands slightly wider than shoulder width on a stable raised surface.",
+      "Step back until your body forms a straight line.",
+      "Lower your chest toward the surface by bending your elbows.",
+      "Press through your hands until your arms extend."
+    ],
+    "commonMistakes": [
+      "Letting the hips sag or pike during the repetition.",
+      "Allowing the elbows to flare far out to the sides.",
+      "Stopping well short of the surface on each descent."
+    ]
+  },
+  "Barbell_Incline_Bench_Press_-_Medium_Grip": {
+    "cues": [
+      "Lie on an incline bench with the bar positioned above your upper chest.",
+      "Grip the bar so your forearms are nearly vertical at the bottom.",
+      "Lower the bar under control to your upper chest.",
+      "Press upward until your arms extend without bouncing the bar."
+    ],
+    "commonMistakes": [
+      "Bouncing the bar off the chest.",
+      "Using a grip so wide that it limits the range of motion.",
+      "Lifting the shoulders or hips from the bench to finish a rep."
+    ]
+  },
+  "Dumbbell_One-Arm_Shoulder_Press": {
+    "cues": [
+      "Start with one dumbbell beside your shoulder and wrist stacked over elbow.",
+      "Brace your trunk and keep your torso steady.",
+      "Press the dumbbell overhead until your arm extends.",
+      "Lower it under control to your shoulder, then switch arms."
+    ],
+    "commonMistakes": [
+      "Leaning or rotating the torso to help the weight rise.",
+      "Letting the wrist fold back under the dumbbell.",
+      "Dropping the weight quickly on the way down."
+    ]
+  },
+  "Barbell_Shoulder_Press": {
+    "cues": [
+      "Sit against a supported bench with the bar at shoulder height.",
+      "Grip the bar overhand and brace your trunk.",
+      "Press the bar overhead until your arms extend.",
+      "Lower the bar slowly back to your shoulders."
+    ],
+    "commonMistakes": [
+      "Overarching the lower back to move the bar.",
+      "Letting the bar drift well forward of the shoulders.",
+      "Dropping the bar quickly during the lowering phase."
+    ]
+  },
+  "Bent_Over_Two-Dumbbell_Row": {
+    "cues": [
+      "Hold a dumbbell in each hand and hinge forward with knees softly bent.",
+      "Keep your back steady and let your arms hang beneath your shoulders.",
+      "Pull both dumbbells toward your sides with elbows close to your body.",
+      "Lower the weights slowly to the starting hang."
+    ],
+    "commonMistakes": [
+      "Rounding the back while hinged forward.",
+      "Swinging the torso to lift the dumbbells.",
+      "Shrugging the shoulders instead of rowing the elbows back."
+    ]
+  },
+  "Bent_Over_Two-Dumbbell_Row_With_Palms_In": {
+    "cues": [
+      "Hold the dumbbells with palms facing each other and hinge at your hips.",
+      "Keep your back steady as your arms hang below your shoulders.",
+      "Row the weights toward your sides while drawing your shoulder blades together.",
+      "Lower the dumbbells under control."
+    ],
+    "commonMistakes": [
+      "Rounding the back during the hinge.",
+      "Twisting or rocking the torso to move the weights.",
+      "Cutting the controlled lowering phase short."
+    ]
+  },
+  "Chin-Up": {
+    "cues": [
+      "Take a shoulder-width or slightly narrower underhand grip on the bar.",
+      "Begin from a controlled hang with arms extended.",
+      "Pull until your chin reaches bar height, keeping your elbows near your sides.",
+      "Lower slowly until your arms extend again."
+    ],
+    "commonMistakes": [
+      "Swinging the legs to create momentum.",
+      "Reaching the chin forward instead of lifting the body.",
+      "Dropping quickly before reaching a controlled hang."
+    ]
+  },
+  "V-Bar_Pullup": {
+    "cues": [
+      "Secure the V-handle over a pull-up bar before gripping it.",
+      "Hang with a firm grip and keep your chest lifted.",
+      "Pull your chest toward the handle while keeping the torso controlled.",
+      "Lower slowly back to a full hang."
+    ],
+    "commonMistakes": [
+      "Using the V-handle without securing it on the bar.",
+      "Swinging the body to start the pull.",
+      "Stopping short instead of lowering with control."
+    ]
+  },
+  "Flat_Bench_Lying_Leg_Raise": {
+    "cues": [
+      "Lie on a flat bench with your legs extended beyond its end.",
+      "Hold the bench or place your hands beneath your hips for support.",
+      "Raise your legs until they point upward, keeping them controlled.",
+      "Lower slowly without letting your lower back arch away from the bench."
+    ],
+    "commonMistakes": [
+      "Swinging the legs to build momentum.",
+      "Arching the lower back as the legs lower.",
+      "Bending the knees substantially during the lift."
+    ]
+  },
+  "Reverse_Crunch": {
+    "cues": [
+      "Lie on your back with arms by your sides and thighs raised over your hips.",
+      "Keep your arms still as you curl your pelvis and hips off the floor.",
+      "Bring your knees toward your chest without swinging your legs.",
+      "Lower your hips slowly to the starting position."
+    ],
+    "commonMistakes": [
+      "Swinging the legs to lift the hips.",
+      "Pushing down forcefully with the hands to create momentum.",
+      "Dropping the hips instead of lowering them under control."
+    ]
+  }
+}

@@ -4,8 +4,9 @@
 // can change without touching it.
 import {
   PLAN_PROMPT_VERSION,
+  okOutcome,
+  splitServed,
   writeRecord,
-  type CoachOutcome,
   type CoachSink,
 } from "./coachLog";
 import { buildDefaultPlan } from "./defaultPlan";
@@ -17,6 +18,7 @@ import {
   verifyPlan,
   type LibraryExercise,
   type VerifyProfile,
+  type CategorisedExercise,
 } from "./verify";
 
 // What the coach needs from a model: given a prompt, return parsed JSON (or throw).
@@ -53,9 +55,9 @@ export function buildPlanPrompt(
       ? `\nYour last plan was rejected for these reasons. Fix every one:\n- ${problems.join("\n- ")}\n`
       : "";
   return [
-    `Build a ${profile.daysPerWeek}-day weekly strength plan as JSON: {"name", "days": [{"name", "exercises": [{"exercise", "sets", "reps", "restSeconds"}]}]}.`,
+    `Build a ${profile.daysPerWeek}-day weekly strength plan as JSON: {"name", "days": [{"name", "exercises": [{"exercise", "sets", "reps", "restSeconds", "rpe"}]}]}.`,
     `"exercise" must be an exact name from this list, which is grouped as "muscle (category): name; name":\n${options}`,
-    `2 to 8 exercises a day, no exercise twice on a day, sets 1 to 6, reps 1 to 30, rest 30 to 300 seconds. For a timed hold such as a plank, give reps as the number of holds (for example 3 sets of 1), not seconds.`,
+    `2 to 8 exercises a day, no exercise twice on a day, sets 1 to 6, reps 1 to 30, rest 30 to 300 seconds, rpe 6 to 9 (a whole number: the effort you want on every set, 10 being all-out, 9 one rep left, 7 about three left). For a timed hold such as a plank, give reps as the number of holds (for example 3 sets of 1), not seconds.`,
     retry,
   ].join("\n\n");
 }
@@ -120,7 +122,7 @@ export type GenerateOptions = {
 export async function generatePlan(
   model: PlanModel,
   profile: VerifyProfile,
-  library: LibraryExercise[],
+  library: CategorisedExercise[],
   {
     log,
     takeProviderEvents = () => [],
@@ -205,28 +207,4 @@ export async function generatePlan(
     source: "DEFAULT",
     attempts: MAX_ATTEMPTS,
   };
-}
-
-// The "served" event names the provider and model, and the "usage" event carries the
-// token counts of the call that answered (a provider that failed over sent none); the
-// rest stay as the call's events.
-function splitServed(events: ProviderEvent[]) {
-  const last = events.filter((e) => e.action === "served").at(-1);
-  const usage = events.filter((e) => e.action === "usage").at(-1);
-  return {
-    served: last ? { provider: last.provider, model: last.model } : {},
-    tokens: {
-      inputTokens: usage?.inputTokens ?? null,
-      outputTokens: usage?.outputTokens ?? null,
-    },
-    providerEvents: events.filter(
-      (e) => e.action !== "served" && e.action !== "usage",
-    ),
-  };
-}
-
-function okOutcome(attempt: number, events: ProviderEvent[]): CoachOutcome {
-  if (events.some((e) => e.action === "fallback")) return "switched";
-  if (attempt > 1 || events.some((e) => e.action === "retry")) return "retried";
-  return "ok";
 }

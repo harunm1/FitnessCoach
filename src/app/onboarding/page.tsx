@@ -1,7 +1,10 @@
 import Link from "next/link";
 import QuizForm from "@/components/QuizForm";
+import { requireUser } from "@/lib/auth/session";
 
-export default function OnboardingPage() {
+export default async function OnboardingPage() {
+  await requireUser();
+
   return (
     <main className="min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12">
       <div className="mx-auto max-w-2xl">
