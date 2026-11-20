@@ -82,6 +82,26 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Did with it:** reviewed each module against the rules above and ran the tests, typecheck and lint before each pull request (#45, #47, #48, #49, #53, #54). Saving a week once to a real PostgreSQL (PGlite with all migrations) showed that in a two- or three-run week the long run came out shorter than the easy run; the unit tests had passed because none checked it. I changed the shares and added a test that the long run is the longest for two to five run days. I checked the Groq free-tier limits cited in Section 2 against Groq's own rate-limits page.
 
+### 5 November 2026, hosting choice and deploy config (issue #57)
+
+**Before asking:** D5 already said we deploy for the demo. I set the conditions: free tiers with no card, a hosted PostgreSQL that does not expire before the presentation, `prisma migrate deploy` on release rather than by hand, every variable in `.env.example` with no secrets committed, and no accounts created until the config was reviewed. The course accepts a local demo, so this is for integration and the pilot.
+
+**Asked:** to compare Vercel with Neon, Railway and Render against each provider's own pricing and docs pages as of today, and how Prisma 7 should connect to Neon from Vercel.
+
+**Got:** Render's free PostgreSQL is deleted 30 days after creation and its web service sleeps after 15 minutes; Railway gives a 30-day $5 trial, then $1 a month; Vercel Hobby is free with a 300-second function limit and Neon Free needs no card. Neon's Prisma guide uses the pooled string for the app and a direct string for the CLI. A suggestion to migrate only on production builds, so a pull request preview never applies an unmerged migration to the shared database.
+
+**Did with it:** recorded the choice and the options it beat as D19 with the sources and the date checked; wrote the two rules (which URL the CLI uses, which steps a build runs) as a small module with six tests written first and seen failing; added `vercel.json`, the build script, the `.env.example` entry and the README Deploy steps. CI already runs `npm run build`. Creating the accounts, seeding Neon and checking the demo path on the live URL are the steps left to me.
+
+### 5 November 2026, deploy review fixes (issue #57, PR #61)
+
+**Before asking:** an independent review of #61 found that previews would share the production database. I listed the fixes I wanted: a separate Neon branch for previews with Preview-scoped variables, a connection timeout for a database waking from suspend, the Neon region next to Vercel's functions, the release script run in CI, a pinned Node version, and a note on who owns the Vercel project.
+
+**Asked:** to check each fix against Prisma's Vercel guide, Neon's Prisma guide and Vercel's Git, function and Node.js docs, and to apply them.
+
+**Got:** Prisma's guide says a pull request with a migration would change the production schema and recommends a second database scoped to Preview; Neon's guide gives `connect_timeout=15` for P1001 on wake; Vercel's default function region is `iad1`; Node 22.x is still offered; Vercel's Hobby commit-author check applies to private repositories in organizations, not to our public repository.
+
+**Did with it:** updated the README Deploy steps and the D19 cost, switched CI from `npm run build` to `scripts/vercel-build.ts` (so the first 5 November entry's "CI already runs `npm run build`" no longer holds), and added `engines` to `package.json`. A second independent review then found that Vercel lets only the owner of a personal-account repository import it, so Mohammad creates the Vercel project; that previews with their own database should migrate too, which I changed test first; and that `npx` should not fetch missing binaries. I checked each against Vercel's and Neon's docs, fixed them, and reran lint, typecheck, tests and the format check.
+
 ### 6 November 2026, Section 2 trim for the final proposal (issues #4, #13)
 
 **Before asking:** the four sections came to about 2,280 words against the 2,000-word cap, and Section 2 (mine) was the longest. I set the rule for the cut: every objective, the diagram, the entity table, the decision and failure tables and both advanced features stay; only repetition and wording go. The technologies table repeated 2.2 and 2.3, so it could become one sentence.
@@ -195,6 +215,16 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 **Got:** Groq serves `openai/gpt-oss-safeguard-20b` for bring-your-own-policy moderation, in preview (Groq content-moderation and model pages, 6 Nov); 67 new word-list cases and two new test files that failed first; `distress.ts` (check-in), `safetyScreen.ts` (layers, 3-second limit, model failure falls back to the word list) and `safetyModel.ts` (policy in Groq's recommended four sections, JSON output).
 
 **Did with it:** checked that every earlier case still passes, wrote the decision as D15 in `docs/ARCHITECTURE.md` with the option it beat, and kept the check-in wording short with 9-8-8 and 911 in it. Nothing in the app calls the screen yet; the chat code (#53) does next. A second fresh review found more missed crisis and cardiac wordings, a distress reading from the model replacing the eating-support and pain-stop replies, and crisis messages softened to the check-in by any gym word. I kept the design and tightened it: a reply that already gives specific help now outranks a distress reading; exaggeration counts only when tied to the session and nothing states intent; any message with crisis words that would get the off-topic redirect gets the check-in; and every new wording became a test that failed first (64).
+
+### 8 November 2026, shadcn/ui in the foundation (issue #75)
+
+**Before asking:** the course requires shadcn/ui or a similar library, and `main` had none. I decided to set it up once in the foundation with the same choices as my Assignment 4 (Base UI, Nova preset), so the project and the assignment follow one convention, and to move only the root page onto the components so no teammate's screen changes under them.
+
+**Asked:** what the current shadcn CLI offers for an existing Next.js 16 and Tailwind 4 app, what `init` changes, and whether any of it alters the existing screens.
+
+**Got:** CLI 4.23.0 with `--base` (Base UI, Radix or React Aria) and `--preset`, whose default is base-nova; `init` wrote `components.json`, `src/lib/utils.ts` and the theme tokens in `globals.css`, and pulled in shadcn's own `cn` package in place of `clsx` and `tailwind-merge`. Two lines needed attention: a font variable that referred to itself, and a global focus-outline colour that would restyle the teammates' buttons and links.
+
+**Did with it:** checked the `cn` package's maintainer and repository before keeping it, fixed the font variable, left the outline colour out, and kept the app's background, foreground and primary colours so existing screens look the same; every border on those screens already names its colour, so the new default border colour does not reach them. Wrote the root page test first and saw it fail, then moved the page onto Card and `buttonVariants()` on the link, as in Lecture 8. Added a Vitest config so tests resolve the `@/` alias. Recorded the version and sources in `docs/RESEARCH.md` and decision D20 in `docs/ARCHITECTURE.md`. An independent review before the pull request found the link carried two conflicting paddings (now merged with `cn()`), a focus ring below 3:1 contrast (the ring now uses the ink colour), the CLI installed as a production dependency (moved to dev, which clears six audit advisories), and three doc claims stated more broadly than their sources; each was fixed, and the padding fix has a test that failed first. The issue also lists Form; the base-nova registry's `form` item is empty and Field replaces it, so it waits for the first form that uses it.
 
 ### 8 November 2026, loading and error states on every route (issue #72)
 
@@ -429,6 +459,16 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 **Got:** Neon's docs (checked 17 Nov) confirm `DATABASE_URL` is pooled and `DATABASE_URL_UNPOOLED` direct, with preview values given to each deployment's build, so #61's rule (migrate over the direct URL on hosted builds) already fit. The review found one real fault: CI runs the build script against the test database, so the seeded library would have changed which exercises the browser test's starter plan picks. It also found that the script handing the blank demo password to the seed was untested, and that three doc statements were off: preview cleanup on Hobby is 30 days, not months; preview branches come from the default branch; Neon describes a custom variable prefix as added in front of `DATABASE_URL`.
 
 **Did with it:** gave the CI build its own empty database (which also checks migrate-from-empty plus seed), moved the step loop into a tested `runSteps` and checked that removing the blank password or the stop on failure makes a test fail, corrected the README and D19, and asked Mohammad to confirm the variable names in Vercel. Unpinned seed download left as a follow-up issue. Tools: Claude Code with the `vercel:deployments-cicd`, `opinionated-prisma:migration-safety` and `superpowers:verification-before-completion` skills, its code-reviewer agent (review and delta check) and workflow-guardian agent (CI change), Context7 and Firecrawl for the Neon docs, `gh`, Vitest, ESLint, Prettier.
+
+### 18 November 2026, bringing the streamed coach replies up to date with `main` (issue #11, pull request #56)
+
+**Before asking:** Shubham asked for #56's conflicts to be resolved and CI rerun before he re-checks his four points: the safety limits, the body-read fallback, the upstream cancellation and the empty-stream handling. Since the PR was opened, `main` had rewritten the coach's providers and added a log record for each model call. My plan was to merge `main` rather than rebase, keep `main`'s provider types and logging as the base, and move the streaming onto them. The checks a message goes through before the model call would be one shared step for the plain and the streamed turn, so the two cannot drift apart again.
+
+**Asked:** an AI assistant (Claude Code) to resolve the merge on that plan. It was to write failing tests first for the behaviour that had to change: one log record per streamed call, including when the reader stops early; the serving model named in that record; and a stream with no text moving to the other provider, as a plain reply with no text already does. Then a reviewer that had not seen the work would check the merge against `main` and against the old PR head.
+
+**Got:** the merged branch, with the streamed turn in its own module and the request settings shared with the plain call. The review found no errors. It found one real gap: a stream that sent only whitespace counted as started, so the other provider was never tried. The delta check then found that such whitespace would show as a blank first line. While merging I also found that `main` itself failed its type check after #97 and #101 landed together: a test fixture lacked the now-required RPE.
+
+**Did with it:** had both whitespace gaps fixed test-first, each test shown failing before its fix. I checked by mutation that removing each new record or served event fails a test, noted in D10 that the stream has no same-provider retry, and added the RPE to the fixture so the branch type-checks. Lint, type check, Prettier and the 1,384 unit tests pass locally; CI (unit, integration, e2e) is green. Tools: Claude Code with the `mattpocock-skills:resolving-merge-conflicts` and `superpowers:verification-before-completion` skills, its `pr-review-toolkit:code-reviewer` agent (blind review and delta check), `gh`, Vitest, ESLint, Prettier.
 
 ## Mohammad
 

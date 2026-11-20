@@ -1,0 +1,1435 @@
+{
+  "promptVersion": "plan-v3",
+  "promptFingerprint": "6d14992702a470245915112c25a8ef116419eae77cc4d429ae9f310e63f877cf",
+  "source": "eval/results/2026-11-20-chain-fixtures-demo-v3-all.jsonl",
+  "plans": [
+    {
+      "profileId": "gym-3-days",
+      "reply": {
+        "name": "3-Day Strength Plan",
+        "days": [
+          {
+            "name": "Day 1 - Upper Push",
+            "exercises": [
+              {
+                "exercise": "Barbell Bench Press - Medium Grip",
+                "sets": 4,
+                "reps": 8,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Barbell Shoulder Press",
+                "sets": 4,
+                "reps": 8,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Incline Dumbbell Press",
+                "sets": 3,
+                "reps": 10,
+                "restSeconds": 90,
+                "rpe": 7
+              },
+              {
+                "exercise": "Side Lateral Raise",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Triceps Pushdown",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 8
+              },
+              {
+                "exercise": "Push-Ups - Close Triceps Position",
+                "sets": 3,
+                "reps": 15,
+                "restSeconds": 60,
+                "rpe": 7
+              }
+            ]
+          },
+          {
+            "name": "Day 2 - Lower Body",
+            "exercises": [
+              {
+                "exercise": "Barbell Deadlift",
+                "sets": 4,
+                "reps": 6,
+                "restSeconds": 180,
+                "rpe": 9
+              },
+              {
+                "exercise": "Barbell Full Squat",
+                "sets": 4,
+                "reps": 6,
+                "restSeconds": 180,
+                "rpe": 9
+              },
+              {
+                "exercise": "Romanian Deadlift",
+                "sets": 3,
+                "reps": 10,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Leg Press",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 7
+              },
+              {
+                "exercise": "Standing Calf Raises",
+                "sets": 4,
+                "reps": 15,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Plank",
+                "sets": 3,
+                "reps": 1,
+                "restSeconds": 60,
+                "rpe": 6
+              }
+            ]
+          },
+          {
+            "name": "Day 3 - Pull & Core",
+            "exercises": [
+              {
+                "exercise": "Bent Over Barbell Row",
+                "sets": 4,
+                "reps": 8,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Pullups",
+                "sets": 4,
+                "reps": 6,
+                "restSeconds": 120,
+                "rpe": 9
+              },
+              {
+                "exercise": "Face Pull",
+                "sets": 3,
+                "reps": 15,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Barbell Curl",
+                "sets": 3,
+                "reps": 10,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Hammer Curls",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Cable Crunch",
+                "sets": 3,
+                "reps": 15,
+                "restSeconds": 60,
+                "rpe": 7
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "profileId": "gym-5-days",
+      "reply": {
+        "name": "5-Day Strength Plan",
+        "days": [
+          {
+            "name": "Day 1",
+            "exercises": [
+              {
+                "exercise": "Barbell Bench Press - Medium Grip",
+                "sets": 4,
+                "reps": 8,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Bent Over Barbell Row",
+                "sets": 4,
+                "reps": 8,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Barbell Squat",
+                "sets": 4,
+                "reps": 6,
+                "restSeconds": 180,
+                "rpe": 9
+              },
+              {
+                "exercise": "Standing Barbell Calf Raise",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Plank",
+                "sets": 3,
+                "reps": 1,
+                "restSeconds": 60,
+                "rpe": 6
+              }
+            ]
+          },
+          {
+            "name": "Day 2",
+            "exercises": [
+              {
+                "exercise": "Incline Dumbbell Press",
+                "sets": 4,
+                "reps": 10,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "One-Arm Dumbbell Row",
+                "sets": 4,
+                "reps": 10,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Leg Press",
+                "sets": 4,
+                "reps": 10,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Seated Dumbbell Press",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 7
+              },
+              {
+                "exercise": "Cable Crunch",
+                "sets": 3,
+                "reps": 15,
+                "restSeconds": 60,
+                "rpe": 7
+              }
+            ]
+          },
+          {
+            "name": "Day 3",
+            "exercises": [
+              {
+                "exercise": "Close-Grip Barbell Bench Press",
+                "sets": 4,
+                "reps": 8,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Pullups",
+                "sets": 4,
+                "reps": 6,
+                "restSeconds": 150,
+                "rpe": 9
+              },
+              {
+                "exercise": "Romanian Deadlift",
+                "sets": 4,
+                "reps": 8,
+                "restSeconds": 150,
+                "rpe": 8
+              },
+              {
+                "exercise": "Standing Dumbbell Calf Raise",
+                "sets": 3,
+                "reps": 15,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Hanging Leg Raise",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 7
+              }
+            ]
+          },
+          {
+            "name": "Day 4",
+            "exercises": [
+              {
+                "exercise": "Dumbbell Bench Press",
+                "sets": 4,
+                "reps": 10,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Bent Over Two-Dumbbell Row",
+                "sets": 4,
+                "reps": 10,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Front Barbell Squat",
+                "sets": 4,
+                "reps": 8,
+                "restSeconds": 150,
+                "rpe": 8
+              },
+              {
+                "exercise": "Side Lateral Raise",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Cable Russian Twists",
+                "sets": 3,
+                "reps": 15,
+                "restSeconds": 60,
+                "rpe": 7
+              }
+            ]
+          },
+          {
+            "name": "Day 5",
+            "exercises": [
+              {
+                "exercise": "Barbell Deadlift",
+                "sets": 4,
+                "reps": 5,
+                "restSeconds": 180,
+                "rpe": 9
+              },
+              {
+                "exercise": "Incline Push-Up",
+                "sets": 4,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Split Squat with Dumbbells",
+                "sets": 4,
+                "reps": 10,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Face Pull",
+                "sets": 3,
+                "reps": 15,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Russian Twist",
+                "sets": 3,
+                "reps": 20,
+                "restSeconds": 60,
+                "rpe": 7
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "profileId": "gym-4-days-knee",
+      "reply": {
+        "name": "4-Day Strength Plan",
+        "days": [
+          {
+            "name": "Day 1 - Upper Push",
+            "exercises": [
+              {
+                "exercise": "Barbell Bench Press - Medium Grip",
+                "sets": 4,
+                "reps": 8,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Barbell Shoulder Press",
+                "sets": 3,
+                "reps": 10,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Incline Dumbbell Press",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 7
+              },
+              {
+                "exercise": "Side Lateral Raise",
+                "sets": 3,
+                "reps": 15,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Triceps Pushdown",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 8
+              }
+            ]
+          },
+          {
+            "name": "Day 2 - Lower Body",
+            "exercises": [
+              {
+                "exercise": "Barbell Glute Bridge",
+                "sets": 4,
+                "reps": 10,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Romanian Deadlift",
+                "sets": 4,
+                "reps": 8,
+                "restSeconds": 150,
+                "rpe": 9
+              },
+              {
+                "exercise": "Standing Barbell Calf Raise",
+                "sets": 4,
+                "reps": 15,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Floor Glute-Ham Raise",
+                "sets": 3,
+                "reps": 8,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Plank",
+                "sets": 3,
+                "reps": 1,
+                "restSeconds": 90,
+                "rpe": 7
+              }
+            ]
+          },
+          {
+            "name": "Day 3 - Upper Pull",
+            "exercises": [
+              {
+                "exercise": "Pullups",
+                "sets": 4,
+                "reps": 6,
+                "restSeconds": 150,
+                "rpe": 9
+              },
+              {
+                "exercise": "Bent Over Barbell Row",
+                "sets": 4,
+                "reps": 8,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Face Pull",
+                "sets": 3,
+                "reps": 15,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Barbell Curl",
+                "sets": 3,
+                "reps": 10,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Cable Shrugs",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 7
+              }
+            ]
+          },
+          {
+            "name": "Day 4 - Full Body / Core",
+            "exercises": [
+              {
+                "exercise": "Dumbbell Bench Press",
+                "sets": 3,
+                "reps": 10,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Standing Dumbbell Press",
+                "sets": 3,
+                "reps": 10,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Single Leg Glute Bridge",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 7
+              },
+              {
+                "exercise": "Hanging Leg Raise",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Cable Russian Twists",
+                "sets": 3,
+                "reps": 20,
+                "restSeconds": 60,
+                "rpe": 7
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "profileId": "machines-6-days",
+      "reply": {
+        "name": "6-Day Strength Plan",
+        "days": [
+          {
+            "name": "Day 1",
+            "exercises": [
+              {
+                "exercise": "Bench Dips",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 7
+              },
+              {
+                "exercise": "Bodyweight Squat",
+                "sets": 4,
+                "reps": 15,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Cable Chest Press",
+                "sets": 3,
+                "reps": 10,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Cable Hammer Curls - Rope Attachment",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Plank",
+                "sets": 3,
+                "reps": 1,
+                "restSeconds": 60,
+                "rpe": 6
+              }
+            ]
+          },
+          {
+            "name": "Day 2",
+            "exercises": [
+              {
+                "exercise": "Push-Ups - Close Triceps Position",
+                "sets": 4,
+                "reps": 10,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Leg Press",
+                "sets": 4,
+                "reps": 12,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Cable Rear Delt Fly",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Machine Bicep Curl",
+                "sets": 3,
+                "reps": 10,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Side Jackknife",
+                "sets": 3,
+                "reps": 15,
+                "restSeconds": 45,
+                "rpe": 6
+              }
+            ]
+          },
+          {
+            "name": "Day 3",
+            "exercises": [
+              {
+                "exercise": "Dips - Triceps Version",
+                "sets": 3,
+                "reps": 8,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Smith Machine Squat",
+                "sets": 4,
+                "reps": 10,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Incline Cable Chest Press",
+                "sets": 3,
+                "reps": 10,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Face Pull",
+                "sets": 3,
+                "reps": 15,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Hanging Leg Raise",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 7
+              }
+            ]
+          },
+          {
+            "name": "Day 4",
+            "exercises": [
+              {
+                "exercise": "Body-Up",
+                "sets": 3,
+                "reps": 6,
+                "restSeconds": 90,
+                "rpe": 9
+              },
+              {
+                "exercise": "Freehand Jump Squat",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 8
+              },
+              {
+                "exercise": "Cable Shoulder Press",
+                "sets": 3,
+                "reps": 10,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Standing Biceps Cable Curl",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Russian Twist",
+                "sets": 3,
+                "reps": 20,
+                "restSeconds": 45,
+                "rpe": 6
+              }
+            ]
+          },
+          {
+            "name": "Day 5",
+            "exercises": [
+              {
+                "exercise": "Push-Up Wide",
+                "sets": 4,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Leg Extensions",
+                "sets": 3,
+                "reps": 15,
+                "restSeconds": 90,
+                "rpe": 7
+              },
+              {
+                "exercise": "Machine Shoulder (Military) Press",
+                "sets": 3,
+                "reps": 10,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Cable Shrugs",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Crunches",
+                "sets": 3,
+                "reps": 20,
+                "restSeconds": 45,
+                "rpe": 6
+              }
+            ]
+          },
+          {
+            "name": "Day 6",
+            "exercises": [
+              {
+                "exercise": "Cable Rope Overhead Triceps Extension",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 7
+              },
+              {
+                "exercise": "Smith Machine Stiff-Legged Deadlift",
+                "sets": 4,
+                "reps": 10,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Inverted Row",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Standing Low-Pulley Deltoid Raise",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Seated Calf Raise",
+                "sets": 3,
+                "reps": 15,
+                "restSeconds": 60,
+                "rpe": 6
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "profileId": "dumbbells-bands-3-days-shoulder",
+      "reply": {
+        "name": "3-Day Strength Plan",
+        "days": [
+          {
+            "name": "Day 1",
+            "exercises": [
+              {
+                "exercise": "Bodyweight Squat",
+                "sets": 4,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 7
+              },
+              {
+                "exercise": "Dumbbell Lunges",
+                "sets": 3,
+                "reps": 10,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Dumbbell Shrug",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Crunches",
+                "sets": 3,
+                "reps": 20,
+                "restSeconds": 45,
+                "rpe": 6
+              },
+              {
+                "exercise": "Plank",
+                "sets": 3,
+                "reps": 1,
+                "restSeconds": 60,
+                "rpe": 7
+              }
+            ]
+          },
+          {
+            "name": "Day 2",
+            "exercises": [
+              {
+                "exercise": "Pullups",
+                "sets": 4,
+                "reps": 8,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Dumbbell Bicep Curl",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Dumbbell Alternate Bicep Curl",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Hyperextensions With No Hyperextension Bench",
+                "sets": 3,
+                "reps": 15,
+                "restSeconds": 90,
+                "rpe": 7
+              },
+              {
+                "exercise": "Russian Twist",
+                "sets": 3,
+                "reps": 20,
+                "restSeconds": 45,
+                "rpe": 6
+              }
+            ]
+          },
+          {
+            "name": "Day 3",
+            "exercises": [
+              {
+                "exercise": "Butt Lift (Bridge)",
+                "sets": 4,
+                "reps": 15,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Single Leg Glute Bridge",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Standing Dumbbell Calf Raise",
+                "sets": 4,
+                "reps": 15,
+                "restSeconds": 45,
+                "rpe": 6
+              },
+              {
+                "exercise": "Dumbbell Flyes",
+                "sets": 3,
+                "reps": 10,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Side Jackknife",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 45,
+                "rpe": 6
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "profileId": "dumbbells-3-days",
+      "reply": {
+        "name": "3-Day Weekly Strength Plan",
+        "days": [
+          {
+            "name": "Day 1",
+            "exercises": [
+              {
+                "exercise": "Bench Dips",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Bodyweight Squat",
+                "sets": 4,
+                "reps": 15,
+                "restSeconds": 90,
+                "rpe": 7
+              },
+              {
+                "exercise": "Seated Dumbbell Press",
+                "sets": 3,
+                "reps": 10,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Bent Over Two-Dumbbell Row",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Plank",
+                "sets": 3,
+                "reps": 1,
+                "restSeconds": 60,
+                "rpe": 7
+              }
+            ]
+          },
+          {
+            "name": "Day 2",
+            "exercises": [
+              {
+                "exercise": "Push-Up Wide",
+                "sets": 4,
+                "reps": 10,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Dumbbell Lunges",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Side Lateral Raise",
+                "sets": 3,
+                "reps": 15,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Inverted Row",
+                "sets": 3,
+                "reps": 10,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Standing Dumbbell Calf Raise",
+                "sets": 3,
+                "reps": 15,
+                "restSeconds": 60,
+                "rpe": 7
+              }
+            ]
+          },
+          {
+            "name": "Day 3",
+            "exercises": [
+              {
+                "exercise": "Decline Dumbbell Flyes",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Split Squat with Dumbbells",
+                "sets": 3,
+                "reps": 10,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Bent Over Dumbbell Rear Delt Raise With Head On Bench",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Chin-Up",
+                "sets": 3,
+                "reps": 8,
+                "restSeconds": 150,
+                "rpe": 9
+              },
+              {
+                "exercise": "Hanging Leg Raise",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 8
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "profileId": "dumbbells-1-day-wrist",
+      "reply": {
+        "name": "Full Body Strength",
+        "days": [
+          {
+            "name": "Day 1",
+            "exercises": [
+              {
+                "exercise": "Push-Up Wide",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 7
+              },
+              {
+                "exercise": "Bodyweight Squat",
+                "sets": 4,
+                "reps": 15,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Bent Over Two-Dumbbell Row",
+                "sets": 3,
+                "reps": 10,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Standing Dumbbell Press",
+                "sets": 3,
+                "reps": 8,
+                "restSeconds": 120,
+                "rpe": 7
+              },
+              {
+                "exercise": "Dumbbell Shrug",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 7
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "profileId": "kettlebells-2-days-back-shoulder",
+      "reply": {
+        "name": "2-Day Weekly Strength Plan",
+        "days": [
+          {
+            "name": "Day 1",
+            "exercises": [
+              {
+                "exercise": "Alternating Kettlebell Row",
+                "sets": 4,
+                "reps": 8,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Bodyweight Squat",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Pullups",
+                "sets": 3,
+                "reps": 6,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Crunches",
+                "sets": 3,
+                "reps": 15,
+                "restSeconds": 45,
+                "rpe": 7
+              },
+              {
+                "exercise": "Butt Lift (Bridge)",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 60,
+                "rpe": 7
+              }
+            ]
+          },
+          {
+            "name": "Day 2",
+            "exercises": [
+              {
+                "exercise": "Inverted Row",
+                "sets": 4,
+                "reps": 8,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Bodyweight Walking Lunge",
+                "sets": 3,
+                "reps": 10,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Chin-Up",
+                "sets": 3,
+                "reps": 5,
+                "restSeconds": 120,
+                "rpe": 9
+              },
+              {
+                "exercise": "Plank",
+                "sets": 3,
+                "reps": 1,
+                "restSeconds": 60,
+                "rpe": 8
+              },
+              {
+                "exercise": "Scapular Pull-Up",
+                "sets": 3,
+                "reps": 8,
+                "restSeconds": 60,
+                "rpe": 7
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "profileId": "bodyweight-2-days",
+      "reply": {
+        "name": "2-Day Weekly Strength Plan",
+        "days": [
+          {
+            "name": "Day 1",
+            "exercises": [
+              {
+                "exercise": "Push-Ups - Close Triceps Position",
+                "sets": 4,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 7
+              },
+              {
+                "exercise": "Bodyweight Squat",
+                "sets": 4,
+                "reps": 15,
+                "restSeconds": 90,
+                "rpe": 7
+              },
+              {
+                "exercise": "Butt Lift (Bridge)",
+                "sets": 3,
+                "reps": 20,
+                "restSeconds": 60,
+                "rpe": 6
+              },
+              {
+                "exercise": "Pullups",
+                "sets": 3,
+                "reps": 8,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Plank",
+                "sets": 3,
+                "reps": 1,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Scapular Pull-Up",
+                "sets": 2,
+                "reps": 10,
+                "restSeconds": 75,
+                "rpe": 6
+              }
+            ]
+          },
+          {
+            "name": "Day 2",
+            "exercises": [
+              {
+                "exercise": "Incline Push-Up",
+                "sets": 4,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 7
+              },
+              {
+                "exercise": "Bodyweight Walking Lunge",
+                "sets": 4,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 7
+              },
+              {
+                "exercise": "Single Leg Glute Bridge",
+                "sets": 3,
+                "reps": 15,
+                "restSeconds": 60,
+                "rpe": 6
+              },
+              {
+                "exercise": "Chin-Up",
+                "sets": 3,
+                "reps": 6,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Russian Twist",
+                "sets": 3,
+                "reps": 20,
+                "restSeconds": 60,
+                "rpe": 7
+              },
+              {
+                "exercise": "Hyperextensions With No Hyperextension Bench",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 7
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "profileId": "bodyweight-4-days-back",
+      "reply": {
+        "name": "4-Day Strength Plan",
+        "days": [
+          {
+            "name": "Day 1 - Upper Body Push",
+            "exercises": [
+              {
+                "exercise": "Push-Ups - Close Triceps Position",
+                "sets": 4,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 7
+              },
+              {
+                "exercise": "Incline Push-Up",
+                "sets": 3,
+                "reps": 10,
+                "restSeconds": 90,
+                "rpe": 8
+              },
+              {
+                "exercise": "Bench Dips",
+                "sets": 3,
+                "reps": 15,
+                "restSeconds": 75,
+                "rpe": 7
+              },
+              {
+                "exercise": "Handstand Push-Ups",
+                "sets": 2,
+                "reps": 6,
+                "restSeconds": 120,
+                "rpe": 8
+              }
+            ]
+          },
+          {
+            "name": "Day 2 - Lower Body Strength",
+            "exercises": [
+              {
+                "exercise": "Bodyweight Squat",
+                "sets": 5,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 7
+              },
+              {
+                "exercise": "Bodyweight Walking Lunge",
+                "sets": 4,
+                "reps": 10,
+                "restSeconds": 90,
+                "rpe": 7
+              },
+              {
+                "exercise": "Freehand Jump Squat",
+                "sets": 3,
+                "reps": 8,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Butt Lift (Bridge)",
+                "sets": 3,
+                "reps": 15,
+                "restSeconds": 75,
+                "rpe": 6
+              },
+              {
+                "exercise": "Single Leg Glute Bridge",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 75,
+                "rpe": 6
+              }
+            ]
+          },
+          {
+            "name": "Day 3 - Pull & Core",
+            "exercises": [
+              {
+                "exercise": "Pullups",
+                "sets": 4,
+                "reps": 8,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Inverted Row",
+                "sets": 4,
+                "reps": 10,
+                "restSeconds": 90,
+                "rpe": 7
+              },
+              {
+                "exercise": "Chin-Up",
+                "sets": 3,
+                "reps": 6,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Plank",
+                "sets": 3,
+                "reps": 1,
+                "restSeconds": 60,
+                "rpe": 6
+              },
+              {
+                "exercise": "Crunches",
+                "sets": 3,
+                "reps": 20,
+                "restSeconds": 60,
+                "rpe": 6
+              }
+            ]
+          },
+          {
+            "name": "Day 4 - Full Body & Explosive",
+            "exercises": [
+              {
+                "exercise": "Bench Jump",
+                "sets": 4,
+                "reps": 8,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Knee Tuck Jump",
+                "sets": 3,
+                "reps": 10,
+                "restSeconds": 120,
+                "rpe": 8
+              },
+              {
+                "exercise": "Scapular Pull-Up",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 7
+              },
+              {
+                "exercise": "Isometric Neck Exercise - Front And Back",
+                "sets": 2,
+                "reps": 1,
+                "restSeconds": 60,
+                "rpe": 6
+              },
+              {
+                "exercise": "Hanging Leg Raise",
+                "sets": 3,
+                "reps": 12,
+                "restSeconds": 90,
+                "rpe": 7
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

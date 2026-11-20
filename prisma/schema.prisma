@@ -276,6 +276,7 @@ enum CoachEventOutcome {
   rejected
   error
   rule_based
+  cached
 }
 
 // One record per coach call. Prompt/profile input is deliberately not stored.

@@ -76,7 +76,7 @@ The [acceptance checklist](docs/ACCOUNTS_TESTING.md) documents expected results 
 all three accounts milestones. The commands below are a database/app overview;
 configure authentication and mail before testing signup.
 
-Prerequisites: Node.js 22.13 or newer, npm, and Docker Desktop with Docker Compose available.
+Prerequisites: Node.js 22 (22.13 or newer; `engines` in `package.json` is `^22.13.0`, the line CI and the hosted build use), npm, and Docker Desktop with Docker Compose available.
 Start Docker Desktop before running the Docker commands. When using WSL, enable
 Docker Desktop integration for your distribution.
 
@@ -163,6 +163,8 @@ GROQ_API_KEY=""     # console.groq.com/keys
 GEMINI_API_KEY=""   # aistudio.google.com/apikey
 ```
 
+For the demo, set `COACH_DEMO_MODE=1` and `GEMINI_MODEL="gemini-3.5-flash-lite"`, the fallback model the 30 October eval used (D6). Each provider call then stops after 8 seconds and nothing waits for a retry; the default Gemini Flash took a median of 9.9 seconds in the first eval round, so it would time out. When the coach fails, the user gets a coach plan written earlier (`src/lib/coach/demoPlans.json`) that passes the verifier for their profile, before the rule-based plan (D12 in [ARCHITECTURE.md](docs/ARCHITECTURE.md)). After a change to the plan prompt, refresh it from a new eval run with `npx tsx scripts/demo-plans.ts <results.jsonl> <prompt version>`.
+
 For user-scoped coach-call storage, see
 [COACH_EVENTS.md](docs/COACH_EVENTS.md). It explains the #52 migration, metadata,
 privacy boundaries and connecting the sink to an authenticated coach caller.
@@ -182,6 +184,110 @@ npm run test:integration
 npm run build
 npm run test:e2e
 ```
+
+## Deploy
+
+The app runs on Vercel (Hobby) with PostgreSQL on Neon (Free), connected through Vercel
+Storage; why is decision D19 in `docs/ARCHITECTURE.md`, and the setup was agreed at the
+17 November meeting (`docs/meetings/2026-11-17.md`, items 2 to 4). `vercel.json` sets the
+build command to `scripts/vercel-build.ts`. On production and preview deployments it
+first checks that `DATABASE_URL` and `DATABASE_URL_UNPOOLED` are both set and point at
+the same Neon branch, then runs `prisma migrate deploy` (over the direct URL), the
+exercise seed (`prisma db seed`, which upserts, with `DEMO_PASSWORD` blanked so no demo
+logins are created), and `next build`. With any other `VERCEL_ENV` it stops and names
+the setting to turn on; a local build is `npm run build`.
+
+The project belongs to Mohammad's Vercel Hobby account: Vercel lets only the owner of a
+personal-account repository import it. The repository stays public; Vercel's Hobby
+limits on commit authors apply to private repositories.
+
+One-time setup (steps 1 to 3 were done on 17 November):
+
+1. Mohammad imports `harunm1/FitnessCoach` with **Add New > Project** and keeps the
+   detected Next.js preset; `vercel.json` supplies the build command.
+2. **Storage > Create Database > Neon**, Free plan, region Washington, D.C. (US East,
+   next to Vercel's default function region `iad1`; Neon has no Canadian region and the
+   region cannot be changed later). Neon Auth stays off: the app has its own sign-in.
+   Connect it to Production, Preview and Development, with **Create database branch for
+   deployment: Preview** on. The integration then sets `DATABASE_URL` (pooled, for the
+   app) and `DATABASE_URL_UNPOOLED` (direct, for the Prisma CLI); production uses the
+   Neon production branch, and each Git branch with a preview deployment gets its own
+   Neon branch, made from the project's default branch (the production branch unless
+   someone changes the default)
+   ([Neon Vercel-managed integration](https://neon.com/docs/guides/vercel-managed-integration#choose-a-production-branch),
+   checked 17 Nov 2026). The 17 Nov minutes record the prefix field as `DATABASE`,
+   giving `DATABASE_URL`; Neon's page describes a custom prefix as added in front
+   (`MYDB` gives `MYDB_DATABASE_URL`) and needed only when those names are already
+   taken. Check the names under **Settings > Environment Variables**: the app and this
+   build read exactly `DATABASE_URL` and `DATABASE_URL_UNPOOLED`, and a build stops
+   naming whichever is missing.
+3. Read the production domain from **Settings > Domains** (usually
+   `<project>.vercel.app`).
+4. Under **Settings > Build and Deployment**, **Build Command** can stay as it is: the
+   `buildCommand` in `vercel.json` overrides the dashboard value for every build
+   ([vercel.json reference](https://vercel.com/docs/project-configuration/vercel-json),
+   checked 20 Nov 2026). A leftover dashboard override changes nothing, but it is
+   worth removing so the dashboard does not show a command that never runs.
+5. Under **Settings > Environment Variables**, scoped as listed:
+
+   | Name                                                                               | Environment         | Value                                                                                                                                                       |
+   | ---------------------------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | `DATABASE_URL`, `DATABASE_URL_UNPOOLED`                                            | all                 | set by the Neon integration (step 2); never edit by hand                                                                                                    |
+   | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`           | Production          | the private progress-photo bucket and an Object Read & Write token (D3); set 17 Nov                                                                         |
+   | `GROQ_API_KEY`                                                                     | Production, Preview | from console.groq.com; set 17 Nov                                                                                                                           |
+   | `GEMINI_API_KEY`                                                                   | Production, Preview | from aistudio.google.com; set 17 Nov                                                                                                                        |
+   | `BETTER_AUTH_SECRET`                                                               | Production          | still needed: a random secret of 32 or more characters (the `node -e` line in `.env.example`)                                                               |
+   | `BETTER_AUTH_URL`                                                                  | Production          | still needed: the production origin, `https://<project>.vercel.app`, with no path                                                                           |
+   | `STRIPE_SECRET_KEY`, `STRIPE_MONTHLY_PRICE_ID`, `STRIPE_YEARLY_PRICE_ID`           | Production          | still needed: the Stripe sandbox (test mode) key and prices, as in `docs/BILLING.md`                                                                        |
+   | `STRIPE_WEBHOOK_SECRET`                                                            | Production          | still needed: the signing secret of a webhook registered for `https://<project>.vercel.app/api/stripe/webhook` with the events in `docs/BILLING.md`         |
+   | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_FROM`, `SMTP_USER`, `SMTP_PASSWORD` | Production          | still needed (not in the 17 Nov list): a hosted SMTP service with a verified sender; sign-up needs a verified address, and Mailpit does not exist on Vercel |
+
+   `COACH_PROVIDER` stays unset: the coach defaults to Groq. `DEMO_PASSWORD` is never
+   set on Vercel: demo logins are for local databases only.
+
+   On the same page, keep **Enable access to System Environment Variables** turned
+   on: the build reads `VERCEL_ENV` to decide whether to migrate, and stops with that
+   setting named whenever `VERCEL_ENV` is not `production` or `preview`.
+
+6. Deploy. Each push to `main` redeploys production and applies any new migration to
+   the Neon production branch, then the seed; each pull request gets its own preview
+   URL and its own Neon branch, migrated and seeded before the build. A build stops
+   before any step, with the variable named, if `VERCEL_ENV` is missing, a database URL
+   is missing or unreadable, the direct URL is the pooled one, or the two point at
+   different branches. Request size: a Vercel Function accepts a request body of at
+   most 4.5 MB and answers anything larger with `413 FUNCTION_PAYLOAD_TOO_LARGE`
+   ([Vercel Functions limits](https://vercel.com/docs/functions/limitations), checked
+   13 Nov 2026). Server Actions are function requests, so an upload sent through one
+   (photos, #16) must stay under that size on the hosted app, whatever
+   `serverActions.bodySizeLimit` says locally.
+7. Deployment Protection: new Vercel projects protect preview URLs with a Vercel login.
+   Previews are for checking the build and the migrations: auth is not configured on
+   them (`BETTER_AUTH_URL` and `BETTER_AUTH_SECRET` are Production only), so pages that
+   need a session show the error page there. Use the production URL for the demo.
+
+Migrations run before the new build goes live, so the running version briefly meets
+the new schema: keep migrations additive (new tables and nullable columns), and drop or
+rename in a later change. A preview branch is made from the default branch, so it holds
+a copy of production's accounts: treat preview URLs as private and keep Deployment
+Protection on. Neon deletes a preview branch when its last Vercel deployment is
+deleted: on Hobby, Vercel keeps preview deployments 30 days by default, or delete all
+of that Git branch's preview deployments by hand to clean up at once
+([preview branch cleanup](https://neon.com/docs/guides/vercel-branch-cleanup), checked
+17 Nov 2026); delete stale branches in the Neon console if the Free plan's branch limit
+is reached.
+
+The seed downloads the free-exercise-db list from GitHub (`prisma/seed.ts`) on every
+hosted build. If GitHub is unreachable, or the list upstream drops an exercise that has
+curated cues, the seed step fails and the build stops before going live; the running
+version stays up. Redeploy once GitHub answers; for a dropped exercise, update
+`prisma/exerciseCueData.ts`.
+
+If `prisma migrate deploy` fails partway through a migration, Prisma records the
+failure and refuses later deploys until it is resolved. Either undo whatever part of
+the migration did apply and run `npx prisma migrate resolve --rolled-back
+<migration_name>`, or finish the migration by hand and run `--applied` instead; run
+either with `DATABASE_URL` set to that branch's direct string (`DATABASE_URL_UNPOOLED`
+in Vercel), then redeploy.
 
 ## How we work
 
