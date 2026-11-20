@@ -1,34 +1,43 @@
 import { describe, expect, it, vi } from "vitest";
 import { generatePlan, type PlanModel } from "./generatePlan";
-import { verifyPlan, type LibraryExercise, type VerifyProfile } from "./verify";
+import {
+  verifyPlan,
+  type VerifyProfile,
+  type CategorisedExercise,
+} from "./verify";
 
-const library: LibraryExercise[] = [
+const library: CategorisedExercise[] = [
   {
     id: "bench",
+    category: "strength",
     equipment: "barbell",
     primaryMuscles: ["chest"],
     secondaryMuscles: [],
   },
   {
     id: "pushup",
+    category: "strength",
     equipment: "body only",
     primaryMuscles: ["chest"],
     secondaryMuscles: [],
   },
   {
     id: "squat",
+    category: "strength",
     equipment: "barbell",
     primaryMuscles: ["quadriceps"],
     secondaryMuscles: [],
   },
   {
     id: "row",
+    category: "strength",
     equipment: "barbell",
     primaryMuscles: ["middle back"],
     secondaryMuscles: [],
   },
   {
     id: "press",
+    category: "strength",
     equipment: "barbell",
     primaryMuscles: ["shoulders"],
     secondaryMuscles: [],
@@ -44,6 +53,7 @@ const slot = (exerciseId: string) => ({
   sets: 3,
   reps: 10,
   restSeconds: 90,
+  rpe: 7,
 });
 const good = {
   name: "P",
@@ -87,7 +97,7 @@ describe("generatePlan", () => {
 });
 
 describe("the full exercise list in the prompt", () => {
-  const named: LibraryExercise[] = [
+  const named: CategorisedExercise[] = [
     {
       id: "Barbell_Bench",
       name: "Barbell Bench",
@@ -143,8 +153,14 @@ describe("the full exercise list in the prompt", () => {
         {
           name: "Full",
           exercises: [
-            { exercise: "Barbell Bench", sets: 3, reps: 8, restSeconds: 90 },
-            { exercise: "Pushups", sets: 3, reps: 12, restSeconds: 60 },
+            {
+              exercise: "Barbell Bench",
+              sets: 3,
+              reps: 8,
+              restSeconds: 90,
+              rpe: 7,
+            },
+            { exercise: "Pushups", sets: 3, reps: 12, restSeconds: 60, rpe: 7 },
           ],
         },
       ],
@@ -164,12 +180,19 @@ describe("the full exercise list in the prompt", () => {
         {
           name: "Full",
           exercises: [
-            { exercise: "barbell bench", sets: 3, reps: 8, restSeconds: 90 },
+            {
+              exercise: "barbell bench",
+              sets: 3,
+              reps: 8,
+              restSeconds: 90,
+              rpe: 7,
+            },
             {
               exercise: "chest (strength): the pushup.",
               sets: 3,
               reps: 12,
               restSeconds: 60,
+              rpe: 7,
             },
           ],
         },
@@ -190,12 +213,19 @@ describe("the full exercise list in the prompt", () => {
         {
           name: "Full",
           exercises: [
-            { exercise: "Barbell Bench", sets: 3, reps: 8, restSeconds: 90 },
+            {
+              exercise: "Barbell Bench",
+              sets: 3,
+              reps: 8,
+              restSeconds: 90,
+              rpe: 7,
+            },
             {
               exercise: "Chest Fly Machine",
               sets: 3,
               reps: 12,
               restSeconds: 60,
+              rpe: 7,
             },
           ],
         },
@@ -205,5 +235,35 @@ describe("the full exercise list in the prompt", () => {
     expect(model.mock.calls[1][0]).toMatch(
       /Chest Fly Machine: not in the exercise library/,
     );
+  });
+
+  it("asks for an RPE of 6 to 9 on every exercise (#65)", async () => {
+    const model = vi.fn<PlanModel>().mockRejectedValue(new Error("down"));
+    await generatePlan(model, user, named);
+    const prompt = model.mock.calls[0][0];
+    expect(prompt).toContain('"rpe"');
+    expect(prompt).toMatch(/rpe 6 to 9/i);
+  });
+
+  it("regenerates once when a reply has no RPE, and names the problem (#65)", async () => {
+    const withoutRpe = {
+      name: "P",
+      days: [
+        {
+          name: "Full",
+          exercises: [
+            { exercise: "Barbell Bench", sets: 3, reps: 8, restSeconds: 90 },
+            { exercise: "Pushups", sets: 3, reps: 12, restSeconds: 60 },
+          ],
+        },
+      ],
+    };
+    const model = vi.fn<PlanModel>().mockResolvedValue(withoutRpe);
+    const result = await generatePlan(model, user, named);
+    expect(model).toHaveBeenCalledTimes(2);
+    expect(model.mock.calls[1][0]).toMatch(
+      /rejected for these reasons[\s\S]*exercises\.0\.rpe/,
+    );
+    expect(result.source).toBe("DEFAULT");
   });
 });

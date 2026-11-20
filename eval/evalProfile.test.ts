@@ -1,10 +1,10 @@
 // The per-call times an eval row records must not include the wait that paces the calls (#64).
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import type { LibraryExercise } from "../src/lib/coach/verify";
+import type { CategorisedExercise } from "../src/lib/coach/verify";
 import { evalProfile, type EvalContext } from "./evalProfile";
 
-const library: LibraryExercise[] = JSON.parse(
+const library: CategorisedExercise[] = JSON.parse(
   readFileSync("eval/fixtures-library.json", "utf8"),
 );
 

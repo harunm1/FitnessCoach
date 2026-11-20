@@ -14,6 +14,7 @@ import {
 import {
   fitsProfile,
   verifyPlan,
+  type CategorisedExercise,
   type LibraryExercise,
 } from "../src/lib/coach/verify";
 
@@ -25,8 +26,8 @@ export type EvalContext = {
   // Awaited before each call and outside its timer (the repeat runner's pacer).
   beforeCall?: () => Promise<void>;
   events: ProviderEvent[];
-  library: LibraryExercise[];
-  byId: Map<string, LibraryExercise>;
+  library: CategorisedExercise[];
+  byId: Map<string, CategorisedExercise>;
 };
 
 export type Call = {
@@ -72,7 +73,7 @@ export async function setUpEval(
   const all = (await (
     await fetch(EXERCISES_URL)
   ).json()) as (LibraryExercise & { name: string; category: string })[];
-  const library: LibraryExercise[] = all.map((e) => ({
+  const library: CategorisedExercise[] = all.map((e) => ({
     id: e.id,
     name: e.name,
     category: e.category,
