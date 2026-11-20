@@ -163,6 +163,8 @@ GROQ_API_KEY=""     # console.groq.com/keys
 GEMINI_API_KEY=""   # aistudio.google.com/apikey
 ```
 
+For the demo, set `COACH_DEMO_MODE=1` and `GEMINI_MODEL="gemini-3.5-flash-lite"`, the fallback model the 30 October eval used (D6). Each provider call then stops after 8 seconds and nothing waits for a retry; the default Gemini Flash took a median of 9.9 seconds in the first eval round, so it would time out. When the coach fails, the user gets a coach plan written earlier (`src/lib/coach/demoPlans.json`) that passes the verifier for their profile, before the rule-based plan (D12 in [ARCHITECTURE.md](docs/ARCHITECTURE.md)). After a change to the plan prompt, refresh it from a new eval run with `npx tsx scripts/demo-plans.ts <results.jsonl> <prompt version>`.
+
 For user-scoped coach-call storage, see
 [COACH_EVENTS.md](docs/COACH_EVENTS.md). It explains the #52 migration, metadata,
 privacy boundaries and connecting the sink to an authenticated coach caller.
