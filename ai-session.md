@@ -430,6 +430,16 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 
 **Did with it:** gave the CI build its own empty database (which also checks migrate-from-empty plus seed), moved the step loop into a tested `runSteps` and checked that removing the blank password or the stop on failure makes a test fail, corrected the README and D19, and asked Mohammad to confirm the variable names in Vercel. Unpinned seed download left as a follow-up issue. Tools: Claude Code with the `vercel:deployments-cicd`, `opinionated-prisma:migration-safety` and `superpowers:verification-before-completion` skills, its code-reviewer agent (review and delta check) and workflow-guardian agent (CI change), Context7 and Firecrawl for the Neon docs, `gh`, Vitest, ESLint, Prettier.
 
+### 18 November 2026, bringing the streamed coach replies up to date with `main` (issue #11, pull request #56)
+
+**Before asking:** Shubham asked for #56's conflicts to be resolved and CI rerun before he re-checks his four points: the safety limits, the body-read fallback, the upstream cancellation and the empty-stream handling. Since the PR was opened, `main` had rewritten the coach's providers and added a log record for each model call. My plan was to merge `main` rather than rebase, keep `main`'s provider types and logging as the base, and move the streaming onto them. The checks a message goes through before the model call would be one shared step for the plain and the streamed turn, so the two cannot drift apart again.
+
+**Asked:** an AI assistant (Claude Code) to resolve the merge on that plan. It was to write failing tests first for the behaviour that had to change: one log record per streamed call, including when the reader stops early; the serving model named in that record; and a stream with no text moving to the other provider, as a plain reply with no text already does. Then a reviewer that had not seen the work would check the merge against `main` and against the old PR head.
+
+**Got:** the merged branch, with the streamed turn in its own module and the request settings shared with the plain call. The review found no errors. It found one real gap: a stream that sent only whitespace counted as started, so the other provider was never tried. The delta check then found that such whitespace would show as a blank first line. While merging I also found that `main` itself failed its type check after #97 and #101 landed together: a test fixture lacked the now-required RPE.
+
+**Did with it:** had both whitespace gaps fixed test-first, each test shown failing before its fix. I checked by mutation that removing each new record or served event fails a test, noted in D10 that the stream has no same-provider retry, and added the RPE to the fixture so the branch type-checks. Lint, type check, Prettier and the 1,384 unit tests pass locally; CI (unit, integration, e2e) is green. Tools: Claude Code with the `mattpocock-skills:resolving-merge-conflicts` and `superpowers:verification-before-completion` skills, its `pr-review-toolkit:code-reviewer` agent (blind review and delta check), `gh`, Vitest, ESLint, Prettier.
+
 ## Mohammad
 
 ### 31 October 2026, onboarding quiz validation edge cases
