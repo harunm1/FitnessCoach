@@ -1,6 +1,6 @@
 // The unsaved-retry notice (#63, #42): what went wrong, any reply marked as not saved, and a button that sends the same text again.
 type UnsavedNoticeProps = {
-  // The form action from useActionState, so a retry goes through the same Server Action.
+  // The parent form's sender, so retries use the same authenticated endpoint.
   action: (formData: FormData) => void;
   message: string;
   text: string;

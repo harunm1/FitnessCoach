@@ -590,6 +590,16 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Did with it:** I continued with a separate #51 branch, preserving the old commits in a backup and building on the #104 fix. AI helped update the implementation, migration and regression tests. The existing exercise coach now checks the shared tier guard before model setup. The checks passed: 891 unit tests, 91 PostgreSQL integration tests, 17 browser tests, formatting, lint, TypeScript and the production build. The older migration-name recovery was also tested on a disposable database, without using my development database. The documentation explains setup and the remaining callers. I am keeping #51 open until those callers are integrated and tested.
 
+### 20 November 2026, guarded streaming chat integration (issue #51)
+
+**Before asking:** #56 had already merged the streaming library, and the updated #51 description wanted guards on the chat route. Before writing anything, I re-read the issue and my earlier work (up to #107) so I could reuse the helpers I already had.
+
+**Asked:** AI to help me check my understanding of the current code, confirm which pieces already existed, and explain the errors I hit while wiring things together.
+
+**Got:** Confirmation that the tier guards, plan-request reservation and streaming generator were already in place. The missing parts were a streaming HTTP endpoint, since the coach form still called the plain Server Action. When one of my interaction tests failed, AI helped me work out why: the action-state updates held back the visible reply until the whole response finished. That explained the problem, and I fixed it myself by having the form handle the streaming request directly.
+
+**Did with it:** I made the code changes myself on a new branch from main. I wrote the guarded endpoint, reused the action's admission checks, connected the form and added the regression tests. Before opening a stream, the route checks the user's current tier. It loads only the session owner's context and history, and it reports success only after the exchange is saved. The tests cover denied access, trial expiry, ownership, quotas, interruptions, saving and incremental display. I used AI only for debugging and for questions I wasn't sure about. No provider keys or private env values went into the code. The plan-request integration stays with #58, and chat keeps its existing limits and FREE access policy. Database and browser checks are still pending: there's no test database URL configured, and the local database rejected the configured credentials. I didn't change any dev database or env file.
+
 ## Farnaz
 
 ### 8 November 2026, progress logic (issue #16)

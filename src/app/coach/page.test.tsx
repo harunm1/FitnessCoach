@@ -10,7 +10,7 @@ const { requireAccount, loadConversation, hasProfile } = vi.hoisted(() => ({
 vi.mock("@/lib/auth/access", () => ({ requireAccount }));
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
 vi.mock("@/lib/coach/conversation", () => ({ loadConversation, hasProfile }));
-vi.mock("./actions", () => ({ sendCoachMessage: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 import CoachPage from "./page";
 import { NO_PROFILE_MESSAGE, TIER_MESSAGE } from "./copy";
 
