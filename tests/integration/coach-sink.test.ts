@@ -239,6 +239,7 @@ describe("PostgreSQL coach record sink", () => {
             sets: 3,
             reps: 8,
             restSeconds: 90,
+            rpe: 7,
           })),
         },
       ],

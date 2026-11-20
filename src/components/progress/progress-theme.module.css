@@ -8,16 +8,16 @@
 }
 
 .progressTheme[data-theme="dark"] {
-  --color-background: #0a0a0a;
-  --color-foreground: #ededed;
+  --background: #0a0a0a;
+  --foreground: #ededed;
   --map-worked: #6dbb87;
   --map-neutral: #34352f;
 }
 
 @media (prefers-color-scheme: dark) {
   .progressTheme[data-theme="system"] {
-    --color-background: #0a0a0a;
-    --color-foreground: #ededed;
+    --background: #0a0a0a;
+    --foreground: #ededed;
     --map-worked: #6dbb87;
     --map-neutral: #34352f;
   }

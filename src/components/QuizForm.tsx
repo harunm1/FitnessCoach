@@ -25,6 +25,7 @@ export default function QuizForm() {
     const parsed = quizProfileSchema.safeParse({
       goal: formData.get("goal"),
       level: formData.get("level"),
+      trainingMode: formData.get("trainingMode") ?? undefined,
       daysPerWeek: formData.get("daysPerWeek"),
       equipment: formData.getAll("equipment"),
       injuries: formData.get("injuries") ?? "",
@@ -63,6 +64,33 @@ export default function QuizForm() {
                 defaultChecked={index === 0}
                 name="goal"
                 required
+                type="radio"
+                value={value}
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className="space-y-3">
+        <legend className="text-sm font-semibold">
+          What do you train for?
+        </legend>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {[
+            ["GYM", "Strength"],
+            ["RUNNING", "Running"],
+            ["BOTH", "Both"],
+          ].map(([value, label], index) => (
+            <label
+              className="flex min-h-11 cursor-pointer items-center gap-3 border border-foreground/15 bg-white px-3 text-sm has-[:checked]:border-foreground has-[:checked]:bg-foreground/[0.04]"
+              key={value}
+            >
+              <input
+                className="accent-foreground"
+                defaultChecked={index === 0}
+                name="trainingMode"
                 type="radio"
                 value={value}
               />
