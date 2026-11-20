@@ -206,6 +206,30 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 
 **Did with it:** added the two composite indexes the queries justify in one migration, kept the other four out until a pull request adds a query that needs them, and recorded `EXPLAIN ANALYZE` before and after in the pull request. Every session query now reads through an index; the sorts left run on one to four rows.
 
+### 8 November 2026, loading and error states on every route (issue #72)
+
+**Before asking:** the proposal promises loading and error states on every route, and `main` had none. I decided on the Lecture 8 pattern (p47-55) as one convention for the team: a root `loading.tsx` with plain fallback text and a root `error.tsx` with a `data-testid` and a button to try again, so `/`, `/onboarding` and `/session` are all covered without each owner adding a `<Suspense>` by hand. I wanted the tests to run in the existing Vitest setup without adding a browser test library, since Shubham's open pull request already brings Playwright.
+
+**Asked:** what the `error.js` props are in our installed Next.js 16.4, what Cache Components changes for `force-dynamic`, and how to test a streamed Suspense fallback with `react-dom/server` alone.
+
+**Got:** the bundled Next.js docs: `retry()` became stable in 16.3 and is preferred over `reset()` because it re-fetches the segment's data; with Cache Components, `force-dynamic` is removed and uncached reads must sit inside a `<Suspense>` boundary. For the test, `renderToPipeableStream` streams the fallback first and the content after the data resolves.
+
+**Did with it:** wrote the tests first and watched them fail, then the two files. A first streaming test hung: React did not send the fallback when it was the whole output, so the test now renders a full document as the root layout does, and it shows the fallback before the data and the content after. Changing the fallback text or unwiring the button makes three of the four tests fail (the loading test and file were removed on 13 Nov). Added decision D16 and a Cache Components note for `/session` to `docs/ARCHITECTURE.md`. The task asked for a reset button and the shadcn Button; I used `retry()` per the current docs, and a plain Tailwind button because the repository has no shadcn components yet. No coach route exists on `main` yet, so the coach pull request adds its own pair or inherits the root one. The streaming test checks the fallback component inside `<Suspense>`; that Next.js picks up `loading.tsx` is covered by the build and the docs, and a Playwright check of `/session` can follow once Playwright is on `main`.
+
+**13 November, after my own re-review:** the root `loading.tsx` had a fault I had not tested for. Its fallback starts the response before the page runs, so a signed-out request to a guarded page came back as 200 with a client-side redirect instead of a 307. I confirmed it against the Next.js loading docs, wrote a browser test for the three guarded pages and watched it fail (200, 200, 200), then removed the root loading file and its test and rewrote D16: the error state stays at the root, and a loading state goes inside the page after its sign-in check. An independent review checked the change before I pushed it.
+
+### 8 November 2026, strength-only starter plan (issues #71 and #15)
+
+**Before asking:** Farnaz found that the rule-based starter plan gives a Legs day of three stretches for a dumbbell and body-weight user. My fix was to filter the library to the "strength" category inside `buildDefaultPlan`, which is also the coach's fallback. Onboarding loads the library without its category, so a strict filter would leave it with no exercises; I chose to keep exercises that arrive without a category and to ask for the category in onboarding's query instead.
+
+**Asked:** to reproduce her case on the seeded free-exercise-db data, and for an independent review of the change and its tests.
+
+**Got:** the same picks she reported (All Fours Quad Stretch, 90/90 Hamstring and Ankle On The Knee on Legs, Chair Lower Back Stretch on Pull), because the dataset lists those stretches before the first strength exercise for those four muscles. The independent review found nothing blocking; it flagged that onboarding still keeps every stretch until its query selects the category, a lint warning in my test, and that the coach's own plans are not checked for category either.
+
+**Did with it:** wrote a test from thirteen seeded records in dataset order (fourteen after a later review added a plyometrics record, Bench Jump, ahead of the first strength match, so a filter that only drops stretches fails too), saw it fail, then added the filter and a test that a library without categories still gets a plan. The pull request refers to #15 rather than closing it, and the onboarding change is asked for on the issue.
+
+**Later the same day:** Farnaz suggested in her review that `buildDefaultPlan` require the category, so TypeScript points at any caller that forgets to load it. I agreed and reversed my earlier choice: the input type now requires `category`, an exercise without one is never picked, and the coach functions that pass the library through (`generatePlan`, `buildHybridWeek`) require it too. TypeScript then flagged onboarding's query, the eval script and the test fixtures; I added the category to each, including the one-line select in onboarding, so the quiz now gets strength exercises only. An independent review found nothing blocking; from its smaller points I moved the type next to `LibraryExercise`, matched the category without regard to case, pointed the comments at #71, and checked the input type with `expectTypeOf` instead of a `@ts-expect-error` line. Its run-time test caught my first case-insensitive version crashing on an exercise with no category, so that path now skips the exercise. Without the change, the new run-time tests fail and the type check fails; the full real library (876 exercises in free-exercise-db's `dist/exercises.json`, fetched 8 Nov) gave a plan for every quiz equipment and injury combination the review tried.
+
 ### 10 November 2026, board and docs upkeep (issues #70, #73 to #77)
 
 **Before asking:** pull requests #70, #73, #74 and #77 were not on the project board, #75 and #76 still said In progress while they waited for review, #76, #77 and #78 had no enhancement label or assignee, and the Mohammad heading in this file sat above my entries from 27 October on. I decided the board, labels and section order myself and wanted only the mechanical edits done and checked.
@@ -326,6 +350,106 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 
 **Did with it:** I bumped the prompt to `plan-v3`, made the retry test name the `rpe` problem, wrote the scale and its source into the schema comment and the D17 row, and listed the #99 clash and the missing live run against Groq and Gemini in the pull request. The 30 October eval replay adds `rpe: 7` to the recorded replies, which predate the field. Lint, typecheck, 865 unit tests and the format check pass. Tools for the targeted help: a fresh review agent (`pr-review-toolkit:code-reviewer`) and git.
 
+### 13 November 2026, a real walk-through of the core path and five more pull requests brought current (issues #57, #72, #75, #76, #63)
+
+**Before asking:** I wanted to know what Sunday's checkpoint would actually show, so I decided to run the core path for real, in a browser against a local database, on a branch holding `main` plus the open pull requests it depends on, and to record each step as pass or fail. I also wanted my conflicting pull requests merged with `main` and their known faults fixed, each checked by a reviewer that had not seen the work before the push. My rules for it: merge, never rebase; a failing test before each fix; nothing created in the Vercel or Neon accounts.
+
+**Asked:** for the walk-through script and run, the merges, the fixes with their tests first, and an independent review of each branch before pushing.
+
+**Got:** the walk-through passed sign-in, the quiz, a strength-only starter plan from the real 876-exercise library, a logged workout and a live coach exchange saved in about two seconds. It showed three things I would not have known otherwise: a new account must start its free trial before either coach will answer, the coach and photo pages have no link leading to them yet, and the photo step cannot run without the storage keys. The reviews found that the hosted build could still skip migrations without a word when Vercel's system variables are off (the variable my check relied on is one of them), that a loading file above a page that redirects turns a signed-out 307 into a 200 (the root one I had added, and the coach page's), and that an open-ended Node version range would make the hosted build run a newer Node than CI tests.
+
+**Did with it:** fixed each with its test first: the build command now stops unless it is a production or preview build; the root and coach loading files are gone and a browser test asserts the 307; decision D16 now puts loading states inside the page after its sign-in check; both pull requests that set the Node range use the same one. The review of the deploy change needed three rounds, because my first two fixes for keeping a misread connection string out of the build log each left a case open; I stopped at three and say so in the pull request. I filed one issue for a teammate instead of touching his file (the quiz saves "kettlebell", the library says "kettlebells"). Four of my earlier entries in this file sit under Shubham's heading; I left them there for now so his open pull requests do not conflict, and will move them once those merge. Tools: Playwright for the walk-through, a local PostgreSQL instance, the pr-review-toolkit code-reviewer agent and the backend-design schema-reviewer agent for the independent reviews, and the Next.js and Vercel documentation for the two platform rules.
+
+### 13 November 2026, afternoon: approved pull requests onto main and the open reviews closed (pull requests #105, #107, #109, #102, #53, #96, #73)
+
+**Before asking:** I set the merge order from the morning walk-through: Shubham's sign-in and coach-tier pull requests first, then Farnaz's photo storage, then my three core-path pull requests, which were past the three-day review window. My rules for it: merge commits so every commit keeps its author, main green after each merge, a teammate's code gets a comment and is never edited, and every review gets two independent passes, the second from a reviewer that had not seen the first.
+
+**Asked:** for a review of the one commit Farnaz pushed after my approval on #109, checked against the 4.5 MB Vercel request limit; for a full re-review of Mohammad's #102 against my two 11 November comments and issue #111; and for my own branches to be brought up to date with main and checked.
+
+**Got:** both #109 passes found nothing blocking. The photo form now shrinks images in the browser, the server takes at most 4 MiB, and Vercel's limits page confirmed the 4.5 MB cap. Both #102 passes found every 11 November point closed and #111 fixed in that pull request. One integration test failed on three different branches, including #73, which does not touch the coach. The cause is on main: the exercise coach saves the question and the answer in one transaction, so both rows share a timestamp, and the history query orders by timestamp alone.
+
+**Did with it:** merged #105, #107 and #109, with main green after each, and approved #102 for Mohammad to merge. I filed the timestamp fault as #112 for Shubham, with the fix (break ties by id), rather than editing his file; my coach chat already breaks the tie that way. #110 needs more than a conflict resolution after #109 (a changed function signature and the new upload limit), so I left Farnaz a comment instead of editing her branch. My three pull requests are up to date with main, green, and have their self-review comments. Their merge waits on the branch-protection step, since none has a teammate's approval yet. I also caught a wrong unit-test count in my own #53 comment and corrected it: stale local copies of old test files had inflated it. Tools: the pr-review-toolkit and agent-protocols code-reviewer agents for the independent passes, the GitHub CLI, and the Vercel documentation for the request limit.
+
+### 10 November 2026, quiz plans with run days (issue #85)
+
+**Before asking:** the quiz plan came from `buildDefaultPlan`, so it never had a run day and the session screen had nothing to show for runs, although `buildHybridWeek` and `saveWeek` could already store them. I decided the quiz asks for training mode, strength by default, and that only running and both take the new path, so a strength quiz stays as it is. The quiz action is Mohammad's file, so I kept my change there to one early branch and put the rest in my own files.
+
+**Asked:** the test-first slices (a both-mode quiz saves a run day, running-only saves runs, strength-only is unchanged), the Next.js Server Action form handling, and an independent review of the branch.
+
+**Got:** the review found that the profile and the plan were saved in two steps, so a failed plan save would leave the profile saying running with the old strength plan active, and that the hybrid week was saved without running either verifier, against D9. It also found tests that would pass without the change, and the new-runner default missing from the docs.
+
+**Did with it:** `saveWeek` takes a hook that runs inside its transaction, so the profile is saved with the plan or not at all; a test makes the plan fail and checks the profile is unchanged. The strength and running verifiers run before saving. I tightened the running-only test to two runs and two strength days, and added tests for the saved mode, one-day running and the refusal paths. The new-runner default and the options it beat are in the D9 note in `ARCHITECTURE.md`. Lint, typecheck, 850 unit tests, 54 integration tests on PostgreSQL 16 and the format check pass (pull request #97). Tools for the targeted help: skills `agentic-sdlc:testing-vitest` and `hzblj-skills:functions`, Context7 for the Next.js Server Action and `useActionState` form docs (checked 10 November 2026), and a fresh review agent (`pr-review-toolkit:code-reviewer`).
+
+### 10 November 2026, bringing the chat pull request current after #48 merged (issue #11, pull request #53)
+
+**Before asking:** #48 was squashed, so the chat branch still carried the guardrail commits it had merged one by one, and git reported add/add conflicts in the guardrail files. I decided to merge the #43 branch first, so the chat changes kept their place, and then main, instead of taking main's copy of every guardrail file, which would have dropped the chat branch's `mentionsTraining`.
+
+**Asked:** the merge, and an independent review of the result against main.
+
+**Got:** the typecheck failed after the merge: main already has its own chat model (`coachChatModel`), which duplicated the one in this branch. The review found no blocking issue and noted that the route must pass history from stored rows, not the request body.
+
+**Did with it:** I dropped the duplicate chat model and used main's. Main's Gemini chat reply kept only the first text part, the bug Shubham found, so I re-applied the join-all-parts fix there; the test failed first. Lint, typecheck, 991 unit tests, 46 integration tests on PostgreSQL 16 and the format check pass. Tools for the targeted help: `pr-review-toolkit:code-reviewer` (fresh context) and git.
+
+### 10 November 2026, guardrail false positives and misses left from #48 (issue #43)
+
+**Before asking:** the review of #48 left a list: training talk the crisis word list still mistook for a crisis (a rep or load count after "pills", "kms" as a distance unit, "won't be here tomorrow so I can't train", jumps into a pool or onto a box) and three diagnosis questions it let through ("did i break my back squatting", "did i tear my shoulder pressing", "did i tear my pec"). I decided every fix stays inside the guardrail module, that each case gets a failing test first, and that if a fix would turn an existing crisis test red the crisis reading wins and the case is logged for the model check instead.
+
+**Asked:** the test-first slices, the narrowing of each pattern, and an independent review of the branch that had not seen the work.
+
+**Got:** the review ran the same probes against main and against the branch and found my first fix too wide: a swim word anywhere let "i can't swim, i'm on the bridge and i'm gonna jump into the water" through, a jump onto a "platform" or "step" from a roof stopped being a crisis, the "so i can't train" and "so i need to reschedule" exceptions accepted any words after them ("...so i need to reschedule my funeral"), and "using kms" and "school vs kms" were let through.
+
+**Did with it:** each of those inputs is now a test that failed first and stays a crisis. The jump exception needs a pool named just before the jump or a plyo box, and does nothing when the message has a height ("bridge", "below", "from here") or "can't swim". The scheduling exceptions need a training object or the end of the sentence. "Kms" is a unit only after "prefer" or a "miles vs" pair. Load units after "pills ... 20 more" stop counting when ingestion words follow. The diagnosis list gained pec, biceps, triceps, quads and groin, and a lift name no longer hides "squatting" or "pressing". Left to the model check, not coded: "kms today", "kms for real", "on the roof i'm jumping", and a roof or bridge jump into water. Lint, typecheck, 903 unit tests and the format check pass. Tools for the targeted help: skill `agentic-sdlc:testing-vitest`, skill `backend-design:error-handling-as-design` (not run, see the log), and a fresh review agent (`pr-review-toolkit:code-reviewer`).
+
+### 13 November 2026, getting the core-path pull requests mergeable (issues #11, #71, #63; pull requests #53, #73, #96)
+
+**Before asking:** the chat turn (#53) and the strength-only starter plan (#73) conflicted with `main`, and the chat screen (#96) sits on #53, so none of the three could merge before the 15 November checkpoint. My plan was to merge `main` into each branch rather than rebase, apply the fixes my 11 November re-review had found but not pushed, and have each branch checked by a reviewer that had not seen the work before I pushed it. I had already decided that the injury text a user types must not reach a model, and that a refusal must never be the only thing a person in crisis reads.
+
+**Asked:** for the merges and the fixes, each with its failing test first, and for an independent review of each branch before the push.
+
+**Got:** the review of #53 found that a failed model call could put the first characters of a provider's reply into a log record, and that natural follow-ups such as "what do you mean by that exactly?" were being redirected. The review of #96 found that a message over a rate cap got "wait a moment" even when it held crisis wording. My own reading found that `/coach` would load a body-map exercise chat as the coach conversation, because both are stored as conversations of the same user. The review of #73 ran the real starter plan on the full 876-exercise library for 67,914 quiz profiles and found none that lost a plan.
+
+**Did with it:** kept the fixes small and in my own files. Failed chat calls are recorded by the provider's fixed message or the error's name. The follow-up rule accepts a quoted term and a trailing "please", "again" or "exactly". `/coach` loads only the untitled conversation. The coach gets muscles to avoid from the injury text by the same code rule onboarding uses. Only replies that mean the person needs help replace a cap message. I corrected a test count I had first reported for #53 (956, not 1,057: stale copies of test files in my local folder had been counted). Tools: the pr-review-toolkit code-reviewer agent for the independent reviews and the checks on the changed lines.
+
+### 15 November 2026, checkpoint 1 audit and the Lecture 9 practices
+
+**Before asking:** the checkpoint needs a list of where each core-path step and course requirement stands on `main`, each tied to a commit or PR, plus the Lecture 9 practices written down so reviews can use them.
+
+**Asked:** an AI assistant (Claude Code) to draft the execution audit from `git log`, the GitHub PRs, reviews and issues, and the CI runs; to turn Lecture 9 into numbered practice rows with slide references; and to check `main`, the open photo PRs and #115 against those rows.
+
+**Got:** the audit (`docs/audits/2026-11-15-execution-audit.md`), rows 8 to 19 in `docs/ENGINEERING_PRACTICES.md`, and draft review comments for #113, #114 and #115. It found no gap on `main` against the new rows. Main CI failed again on the exercise-chat ordering test (#112).
+
+**Did with it:** checked each row against the slide it cites and against the code before committing. Checked the Next.js `bodySizeLimit` docs and the new dependency's npm record before the #113 and #114 comments. Dropped one draft review point (duplicate React keys) after reading `groupByExercise` showed it could not happen. Posted the reviews as comments; the live walk-through is still owed because the laptop did not have enough memory. Tools: Claude Code, Context7 for the Next.js docs, `npm view`, `pdftotext` for the lecture slides.
+
+### 15 November 2026, review passes before pushing #77, #74 and #61 (issues #75, #72, #57)
+
+**Before asking:** three of my pull requests had `main` merged in locally, and I wanted each one checked by a reviewer that had not seen my reasoning before I pushed.
+
+**Asked:** an AI assistant (Claude Code) to run separate review passes, one after another, on each diff and its pull request description, against the issue, `docs/ENGINEERING_PRACTICES.md` and the source code.
+
+**Got:** most findings were wrong statements in the descriptions and docs rather than in the code. On #77, the docs and then the description said no screen on `main` uses the rounded-corner classes, but `/coach` does. On #74, it described a coach loading file that #96 never added. On #61, one pass found that my first fix to the deploy steps did not work: in Windows PowerShell 5.1, setting a variable to an empty string removes it, so the seed would still read the demo password from the local env file.
+
+**Did with it:** checked each finding against the code before changing anything, and re-ran the PowerShell behaviour myself. Fixed the docs and descriptions, added `/progress/photos` to the signed-out redirect test on #74, and pushed only after a pass with no errors. One wording suggestion on #61 (single quotes for the connection string) is listed as a follow-up on the pull request. Tools: Claude Code and its code-reviewer agents, `gh`, Prettier and ESLint.
+
+### 17 November 2026, the deploy pull request after the team chose Vercel Storage for Neon (issue #57, pull request #61)
+
+**Before asking:** at the 17 November meeting the project went onto Mohammad's Vercel account with Neon connected through Vercel Storage, a database branch per preview. Main's build is plain `next build`, so nothing applied migrations or loaded the exercise library; that night a dashboard Build Command did both by hand. I wanted #61 to do it properly: bring it current with `main`, run the exercise seed after the migrations on every hosted build without ever creating demo logins, and make the README match the setup and the variable list we agreed.
+
+**Asked:** an AI assistant (Claude Code) to check the Neon integration's variable names and preview branching against Neon's current docs, to write the failing tests for the seed step first, then the change, and to have a reviewer that had not seen the work check the result.
+
+**Got:** Neon's docs (checked 17 Nov) confirm `DATABASE_URL` is pooled and `DATABASE_URL_UNPOOLED` direct, with preview values given to each deployment's build, so #61's rule (migrate over the direct URL on hosted builds) already fit. The review found one real fault: CI runs the build script against the test database, so the seeded library would have changed which exercises the browser test's starter plan picks. It also found that the script handing the blank demo password to the seed was untested, and that three doc statements were off: preview cleanup on Hobby is 30 days, not months; preview branches come from the default branch; Neon describes a custom variable prefix as added in front of `DATABASE_URL`.
+
+**Did with it:** gave the CI build its own empty database (which also checks migrate-from-empty plus seed), moved the step loop into a tested `runSteps` and checked that removing the blank password or the stop on failure makes a test fail, corrected the README and D19, and asked Mohammad to confirm the variable names in Vercel. Unpinned seed download left as a follow-up issue. Tools: Claude Code with the `vercel:deployments-cicd`, `opinionated-prisma:migration-safety` and `superpowers:verification-before-completion` skills, its code-reviewer agent (review and delta check) and workflow-guardian agent (CI change), Context7 and Firecrawl for the Neon docs, `gh`, Vitest, ESLint, Prettier.
+
+### 18 November 2026, bringing the streamed coach replies up to date with `main` (issue #11, pull request #56)
+
+**Before asking:** Shubham asked for #56's conflicts to be resolved and CI rerun before he re-checks his four points: the safety limits, the body-read fallback, the upstream cancellation and the empty-stream handling. Since the PR was opened, `main` had rewritten the coach's providers and added a log record for each model call. My plan was to merge `main` rather than rebase, keep `main`'s provider types and logging as the base, and move the streaming onto them. The checks a message goes through before the model call would be one shared step for the plain and the streamed turn, so the two cannot drift apart again.
+
+**Asked:** an AI assistant (Claude Code) to resolve the merge on that plan. It was to write failing tests first for the behaviour that had to change: one log record per streamed call, including when the reader stops early; the serving model named in that record; and a stream with no text moving to the other provider, as a plain reply with no text already does. Then a reviewer that had not seen the work would check the merge against `main` and against the old PR head.
+
+**Got:** the merged branch, with the streamed turn in its own module and the request settings shared with the plain call. The review found no errors. It found one real gap: a stream that sent only whitespace counted as started, so the other provider was never tried. The delta check then found that such whitespace would show as a blank first line. While merging I also found that `main` itself failed its type check after #97 and #101 landed together: a test fixture lacked the now-required RPE.
+
+**Did with it:** had both whitespace gaps fixed test-first, each test shown failing before its fix. I checked by mutation that removing each new record or served event fails a test, noted in D10 that the stream has no same-provider retry, and added the RPE to the fixture so the branch type-checks. Lint, type check, Prettier and the 1,384 unit tests pass locally; CI (unit, integration, e2e) is green. Tools: Claude Code with the `mattpocock-skills:resolving-merge-conflicts` and `superpowers:verification-before-completion` skills, its `pr-review-toolkit:code-reviewer` agent (blind review and delta check), `gh`, Vitest, ESLint, Prettier.
+
 ## Mohammad
 
 ### 31 October 2026, onboarding quiz validation edge cases
@@ -347,6 +471,16 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 **Got:** suggestions to give the countdown stronger visual emphasis and display a clear status label as it changes state.
 
 **Did with it:** updated the timer to highlight while running and show explicit “Resting”, “Paused”, and “Rest complete” states; verified in the browser that clicking Start rest changes the button to Pause timer and the countdown decreases. Styled the UI with Tailwind utility classes. No shadcn/ui components were used.
+
+### 10 November 2026, exercise cue library (issue #8)
+
+**Before asking:** the exercise library already contained 876 records, while its `cues` and `commonMistakes` fields were empty. Issue #8 asks for original, concise form guidance on 30 beginner or intermediate strength exercises across the main movement patterns.
+
+**Asked:** to select eligible seeded exercises, review one source for each, and write three to five form cues and two to three common mistakes per exercise. I also asked for AI assistance to be recorded transparently in this session log.
+
+**Got:** AI-assisted summaries of setup, movement and common technique errors from exercise-specific ExRx pages and the upstream Free Exercise DB records used by our seed. Candidate IDs and their category, level and equipment were checked against the seeded database. Where an external page did not provide a usable or matching description, the source list cites the exact upstream library record instead.
+
+**Did with it:** reviewed the exercise and equipment matches, kept the cue wording original rather than copying source text, and added 30 entries with the required cue and mistake counts. Tests validate the cue counts and missing-ID checker; the seed checks every curated ID against the downloaded library before writing, reports how many entries received cues, and clears stale cue arrays when the JSON no longer contains an exercise. Running the seed twice confirmed the cue arrays remain stable. The session page displays form guidance in a closed-by-default disclosure for each exercise that has cues, with a render test for populated and empty guidance. Formatting, lint, typecheck, and the unit suite passed.
 
 ## Shubham
 
@@ -396,45 +530,45 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Did with it:** I decided how the flow and the demo accounts should work. I got the app running locally, fixed the three errors and told it what I saw when something else broke. Near the end I asked it to check the work against every requirement in the issue. The automated checks passed in a clean workspace, including the database and browser tests. I repaired the local migration history after taking a backup, and no app data was deleted. The demo passwords are in my private env file, not in the repo, and the offline PRO account only exists for local testing.
 
-### 10 November 2026, quiz plans with run days (issue #85)
+### 14 November 2026, coach-event review corrections (issue #52)
 
-**Before asking:** the quiz plan came from `buildDefaultPlan`, so it never had a run day and the session screen had nothing to show for runs, although `buildHybridWeek` and `saveWeek` could already store them. I decided the quiz asks for training mode, strength by default, and that only running and both take the new path, so a strength quiz stays as it is. The quiz action is Mohammad's file, so I kept my change there to one early branch and put the rest in my own files.
+**Before asking:** my PR had an approving review, with five non-blocking comments. I wanted to know which ones I should fix now and which could wait, so I went through them against issue #52 and the existing code and asked for guidance.
 
-**Asked:** the test-first slices (a both-mode quiz saves a run day, running-only saves runs, strength-only is unchanged), the Next.js Server Action form handling, and an independent review of the branch.
+**Asked:** whether the review comments matched what issue #52 requires, what the remaining privacy and test concerns were, and how to correct them. I also asked which items were fine to leave as follow-ups.
 
-**Got:** the review found that the profile and the plan were saved in two steps, so a failed plan save would leave the profile saying running with the old strength plan active, and that the hybrid week was saved without running either verifier, against D9. It also found tests that would pass without the change, and the new-runner default missing from the docs.
+**Got:** advice on three fixes: keeping chat replies out of the logs, testing for the actual prompt text instead of a column that doesn't exist, and fixing the wording in the README. I also learned that PR #99 is still open, so the cached-outcome migration has to wait on merge order. A fixed error category is future work.
 
-**Did with it:** `saveWeek` takes a hook that runs inside its transaction, so the profile is saved with the plan or not at all; a test makes the plan fail and checks the profile is unchanged. The strength and running verifiers run before saving. I tightened the running-only test to two runs and two strength days, and added tests for the saved mode, one-day running and the refusal paths. The new-runner default and the options it beat are in the D9 note in `ARCHITECTURE.md`. Lint, typecheck, 850 unit tests, 54 integration tests on PostgreSQL 16 and the format check pass (pull request #97). Tools for the targeted help: skills `agentic-sdlc:testing-vitest` and `hzblj-skills:functions`, Context7 for the Next.js Server Action and `useActionState` form docs (checked 10 November 2026), and a fresh review agent (`pr-review-toolkit:code-reviewer`).
+**Did with it:** I made the changes in the code, tests and docs myself, using the guidance as a reference. The sink now stores SQL NULL for chat replies before serialization. The tests now cover chat privacy and check saved records for actual prompt text. All 852 unit tests, TypeScript, lint and formatting pass. I couldn't run the database integration tests because TEST_DATABASE_URL isn't set and the Docker daemon isn't available. I didn't use a development database.
 
-### 10 November 2026, bringing the chat pull request current after #48 merged (issue #11, pull request #53)
+### Storing coach-call records (issue #52)
 
-**Before asking:** #48 was squashed, so the chat branch still carried the guardrail commits it had merged one by one, and git reported add/add conflicts in the guardrail files. I decided to merge the #43 branch first, so the chat changes kept their place, and then main, instead of taking main's copy of every guardrail file, which would have dropped the chat branch's `mentionsTraining`.
+**Before asking:** I was working on the schema and code for coach-event storage and wanted feedback on whether the structure fit the project. I needed to check my changes against issue #52, understand how they should connect to the existing coach logger, and find out whether any dependency branches were missing.
 
-**Asked:** the merge, and an independent review of the result against main.
+**Asked:** to check the schema and related code against the issue, point out problems with the relationships, ownership and stored fields, and help with the remaining implementation and tests. I also wanted to understand how to keep prompts out of the database and handle failed writes without breaking the coach response.
 
-**Got:** the typecheck failed after the merge: main already has its own chat model (`coachChatModel`), which duplicated the one in this branch. The review found no blocking issue and noted that the route must pass history from stored rows, not the request body.
+**Got:** feedback and help with specific schema, sink and test changes. The main points were to take the owner from the server, include the metadata requested in the issue comment, distinguish unknown token counts from zero, and handle missing JSON values correctly. The review also identified that the pending `cached` outcome would need a matching schema update when it lands.
 
-**Did with it:** I dropped the duplicate chat model and used main's. Main's Gemini chat reply kept only the first text part, the bug Shubham found, so I re-applied the join-all-parts fix there; the test failed first. Lint, typecheck, 991 unit tests, 46 integration tests on PostgreSQL 16 and the format check pass. Tools for the targeted help: `pr-review-toolkit:code-reviewer` (fresh context) and git.
+**Did with it:** I used the feedback while working through the schema and code changes, for implementation, troubleshooting and verification. I kept the work on its own #52 branch. The migration and tests ran on an isolated database: 852 unit tests, 86 integration tests and 17 browser tests passed, along with formatting, lint, TypeScript and the build. The 14 sink cases check storage, separate users, deletion and failures. The setup notes explain how callers should use the sink and what still needs coordinating with the pending coach changes.
 
-### 10 November 2026, guardrail false positives and misses left from #48 (issue #43)
+### Exercise-coach sign-in and private history (issue #104)
 
-**Before asking:** the review of #48 left a list: training talk the crisis word list still mistook for a crisis (a rep or load count after "pills", "kms" as a distance unit, "won't be here tomorrow so I can't train", jumps into a pool or onto a box) and three diagnosis questions it let through ("did i break my back squatting", "did i tear my shoulder pressing", "did i tear my pec"). I decided every fix stays inside the guardrail module, that each case gets a failing test first, and that if a fix would turn an existing crisis test red the crisis reading wins and the case is logged for the model check instead.
+**Before asking:** I wanted to check my assigned issues and whether I needed code from another branch before continuing. The review found that the body-map coach still used the shared demo user after the quiz/session work merged. I chose to fix that privacy issue first and keep it separate from the tier and plan-limit work.
 
-**Asked:** the test-first slices, the narrowing of each pattern, and an independent review of the branch that had not seen the work.
+**Asked:** to check the existing flow, use the signed-in account for exercise chat, and test that one person's questions never appear in another person's history. I also wanted to remove the unused shared demo seed without deleting existing users or workouts.
 
-**Got:** the review ran the same probes against main and against the branch and found my first fix too wide: a swim word anywhere let "i can't swim, i'm on the bridge and i'm gonna jump into the water" through, a jump onto a "platform" or "step" from a roof stopped being a crisis, the "so i can't train" and "so i need to reschedule" exceptions accepted any words after them ("...so i need to reschedule my funeral"), and "using kms" and "school vs kms" were let through.
+**Got:** help understanding why the exercise coach bypassed sign-in and how the shared demo account mixed users' chat histories, and help with specific code changes and regression tests. The guidance covered where to check the session, how to scope conversations by the signed-in user's ID, and how to test requests that supply someone else's details.
 
-**Did with it:** each of those inputs is now a test that failed first and stays a crisis. The jump exception needs a pool named just before the jump or a plyo box, and does nothing when the message has a height ("bridge", "below", "from here") or "can't swim". The scheduling exceptions need a training object or the end of the sentence. "Kms" is a unit only after "prefer" or a "miles vs" pair. Load units after "pills ... 20 more" stop counting when ingestion words follow. The diagnosis list gained pec, biceps, triceps, quads and groin, and a lift name no longer hides "squatting" or "pressing". Left to the model check, not coded: "kms today", "kms for real", "on the roof i'm jumping", and a roof or bridge jump into water. Lint, typecheck, 903 unit tests and the format check pass. Tools for the targeted help: skill `agentic-sdlc:testing-vitest`, skill `backend-design:error-handling-as-design` (not run, see the log), and a fresh review agent (`pr-review-toolkit:code-reviewer`).
+**Did with it:** I chose to fix #104 first and keep it separate from my #51 work. I directed the change to use the signed-in account and asked for checks that users could not share chat history. AI helped implement the changes, write the regression tests and work through the failing checks. I used the results to check the fix against the issue. The shared demo seed was removed without deleting existing data, and the setup docs were updated. The optional four-tier demo logins remain available.
 
-### 13 November 2026, getting the core-path pull requests mergeable (issues #11, #71, #63; pull requests #53, #73, #96)
+### Coach tiers and plan-request limits (issue #51)
 
-**Before asking:** the chat turn (#53) and the strength-only starter plan (#73) conflicted with `main`, and the chat screen (#96) sits on #53, so none of the three could merge before the 15 November checkpoint. My plan was to merge `main` into each branch rather than rebase, apply the fixes my 11 November re-review had found but not pushed, and have each branch checked by a reviewer that had not seen the work before I pushed it. I had already decided that the injury text a user types must not reach a model, and that a refusal must never be the only thing a person in crisis reads.
+**Before asking:** I wanted to continue my coach-access task after the exercise-chat privacy fix. The older branch already had tier helpers and a cooldown, but it needed to fit the sign-in and Stripe code now on main. I wanted my existing #104 work preserved and the remaining coach-owner integration kept clear.
 
-**Asked:** for the merges and the fixes, each with its failing test first, and for an independent review of each branch before the push.
+**Asked:** to check the current branches and requirements, refresh the helpers, and test that expired access or repeated requests cannot reach the model. The policy stays the same: every tier can request a plan, while coach chat needs an active trial, PRO entitlement or ADMIN access.
 
-**Got:** the review of #53 found that a failed model call could put the first characters of a provider's reply into a log record, and that natural follow-ups such as "what do you mean by that exactly?" were being redirected. The review of #96 found that a message over a rate cap got "wait a moment" even when it held crisis wording. My own reading found that `/coach` would load a body-map exercise chat as the coach conversation, because both are stored as conversations of the same user. The review of #73 ran the real starter plan on the full 876-exercise library for 67,914 quiz profiles and found none that lost a plan.
+**Got:** help with specific code changes and tests for fresh sessions, effective tiers and an atomic database reservation. The reservation counts failed attempts as well as successful requests, and concurrent requests cannot both claim the same slot. The review also identified that the general chat route and personalization action are still pending in other coach work.
 
-**Did with it:** kept the fixes small and in my own files. Failed chat calls are recorded by the provider's fixed message or the error's name. The follow-up rule accepts a quoted term and a trailing "please", "again" or "exactly". `/coach` loads only the untitled conversation. The coach gets muscles to avoid from the injury text by the same code rule onboarding uses. Only replies that mean the person needs help replace a cap message. I corrected a test count I had first reported for #53 (956, not 1,057: stale copies of test files in my local folder had been counted). Tools: the pr-review-toolkit code-reviewer agent for the independent reviews and the checks on the changed lines.
+**Did with it:** I continued with a separate #51 branch, preserving the old commits in a backup and building on the #104 fix. AI helped update the implementation, migration and regression tests. The existing exercise coach now checks the shared tier guard before model setup. The checks passed: 891 unit tests, 91 PostgreSQL integration tests, 17 browser tests, formatting, lint, TypeScript and the production build. The older migration-name recovery was also tested on a disposable database, without using my development database. The documentation explains setup and the remaining callers. I am keeping #51 open until those callers are integrated and tested.
 
 ## Farnaz
 
@@ -447,3 +581,33 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Got:** keep the current week from breaking a streak until it's over; compute days in Toronto time because workouts are stored in UTC; skip stretching and cardio when counting muscles. Plus 28 tests.
 
 **Did with it:** reviewed each function against my design, ran tests, lint, typecheck and Prettier locally, and chose to leave runs out of the muscle-share total so the percentages describe strength work. After Nabeegh's review I added tests for daylight saving, workout order, other lifting categories, workouts without a plan and ties in muscle share, so there are now 33.
+
+### 12 November 2026, progress photo storage (issue #16)
+
+**Before asking:** I chose Cloudflare R2 for photos (D3). Phone photos carry GPS data, so I proposed on #16 to upload through a Server Action that removes it, instead of a signed upload link; Nabeegh and Shubham agreed.
+
+**Asked:** I had never set up R2, so I asked for step-by-step instructions with explanations so I'd understand each step. I also asked for the initial code and tests for the new files, based on the design I had in mind: the storage module, photo processing, upload and delete actions, and the page. I wasn't sure how to set up 5-minute signed links, so I asked for guidance on that, and for a list of checks for the UI and R2 so I wouldn't miss anything, on top of the checks I had planned myself.
+
+**Got:** step-by-step instructions and explanations that cleared up my doubts; the initial code for those files, including the 5-minute signed links; 77 tests; and a checklist for testing.
+
+**Did with it:** followed the instructions to set up the private R2 bucket and its key, reviewed the generated code to make sure it met our project requirements, ran tests, lint, typecheck and Prettier locally, and went through the checklist on localhost: upload, rejected files, delete, an expired link and signing out. I also left body measurements as a suggestion on #16, since they need a schema change. After Shubham's review, I had the delete order changed so the R2 file is removed before the database row, and a failed file delete now shows "Try again" instead of hiding the photo. The updated failure test and a new retry test were AI-generated; I checked them and reran the suite, so there are now 78 tests.
+
+### 12 November 2026, profile photos (issue #16)
+
+**Before asking:** Shubham asked me to handle profile photos since I had built the photo storage functionality. I wanted users to have a round profile picture and be able to adjust its framing, similar to what other apps offer. I also wanted users to be able to edit an existing photo without uploading it again.
+
+**Asked:** I first explored how to implement an interactive image crop editor in React, including which libraries support dragging and zooming. I asked about using `react-easy-crop` and how it could fit into our existing photo storage and processing setup. I also asked how to preserve the original image so users could change the crop later, and how to handle upload, update, and removal securely. After discussing the approach, I requested implementation examples and tests for the account page and related actions.
+
+**Got:** An implementation approach using `react-easy-crop`, with drag-and-zoom controls, upload/edit/remove actions restricted to the signed-in user's profile photo, and a way to retain the original image alongside the cropped version; as well as 65 tests covering the new functionality.
+
+**Did with it:** Reviewed the implementation and checked that it reused our existing storage and photo processing modules. Ran tests, lint, typecheck, and Prettier locally, then tested adding, changing, editing, and removing a photo on localhost, including uploading a non-image file. Checked R2 to verify that both the original and cropped images were stored correctly and that both were deleted when a photo was changed or removed. When the editor initially opened blank, I investigated the issue and traced it to a photo uploaded before original-image storage was introduced. This meant the issue was limited to older photos and did not affect newly uploaded ones. I also found that a non-image file opened a blank editor, and asked for a check before the editor opens.
+
+### 13 November 2026, review fixes for photos and profile photos (issues #16, #109, #110)
+
+**Before asking:** Nabeegh reviewed #109 and #110 and left comments about upload size, ownership checks, error logging, photo limits, accessibility, and tests. I wanted to address the feedback while keeping uploads flexible for users.
+
+**Asked:** How to address each review comment, including handling large phone photos under Vercel's 4.5 MB request limit and preventing two tabs from overwriting each other's profile photo.
+
+**Got:** Implementation examples and suggestions for browser-side image resizing (up to 50 MB), ownership checks, error logging, a 1,000-photo limit with a paginated gallery, accessibility improvements, and handling changes across tabs. AI also generated tests, including photo editor interaction tests using jsdom and Testing Library.
+
+**Did with it:** Reviewed the suggestions and implementation, decided to keep the upload and photo limits generous, and added notes to the page explaining them. Ran tests, lint, typecheck, and Prettier locally. Tested large photos, non-image files, error handling, and the two-tab case on localhost. Found and fixed an issue where an edit in one tab could overwrite a photo saved in another. Checked R2 for leftover files.

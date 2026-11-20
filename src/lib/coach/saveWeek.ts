@@ -59,12 +59,16 @@ export async function saveWeek(
   userId: string,
   week: { name: string; days: WeekDay[] },
   source: PlanSourceName,
+  // Runs inside the same transaction, after the lock: the quiz saves the profile here
+  // so a failed plan save leaves the profile as it was.
+  beforeSave?: (tx: Prisma.TransactionClient) => Promise<void>,
 ): Promise<{ planId: number }> {
   const plan = await prisma.$transaction(async (tx) => {
     // Lock the user's row first: under Postgres's default READ COMMITTED, two
     // concurrent saves (a double tap, a client retry) would otherwise each deactivate
     // the old plan and both insert an active one. With the lock they run in turn.
     await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
+    await beforeSave?.(tx);
     await tx.plan.updateMany({
       where: { userId, active: true },
       data: { active: false },

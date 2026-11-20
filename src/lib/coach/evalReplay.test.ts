@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { EVAL_PROFILES } from "./evalProfiles";
 import { generatePlan, type PlanModel } from "./generatePlan";
-import { verifyPlan, type LibraryExercise } from "./verify";
+import { verifyPlan, type CategorisedExercise } from "./verify";
 
 type Row = {
   id: string;
@@ -28,10 +28,25 @@ const rows: Row[] = readFileSync(
 
 // Only the exercises those replies name, copied from free-exercise-db with the same
 // fields the app stores (eval/fixtures-library.json).
-const library: LibraryExercise[] = JSON.parse(
+const library: CategorisedExercise[] = JSON.parse(
   readFileSync("eval/fixtures-library.json", "utf8"),
 );
 const byId = new Map(library.map((e) => [e.id, e]));
+
+// The 30 October replies were recorded before plans carried an RPE target (#65), so
+// the replay adds rpe 7 to each exercise slot. Everything else in a reply is exactly
+// what the model returned; the recorded file is not edited.
+function withRpe(reply: unknown): unknown {
+  const days = (reply as { days?: unknown }).days;
+  if (!Array.isArray(days)) return reply;
+  return {
+    ...(reply as object),
+    days: days.map((day: { exercises?: object[] }) => ({
+      ...day,
+      exercises: day.exercises?.map((slot) => ({ rpe: 7, ...slot })),
+    })),
+  };
+}
 
 function replay(calls: Row["calls"]): PlanModel {
   let i = 0;
@@ -40,7 +55,7 @@ function replay(calls: Row["calls"]): PlanModel {
     if (!call || call.reply === undefined) {
       throw new Error(call?.error ?? "no recorded reply");
     }
-    return call.reply;
+    return withRpe(call.reply);
   };
 }
 
