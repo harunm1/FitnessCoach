@@ -1,5 +1,5 @@
 // Which database URL the Prisma CLI uses, and which steps a hosted build runs (#57, D19).
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import prismaConfig from "../../../prisma.config";
 import {
   buildSteps,
@@ -17,7 +17,7 @@ const POOLED = "postgresql://u:p@ep-x-pooler.neon.tech/db";
 const DIRECT = "postgresql://u:p@ep-x.neon.tech/db";
 const OTHER_BRANCH = "postgresql://u:p@ep-y.neon.tech/db";
 const TEST_DB = "postgresql://u:p@localhost:5432/fitnesscoach_test";
-const DIRECT_OF_OTHER_POOLED = "postgresql://u:p@ep-x-pooler.neon.tech/db";
+const POOLED_AS_DIRECT = "postgresql://u:p@ep-x-pooler.neon.tech/db";
 
 describe("cliDatabaseUrl", () => {
   it("uses the direct connection for migrations on a hosted build", () => {
@@ -130,7 +130,7 @@ describe("hostedDatabaseProblems", () => {
       hostedDatabaseProblems({
         VERCEL_ENV: "preview",
         DATABASE_URL: POOLED,
-        DATABASE_URL_UNPOOLED: DIRECT_OF_OTHER_POOLED,
+        DATABASE_URL_UNPOOLED: POOLED_AS_DIRECT,
       }),
     ).toEqual([
       "DATABASE_URL_UNPOOLED (ep-x-pooler.neon.tech/db) is a pooled string for VERCEL_ENV=preview; set the direct Neon string, with connection pooling off (README, Deploy step 5)",
@@ -283,6 +283,23 @@ describe("SEED_STEP", () => {
   it("runs the exercise seed that prisma.config.ts names", () => {
     expect(SEED_STEP).toBe("prisma db seed");
     expect(prismaConfig.migrations?.seed).toBe("tsx prisma/seed.ts");
+  });
+});
+
+describe("prisma.config datasource", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  // The wiring, not just the helper: reverting `url` in prisma.config.ts to
+  // process.env.DATABASE_URL would send hosted migrations through the Neon pooler.
+  it("gives the Prisma CLI the direct URL on a Vercel build", async () => {
+    vi.stubEnv("VERCEL_ENV", "preview");
+    vi.stubEnv("DATABASE_URL", POOLED);
+    vi.stubEnv("DATABASE_URL_UNPOOLED", DIRECT);
+    vi.resetModules();
+
+    const { default: config } = await import("../../../prisma.config");
+
+    expect(config.datasource?.url).toBe(DIRECT);
   });
 });
 

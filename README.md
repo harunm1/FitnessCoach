@@ -76,7 +76,7 @@ The [acceptance checklist](docs/ACCOUNTS_TESTING.md) documents expected results 
 all three accounts milestones. The commands below are a database/app overview;
 configure authentication and mail before testing signup.
 
-Prerequisites: Node.js 22.13 or newer, npm, and Docker Desktop with Docker Compose available.
+Prerequisites: Node.js 22 (22.13 or newer; `engines` in `package.json` is `^22.13.0`, the line CI and the hosted build use), npm, and Docker Desktop with Docker Compose available.
 Start Docker Desktop before running the Docker commands. When using WSL, enable
 Docker Desktop integration for your distribution.
 
@@ -221,10 +221,11 @@ One-time setup (steps 1 to 3 were done on 17 November):
    naming whichever is missing.
 3. Read the production domain from **Settings > Domains** (usually
    `<project>.vercel.app`).
-4. Under **Settings > Build and Deployment**, leave **Build Command** without a
-   dashboard override, so the one in `vercel.json` is the only one to read. (On 17
-   November a dashboard override ran the migrations and the seed until this build
-   script was merged; remove it once it is.)
+4. Under **Settings > Build and Deployment**, **Build Command** can stay as it is: the
+   `buildCommand` in `vercel.json` overrides the dashboard value for every build
+   ([vercel.json reference](https://vercel.com/docs/project-configuration/vercel-json),
+   checked 20 Nov 2026). A leftover dashboard override changes nothing, but it is
+   worth removing so the dashboard does not show a command that never runs.
 5. Under **Settings > Environment Variables**, scoped as listed:
 
    | Name                                                                               | Environment         | Value                                                                                                                                                       |
