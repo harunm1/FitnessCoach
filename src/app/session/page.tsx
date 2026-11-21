@@ -89,6 +89,8 @@ export default async function SessionPage() {
               setNumber: true,
               reps: true,
               weightKg: true,
+              painDuringSession: true,
+              painNextMorning: true,
             },
           },
         },
@@ -236,6 +238,10 @@ export default async function SessionPage() {
                                       Set {set.setNumber}: {set.reps} reps
                                       {set.weightKg !== null &&
                                         ` · ${set.weightKg.toString()} kg`}
+                                      {set.painDuringSession !== null &&
+                                        ` · pain ${set.painDuringSession}/10 during`}
+                                      {set.painNextMorning !== null &&
+                                        ` · pain ${set.painNextMorning}/10 next morning`}
                                     </li>
                                   ))}
                                 </ul>
