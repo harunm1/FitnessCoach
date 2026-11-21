@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { AccountTheme, ThemeToggle } from "@/components/auth/account-theme";
-import theme from "@/components/progress/progress-theme.module.css";
+import theme from "@/components/theme/app-theme.module.css";
 import { DeletePhotoButton } from "@/components/photos/DeletePhotoButton";
 import { PhotoUploadForm } from "@/components/photos/PhotoUploadForm";
-import { UserBadge } from "@/components/photos/UserBadge";
+import { AppNav } from "@/components/nav/AppNav";
 import { requireUser } from "@/lib/auth/session";
 import {
   signAvatar,
@@ -79,22 +79,15 @@ export default async function ProgressPhotosPage({
 
   return (
     <AccountTheme
-      className={`${theme.progressTheme} min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12`}
+      className={`${theme.appTheme} min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12`}
     >
       <div className="mx-auto max-w-3xl">
-        <header className="mb-10 flex items-center justify-between gap-4 border-b border-foreground/15 pb-5">
-          <p className="text-sm font-bold tracking-[0.12em]">FORM</p>
-          <div className="flex min-w-0 items-center gap-3 sm:gap-4 max-sm:[&_button>span]:hidden">
-            <UserBadge name={user.name} imageUrl={avatarUrl} />
-            <ThemeToggle />
-            <Link
-              href="/progress"
-              className="shrink-0 text-xs text-foreground/60 underline underline-offset-4"
-            >
-              Back to progress
-            </Link>
-          </div>
-        </header>
+        <AppNav
+          current="photos"
+          name={user.name}
+          avatarUrl={avatarUrl}
+          actions={<ThemeToggle />}
+        />
 
         <section className="mb-8">
           <p className="text-xs font-semibold tracking-[0.14em] text-foreground/60 uppercase">

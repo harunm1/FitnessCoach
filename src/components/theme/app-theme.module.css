@@ -1,0 +1,114 @@
+/* One light and dark theme for the home page and every signed-in page except
+   the account page, which has its own. AccountTheme sets data-theme and
+   remembers the choice, so the theme follows the user from page to page.
+
+   The pages are built from Tailwind's background and foreground colours, so
+   switching those switches most of each page. The rules further down cover
+   the few places that use fixed colours instead: white cards and inputs,
+   error and timer colours, and the muscle diagrams.
+
+   The class is written twice so these rules win over AccountTheme's own
+   colours, which reuse the names --primary, --muted and --accent. */
+.appTheme.appTheme {
+  --primary: #19211d;
+  --primary-foreground: #f5f6f2;
+  --muted: oklch(0.97 0 0);
+  --accent: oklch(0.97 0 0);
+  --map-worked: #2f6345;
+  --map-neutral: #d6d9d1;
+}
+
+.appTheme.appTheme[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --card: #171717;
+  --card-foreground: #ededed;
+  --primary: #ededed;
+  --primary-foreground: #151515;
+  --muted: #242421;
+  --muted-foreground: #b0b0aa;
+  --accent: #242421;
+  --border: #30302b;
+  --input: #30302b;
+  --ring: #9b9b94;
+  --raised: #171717;
+  --error-text: #f19a8a;
+  --error-line: #b84a3a;
+  --timer-bg: #10261b;
+  --timer-text: #8fd3a8;
+  --body-accent: #7fd49b;
+  --map-worked: #6dbb87;
+  --map-neutral: #34352f;
+}
+
+@media (prefers-color-scheme: dark) {
+  .appTheme.appTheme[data-theme="system"] {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+    --card: #171717;
+    --card-foreground: #ededed;
+    --primary: #ededed;
+    --primary-foreground: #151515;
+    --muted: #242421;
+    --muted-foreground: #b0b0aa;
+    --accent: #242421;
+    --border: #30302b;
+    --input: #30302b;
+    --ring: #9b9b94;
+    --raised: #171717;
+    --error-text: #f19a8a;
+    --error-line: #b84a3a;
+    --timer-bg: #10261b;
+    --timer-text: #8fd3a8;
+    --body-accent: #7fd49b;
+    --map-worked: #6dbb87;
+    --map-neutral: #34352f;
+  }
+}
+
+/* Fixed colours from shared components. Each falls back to its usual colour,
+   so light mode looks exactly as before; only the dark values above change. */
+.appTheme :global(.bg-white) {
+  background-color: var(--raised, var(--color-white));
+}
+
+.appTheme :global(.text-red-800) {
+  color: var(--error-text, var(--color-red-800));
+}
+
+.appTheme :global(.border-red-700) {
+  border-color: var(--error-line, var(--color-red-700));
+}
+
+/* The rest timer while it runs. */
+.appTheme :global(.bg-emerald-50) {
+  background-color: var(--timer-bg, var(--color-emerald-50));
+}
+
+.appTheme :global(.text-emerald-800) {
+  color: var(--timer-text, var(--color-emerald-800));
+}
+
+.appTheme :global(.text-emerald-900) {
+  color: var(--timer-text, var(--color-emerald-900));
+}
+
+/* The green labels on the session's muscle panel (BodyMap.tsx). */
+.appTheme :global(.text-\[\#245c43\]) {
+  color: var(--body-accent, #245c43);
+}
+
+.appTheme :global(.border-\[\#245c43\]) {
+  border-color: var(--body-accent, #245c43);
+}
+
+/* The muscle diagrams on the progress and session pages set their colours as
+   SVG attributes; CSS takes priority. The values match WORKED and NEUTRAL in
+   MuscleMap.tsx. */
+.appTheme :global(path[fill="#2f6345"]) {
+  fill: var(--map-worked);
+}
+
+.appTheme :global(path[fill="#d6d9d1"]) {
+  fill: var(--map-neutral);
+}
