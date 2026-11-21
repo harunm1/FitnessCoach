@@ -9,11 +9,17 @@ import { BODY_MAP_MUSCLE_NAMES } from "@/lib/body-map/muscles";
 import { getNextPlanDayIndex } from "@/lib/workout/progression";
 import { finishWorkout, startOrResumeWorkout } from "./actions";
 import { requireUser } from "@/lib/auth/session";
+import { AccountTheme, ThemeToggle } from "@/components/auth/account-theme";
+import { AppNav } from "@/components/nav/AppNav";
+import theme from "@/components/theme/app-theme.module.css";
+import { loadAvatarUrl } from "@/lib/photos/avatar";
 
 export const dynamic = "force-dynamic";
 
 export default async function SessionPage() {
   const user = await requireUser();
+  // Started now so the photo link loads alongside the plan.
+  const avatar = loadAvatarUrl(user.id);
   const plan = await prisma.plan.findFirst({
     where: {
       active: true,
@@ -114,28 +120,29 @@ export default async function SessionPage() {
     loggedByExercise.set(set.exerciseId, exerciseSets);
   }
 
+  const avatarUrl = await avatar;
+
   return (
-    <main className="min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12">
+    <AccountTheme
+      className={`${theme.appTheme} min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12`}
+    >
       <div className="mx-auto max-w-3xl">
-        <header className="mb-10 flex items-center justify-between border-b border-foreground/15 pb-5">
-          <Link className="text-sm font-bold tracking-[0.12em]" href="/">
-            FORM
-          </Link>
-          <nav aria-label="Your pages" className="flex items-center gap-4">
-            <Link
-              className="text-xs text-foreground/60 underline underline-offset-4"
-              href="/progress"
-            >
-              Progress
-            </Link>
-            <Link
-              className="text-xs text-foreground/60 underline underline-offset-4"
-              href="/onboarding"
-            >
-              Edit profile
-            </Link>
-          </nav>
-        </header>
+        <AppNav
+          current="session"
+          name={user.name}
+          avatarUrl={avatarUrl}
+          actions={
+            <>
+              <ThemeToggle />
+              <Link
+                className="shrink-0 text-xs text-foreground/60 underline underline-offset-4"
+                href="/onboarding"
+              >
+                Edit profile
+              </Link>
+            </>
+          }
+        />
 
         {plan && sessionDay ? (
           <>
@@ -341,6 +348,6 @@ export default async function SessionPage() {
           </section>
         )}
       </div>
-    </main>
+    </AccountTheme>
   );
 }

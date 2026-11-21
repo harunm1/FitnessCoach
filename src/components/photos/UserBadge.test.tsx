@@ -35,4 +35,15 @@ describe("UserBadge", () => {
     );
     expect(html).toContain('alt=""');
   });
+
+  it("marks itself as the current page on the account page only", () => {
+    expect(
+      renderToStaticMarkup(
+        <UserBadge name="Free Demo" imageUrl={null} current />,
+      ),
+    ).toContain('aria-current="page"');
+    expect(
+      renderToStaticMarkup(<UserBadge name="Free Demo" imageUrl={null} />),
+    ).not.toContain("aria-current");
+  });
 });

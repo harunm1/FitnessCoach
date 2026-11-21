@@ -2,14 +2,17 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { requireAccount, loadConversation, hasProfile } = vi.hoisted(() => ({
-  requireAccount: vi.fn(),
-  loadConversation: vi.fn(),
-  hasProfile: vi.fn(),
-}));
+const { requireAccount, loadConversation, hasProfile, loadAvatarUrl } =
+  vi.hoisted(() => ({
+    requireAccount: vi.fn(),
+    loadConversation: vi.fn(),
+    hasProfile: vi.fn(),
+    loadAvatarUrl: vi.fn(),
+  }));
 vi.mock("@/lib/auth/access", () => ({ requireAccount }));
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
 vi.mock("@/lib/coach/conversation", () => ({ loadConversation, hasProfile }));
+vi.mock("@/lib/photos/avatar", () => ({ loadAvatarUrl }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 import CoachPage from "./page";
 import { NO_PROFILE_MESSAGE, TIER_MESSAGE } from "./copy";
@@ -17,6 +20,7 @@ import { NO_PROFILE_MESSAGE, TIER_MESSAGE } from "./copy";
 beforeEach(() => {
   vi.clearAllMocks();
   hasProfile.mockResolvedValue(true);
+  loadAvatarUrl.mockResolvedValue(null);
   loadConversation.mockResolvedValue({
     id: 7,
     messages: [{ id: 1, role: "USER", content: "How long should I rest?" }],
@@ -24,6 +28,19 @@ beforeEach(() => {
 });
 
 describe("coach page", () => {
+  it("shows the nav bar with Coach as the current page", async () => {
+    requireAccount.mockResolvedValue({
+      user: { id: "owner", name: "Free Demo" },
+      access: { permissions: ["coach"] },
+    });
+
+    const html = renderToStaticMarkup(await CoachPage());
+
+    expect(html).toContain('<nav aria-label="Main"');
+    expect(html).toMatch(/<a[^>]*aria-current="page"[^>]*href="\/coach"/);
+    expect(loadAvatarUrl).toHaveBeenCalledWith("owner");
+  });
+
   it("shows the saved conversation and the form when the account has coach access", async () => {
     requireAccount.mockResolvedValue({
       user: { id: "owner" },

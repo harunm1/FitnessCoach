@@ -159,10 +159,13 @@ describe("progress photos page", () => {
     expect(html).toContain('aria-label="Switch to dark mode"');
   });
 
-  it("links back to the progress page", async () => {
+  it("shows the nav bar with Photos as the current page", async () => {
     const html = await render();
+    expect(html).toContain('<nav aria-label="Main"');
     expect(html).toContain('href="/progress"');
-    expect(html).toContain("Back to progress");
+    expect(html).toMatch(
+      /<a[^>]*aria-current="page"[^>]*href="\/progress\/photos"/,
+    );
   });
 
   it("invites a first photo when there are none", async () => {

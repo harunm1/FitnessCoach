@@ -3,11 +3,12 @@ import { BillingPanel } from "@/components/auth/billing-panel";
 import { requireAccount } from "@/lib/auth/access";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { TrialButton } from "@/components/auth/trial-button";
-import { AccountBrand, AccountIcon } from "@/components/auth/account-ui";
+import { AccountIcon } from "@/components/auth/account-ui";
 import styles from "@/components/auth/account.module.css";
 import { AccountTheme, ThemeToggle } from "@/components/auth/account-theme";
 import { ChangePasswordDialog } from "@/components/auth/change-password-dialog";
 import { ProfilePhotoForm } from "@/components/auth/profile-photo-form";
+import { AppNav } from "@/components/nav/AppNav";
 import { loadAvatar } from "@/lib/photos/avatar";
 
 // A request-time display snapshot; permission checks remain in the server guard.
@@ -61,16 +62,25 @@ export default async function AccountPage({
 
   return (
     <AccountTheme className={styles.accountPage}>
-      <header className={styles.accountHeader}>
-        <AccountBrand />
-        <div className={styles.headerRight}>
-          <ThemeToggle />
-          <span className={styles.headerLabel}>
-            <AccountIcon name="shield" size={16} /> Verified account
-          </span>
-          <SignOutButton />
-        </div>
-      </header>
+      {/* The nav bar wraps onto two rows on phones, so the header can't keep
+          its fixed phone height. */}
+      <div className={`${styles.accountHeader} h-auto! max-[760px]:py-3!`}>
+        <AppNav
+          current="account"
+          name={user.name}
+          avatarUrl={avatar?.url ?? null}
+          className=""
+          actions={
+            <>
+              <ThemeToggle />
+              <span className={styles.headerLabel}>
+                <AccountIcon name="shield" size={16} /> Verified account
+              </span>
+              <SignOutButton />
+            </>
+          }
+        />
+      </div>
       <div className={styles.accountContent}>
         <div className={styles.accountIntro}>
           <div>
