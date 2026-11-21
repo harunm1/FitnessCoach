@@ -197,6 +197,12 @@ describe("progress page", () => {
     expect(html).toContain("See all (5)");
   });
 
+  it("shows the nav bar with Progress as the current page", async () => {
+    const html = await render();
+    expect(html).toContain('<nav aria-label="Main"');
+    expect(html).toMatch(/<a[^>]*aria-current="page"[^>]*href="\/progress"/);
+  });
+
   it("still shows progress when photo storage is unavailable", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     storage.get.mockImplementation(() => {

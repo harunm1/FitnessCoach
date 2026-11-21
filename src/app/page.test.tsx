@@ -1,11 +1,31 @@
-// Checks the root page is built from the shadcn/ui Card and button styles, links to the quiz and keeps the account links beside it.
+// Checks the root page is built from the shadcn/ui Card and button styles, leads with Get started and keeps Sign in beside it, and sends signed-in users to their session.
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const { getVerifiedUser, redirect } = vi.hoisted(() => ({
+  getVerifiedUser: vi.fn(),
+  redirect: vi.fn((url: string) => {
+    throw new Error(`redirect:${url}`);
+  }),
+}));
+vi.mock("@/lib/auth/session", () => ({ getVerifiedUser }));
+vi.mock("next/navigation", () => ({ redirect }));
 import Home from "./page";
 
-function render(): string {
-  return renderToStaticMarkup(<Home />);
+// The page as a signed-out visitor sees it.
+let html = "";
+async function load(): Promise<string> {
+  return renderToStaticMarkup(await Home());
 }
+function render(): string {
+  return html;
+}
+
+beforeEach(async () => {
+  vi.clearAllMocks();
+  getVerifiedUser.mockResolvedValue(null);
+  html = await load();
+});
 
 // Every <a> in the markup as { href, text, classes }.
 function links(html: string) {
@@ -32,10 +52,10 @@ function cardMarkup(html: string): string {
   throw new Error("The Card's <div> is never closed");
 }
 
-// The quiz link, found by where it goes, so the account links can come after it.
-function quizLink() {
-  const link = links(render()).find((l) => l.href === "/onboarding");
-  if (!link) throw new Error("The root page has no link to /onboarding");
+// The Get started link, found by where it goes, so Sign in can come after it.
+function startLink() {
+  const link = links(render()).find((l) => l.href === "/sign-up");
+  if (!link) throw new Error("The root page has no link to /sign-up");
   return link;
 }
 
@@ -52,27 +72,26 @@ describe("root page", () => {
     );
   });
 
-  it("links to the quiz first, then to Create account and Sign in", () => {
+  it("links to Get started first, then to Sign in", () => {
     const found = links(render()).map(({ href, text }) => ({ href, text }));
     expect(found).toEqual([
-      { href: "/onboarding", text: "Start your quiz" },
-      { href: "/sign-up", text: "Create account" },
+      { href: "/sign-up", text: "Get started" },
       { href: "/sign-in", text: "Sign in" },
     ]);
   });
 
-  it("puts the heading, the quiz link and the account links inside the shadcn Card", () => {
+  it("puts the heading, Get started and Sign in inside the shadcn Card", () => {
     const card = cardMarkup(render());
     expect(card).toContain("<h1");
-    for (const href of ["/onboarding", "/sign-up", "/sign-in"]) {
+    for (const href of ["/sign-up", "/sign-in"]) {
       expect(card).toContain(`href="${href}"`);
     }
   });
 
-  it("styles only the quiz link as a button; the account links stay plain underlined text", () => {
+  it("styles only Get started as a button; Sign in stays plain underlined text", () => {
     const found = links(render());
-    const account = found.filter((l) => l.href !== "/onboarding");
-    expect(account).toHaveLength(2);
+    const account = found.filter((l) => l.href !== "/sign-up");
+    expect(account).toHaveLength(1);
     for (const { classes } of account) {
       expect(classes).toContain("underline");
       expect(classes.filter((c) => /^bg-/.test(c))).toEqual([]);
@@ -80,7 +99,7 @@ describe("root page", () => {
   });
 
   it("styles the link as the primary button with no conflicting padding or height", () => {
-    const { classes } = quizLink();
+    const { classes } = startLink();
     expect(classes).toEqual(
       expect.arrayContaining(["bg-primary", "text-primary-foreground"]),
     );
@@ -91,6 +110,12 @@ describe("root page", () => {
   });
 
   it("keeps a 44px touch target on the link (h-11, not the lg size's h-9)", () => {
-    expect(quizLink().classes).toContain("h-11");
+    expect(startLink().classes).toContain("h-11");
+  });
+
+  it("sends a signed-in user to their session instead", async () => {
+    getVerifiedUser.mockResolvedValue({ id: "u1", name: "Free Demo" });
+    await expect(load()).rejects.toThrow("redirect:/session");
+    expect(redirect).toHaveBeenCalledWith("/session");
   });
 });
