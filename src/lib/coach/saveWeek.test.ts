@@ -77,6 +77,12 @@ describe("weekToPlanData", () => {
     }
     expect(days.at(-2)?.run?.create.type).toBe("LONG");
   });
+
+  it("includes substitutionReason when a strength exercise has one", () => {
+    const strength = days.find((day) => day.kind === "STRENGTH");
+    const exerciseCreate = strength?.exercises?.create;
+    expect(exerciseCreate?.[0]).toHaveProperty("substitutionReason");
+  });
 });
 
 describe("saveWeek", () => {

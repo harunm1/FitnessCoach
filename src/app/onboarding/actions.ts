@@ -143,6 +143,7 @@ export async function saveQuizProfile(
                   sets: exercise.sets,
                   reps: exercise.reps,
                   restSeconds: exercise.restSeconds,
+                  substitutionReason: exercise.substitutionReason,
                 })),
               },
             })),

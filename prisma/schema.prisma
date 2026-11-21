@@ -183,15 +183,16 @@ model PlanDay {
 // One exercise slot on one plan day. The verifier's range checks (sets, reps, rest)
 // are enforced in code, not here, because the ranges are coaching decisions.
 model PlanExercise {
-  id          Int      @id @default(autoincrement())
-  planDayId   Int
-  planDay     PlanDay  @relation(fields: [planDayId], references: [id], onDelete: Cascade)
-  exerciseId  String
-  exercise    Exercise @relation(fields: [exerciseId], references: [id])
-  order       Int
-  sets        Int
-  reps        Int
-  restSeconds Int
+  id                 Int      @id @default(autoincrement())
+  planDayId          Int
+  planDay            PlanDay  @relation(fields: [planDayId], references: [id], onDelete: Cascade)
+  exerciseId         String
+  exercise           Exercise @relation(fields: [exerciseId], references: [id])
+  order              Int
+  sets               Int
+  reps               Int
+  restSeconds        Int
+  substitutionReason String?
 
   @@unique([planDayId, exerciseId]) // no exercise twice on one day (verifier rule)
   @@unique([planDayId, order])

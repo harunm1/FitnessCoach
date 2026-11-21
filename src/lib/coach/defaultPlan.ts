@@ -8,7 +8,7 @@ import {
 } from "./verify";
 import type { PlanInput } from "./schema";
 import { draftExerciseJointMappings } from "./exerciseJointMappings";
-import { findJointSubstitution } from "./jointSubstitutions";
+import { findJointSubstitution, type Joint } from "./jointSubstitutions";
 
 // The fallback asks for a moderate effort: 7 is "about three reps left" (#65).
 const DEFAULT_RPE = 7;
@@ -55,9 +55,13 @@ export function buildDefaultPlan(
     (e) => e.category?.toLowerCase() === "strength" && fitsProfile(e, profile),
   );
 
-  const resolveJointAware = (exerciseId: string): string | undefined => {
+  const resolveJointAware = (
+    exerciseId: string,
+  ): { exerciseId: string; substitutionReason?: string } | undefined => {
     const reportedJoints = profile.reportedJoints ?? [];
-    if (reportedJoints.length === 0) return exerciseId;
+    if (reportedJoints.length === 0) {
+      return { exerciseId };
+    }
 
     const original = Object.hasOwn(draftExerciseJointMappings, exerciseId)
       ? draftExerciseJointMappings[
@@ -66,21 +70,34 @@ export function buildDefaultPlan(
       : undefined;
     if (!original) return undefined;
     if (!original.joints.some((joint) => reportedJoints.includes(joint))) {
-      return exerciseId;
+      return { exerciseId };
     }
 
-    return findJointSubstitution(
+    const replacement = findJointSubstitution(
       exerciseId,
       usable.map((exercise) => exercise.id),
       reportedJoints,
       draftExerciseJointMappings,
     );
+    if (!replacement) return undefined;
+
+    const avoided = reportedJoints.filter((joint: Joint) =>
+      (original.joints as readonly Joint[]).includes(joint),
+    );
+    return {
+      exerciseId: replacement,
+      substitutionReason:
+        avoided.length === 1
+          ? `avoids ${avoided[0]} loading`
+          : `avoids loading ${avoided.join(" and ")}`,
+    };
   };
 
   return {
     name: `${profile.daysPerWeek}-day starter plan`,
     days: days.map((day) => {
       const picked: string[] = [];
+      const substitutions = new Map<string, string>();
       for (const muscle of day.muscles) {
         const match = usable.find(
           (e) =>
@@ -90,13 +107,26 @@ export function buildDefaultPlan(
         );
         if (match) {
           const resolved = resolveJointAware(match.id);
-          if (resolved && !picked.includes(resolved)) picked.push(resolved);
+          if (resolved && !picked.includes(resolved.exerciseId)) {
+            picked.push(resolved.exerciseId);
+            if (resolved.substitutionReason) {
+              substitutions.set(
+                resolved.exerciseId,
+                resolved.substitutionReason,
+              );
+            }
+          }
         }
       }
       for (const exercise of usable) {
         if (picked.length >= 2) break;
         const resolved = resolveJointAware(exercise.id);
-        if (resolved && !picked.includes(resolved)) picked.push(resolved);
+        if (resolved && !picked.includes(resolved.exerciseId)) {
+          picked.push(resolved.exerciseId);
+          if (resolved.substitutionReason) {
+            substitutions.set(resolved.exerciseId, resolved.substitutionReason);
+          }
+        }
       }
       if (picked.length < 2) {
         throw new Error(`Not enough compatible exercises for ${day.name}`);
@@ -109,6 +139,7 @@ export function buildDefaultPlan(
           reps: 10,
           restSeconds: 90,
           rpe: DEFAULT_RPE,
+          substitutionReason: substitutions.get(exerciseId),
         })),
       };
     }),
