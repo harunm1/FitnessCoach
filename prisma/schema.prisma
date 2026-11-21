@@ -232,16 +232,18 @@ model Workout {
 }
 
 model SetLog {
-  id         Int      @id @default(autoincrement())
-  workoutId  Int
-  workout    Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
-  exerciseId String
-  exercise   Exercise @relation(fields: [exerciseId], references: [id])
-  setNumber  Int
-  reps       Int
-  weightKg   Decimal? @db.Decimal(6, 2)
-  rpe        Int? // rate of perceived exertion, 1 to 10
-  loggedAt   DateTime @default(now())
+  id                Int      @id @default(autoincrement())
+  workoutId         Int
+  workout           Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exerciseId        String
+  exercise          Exercise @relation(fields: [exerciseId], references: [id])
+  setNumber         Int
+  reps              Int
+  weightKg          Decimal? @db.Decimal(6, 2)
+  rpe               Int? // rate of perceived exertion, 1 to 10
+  painDuringSession Int?
+  painNextMorning   Int?
+  loggedAt          DateTime @default(now())
 
   // One row per set, so saving the same set again after a dropped connection updates
   // it instead of logging it twice (#42).

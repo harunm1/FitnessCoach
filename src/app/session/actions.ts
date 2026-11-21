@@ -15,6 +15,7 @@ import {
 } from "@/lib/workout/runMetricsSchema";
 import { getNextPlanDayIndex } from "@/lib/workout/progression";
 import { requireUser } from "@/lib/auth/session";
+import { painTrafficLight } from "@/lib/coach/painTrafficLight";
 
 export async function saveRunMetrics(
   _previousState: RunMetricsActionState,
@@ -85,6 +86,8 @@ export async function logSet(
     setNumber: formData.get("setNumber"),
     reps: formData.get("reps"),
     weightKg: formData.get("weightKg"),
+    painDuringSession: formData.get("painDuringSession"),
+    painNextMorning: formData.get("painNextMorning"),
   });
   if (!parsed.success) {
     return {
@@ -137,6 +140,16 @@ export async function logSet(
     };
   }
 
+  const during = parsed.data.painDuringSession ?? 0;
+  const nextMorning = parsed.data.painNextMorning ?? 0;
+  const traffic = painTrafficLight(during, nextMorning);
+  if (traffic.state === "stop") {
+    return {
+      status: "error",
+      message: traffic.reason,
+    };
+  }
+
   try {
     const weightKg =
       parsed.data.weightKg === undefined
@@ -157,10 +170,14 @@ export async function logSet(
         setNumber: parsed.data.setNumber,
         reps: parsed.data.reps,
         weightKg,
+        painDuringSession: parsed.data.painDuringSession,
+        painNextMorning: parsed.data.painNextMorning,
       },
       update: {
         reps: parsed.data.reps,
         weightKg,
+        painDuringSession: parsed.data.painDuringSession,
+        painNextMorning: parsed.data.painNextMorning,
       },
     });
   } catch {

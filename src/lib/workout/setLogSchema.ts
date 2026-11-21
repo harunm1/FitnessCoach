@@ -13,10 +13,17 @@ const optionalWeightSchema = z.preprocess(
     .optional(),
 );
 
+const optionalPainSchema = z.preprocess(
+  (value) => (value === "" || value === null ? undefined : value),
+  z.coerce.number().int().min(0).max(10).optional(),
+);
+
 export const setLogSchema = z.object({
   setNumber: z.coerce.number().int().min(1).max(6),
   reps: z.coerce.number().int().min(1).max(30),
   weightKg: optionalWeightSchema,
+  painDuringSession: optionalPainSchema,
+  painNextMorning: optionalPainSchema,
 });
 
 export type SetLogActionState = {

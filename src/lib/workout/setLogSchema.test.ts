@@ -37,4 +37,46 @@ describe("setLogSchema", () => {
       ).toBe(false);
     },
   );
+
+  it("parses optional 0-to-10 pain scores", () => {
+    expect(
+      setLogSchema.parse({
+        setNumber: "1",
+        reps: "10",
+        weightKg: "",
+        painDuringSession: "6",
+        painNextMorning: "3",
+      }),
+    ).toMatchObject({ painDuringSession: 6, painNextMorning: 3 });
+  });
+
+  it.each(["-1", "11", "2.5", "not-a-number"])(
+    "rejects invalid pain score %s",
+    (painDuringSession) => {
+      expect(
+        setLogSchema.safeParse({
+          setNumber: "1",
+          reps: "10",
+          weightKg: "",
+          painDuringSession,
+          painNextMorning: "",
+        }).success,
+      ).toBe(false);
+    },
+  );
+
+  it.each(["-1", "11", "2.5", "not-a-number"])(
+    "rejects invalid next-morning pain score %s",
+    (painNextMorning) => {
+      expect(
+        setLogSchema.safeParse({
+          setNumber: "1",
+          reps: "10",
+          weightKg: "",
+          painDuringSession: "",
+          painNextMorning,
+        }).success,
+      ).toBe(false);
+    },
+  );
 });
