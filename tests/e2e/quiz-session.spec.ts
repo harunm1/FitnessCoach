@@ -130,7 +130,9 @@ test("an athlete completes the quiz and logs a session without touching another 
     await page
       .getByRole("button", { name: "Start workout", exact: true })
       .click();
-    await expect(page.getByRole("status")).toContainText("Workout in progress");
+    await expect(
+      page.getByText(/Workout in progress since/, { exact: false }),
+    ).toBeVisible();
 
     const exercise = page.locator("li").filter({
       has: page.getByRole("heading", { name: pressName, exact: true }),
