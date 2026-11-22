@@ -89,8 +89,10 @@ export function rateLimitedOut(
 // own 30 s timeout ("timed out") is not one: a first reply that never arrives is a
 // failure the user would see, so it counts.
 export function isTransportError(error: string | undefined): boolean {
+  // Matches "Groq returned HTTP 503" and "Groq request failed"; rejects "Groq returned HTTP 400".
   return (
-    error !== undefined && /HTTP (408|429|5\d\d)|request failed/.test(error)
+    error !== undefined &&
+    /HTTP (408|429|5\d\d)|request failed|reply could not be read/.test(error)
   );
 }
 
@@ -103,9 +105,8 @@ export function permanentlyRefused(
     calls.length > 0 &&
     calls.every(
       (c) =>
-        c.error !== undefined &&
-        /HTTP 4\d\d/.test(c.error) &&
-        !/HTTP (408|429)/.test(c.error),
+        // Matches "Groq returned HTTP 401"; rejects "Groq returned HTTP 400" (a failed reply to record).
+        c.error !== undefined && /HTTP (401|403|404|413)/.test(c.error),
     )
   );
 }

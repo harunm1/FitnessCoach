@@ -96,6 +96,7 @@ describe("isTransportError", () => {
       "Gemini returned HTTP 503",
       "Groq returned HTTP 408",
       "Groq request failed",
+      "Groq reply could not be read",
     ]) {
       expect(isTransportError(e)).toBe(true);
     }
@@ -124,6 +125,18 @@ describe("permanentlyRefused", () => {
     ).toBe(true);
     expect(permanentlyRefused([{ error: "Groq returned HTTP 404" }])).toBe(
       true,
+    );
+    expect(permanentlyRefused([{ error: "Groq returned HTTP 413" }])).toBe(
+      true,
+    );
+  });
+
+  it("is false for a 400 or 422: Groq answers JSON that did not validate with 400, a failed first reply to record", () => {
+    expect(permanentlyRefused([{ error: "Groq returned HTTP 400" }])).toBe(
+      false,
+    );
+    expect(permanentlyRefused([{ error: "Gemini returned HTTP 422" }])).toBe(
+      false,
     );
   });
 
