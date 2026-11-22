@@ -215,3 +215,127 @@ describe("buildDefaultPlan with the seeded library (#71, found on #15)", () => {
     >();
   });
 });
+
+// A full-gym library in the dataset's order, kettlebell and bodyweight moves first, as in the
+// live bug (#139): the first fit for each slot used to win, whatever the equipment or level.
+function gym(
+  id: string,
+  equipment: string,
+  primary: string,
+  level: "BEGINNER" | "INTERMEDIATE" | "EXPERT" = "INTERMEDIATE",
+): CategorisedExercise {
+  return {
+    id,
+    category: "strength",
+    equipment,
+    primaryMuscles: [primary],
+    secondaryMuscles: [],
+    level,
+  };
+}
+
+const fullGym: CategorisedExercise[] = [
+  gym("kb-floor-press", "kettlebells", "chest", "BEGINNER"),
+  gym("kb-row", "kettlebells", "middle back", "BEGINNER"),
+  gym("cable-shoulder-press", "cable", "shoulders"),
+  gym("body-up", "body only", "triceps", "BEGINNER"),
+  gym("kb-squat", "kettlebells", "quadriceps", "BEGINNER"),
+  gym("machine-leg-curl", "machine", "hamstrings"),
+  gym("hip-thrust", "barbell", "glutes"),
+  gym("barbell-bench", "barbell", "chest"),
+  gym("barbell-row", "barbell", "middle back"),
+  gym("barbell-squat", "barbell", "quadriceps"),
+  gym("barbell-rdl", "barbell", "hamstrings"),
+  gym("barbell-press", "barbell", "shoulders"),
+  gym("barbell-curl", "barbell", "biceps"),
+  gym("db-skull", "dumbbell", "triceps"),
+  gym("cable-lat", "cable", "lats"),
+  gym("calf-raise", "machine", "calves"),
+  gym("cable-crunch", "cable", "abdominals"),
+];
+
+const fullGymProfile = {
+  daysPerWeek: 3,
+  equipment: [
+    "body only",
+    "dumbbell",
+    "barbell",
+    "cable",
+    "machine",
+    "kettlebells",
+  ],
+  avoidMuscles: [],
+};
+
+describe("buildDefaultPlan for an experienced user with a full gym (#139)", () => {
+  const plan = buildDefaultPlan(
+    { ...fullGymProfile, level: "EXPERT" },
+    fullGym,
+  );
+  const ids = (day: number) =>
+    plan.days[day].exercises.map((e) => e.exerciseId);
+
+  it("gives more than four exercises a day", () => {
+    plan.days.forEach((_, day) => expect(ids(day).length).toBeGreaterThan(4));
+  });
+
+  it("starts each day with a barbell compound lift, not a kettlebell or bodyweight move", () => {
+    expect(ids(0)[0]).toBe("barbell-bench");
+    expect(ids(1)[0]).toBe("barbell-row");
+    expect(ids(2)[0]).toBe("barbell-squat");
+  });
+
+  it("prefers barbell over kettlebell when both fit the slot", () => {
+    const all = plan.days.flatMap((day) =>
+      day.exercises.map((e) => e.exerciseId),
+    );
+    expect(all).not.toContain("kb-floor-press");
+    expect(all).not.toContain("kb-row");
+    expect(all).not.toContain("kb-squat");
+  });
+
+  it("gives compound lifts more sets than accessories", () => {
+    expect(plan.days[0].exercises[0]).toMatchObject({
+      sets: 4,
+      reps: 8,
+      restSeconds: 120,
+    });
+    expect(plan.days[0].exercises.at(-1)).toMatchObject({ sets: 3, reps: 10 });
+  });
+});
+
+describe("buildDefaultPlan by level (#139)", () => {
+  it("keeps the old size for a beginner: no extra accessories", () => {
+    const plan = buildDefaultPlan(
+      { ...fullGymProfile, level: "BEGINNER" },
+      fullGym,
+    );
+    plan.days.forEach((day) =>
+      expect(day.exercises.length).toBeLessThanOrEqual(4),
+    );
+  });
+
+  it("does not pick an exercise above the user's level when a fit at or below exists", () => {
+    const lib = [
+      gym("expert-squat", "barbell", "quadriceps", "EXPERT"),
+      gym("intermediate-squat", "barbell", "quadriceps", "INTERMEDIATE"),
+      gym("chest", "barbell", "chest", "BEGINNER"),
+      gym("row", "barbell", "middle back", "BEGINNER"),
+    ];
+    const plan = buildDefaultPlan(
+      { ...fullGymProfile, daysPerWeek: 1, level: "INTERMEDIATE" },
+      lib,
+    );
+    const picked = plan.days[0].exercises.map((e) => e.exerciseId);
+    expect(picked).toContain("intermediate-squat");
+    expect(picked).not.toContain("expert-squat");
+  });
+
+  it("behaves as before when no level is given", () => {
+    const plan = buildDefaultPlan(
+      { ...fullGymProfile, daysPerWeek: 1 },
+      fullGym,
+    );
+    expect(plan.days[0].exercises.length).toBeLessThanOrEqual(4);
+  });
+});
