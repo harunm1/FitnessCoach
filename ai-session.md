@@ -661,3 +661,13 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Got:** Implementation examples for a shared navigation component with the user's profile badge, a unified theme file (moved from `progress-theme.module.css` to `theme/app-theme.module.css` and renamed to `appTheme`), a home page that redirects signed-in users and uses Get started as its main action, and a session body map using `react-muscle-highlighter`. AI also generated tests for the changes.
 
 **Did with it:** Reviewed and adapted the suggested implementations to fit the existing project structure. Chose FitnessCoach as the single app name and kept the account page's own controls. Ran tests, lint, typecheck, and Prettier locally, then checked every page on localhost in both light and dark modes, including navigation and signed-in user flows. Discussed the session body map change with Mohammad, got his approval, and then implemented the fix.
+
+### 22 November 2026, coach stream fix (#123, #124), Why this plan follow-ups (#126), Personalize with the coach (#58)
+
+**Before asking:** Farnaz and Mohammad reported on 21 Nov that the coach on the live deploy showed the "can't answer" line above a reply, logged `coach: stream failed unknown`, and returned 429 after a few tries. I wanted the cause found before the freeze, not guessed: provider, keys, Vercel limits, or our own code.
+
+**Asked:** To reproduce the failure locally with the deploy's provider order, trace where an error without a code could be thrown after a successful save, and write a regression test before any fix. Then to apply Mohammad's two #88 review follow-ups, and to build the #58 action in the order Shubham asked for on #51.
+
+**Got:** Local probes showed Groq and Gemini answering normally. A throwaway route under `next dev` showed that `revalidatePath` throws `Invariant: static generation store missing` inside the response stream's `pull`, after the exchange is saved; the 429 was our own 5-a-minute chat limit. AI drafted the regression test (red on main), the one-line removal, the #88 changes with tests, and the #58 modules (a pure `personalizePlan` with injected steps, an input loader, the Server Action, a button) with tests written first.
+
+**Did with it:** Checked the Next source for the invariant, ran each new test against main's code to see it fail, ran lint, typecheck and the full unit suite locally, and had a separate review agent read each change blind before pushing; its findings (a leaking console spy, a test that passed on main too) were fixed. The fix is in #124 for Shubham's review, the #88 follow-ups in #126 for Mohammad's, and the Personalize button is left for Mohammad to place on his plan screen.
