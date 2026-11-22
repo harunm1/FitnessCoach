@@ -239,6 +239,25 @@ describe("guarded streaming coach endpoint", () => {
     });
     expect(mocks.refresh).not.toHaveBeenCalled();
   });
+  // #123: inside the stream's pull, Next 16.4.3 throws this from revalidatePath (seen in
+  // `next dev` on 22 Nov), so a saved exchange came back as "unsaved" with the fallback line.
+  it("confirms a saved exchange even where revalidatePath cannot run (#123)", async () => {
+    mocks.refresh.mockImplementationOnce(() => {
+      throw new Error(
+        'Invariant: static generation store missing in revalidatePath("/coach")',
+      );
+    });
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    const result = await events(await POST(request()));
+    expect(result.map((event) => event.type)).toEqual([
+      "delta",
+      "delta",
+      "saved",
+    ]);
+    expect(mocks.save).toHaveBeenCalledOnce();
+    expect(errors).not.toHaveBeenCalled();
+    errors.mockRestore();
+  });
   it("does not break a reply when best-effort event logging fails", async () => {
     mocks.persist.mockRejectedValue(new Error("log database unavailable"));
     expect((await events(await POST(request()))).at(-1).type).toBe("saved");

@@ -1,4 +1,3 @@
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireTier } from "@/lib/auth/access";
 import { COACH_TIERS } from "@/lib/auth/tier";
@@ -168,7 +167,9 @@ export async function POST(request: Request) {
                 return;
               }
               if (cancelled) return;
-              revalidatePath("/coach");
+              // No revalidatePath here (#123): inside this pull Next has no request
+              // store, so it threw and a saved exchange was reported as unsaved. The
+              // page is force-dynamic and CoachForm calls router.refresh() on "saved".
               send({ type: "saved" });
             }
             controller.close();
