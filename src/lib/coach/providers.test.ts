@@ -13,6 +13,7 @@ import {
   ProviderError,
   type ProviderEvent,
   retryAfterMs,
+  TRUNCATION_NOTE,
   withFallback,
   withRetry,
 } from "./providers";
@@ -132,9 +133,38 @@ describe("exercise coach chat providers", () => {
     expect(sent(fetchMock)).toMatchObject({
       url: "https://api.groq.com/openai/v1/chat/completions",
       headers: { Authorization: `Bearer ${KEY}` },
-      body: { model: GROQ_MODEL, messages, temperature: 0.3, max_tokens: 300 },
+      body: {
+        model: GROQ_MODEL,
+        messages,
+        temperature: 0.3,
+        max_tokens: 600,
+        reasoning_effort: "low",
+      },
     });
     expect(sent(fetchMock).body.response_format).toBeUndefined();
+  });
+
+  it("marks a plain Groq chat reply that stopped at the token limit", async () => {
+    mockFetch(200, {
+      choices: [{ message: { content: "Stop the" }, finish_reason: "length" }],
+    });
+    await expect(groqChatModel(KEY)(messages)).resolves.toBe(
+      `Stop the${TRUNCATION_NOTE}`,
+    );
+  });
+
+  it("marks a plain Gemini chat reply that hit MAX_TOKENS", async () => {
+    mockFetch(200, {
+      candidates: [
+        {
+          content: { parts: [{ text: "Keep your" }] },
+          finishReason: "MAX_TOKENS",
+        },
+      ],
+    });
+    await expect(geminiChatModel(KEY)(messages)).resolves.toBe(
+      `Keep your${TRUNCATION_NOTE}`,
+    );
   });
 
   it("sends the system instruction and chat history in Gemini format", async () => {

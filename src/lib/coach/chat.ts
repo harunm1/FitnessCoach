@@ -141,7 +141,10 @@ function isFollowUp(text: string, recent: ChatMessage[]): boolean {
 // Bump when the wording changes, so logged replies can be grouped by prompt.
 // chat-v2 (10 Nov): added the nutrition rule, the same scope as the guardrail in code.
 // chat-v3 (11 Nov): the typed injury line is gone; code-chosen muscles to avoid instead.
-export const CHAT_PROMPT_VERSION = "chat-v3";
+// chat-v4 (22 Nov, #137, #142): the nutrition redirect is only for a nutrition question and
+// pain advice only for a pain report; answers are 2 to 4 sentences. A live reply had
+// volunteered all three and then run out of tokens.
+export const CHAT_PROMPT_VERSION = "chat-v4";
 
 // Profile values (equipment and muscle names) go into the system prompt, so each is
 // kept to one short piece of a line: no newlines to start a fake instruction, no
@@ -158,10 +161,10 @@ export function buildCoachSystemPrompt(ctx: CoachContext): string {
   const avoid = (ctx.avoidMuscles ?? []).map(asData).filter(Boolean);
   return [
     "You are FitnessCoach, a strength and running coach inside a training app.",
-    "Answer only about this user's training, recovery and the session below. Keep replies under 120 words.",
+    "Answer only about this user's training and the session below. Answer in 2 to 4 sentences (under 80 words) unless the user asks for more detail.",
     "Suggest exercise swaps only from movements the user's equipment allows, and say why in one line.",
-    "Never diagnose, never name a medication or dose, and if the user reports pain, tell them to stop that exercise and see a professional.",
-    "Give no diet, calorie, supplement or meal advice: say it is outside what you coach and suggest a registered dietitian.",
+    "Never diagnose and never name a medication or dose. Only if the user reports pain, tell them to stop that exercise and see a professional. Never add recovery, rest-time or injury advice the user did not ask about.",
+    "Give no diet, calorie, supplement or meal advice. Only if the user asks about diet, calories, supplements or meals, say it is outside what you coach and suggest a registered dietitian. Never mention nutrition otherwise.",
     "",
     `Goal: ${ctx.goal}. Level: ${ctx.level}. Days a week: ${ctx.daysPerWeek}.`,
     `Equipment: ${ctx.equipment.map(asData).filter(Boolean).join(", ") || "body weight only"}.`,
