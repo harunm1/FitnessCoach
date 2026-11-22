@@ -708,4 +708,4 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Did with it:** Wrote each failing test before its change, ran lint, the type check, the format check and the full unit suite on each branch, and had a separate review agent read each branch blind before it was pushed. The reviews found real faults that I fixed: a quiz form that still reset after a second save with the same message, a note that could be saved as the whole reply, and extra accessory choices that put an overhead press on a pull day. Not done: eval cases for the reply length (#142 stays open), the starter plan's warm-up, supersets, cardio and deload week (#145 asked for them), and a separate strength-days and run-days question (#143).
 
-**Tools:** gh, git, Prettier, ESLint, tsc, Vitest, Firecrawl, five general-purpose review agents. No skills.
+**Tools:** gh, git, Prettier, ESLint, tsc, Vitest, four general-purpose review agents. No skills.
