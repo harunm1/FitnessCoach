@@ -248,15 +248,18 @@ describe("guarded streaming coach endpoint", () => {
       );
     });
     const errors = vi.spyOn(console, "error").mockImplementation(() => {});
-    const result = await events(await POST(request()));
-    expect(result.map((event) => event.type)).toEqual([
-      "delta",
-      "delta",
-      "saved",
-    ]);
-    expect(mocks.save).toHaveBeenCalledOnce();
-    expect(errors).not.toHaveBeenCalled();
-    errors.mockRestore();
+    try {
+      const result = await events(await POST(request()));
+      expect(result.map((event) => event.type)).toEqual([
+        "delta",
+        "delta",
+        "saved",
+      ]);
+      expect(mocks.save).toHaveBeenCalledOnce();
+      expect(errors).not.toHaveBeenCalled();
+    } finally {
+      errors.mockRestore();
+    }
   });
   it("does not break a reply when best-effort event logging fails", async () => {
     mocks.persist.mockRejectedValue(new Error("log database unavailable"));
