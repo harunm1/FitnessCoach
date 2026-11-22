@@ -221,23 +221,15 @@ describe("whyThisPlan", () => {
     expect(rows[0]?.summary).toBe("Written by the coach.");
   });
 
-  it("names the provider of the passing reply, not of an earlier rejected one", () => {
+  // A cached demo plan (D12) has no provider of its own; the rejected attempt before it
+  // did not write the plan either.
+  it("does not name a rejected reply's provider for a cached plan served after it", () => {
     const rows = whyThisPlan({
       source: "COACH",
-      records: [
-        rejected,
-        record({
-          attempt: SECOND_ATTEMPT,
-          outcome: "switched",
-          provider: "gemini",
-          model: "gemini-3.5-flash-lite",
-        }),
-      ],
+      records: [rejected, record({ attempt: 1, outcome: "cached" })],
     });
 
-    expect(rows[0]?.summary).toBe(
-      "Written by the coach (gemini, gemini-3.5-flash-lite).",
-    );
+    expect(rows[0]?.summary).toBe("Written by the coach.");
   });
 
   it("leaves out the running line when the plan has no running", () => {
