@@ -2,7 +2,7 @@ import { z } from "zod";
 import { Goal, Level, TrainingMode } from "../../generated/prisma/enums";
 
 export const equipmentOptions = [
-  { value: "body only", label: "Bodyweight only" },
+  { value: "body only", label: "Bodyweight" },
   { value: "dumbbell", label: "Dumbbells" },
   { value: "barbell", label: "Barbell" },
   { value: "cable", label: "Cable machine" },
