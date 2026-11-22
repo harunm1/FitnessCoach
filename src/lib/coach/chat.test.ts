@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  CHAT_PROMPT_VERSION,
   EMPTY_REPLY,
   MAX_HISTORY_MESSAGES,
   MAX_MESSAGE_CHARS,
@@ -136,8 +137,12 @@ describe("buildCoachSystemPrompt", () => {
     expect(prompt).toMatch(/Never mention nutrition otherwise/);
     // Short answers, and no unrequested safety or recovery lines (#142).
     expect(prompt).toMatch(/2 to 4 sentences/);
-    expect(prompt).toMatch(/Only if the user reports pain/);
-    expect(prompt).toMatch(/Never add recovery, rest-time or injury advice/);
+    // A pain report still gets the stop-and-see-a-professional line.
+    expect(prompt).toMatch(
+      /If the user reports pain, tell them to stop that exercise and see a professional/,
+    );
+    expect(prompt).toMatch(/never add recovery, rest-time or injury advice/);
+    expect(CHAT_PROMPT_VERSION).toBe("chat-v4");
     expect(prompt).not.toMatch(/under 120 words/);
     expect(prompt).toContain("Equipment: dumbbell, body only.");
     expect(prompt).toContain("rest day");

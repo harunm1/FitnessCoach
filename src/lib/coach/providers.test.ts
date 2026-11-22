@@ -153,6 +153,19 @@ describe("exercise coach chat providers", () => {
     );
   });
 
+  it("adds no note to a plain reply that finished normally", async () => {
+    mockFetch(200, {
+      choices: [{ message: { content: "Done." }, finish_reason: "stop" }],
+    });
+    await expect(groqChatModel(KEY)(messages)).resolves.toBe("Done.");
+    mockFetch(200, {
+      candidates: [
+        { content: { parts: [{ text: "Done." }] }, finishReason: "STOP" },
+      ],
+    });
+    await expect(geminiChatModel(KEY)(messages)).resolves.toBe("Done.");
+  });
+
   it("marks a plain Gemini chat reply that hit MAX_TOKENS", async () => {
     mockFetch(200, {
       candidates: [

@@ -142,6 +142,31 @@ describe("a reply cut off at the token limit (#132)", () => {
     expect(out).toEqual(["Stop the exercise and", TRUNCATION_NOTE]);
   });
 
+  it("treats a truncated stream with no text as no answer, so the other provider is tried", async () => {
+    const empty =
+      'data: {"choices":[{"delta":{},"finish_reason":"length"}]}' +
+      String.fromCharCode(10, 10) +
+      "data: [DONE]" +
+      String.fromCharCode(10, 10);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(empty, { status: 200 })),
+    );
+    await expect(
+      collect(groqChatStream("test-key")([])),
+    ).rejects.toBeInstanceOf(ProviderError);
+    const geminiEmpty =
+      'data: {"candidates":[{"content":{"parts":[{"thought":true,"text":"hmm"}]},"finishReason":"MAX_TOKENS"}]}' +
+      String.fromCharCode(10, 10);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(geminiEmpty, { status: 200 })),
+    );
+    await expect(
+      collect(geminiChatStream("test-key")([])),
+    ).rejects.toBeInstanceOf(ProviderError);
+  });
+
   it("adds no note when Groq finished normally", async () => {
     const sse =
       'data: {"choices":[{"delta":{"content":"Done."},"finish_reason":null}]}\n\n' +

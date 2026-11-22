@@ -233,8 +233,10 @@ function parseTextReply(
 
 // A chat reply that stopped at the provider's token limit (Groq finish_reason "length",
 // Gemini finishReason "MAX_TOKENS") ends with this note, so the saved text says it is
-// incomplete instead of stopping mid-sentence (#132). The cap counts reasoning tokens
-// too, so it sits well above the 120 words the prompt asks for.
+// incomplete instead of stopping mid-sentence (#137). The cap counts reasoning tokens
+// too (Gemini's thinking guide says so; Groq's pages do not say), so it sits well above
+// the 4 sentences the prompts ask for. `reasoning_effort` is valid only for the gpt-oss
+// models (Groq API reference, checked 22 Nov 2026): a different GROQ_MODEL needs it removed.
 export const TRUNCATION_NOTE =
   " (The reply was cut short. Ask again for the rest.)";
 const CHAT_MAX_TOKENS = 600;
@@ -704,9 +706,12 @@ async function* groqPieces(
     { ...groqChatBody(model, messages), stream: true },
   );
   let truncated = false;
+  let sawText = false;
   for await (const data of sseData("Groq", res)) {
     if (data === "[DONE]") {
-      if (truncated) yield TRUNCATION_NOTE;
+      // Only after some text: a note alone would be saved as the whole reply and
+      // would stop the other provider being tried.
+      if (truncated && sawText) yield TRUNCATION_NOTE;
       return;
     }
     const choice = (
@@ -716,6 +721,7 @@ async function* groqPieces(
     ).choices?.[0];
     if (choice?.finish_reason === "length") truncated = true;
     const piece = choice?.delta?.content;
+    if (typeof piece === "string" && piece.trim()) sawText = true;
     if (typeof piece === "string" && piece) yield piece;
   }
   // Groq ends every complete stream with data: [DONE] (API reference, checked
@@ -743,6 +749,7 @@ async function* geminiPieces(
     geminiChatBody(messages),
   );
   let truncated = false;
+  let sawText = false;
   for await (const data of sseData("Gemini", res)) {
     const candidate = (
       parseEvent("Gemini", data) as {
@@ -754,10 +761,13 @@ async function* geminiPieces(
     ).candidates?.[0];
     if (candidate?.finishReason === "MAX_TOKENS") truncated = true;
     for (const p of candidate?.content?.parts ?? []) {
-      if (!p.thought && typeof p.text === "string" && p.text) yield p.text;
+      if (!p.thought && typeof p.text === "string" && p.text) {
+        if (p.text.trim()) sawText = true;
+        yield p.text;
+      }
     }
   }
-  if (truncated) yield TRUNCATION_NOTE;
+  if (truncated && sawText) yield TRUNCATION_NOTE;
 }
 
 // Falls back only when the primary fails before sending any text. Whitespace is not
