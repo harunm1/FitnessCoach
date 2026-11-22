@@ -174,6 +174,9 @@ describe("personalizePlan with the real generatePlan", () => {
     const s = realSteps(async () => ({ name: "Bad", days: [] }));
     expect((await personalizePlan(s)).status).toBe("kept");
     expect(s.save).not.toHaveBeenCalled();
+    await expect(s.generate.mock.results[0]?.value).resolves.toMatchObject({
+      source: "DEFAULT",
+    });
   });
 
   it("keeps the current plan when the provider is down", async () => {
@@ -182,5 +185,8 @@ describe("personalizePlan with the real generatePlan", () => {
     });
     expect((await personalizePlan(s)).status).toBe("kept");
     expect(s.save).not.toHaveBeenCalled();
+    await expect(s.generate.mock.results[0]?.value).resolves.toMatchObject({
+      source: "DEFAULT",
+    });
   });
 });
