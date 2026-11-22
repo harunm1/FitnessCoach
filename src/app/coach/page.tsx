@@ -1,11 +1,15 @@
 // The coach screen (#63): the signed-in user's saved conversation and the message box, or the tier or quiz message.
 import Link from "next/link";
+import { AccountTheme, ThemeToggle } from "@/components/auth/account-theme";
+import { AppNav } from "@/components/nav/AppNav";
+import theme from "@/components/theme/app-theme.module.css";
 import { requireAccount } from "@/lib/auth/access";
 import {
   hasProfile,
   loadConversation,
   type StoredMessage,
 } from "@/lib/coach/conversation";
+import { loadAvatarUrl } from "@/lib/photos/avatar";
 import { prisma } from "@/lib/prisma";
 import CoachForm from "./CoachForm";
 import MessageList from "./MessageList";
@@ -17,27 +21,35 @@ export const dynamic = "force-dynamic";
 export default async function CoachPage() {
   const { user, access } = await requireAccount();
   const canChat = access.permissions.includes("coach");
+  // Started now so the photo link loads alongside the conversation.
+  const avatar = loadAvatarUrl(user.id);
   const [profile, conversation] = canChat
     ? await Promise.all([
         hasProfile(prisma, user.id),
         loadConversation(prisma, user.id),
       ])
     : [false, null];
+  const avatarUrl = await avatar;
 
   return (
-    <main className="min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12">
+    <AccountTheme
+      className={`${theme.appTheme} min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12`}
+    >
       <div className="mx-auto max-w-2xl">
-        <Link className="text-sm underline" href="/session">
-          Back to today&apos;s session
-        </Link>
-        <h1 className="mt-4 text-3xl font-semibold">Coach</h1>
+        <AppNav
+          current="coach"
+          name={user.name}
+          avatarUrl={avatarUrl}
+          actions={<ThemeToggle />}
+        />
+        <h1 className="text-3xl font-semibold">Coach</h1>
         <CoachBody
           canChat={canChat}
           hasProfile={profile}
           messages={conversation?.messages ?? []}
         />
       </div>
-    </main>
+    </AccountTheme>
   );
 }
 

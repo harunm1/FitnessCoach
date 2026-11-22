@@ -1,132 +1,80 @@
 "use client";
 
-import { useMemo, useState, type KeyboardEvent } from "react";
+import { useMemo, useState } from "react";
+import Body, {
+  type ExtendedBodyPart,
+  type Slug,
+} from "react-muscle-highlighter";
 import ExerciseCoachChat from "@/components/ExerciseCoachChat";
+import { NEUTRAL, WORKED } from "@/components/progress/MuscleMap";
 import {
   findExercisesForMuscle,
   type BodyMapExercise,
 } from "@/lib/body-map/muscles";
+import { MUSCLE_SLUGS } from "@/lib/progress/muscleSlugs";
 
 type BodySide = "front" | "back";
 
 type Hotspot = {
   id: string;
   label: string;
-  front?: [number, number, number, number][];
-  back?: [number, number, number, number][];
+  sides: BodySide[];
 };
 
 type BodyMapProps = {
   exercises: BodyMapExercise[];
 };
 
+// The muscles a user can pick, and which view of the body shows each one. The
+// body itself is drawn by react-muscle-highlighter, the same diagram as the
+// progress page, so every muscle sits exactly on the body. MUSCLE_SLUGS gives
+// the diagram region for each muscle.
 const hotspots: Hotspot[] = [
-  {
-    id: "shoulders",
-    label: "Shoulders",
-    front: [
-      [82, 61, 12, 9],
-      [138, 61, 12, 9],
-    ],
-    back: [
-      [82, 61, 12, 9],
-      [138, 61, 12, 9],
-    ],
-  },
-  { id: "chest", label: "Chest", front: [[110, 83, 26, 13]] },
-  {
-    id: "biceps",
-    label: "Biceps",
-    front: [
-      [67, 96, 8, 19],
-      [153, 96, 8, 19],
-    ],
-  },
-  {
-    id: "triceps",
-    label: "Triceps",
-    back: [
-      [67, 96, 8, 19],
-      [153, 96, 8, 19],
-    ],
-  },
-  {
-    id: "forearms",
-    label: "Forearms",
-    front: [
-      [55, 139, 7, 23],
-      [165, 139, 7, 23],
-    ],
-    back: [
-      [55, 139, 7, 23],
-      [165, 139, 7, 23],
-    ],
-  },
-  { id: "abdominals", label: "Abdominals", front: [[110, 126, 18, 25]] },
-  { id: "middle back", label: "Middle back", back: [[110, 111, 22, 19]] },
-  {
-    id: "lats",
-    label: "Lats",
-    back: [
-      [87, 120, 11, 22],
-      [133, 120, 11, 22],
-    ],
-  },
-  { id: "lower back", label: "Lower back", back: [[110, 151, 15, 12]] },
-  {
-    id: "quadriceps",
-    label: "Quadriceps",
-    front: [
-      [94, 198, 12, 31],
-      [126, 198, 12, 31],
-    ],
-  },
-  {
-    id: "glutes",
-    label: "Glutes",
-    back: [
-      [94, 171, 15, 12],
-      [126, 171, 15, 12],
-    ],
-  },
-  {
-    id: "hamstrings",
-    label: "Hamstrings",
-    back: [
-      [94, 202, 11, 27],
-      [126, 202, 11, 27],
-    ],
-  },
-  {
-    id: "calves",
-    label: "Calves",
-    front: [
-      [95, 267, 8, 18],
-      [125, 267, 8, 18],
-    ],
-    back: [
-      [95, 267, 8, 18],
-      [125, 267, 8, 18],
-    ],
-  },
+  { id: "shoulders", label: "Shoulders", sides: ["front", "back"] },
+  { id: "chest", label: "Chest", sides: ["front"] },
+  { id: "biceps", label: "Biceps", sides: ["front"] },
+  { id: "triceps", label: "Triceps", sides: ["back"] },
+  { id: "forearms", label: "Forearms", sides: ["front", "back"] },
+  { id: "abdominals", label: "Abdominals", sides: ["front"] },
+  { id: "middle back", label: "Middle back", sides: ["back"] },
+  { id: "lats", label: "Lats", sides: ["back"] },
+  { id: "lower back", label: "Lower back", sides: ["back"] },
+  { id: "quadriceps", label: "Quadriceps", sides: ["front"] },
+  { id: "glutes", label: "Glutes", sides: ["back"] },
+  { id: "hamstrings", label: "Hamstrings", sides: ["back"] },
+  { id: "calves", label: "Calves", sides: ["front", "back"] },
 ];
 
-function BodySilhouette({ side }: { side: BodySide }) {
-  return (
-    <>
-      <circle cx="110" cy="29" r="17" fill="#dfe4df" />
-      <path d="M99 48h22v12H99z" fill="#dfe4df" />
-      <path
-        d={
-          side === "front"
-            ? "M84 57c-10 2-17 10-20 21l-14 40c-2 6 1 11 6 12 4 1 7-2 9-7l10-25 3 33 8 45-7 54-3 45c0 7 4 11 10 11 5 0 8-4 9-10l5-48 5 48c1 6 4 10 9 10 6 0 10-4 10-11l-3-45-7-54 8-45 3-33 10 25c2 5 5 8 9 7 5-1 8-6 6-12l-14-40c-3-11-10-19-20-21-8-5-16-7-26-7s-18 2-26 7z"
-            : "M84 57c-10 2-17 10-20 21l-14 40c-2 6 1 11 6 12 4 1 7-2 9-7l10-25 3 33 8 45-7 54-3 45c0 7 4 11 10 11 5 0 8-4 9-10l5-48 5 48c1 6 4 10 9 10 6 0 10-4 10-11l-3-45-7-54 8-45 3-33 10 25c2 5 5 8 9 7 5-1 8-6 6-12l-14-40c-3-11-10-19-20-21-8-5-16-7-26-7s-18 2-26 7z"
-        }
-        fill="#dfe4df"
-      />
-    </>
-  );
-}
+// The selected muscle, matching the selected button below the body.
+const SELECTED = "#e9734d";
+
+// Every region the diagram draws. Its artwork gives each region a dark colour
+// of its own, so each one is coloured explicitly (as in MuscleMap.tsx).
+const ALL_SLUGS: Slug[] = [
+  "abs",
+  "adductors",
+  "ankles",
+  "biceps",
+  "calves",
+  "chest",
+  "deltoids",
+  "feet",
+  "forearm",
+  "gluteal",
+  "hair",
+  "hamstring",
+  "hands",
+  "head",
+  "knees",
+  "lower-back",
+  "neck",
+  "obliques",
+  "quadriceps",
+  "tibialis",
+  "trapezius",
+  "triceps",
+  "upper-back",
+];
 
 export default function BodyMap({ exercises }: BodyMapProps) {
   const [side, setSide] = useState<BodySide>("front");
@@ -136,7 +84,7 @@ export default function BodyMap({ exercises }: BodyMapProps) {
   );
 
   const selectedHotspot = hotspots.find((item) => item.id === selectedMuscle);
-  const visibleHotspots = hotspots.filter((item) => item[side]);
+  const visibleHotspots = hotspots.filter((item) => item.sides.includes(side));
   const matchingExercises = useMemo(
     () =>
       selectedMuscle ? findExercisesForMuscle(selectedMuscle, exercises) : [],
@@ -146,16 +94,30 @@ export default function BodyMap({ exercises }: BodyMapProps) {
     (exercise) => exercise.id === selectedExerciseId,
   );
 
+  // Muscles that can be picked on this side are green, the selected one is
+  // orange, and the rest of the body stays neutral.
+  const selectedSlug = selectedMuscle ? MUSCLE_SLUGS[selectedMuscle] : null;
+  const pickable = new Set(
+    visibleHotspots.map((item) => MUSCLE_SLUGS[item.id]),
+  );
+  const data: ExtendedBodyPart[] = ALL_SLUGS.map((slug) => ({
+    slug,
+    color:
+      slug === selectedSlug ? SELECTED : pickable.has(slug) ? WORKED : NEUTRAL,
+  }));
+
   function selectMuscle(id: string) {
     setSelectedMuscle(id);
     setSelectedExerciseId(null);
   }
 
-  function handleHotspotKeyDown(event: KeyboardEvent<SVGGElement>, id: string) {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      selectMuscle(id);
-    }
+  // A tap on the body picks the first muscle drawn in that region (the upper
+  // back is shared by middle back and lats; both also have their own button).
+  function pressRegion(part: ExtendedBodyPart) {
+    const muscle = visibleHotspots.find(
+      (item) => MUSCLE_SLUGS[item.id] === part.slug,
+    );
+    if (muscle) selectMuscle(muscle.id);
   }
 
   return (
@@ -199,45 +161,20 @@ export default function BodyMap({ exercises }: BodyMapProps) {
             ))}
           </div>
 
-          <svg
-            aria-label={`${side} body muscle map. Select a highlighted area.`}
-            className="mx-auto mt-3 block h-auto w-full max-w-[230px]"
-            role="group"
-            viewBox="0 0 220 310"
+          {/* Mouse and touch can pick a muscle on the body; the buttons below
+              offer the same choices for keyboards and screen readers. */}
+          <div
+            aria-hidden="true"
+            className="mx-auto mt-3 max-w-[230px] [&_svg]:h-auto [&_svg]:w-full"
           >
-            <BodySilhouette side={side} />
-            {visibleHotspots.flatMap(
-              (hotspot) =>
-                hotspot[side]?.map(([x, y, rx, ry], index) => {
-                  const selected = selectedMuscle === hotspot.id;
-                  return (
-                    <g
-                      aria-label={`Select ${hotspot.label}`}
-                      aria-pressed={selected}
-                      className="cursor-pointer outline-none focus-visible:opacity-100"
-                      key={`${hotspot.id}-${index}`}
-                      onClick={() => selectMuscle(hotspot.id)}
-                      onKeyDown={(event) =>
-                        handleHotspotKeyDown(event, hotspot.id)
-                      }
-                      role="button"
-                      tabIndex={0}
-                    >
-                      <ellipse
-                        cx={x}
-                        cy={y}
-                        fill={selected ? "#e9734d" : "#245c43"}
-                        fillOpacity={selected ? 0.8 : 0.48}
-                        rx={rx}
-                        ry={ry}
-                        stroke={selected ? "#a84025" : "#174630"}
-                        strokeWidth="1.5"
-                      />
-                    </g>
-                  );
-                }) ?? [],
-            )}
-          </svg>
+            <Body
+              border="none"
+              data={data}
+              defaultFill={NEUTRAL}
+              onBodyPartPress={pressRegion}
+              side={side}
+            />
+          </div>
 
           <div className="mt-3 flex flex-wrap justify-center gap-1.5">
             {visibleHotspots.map((hotspot) => (

@@ -58,3 +58,23 @@ export async function loadAvatar(userId: string): Promise<Avatar | null> {
     return null;
   }
 }
+
+// Just the short-lived link to the user's profile photo, for the nav bar on
+// pages that don't show the photo anywhere else. Null when they have none or
+// storage is unavailable, so the nav shows the person icon instead.
+export async function loadAvatarUrl(userId: string): Promise<string | null> {
+  try {
+    const { prisma } = await import("@/lib/prisma");
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { image: true },
+    });
+    return await signAvatar(userId, user?.image ?? null, getPhotoStorage());
+  } catch (error) {
+    console.error("[photos] nav: couldn't load the profile photo", {
+      userId,
+      error,
+    });
+    return null;
+  }
+}

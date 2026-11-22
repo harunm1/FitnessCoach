@@ -2,18 +2,23 @@ import Link from "next/link";
 
 // The signed-in user's name with their profile photo, or a person icon
 // when they haven't added one. Links to the account page, where they can
-// manage their account and sign out.
+// manage their account and sign out. On phones only the photo or icon
+// shows, to leave room in the nav bar.
 export function UserBadge({
   name,
   imageUrl,
+  current = false,
 }: {
   name: string;
   imageUrl: string | null;
+  // True on the account page itself.
+  current?: boolean;
 }) {
   return (
     <Link
       href="/account"
       aria-label={`Your account (${name})`}
+      aria-current={current ? "page" : undefined}
       className="flex min-h-11 min-w-0 items-center gap-2 hover:opacity-80"
     >
       {imageUrl ? (
@@ -22,12 +27,12 @@ export function UserBadge({
         <img
           src={imageUrl}
           alt=""
-          className="size-8 shrink-0 rounded-full border border-foreground/15 object-cover"
+          className="size-8 shrink-0 rounded-full border border-current/15 object-cover"
         />
       ) : (
         <span
           data-testid="avatar-icon"
-          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-foreground/15 text-foreground/60"
+          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-current/15 opacity-60"
         >
           <svg
             viewBox="0 0 24 24"
@@ -44,7 +49,11 @@ export function UserBadge({
           </svg>
         </span>
       )}
-      <span className="truncate text-sm font-medium">{name}</span>
+      <span
+        className={`truncate text-sm max-sm:hidden ${current ? "font-semibold underline decoration-2 underline-offset-4" : "font-medium"}`}
+      >
+        {name}
+      </span>
     </Link>
   );
 }
