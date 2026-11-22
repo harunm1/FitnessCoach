@@ -225,9 +225,15 @@ model Workout {
   distanceKm Decimal?  @db.Decimal(6, 2)
   durationSeconds Int?
   notes      String?
+  // "live" for a workout logged in the app, "hevy-import" for one read from an export (#131).
+  source     String    @default("live")
+  // The imported workout's start time and title, so uploading a file twice adds nothing.
+  importKey  String?
 
   sets SetLog[]
   run  RunLog?
+
+  @@unique([userId, importKey])
 }
 
 model SetLog {

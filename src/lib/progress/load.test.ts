@@ -13,6 +13,8 @@ function row(overrides: Record<string, unknown> = {}) {
     finishedAt: new Date("2026-11-08T17:50:00Z"),
     distanceKm: null,
     durationSeconds: null,
+    source: "live",
+    notes: null,
     planDay: { name: "Push" },
     plan: {
       days: [{ kind: "STRENGTH" }, { kind: "RUN" }, { kind: "REST" }],
@@ -61,6 +63,7 @@ describe("loadFinishedWorkouts", () => {
         startedAt: new Date("2026-11-08T17:00:00Z"),
         finishedAt: new Date("2026-11-08T17:50:00Z"),
         dayName: "Push",
+        imported: false,
         planDays: 2,
         distanceKm: null,
         runSeconds: null,
@@ -96,6 +99,27 @@ describe("loadFinishedWorkouts", () => {
       distanceKm: 5.2,
       runSeconds: 1800,
       sets: [],
+    });
+  });
+
+  it("marks an imported workout and names it from the title saved in its notes", async () => {
+    findMany.mockResolvedValue([
+      row({
+        source: "hevy-import",
+        notes: "Push Day",
+        planDay: null,
+        plan: null,
+      }),
+    ]);
+    const [workout] = await loadFinishedWorkouts("user-1", since);
+    expect(workout).toMatchObject({ imported: true, dayName: "Push Day" });
+  });
+
+  it("asks for the source and notes columns", async () => {
+    await loadFinishedWorkouts("user-1", since);
+    expect(findMany.mock.calls[0][0].select).toMatchObject({
+      source: true,
+      notes: true,
     });
   });
 
