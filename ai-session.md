@@ -671,3 +671,11 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Got:** Local probes showed Groq and Gemini answering normally. A throwaway route under `next dev` showed that `revalidatePath` throws `Invariant: static generation store missing` inside the response stream's `pull`, after the exchange is saved; the 429 was our own 5-a-minute chat limit. AI drafted the regression test (red on main), the one-line removal, the #88 changes with tests, and the #58 modules (a pure `personalizePlan` with injected steps, an input loader, the Server Action, a button) with tests written first.
 
 **Did with it:** Checked the Next source for the invariant, ran each new test against main's code to see it fail, ran lint, typecheck and the full unit suite locally, and had a separate review agent read each change blind before pushing; its findings (a leaking console spy, a test that passed on main too) were fixed. The fix is in #124 for Shubham's review, the #88 follow-ups in #126 for Mohammad's, and the Personalize button is left for Mohammad to place on his plan screen.
+
+## 22 November (evening): repeated set save test, demo risk check
+
+**Asked:** To check which demo flows are on main and on the live deploy, and to prove that saving the same set twice stores one row (#42).
+
+**Got:** A flow-by-flow risk table from code, the live pages and teammates' comments, and three integration tests in `tests/integration/quiz-session.test.ts` (PR #128). AI drafted the tests; they pin behaviour `logSet` already has, so they pass on main.
+
+**Did with it:** Read `logSet` and the schema to confirm each assertion, had a separate review agent read the diff blind (it found no error and suggested a weight assertion, which I added), ran Prettier, ESLint and the type check, and let CI run the integration suite. Two taps in flight at once are not covered; that is noted for Mohammad on #15.
