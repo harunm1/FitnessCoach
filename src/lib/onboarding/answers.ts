@@ -69,5 +69,10 @@ export function answersFromProfile(
   } | null,
 ): QuizAnswers {
   if (!profile) return DEFAULT_ANSWERS;
-  return { ...profile, injuries: profile.injuries ?? "" };
+  // Profiles saved before Bodyweight was exclusive can hold it with other items.
+  const equipment =
+    profile.equipment.length > 1
+      ? profile.equipment.filter((item) => item !== BODYWEIGHT)
+      : profile.equipment;
+  return { ...profile, equipment, injuries: profile.injuries ?? "" };
 }

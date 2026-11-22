@@ -1,6 +1,11 @@
 "use client";
 
-import { useActionState, useState, type FormEvent } from "react";
+import {
+  startTransition,
+  useActionState,
+  useState,
+  type FormEvent,
+} from "react";
 import Link from "next/link";
 import { saveQuizProfile } from "@/app/onboarding/actions";
 import {
@@ -35,7 +40,11 @@ export default function QuizForm({
   );
   const [clientError, setClientError] = useState("");
 
+  // Submitted by hand, not through the form's action prop: a form action resets the form
+  // when it finishes, and a controlled radio or checkbox then shows the answer it first
+  // mounted with instead of the current one (React's form reset, checked 22 Nov 2026).
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const parsed = quizProfileSchema.safeParse({
       goal: formData.get("goal"),
@@ -47,7 +56,6 @@ export default function QuizForm({
     });
 
     if (!parsed.success) {
-      event.preventDefault();
       setClientError(
         parsed.error.issues[0]?.message ?? "Check your answers and try again.",
       );
@@ -55,17 +63,11 @@ export default function QuizForm({
     }
 
     setClientError("");
+    startTransition(() => formAction(formData));
   }
 
   return (
-    <form
-      action={formAction}
-      className="space-y-7"
-      // A new key after each save gives the form fresh inputs from the answers in state;
-      // a form action otherwise resets them to their first values.
-      key={`${state.status}-${state.message}`}
-      onSubmit={handleSubmit}
-    >
+    <form className="space-y-7" onSubmit={handleSubmit}>
       <fieldset className="space-y-3">
         <legend className="text-sm font-semibold">
           What is your main goal?
@@ -159,6 +161,7 @@ export default function QuizForm({
           onChange={(event) =>
             change({ daysPerWeek: Number(event.target.value) })
           }
+          aria-describedby="day-split"
           id="daysPerWeek"
           name="daysPerWeek"
         >
@@ -171,8 +174,9 @@ export default function QuizForm({
       </div>
 
       <p
-        className="m-0 -mt-4 text-sm text-foreground/70"
-        data-testid="day-split"
+        aria-live="polite"
+        className="m-0 text-sm text-foreground/70"
+        id="day-split"
       >
         {answers.daysPerWeek} {answers.daysPerWeek === 1 ? "day" : "days"} a
         week will be{" "}

@@ -62,6 +62,21 @@ describe("answersFromProfile", () => {
     expect(DEFAULT_ANSWERS.level).toBe("");
   });
 
+  it("drops Bodyweight from an old profile that holds it with other items", () => {
+    const row = {
+      goal: "STRENGTH" as const,
+      level: "EXPERT" as const,
+      trainingMode: "GYM" as const,
+      daysPerWeek: 3,
+      equipment: ["body only", "barbell"],
+      injuries: null,
+    };
+    expect(answersFromProfile(row).equipment).toEqual(["barbell"]);
+    expect(
+      answersFromProfile({ ...row, equipment: ["body only"] }).equipment,
+    ).toEqual(["body only"]);
+  });
+
   it("shows the saved profile's answers", () => {
     expect(
       answersFromProfile({
