@@ -1,5 +1,6 @@
 "use client";
 
+import LocalTime from "@/components/LocalTime";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { reconcileCheckoutReturn } from "@/lib/billing/checkout-return";
@@ -155,10 +156,7 @@ export function BillingControls({
       {overview.paidUntil && (
         <p className={styles.trialFinePrint}>
           Paid access through{" "}
-          <time dateTime={overview.paidUntil}>
-            {new Date(overview.paidUntil).toUTCString()}
-          </time>
-          .
+          <LocalTime iso={overview.paidUntil} kind="datetime" />.
         </p>
       )}
       <div className={styles.billingButtons}>
