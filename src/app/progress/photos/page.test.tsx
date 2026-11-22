@@ -152,6 +152,22 @@ describe("progress photos page", () => {
     expect(await render()).toContain("you can keep up to 1,000 photos");
   });
 
+  it("follows the saved theme and offers to switch it", async () => {
+    const html = await render();
+    // On the server the saved choice isn't known yet, so it follows the system.
+    expect(html).toContain('data-theme="system"');
+    expect(html).toContain('aria-label="Switch to dark mode"');
+  });
+
+  it("shows the nav bar with Photos as the current page", async () => {
+    const html = await render();
+    expect(html).toContain('<nav aria-label="Main"');
+    expect(html).toContain('href="/progress"');
+    expect(html).toMatch(
+      /<a[^>]*aria-current="page"[^>]*href="\/progress\/photos"/,
+    );
+  });
+
   it("invites a first photo when there are none", async () => {
     expect(await render()).toContain("No photos yet.");
   });

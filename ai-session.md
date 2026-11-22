@@ -82,6 +82,26 @@ Required by the ECE1724 project handout: representative AI interactions, what wa
 
 **Did with it:** reviewed each module against the rules above and ran the tests, typecheck and lint before each pull request (#45, #47, #48, #49, #53, #54). Saving a week once to a real PostgreSQL (PGlite with all migrations) showed that in a two- or three-run week the long run came out shorter than the easy run; the unit tests had passed because none checked it. I changed the shares and added a test that the long run is the longest for two to five run days. I checked the Groq free-tier limits cited in Section 2 against Groq's own rate-limits page.
 
+### 5 November 2026, hosting choice and deploy config (issue #57)
+
+**Before asking:** D5 already said we deploy for the demo. I set the conditions: free tiers with no card, a hosted PostgreSQL that does not expire before the presentation, `prisma migrate deploy` on release rather than by hand, every variable in `.env.example` with no secrets committed, and no accounts created until the config was reviewed. The course accepts a local demo, so this is for integration and the pilot.
+
+**Asked:** to compare Vercel with Neon, Railway and Render against each provider's own pricing and docs pages as of today, and how Prisma 7 should connect to Neon from Vercel.
+
+**Got:** Render's free PostgreSQL is deleted 30 days after creation and its web service sleeps after 15 minutes; Railway gives a 30-day $5 trial, then $1 a month; Vercel Hobby is free with a 300-second function limit and Neon Free needs no card. Neon's Prisma guide uses the pooled string for the app and a direct string for the CLI. A suggestion to migrate only on production builds, so a pull request preview never applies an unmerged migration to the shared database.
+
+**Did with it:** recorded the choice and the options it beat as D19 with the sources and the date checked; wrote the two rules (which URL the CLI uses, which steps a build runs) as a small module with six tests written first and seen failing; added `vercel.json`, the build script, the `.env.example` entry and the README Deploy steps. CI already runs `npm run build`. Creating the accounts, seeding Neon and checking the demo path on the live URL are the steps left to me.
+
+### 5 November 2026, deploy review fixes (issue #57, PR #61)
+
+**Before asking:** an independent review of #61 found that previews would share the production database. I listed the fixes I wanted: a separate Neon branch for previews with Preview-scoped variables, a connection timeout for a database waking from suspend, the Neon region next to Vercel's functions, the release script run in CI, a pinned Node version, and a note on who owns the Vercel project.
+
+**Asked:** to check each fix against Prisma's Vercel guide, Neon's Prisma guide and Vercel's Git, function and Node.js docs, and to apply them.
+
+**Got:** Prisma's guide says a pull request with a migration would change the production schema and recommends a second database scoped to Preview; Neon's guide gives `connect_timeout=15` for P1001 on wake; Vercel's default function region is `iad1`; Node 22.x is still offered; Vercel's Hobby commit-author check applies to private repositories in organizations, not to our public repository.
+
+**Did with it:** updated the README Deploy steps and the D19 cost, switched CI from `npm run build` to `scripts/vercel-build.ts` (so the first 5 November entry's "CI already runs `npm run build`" no longer holds), and added `engines` to `package.json`. A second independent review then found that Vercel lets only the owner of a personal-account repository import it, so Mohammad creates the Vercel project; that previews with their own database should migrate too, which I changed test first; and that `npx` should not fetch missing binaries. I checked each against Vercel's and Neon's docs, fixed them, and reran lint, typecheck, tests and the format check.
+
 ### 6 November 2026, Section 2 trim for the final proposal (issues #4, #13)
 
 **Before asking:** the four sections came to about 2,280 words against the 2,000-word cap, and Section 2 (mine) was the longest. I set the rule for the cut: every objective, the diagram, the entity table, the decision and failure tables and both advanced features stay; only repetition and wording go. The technologies table repeated 2.2 and 2.3, so it could become one sentence.
@@ -195,6 +215,16 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 **Got:** Groq serves `openai/gpt-oss-safeguard-20b` for bring-your-own-policy moderation, in preview (Groq content-moderation and model pages, 6 Nov); 67 new word-list cases and two new test files that failed first; `distress.ts` (check-in), `safetyScreen.ts` (layers, 3-second limit, model failure falls back to the word list) and `safetyModel.ts` (policy in Groq's recommended four sections, JSON output).
 
 **Did with it:** checked that every earlier case still passes, wrote the decision as D15 in `docs/ARCHITECTURE.md` with the option it beat, and kept the check-in wording short with 9-8-8 and 911 in it. Nothing in the app calls the screen yet; the chat code (#53) does next. A second fresh review found more missed crisis and cardiac wordings, a distress reading from the model replacing the eating-support and pain-stop replies, and crisis messages softened to the check-in by any gym word. I kept the design and tightened it: a reply that already gives specific help now outranks a distress reading; exaggeration counts only when tied to the session and nothing states intent; any message with crisis words that would get the off-topic redirect gets the check-in; and every new wording became a test that failed first (64).
+
+### 8 November 2026, shadcn/ui in the foundation (issue #75)
+
+**Before asking:** the course requires shadcn/ui or a similar library, and `main` had none. I decided to set it up once in the foundation with the same choices as my Assignment 4 (Base UI, Nova preset), so the project and the assignment follow one convention, and to move only the root page onto the components so no teammate's screen changes under them.
+
+**Asked:** what the current shadcn CLI offers for an existing Next.js 16 and Tailwind 4 app, what `init` changes, and whether any of it alters the existing screens.
+
+**Got:** CLI 4.23.0 with `--base` (Base UI, Radix or React Aria) and `--preset`, whose default is base-nova; `init` wrote `components.json`, `src/lib/utils.ts` and the theme tokens in `globals.css`, and pulled in shadcn's own `cn` package in place of `clsx` and `tailwind-merge`. Two lines needed attention: a font variable that referred to itself, and a global focus-outline colour that would restyle the teammates' buttons and links.
+
+**Did with it:** checked the `cn` package's maintainer and repository before keeping it, fixed the font variable, left the outline colour out, and kept the app's background, foreground and primary colours so existing screens look the same; every border on those screens already names its colour, so the new default border colour does not reach them. Wrote the root page test first and saw it fail, then moved the page onto Card and `buttonVariants()` on the link, as in Lecture 8. Added a Vitest config so tests resolve the `@/` alias. Recorded the version and sources in `docs/RESEARCH.md` and decision D20 in `docs/ARCHITECTURE.md`. An independent review before the pull request found the link carried two conflicting paddings (now merged with `cn()`), a focus ring below 3:1 contrast (the ring now uses the ink colour), the CLI installed as a production dependency (moved to dev, which clears six audit advisories), and three doc claims stated more broadly than their sources; each was fixed, and the padding fix has a test that failed first. The issue also lists Form; the base-nova registry's `form` item is empty and Field replaces it, so it waits for the first form that uses it.
 
 ### 8 November 2026, loading and error states on every route (issue #72)
 
@@ -570,6 +600,16 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Did with it:** I continued with a separate #51 branch, preserving the old commits in a backup and building on the #104 fix. AI helped update the implementation, migration and regression tests. The existing exercise coach now checks the shared tier guard before model setup. The checks passed: 891 unit tests, 91 PostgreSQL integration tests, 17 browser tests, formatting, lint, TypeScript and the production build. The older migration-name recovery was also tested on a disposable database, without using my development database. The documentation explains setup and the remaining callers. I am keeping #51 open until those callers are integrated and tested.
 
+### 20 November 2026, guarded streaming chat integration (issue #51)
+
+**Before asking:** #56 had already merged the streaming library, and the updated #51 description wanted guards on the chat route. Before writing anything, I re-read the issue and my earlier work (up to #107) so I could reuse the helpers I already had.
+
+**Asked:** AI to help me check my understanding of the current code, confirm which pieces already existed, and explain the errors I hit while wiring things together.
+
+**Got:** Confirmation that the tier guards, plan-request reservation and streaming generator were already in place. The missing parts were a streaming HTTP endpoint, since the coach form still called the plain Server Action. When one of my interaction tests failed, AI helped me work out why: the action-state updates held back the visible reply until the whole response finished. That explained the problem, and I fixed it myself by having the form handle the streaming request directly.
+
+**Did with it:** I made the code changes myself on a new branch from main. I wrote the guarded endpoint, reused the action's admission checks, connected the form and added the regression tests. Before opening a stream, the route checks the user's current tier. It loads only the session owner's context and history, and it reports success only after the exchange is saved. The tests cover denied access, trial expiry, ownership, quotas, interruptions, saving and incremental display. I used AI only for debugging and for questions I wasn't sure about. No provider keys or private env values went into the code. The plan-request integration stays with #58, and chat keeps its existing limits and FREE access policy. Database and browser checks are still pending: there's no test database URL configured, and the local database rejected the configured credentials. I didn't change any dev database or env file.
+
 ## Farnaz
 
 ### 8 November 2026, progress logic (issue #16)
@@ -611,3 +651,23 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Got:** Implementation examples and suggestions for browser-side image resizing (up to 50 MB), ownership checks, error logging, a 1,000-photo limit with a paginated gallery, accessibility improvements, and handling changes across tabs. AI also generated tests, including photo editor interaction tests using jsdom and Testing Library.
 
 **Did with it:** Reviewed the suggestions and implementation, decided to keep the upload and photo limits generous, and added notes to the page explaining them. Ran tests, lint, typecheck, and Prettier locally. Tested large photos, non-image files, error handling, and the two-tab case on localhost. Found and fixed an issue where an edit in one tab could overwrite a photo saved in another. Checked R2 for leftover files.
+
+### 13 November 2026, progress page (issue #16)
+
+**Before asking:** I designed the progress page around the workout logic from #82. My plan was to include a calendar of completed workouts with each day's details, two weekly streaks, a body map showing which muscles were trained during the month and how often, and the latest progress photos. I also wanted the page to be mobile-friendly and consistent with the account page's dark mode.
+
+**Asked:** How to structure the page and its components based on my design, how to implement hover labels for the body map, and how to create realistic demo workout data to test the page. I also asked for implementation examples and tests for the components.
+
+**Got:** Example implementations for some page components, a demo data script, guidance and code for the body map's hover labels, and tests for the page. The dark mode approach reuses Shubham's existing theme toggle and requires a shared change in `globals.css` to keep colours consistent across pages.
+
+**Did with it:** Reviewed the implementation against my original design and the #82 workout logic. Ran tests, lint, typecheck, and Prettier locally. Tested the page on localhost using the demo data, including the calendar, daily details, body map hover labels, page links, dark mode, and mobile layout. After Nabeegh's and Shubham's reviews, I had the pace display fixed so it can't show "5:60 /km", and photo storage errors on the progress page are now logged. The fix tests were AI-generated; I checked them and reran the tests.
+
+### 21 November 2026, navigation bar, shared light and dark theme, session body map
+
+**Before asking:** I started testing the live app and found several usability and consistency issues. After signing in, users land on `/account` with no links to other pages. Clicking the logo sends signed-in users back to the home page, which still displays Sign in and Create account, making it look like they have been logged out. The app also uses two different names, FORM and FitnessCoach. I noticed that the session page had no dark mode while other pages handled themes separately. I wanted to address these issues with a shared navigation bar and a unified theme across all pages. I also found that some muscle spots on the session page's body map were outside the body diagram, so I proposed reusing the diagram from the progress page for consistency.
+
+**Asked:** How to structure a shared navigation bar for signed-in pages, handle home page navigation based on authentication status, and introduce one shared light and dark theme. I also explored options for fixing the session body map and asked for implementation examples and tests.
+
+**Got:** Implementation examples for a shared navigation component with the user's profile badge, a unified theme file (moved from `progress-theme.module.css` to `theme/app-theme.module.css` and renamed to `appTheme`), a home page that redirects signed-in users and uses Get started as its main action, and a session body map using `react-muscle-highlighter`. AI also generated tests for the changes.
+
+**Did with it:** Reviewed and adapted the suggested implementations to fit the existing project structure. Chose FitnessCoach as the single app name and kept the account page's own controls. Ran tests, lint, typecheck, and Prettier locally, then checked every page on localhost in both light and dark modes, including navigation and signed-in user flows. Discussed the session body map change with Mohammad, got his approval, and then implemented the fix.
