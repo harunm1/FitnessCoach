@@ -1,19 +1,115 @@
-// The message box for the coach (#63): sends through the Server Action and shows its pending, error and unsaved-retry states.
+// The coach form streams checked sentences and keeps failed exchanges available for retry.
 "use client";
 
-import { useActionState, useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import QuickReplies from "@/components/coach/QuickReplies";
-import { sendCoachMessage, type CoachActionState } from "./actions";
-import { MESSAGE_MAX_LENGTH } from "./copy";
+import type { CoachActionState } from "./actions";
+import {
+  LOAD_FAILED_MESSAGE,
+  MESSAGE_MAX_LENGTH,
+  SAVE_FAILED_MESSAGE,
+} from "./copy";
+import { readCoachStream } from "./stream-client";
 import UnsavedNotice from "./UnsavedNotice";
 
 const initialState: CoachActionState = { status: "idle" };
 
 export default function CoachForm() {
-  const [state, formAction, pending] = useActionState(
-    sendCoachMessage,
-    initialState,
-  );
+  const router = useRouter();
+  const sending = useRef(false);
+  const activeRequest = useRef<AbortController | null>(null);
+  useEffect(() => () => activeRequest.current?.abort(), []);
+  const [draft, setDraft] = useState("");
+  const [reply, setReply] = useState("");
+  const [state, setState] = useState<CoachActionState>(initialState);
+  const [pending, setPending] = useState(false);
+  const [message, setMessage] = useState("");
+
+  async function send(data: FormData): Promise<CoachActionState> {
+    // Quick replies and Send again use the same authenticated endpoint.
+    const text =
+      [data.get("quickReply"), data.get("message")]
+        .find((value) => typeof value === "string" && value.trim() !== "")
+        ?.toString()
+        .trim() ?? "";
+    const controller = new AbortController();
+    activeRequest.current = controller;
+    setDraft(text);
+    setReply("");
+    let received = "";
+    let result: CoachActionState | undefined;
+    try {
+      const response = await fetch("/api/coach", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text }),
+        credentials: "same-origin",
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        const error: unknown = await response.json();
+        const message =
+          typeof error === "object" &&
+          error !== null &&
+          "message" in error &&
+          typeof error.message === "string"
+            ? error.message
+            : LOAD_FAILED_MESSAGE;
+        return response.status >= 500
+          ? { status: "unsaved", text, message }
+          : { status: "error", message };
+      }
+      await readCoachStream(response, (event) => {
+        if (event.type === "delta") {
+          received += event.text;
+          setReply(received);
+        } else if (event.type === "saved") {
+          result = { status: "sent" };
+        } else {
+          result = {
+            status: "unsaved",
+            text,
+            reply: received,
+            message: event.message,
+          };
+        }
+      });
+      if (result?.status === "sent") router.refresh();
+      return (
+        result ?? {
+          status: "unsaved",
+          text,
+          reply: received,
+          message: SAVE_FAILED_MESSAGE,
+        }
+      );
+    } catch {
+      return {
+        status: "unsaved",
+        text,
+        reply: received,
+        message: SAVE_FAILED_MESSAGE,
+      };
+    } finally {
+      activeRequest.current = null;
+    }
+  }
+
+  function formAction(data: FormData) {
+    if (sending.current) return;
+    sending.current = true;
+    setPending(true);
+    void send(data)
+      .then((result) => {
+        setState(result);
+        if (result.status === "sent") setMessage("");
+      })
+      .finally(() => {
+        sending.current = false;
+        setPending(false);
+      });
+  }
   const inputId = useId();
   const errorId = useId();
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -29,6 +125,26 @@ export default function CoachForm() {
 
   return (
     <>
+      {pending && draft ? (
+        <div
+          className="mt-4 flex flex-col gap-3"
+          aria-label="Current coach exchange"
+        >
+          <p className="m-0 ml-8 rounded-lg bg-foreground/10 px-4 py-3 text-sm whitespace-pre-line">
+            {draft}
+          </p>
+          {reply ? (
+            <p
+              className="m-0 mr-8 rounded-lg border border-foreground/15 px-4 py-3 text-sm whitespace-pre-line"
+              role="log"
+              aria-live="polite"
+              aria-label="Coach reply"
+            >
+              {reply}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       {state.status === "unsaved" && !pending ? (
         <UnsavedNotice
           action={formAction}
@@ -37,7 +153,18 @@ export default function CoachForm() {
           text={state.text}
         />
       ) : null}
-      <form action={formAction} className="mt-6 flex flex-col gap-3">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          const submitter = (event.nativeEvent as SubmitEvent).submitter;
+          const data = new FormData(event.currentTarget);
+          if (submitter instanceof HTMLButtonElement && submitter.name) {
+            data.set(submitter.name, submitter.value);
+          }
+          formAction(data);
+        }}
+        className="mt-6 flex flex-col gap-3"
+      >
         <label className="text-sm font-semibold" htmlFor={inputId}>
           Message the coach
         </label>
@@ -47,6 +174,8 @@ export default function CoachForm() {
           id={inputId}
           maxLength={MESSAGE_MAX_LENGTH}
           name="message"
+          value={message}
+          onChange={(event) => setMessage(event.currentTarget.value)}
           placeholder="For example: can I swap squats for lunges today?"
           // Read-only, not disabled, while pending: a disabled box loses focus.
           readOnly={pending}
@@ -60,7 +189,7 @@ export default function CoachForm() {
             The coach is replying...
           </p>
         ) : null}
-        {state.status === "error" ? (
+        {state.status === "error" && !pending ? (
           <p className="m-0 text-sm" id={errorId} role="alert">
             {state.message}
           </p>
