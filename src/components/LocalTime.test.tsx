@@ -3,8 +3,7 @@
 // then the viewer's own time zone is used.
 import { cleanup, render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { afterEach, describe, expect, it } from "vitest";
-import { formatLocal } from "@/lib/format/localTime";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import LocalTime from "./LocalTime";
 
 afterEach(cleanup);
@@ -19,7 +18,11 @@ describe("LocalTime", () => {
   });
 
   it("switches to the viewer's own zone after mounting", () => {
+    // Pin the browser's zone to one that is not Toronto, so a component stuck on the
+    // Toronto text would fail.
+    vi.stubEnv("TZ", "Asia/Tokyo");
     render(<LocalTime iso={iso} kind="time" />);
-    expect(screen.getByText(formatLocal(new Date(iso), "time"))).toBeTruthy();
+    expect(screen.getByText("7:48 AM")).toBeTruthy();
+    vi.unstubAllEnvs();
   });
 });

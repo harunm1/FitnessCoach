@@ -1,6 +1,5 @@
 "use client";
 
-import LocalTime from "@/components/LocalTime";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { reconcileCheckoutReturn } from "@/lib/billing/checkout-return";
@@ -12,6 +11,7 @@ import {
 } from "@/app/account/billing-actions";
 import type { BillingOverview, BillingInterval } from "@/lib/billing/types";
 import styles from "./account.module.css";
+import LocalTime from "@/components/LocalTime";
 
 export function BillingControls({
   overview,
