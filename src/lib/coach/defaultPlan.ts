@@ -39,17 +39,17 @@ const SPLITS: Record<number, Split[]> = {
     {
       name: "Push",
       muscles: ["chest", "shoulders", "triceps"],
-      extras: ["abdominals", "biceps", "calves"],
+      extras: ["triceps", "abdominals", "shoulders"],
     },
     {
       name: "Pull",
       muscles: ["middle back", "lats", "biceps"],
-      extras: ["lower back", "abdominals", "shoulders"],
+      extras: ["abdominals", "forearms", "traps"],
     },
     {
       name: "Legs",
       muscles: ["quadriceps", "hamstrings", "glutes"],
-      extras: ["calves", "abdominals", "lower back"],
+      extras: ["calves", "abdominals", "adductors"],
     },
   ],
 };
@@ -65,9 +65,9 @@ const UNLISTED_EQUIPMENT_RANK = 99;
 const EQUIPMENT_ORDER = [
   "barbell",
   "dumbbell",
+  "e-z curl bar",
   "machine",
   "cable",
-  "e-z curl bar",
   "kettlebells",
   "bands",
   "body only",
@@ -93,7 +93,8 @@ type Level = keyof typeof LEVEL_RANK;
 // given, every exercise scores the same and the first fit wins, as before.
 function score(exercise: LibraryExercise, level: Level | undefined): number {
   if (!level) return 0;
-  const exerciseLevel = LEVEL_RANK[exercise.level as Level];
+  // A row with no level, or one we do not know, gets no penalty.
+  const exerciseLevel = LEVEL_RANK[(exercise.level ?? "") as Level];
   const above = exerciseLevel > LEVEL_RANK[level] ? ABOVE_LEVEL_PENALTY : 0;
   if (level === "BEGINNER") return above;
   const equipment = EQUIPMENT_ORDER.indexOf(exercise.equipment ?? "body only");
@@ -104,6 +105,13 @@ const compoundRank = (exercise: LibraryExercise) => {
   const rank = COMPOUND_MUSCLES.indexOf(exercise.primaryMuscles[0]);
   return rank < 0 ? COMPOUND_MUSCLES.length : rank;
 };
+
+// A simplification: a lift is called compound by its first primary muscle and free-weight
+// equipment, not by what the movement is, because the library carries no lift type. A
+// dumbbell fly counts; a leg press (machine) does not.
+const isCompound = (exercise: LibraryExercise) =>
+  compoundRank(exercise) < COMPOUND_MUSCLES.length &&
+  (exercise.equipment === "barbell" || exercise.equipment === "dumbbell");
 
 export function buildDefaultPlan(
   profile: VerifyProfile,
@@ -134,13 +142,16 @@ export function buildDefaultPlan(
       const picked: CategorisedExercise[] = [];
       for (const muscle of [...day.muscles, ...day.extras.slice(0, extras)]) {
         const match = ranked.find(
-          (e) => e.primaryMuscles.includes(muscle) && !picked.includes(e),
+          (e) =>
+            e.primaryMuscles.includes(muscle) &&
+            !picked.some((chosen) => chosen.id === e.id),
         );
         if (match) picked.push(match);
       }
       for (const exercise of usable) {
         if (picked.length >= 2) break;
-        if (!picked.includes(exercise)) picked.push(exercise);
+        if (!picked.some((chosen) => chosen.id === exercise.id))
+          picked.push(exercise);
       }
       if (picked.length < 2) {
         throw new Error(`Not enough compatible exercises for ${day.name}`);
@@ -155,9 +166,7 @@ export function buildDefaultPlan(
           .slice(0, LIMITS.exercisesPerDay.max)
           .map((exercise) => ({
             exerciseId: exercise.id,
-            ...(heavy && compoundRank(exercise) < COMPOUND_MUSCLES.length
-              ? COMPOUND
-              : ACCESSORY),
+            ...(heavy && isCompound(exercise) ? COMPOUND : ACCESSORY),
             rpe: DEFAULT_RPE,
           })),
       };

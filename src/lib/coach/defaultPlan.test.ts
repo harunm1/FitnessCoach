@@ -1,5 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { buildDefaultPlan } from "./defaultPlan";
+import { verifyPlan } from "./verify";
 import type {
   LibraryExercise,
   VerifyProfile,
@@ -252,6 +253,8 @@ const fullGym: CategorisedExercise[] = [
   gym("cable-lat", "cable", "lats"),
   gym("calf-raise", "machine", "calves"),
   gym("cable-crunch", "cable", "abdominals"),
+  gym("wrist-curl", "dumbbell", "forearms"),
+  gym("db-shrug", "dumbbell", "traps"),
 ];
 
 const fullGymProfile = {
@@ -337,5 +340,117 @@ describe("buildDefaultPlan by level (#139)", () => {
       fullGym,
     );
     expect(plan.days[0].exercises.length).toBeLessThanOrEqual(4);
+  });
+});
+
+describe("buildDefaultPlan sizes and verification (#139)", () => {
+  const sizes = (level: "BEGINNER" | "INTERMEDIATE" | "EXPERT", days = 3) =>
+    buildDefaultPlan(
+      { ...fullGymProfile, daysPerWeek: days, level },
+      fullGym,
+    ).days.map((day) => day.exercises.length);
+
+  it("adds 0, 1 and 3 accessory muscles for beginner, intermediate and expert", () => {
+    expect(sizes("BEGINNER")).toEqual([3, 3, 3]);
+    expect(sizes("INTERMEDIATE")).toEqual([4, 4, 4]);
+    expect(sizes("EXPERT")).toEqual([6, 6, 5]);
+    expect(sizes("EXPERT", 1)).toEqual([7]);
+  });
+
+  it("orders a one-day expert plan with the big lifts first", () => {
+    const plan = buildDefaultPlan(
+      { ...fullGymProfile, daysPerWeek: 1, level: "EXPERT" },
+      fullGym,
+    );
+    expect(plan.days[0].exercises.map((e) => e.exerciseId).slice(0, 4)).toEqual(
+      ["barbell-squat", "barbell-rdl", "barbell-bench", "barbell-row"],
+    );
+  });
+
+  it("keeps the old prescription and picks when no level is given", () => {
+    const plan = buildDefaultPlan(
+      { ...fullGymProfile, daysPerWeek: 1 },
+      fullGym,
+    );
+    expect(plan.days[0].exercises.map((e) => e.exerciseId)).toEqual([
+      "kb-squat",
+      "kb-floor-press",
+      "kb-row",
+      "cable-shoulder-press",
+    ]);
+    plan.days[0].exercises.forEach((e) =>
+      expect(e).toMatchObject({ sets: 3, reps: 10, restSeconds: 90, rpe: 7 }),
+    );
+  });
+
+  it("gives only barbell and dumbbell lifts the heavier prescription", () => {
+    const plan = buildDefaultPlan(
+      { ...fullGymProfile, level: "EXPERT" },
+      fullGym,
+    );
+    const heavy = plan.days
+      .flatMap((d) => d.exercises)
+      .filter((e) => e.sets === 4)
+      .map((e) => e.exerciseId);
+    heavy.forEach((id) =>
+      expect(["barbell", "dumbbell"]).toContain(
+        fullGym.find((x) => x.id === id)?.equipment,
+      ),
+    );
+    expect(heavy).not.toContain("machine-leg-curl");
+  });
+
+  it("passes the verifier for every level and day count, and avoids a reported muscle", () => {
+    const byId = new Map(fullGym.map((e) => [e.id, e]));
+    (["BEGINNER", "INTERMEDIATE", "EXPERT"] as const).forEach((level) =>
+      [1, 2, 3, 5, 7].forEach((days) => {
+        const profile = {
+          ...fullGymProfile,
+          daysPerWeek: days,
+          level,
+          avoidMuscles: ["calves"],
+        };
+        const result = verifyPlan(
+          buildDefaultPlan(profile, fullGym),
+          profile,
+          byId,
+        );
+        expect(result.ok, `${level} ${days}`).toBe(true);
+      }),
+    );
+  });
+
+  it("works for a library whose rows have no level, and a small library", () => {
+    const noLevel = fullGym.map((exercise) => ({
+      ...exercise,
+      level: undefined,
+    }));
+    expect(() =>
+      buildDefaultPlan({ ...fullGymProfile, level: "EXPERT" }, noLevel),
+    ).not.toThrow();
+    expect(() =>
+      buildDefaultPlan(
+        { ...fullGymProfile, daysPerWeek: 1, level: "EXPERT" },
+        fullGym.slice(7, 10),
+      ),
+    ).not.toThrow();
+  });
+
+  it("keeps a beginner away from exercises above their level", () => {
+    const lib = [
+      gym("expert-squat", "barbell", "quadriceps", "EXPERT"),
+      gym("beginner-squat", "machine", "quadriceps", "BEGINNER"),
+      gym("chest", "machine", "chest", "BEGINNER"),
+    ];
+    const plan = buildDefaultPlan(
+      { ...fullGymProfile, daysPerWeek: 1, level: "BEGINNER" },
+      lib,
+    );
+    expect(plan.days[0].exercises.map((e) => e.exerciseId)).toContain(
+      "beginner-squat",
+    );
+    expect(plan.days[0].exercises.map((e) => e.exerciseId)).not.toContain(
+      "expert-squat",
+    );
   });
 });
