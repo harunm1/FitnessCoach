@@ -14,6 +14,9 @@ export function ImportForm() {
   );
   const [file, setFile] = useState<File | null>(null);
   const [tooBig, setTooBig] = useState(false);
+  // The file the preview on screen was made from: choosing another file hides that preview,
+  // so Import never saves a file nobody has previewed.
+  const [previewed, setPreviewed] = useState<File | null>(null);
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -25,6 +28,7 @@ export function ImportForm() {
         ? "save"
         : "preview",
     );
+    if (data.get("intent") === "preview") setPreviewed(file);
     data.delete("file");
     if (file) data.set("file", file);
     startTransition(() => dispatch(data));
@@ -66,7 +70,7 @@ export function ImportForm() {
           {state.message}
         </p>
       )}
-      {state.status === "preview" && (
+      {state.status === "preview" && previewed === file && (
         <fieldset disabled={pending} className="contents">
           <ImportPreview
             summary={state.summary}

@@ -25,7 +25,8 @@ export function ImportPreview({
       <p className="text-sm">
         The file has {plural(summary.workouts, "workout")} and{" "}
         {plural(summary.sets, "set")}, from {summary.firstDay} to{" "}
-        {summary.lastDay}. {summary.newWorkouts} are new
+        {summary.lastDay}. {summary.newWorkouts}{" "}
+        {summary.newWorkouts === 1 ? "is" : "are"} new
         {alreadyImported > 0 && `; ${alreadyImported} already imported`}.
       </p>
       <p className="text-xs text-foreground/70">

@@ -75,7 +75,8 @@ function toUtc(parts: Parts, timeZone: string): Date | null {
     wall.getUTCMonth() === month - 1 &&
     wall.getUTCDate() === day &&
     hour <= MAX_HOUR &&
-    minute <= MAX_MINUTE;
+    minute <= MAX_MINUTE &&
+    second <= MAX_MINUTE;
   if (!real) return null;
   const guess = wall.getTime();
   const first = guess - zoneOffsetMs(guess, timeZone);

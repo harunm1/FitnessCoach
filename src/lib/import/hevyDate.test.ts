@@ -50,6 +50,7 @@ describe("parseHevyDate", () => {
     expect(parseHevyDate("31 Feb 2024, 10:00")).toBeNull();
     expect(parseHevyDate("20 Jun 2024, 25:00")).toBeNull();
     expect(parseHevyDate("Nov 20, 2024, 13:30 PM")).toBeNull();
+    expect(parseHevyDate("2024-01-15 07:30:75")).toBeNull();
     expect(parseHevyDate("")).toBeNull();
     expect(parseHevyDate("yesterday")).toBeNull();
   });
