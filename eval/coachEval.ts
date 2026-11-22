@@ -31,7 +31,7 @@ async function main() {
     fileArg ??
     `eval/results/${new Date().toISOString().slice(0, 10)}-${mode}-${label}.jsonl`;
 
-  if (repeat) return runRepeats(mode, ids, repeat, file);
+  if (repeat) return runRepeats(mode, ids, repeat, file, only);
 
   const pauseMs = Number(process.env.PAUSE_MS ?? 3000);
   const ctx = await setUpEval(mode);

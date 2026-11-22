@@ -20,6 +20,15 @@ describe("firstCallAnswered", () => {
     ).toBe(false);
     expect(firstCallAnswered([])).toBe(false);
   });
+
+  it("is true when the first call failed on the reply, so that failure counts", () => {
+    expect(
+      firstCallAnswered([{ ms: 800, error: "Groq reply was not valid JSON" }]),
+    ).toBe(true);
+    expect(
+      firstCallAnswered([{ ms: 30000, error: "Groq request timed out" }]),
+    ).toBe(true);
+  });
 });
 
 describe("toRepeatRun", () => {
@@ -65,5 +74,16 @@ describe("parseDoneRuns", () => {
 
   it("is empty for an empty file", () => {
     expect(parseDoneRuns("")).toEqual([]);
+  });
+});
+
+describe("toRepeatRun for a first call that failed on the reply", () => {
+  it("has no reply and no time, and is not a pass", () => {
+    expect(
+      toRepeatRun({
+        firstReplyPassed: false,
+        calls: [{ ms: 800, error: "Groq reply was not valid JSON" }],
+      }),
+    ).toEqual({ firstReplyPassed: false, reply: null, ms: null });
   });
 });

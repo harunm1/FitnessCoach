@@ -45,4 +45,11 @@ describe("parseArgs", () => {
   it("rejects the --flag=value form instead of misreading it", () => {
     expect(() => parseArgs(["groq", "--repeat=5"])).toThrow(/--repeat 5/);
   });
+
+  it("rejects --file without a path, and a path that is really the next flag", () => {
+    expect(() => parseArgs(["groq", "r", "--file"])).toThrow(/--file/);
+    expect(() => parseArgs(["groq", "r", "--file", "--repeat", "5"])).toThrow(
+      /--file/,
+    );
+  });
 });

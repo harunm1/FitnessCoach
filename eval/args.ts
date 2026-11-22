@@ -18,8 +18,15 @@ export function parseArgs(argv: string[]): EvalArgs {
       const [name, value] = arg.split("=");
       throw new Error(`write ${name} ${value}, not ${arg}`);
     }
-    if (FLAGS.includes(arg)) flags.set(arg, argv[++i]);
-    else positionals.push(arg);
+    if (FLAGS.includes(arg)) {
+      const value = argv[++i];
+      if (arg === "--file" && (value === undefined || value.startsWith("--"))) {
+        throw new Error(
+          "--file needs a path, such as --file results/run.jsonl",
+        );
+      }
+      flags.set(arg, value);
+    } else positionals.push(arg);
   }
   const [mode = "groq", label = "run", only] = positionals;
   const args: EvalArgs = { mode, label };

@@ -83,3 +83,55 @@ export function rateLimitedOut(
 ): boolean {
   return calls.length > 0 && calls.every((c) => c.error?.includes("HTTP 429"));
 }
+
+// A transport failure says nothing about the coach's plans: a rate limit, a request
+// timeout from the provider, a server error or a request that never completed. Our
+// own 30 s timeout ("timed out") is not one: a first reply that never arrives is a
+// failure the user would see, so it counts.
+export function isTransportError(error: string | undefined): boolean {
+  return (
+    error !== undefined && /HTTP (408|429|5\d\d)|request failed/.test(error)
+  );
+}
+
+// Every call refused with a client error that will not pass on its own (a bad key,
+// a wrong model name, a request that is too large): more calls only burn the budget.
+export function permanentlyRefused(
+  calls: { error?: string; reply?: unknown }[],
+): boolean {
+  return (
+    calls.length > 0 &&
+    calls.every(
+      (c) =>
+        c.error !== undefined &&
+        /HTTP 4\d\d/.test(c.error) &&
+        !/HTTP (408|429)/.test(c.error),
+    )
+  );
+}
+
+// A setting that is set must be a finite number above zero: NaN or 0 would turn the
+// pacing or the budget off without a word.
+export function positiveNumber(
+  name: string,
+  raw: string | undefined,
+  fallback: number,
+): number {
+  if (raw === undefined) return fallback;
+  const value = Number(raw);
+  if (raw.trim() === "" || !Number.isFinite(value) || value <= 0) {
+    throw new Error(`${name} must be a number above zero, not "${raw}"`);
+  }
+  return value;
+}
+
+// The command that carries on a stopped session: the same provider, the same profiles.
+export function resumeCommand(
+  mode: string,
+  only: string[] | undefined,
+  repeat: number,
+  file: string,
+): string {
+  const profiles = only?.length ? ` ${only.join(",")}` : "";
+  return `npx tsx eval/coachEval.ts ${mode} repeat${profiles} --repeat ${repeat} --file ${file}`;
+}

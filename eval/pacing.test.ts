@@ -4,8 +4,12 @@ import {
   callGapMs,
   dailyCallBudget,
   pacer,
+  isTransportError,
   pendingRuns,
+  permanentlyRefused,
+  positiveNumber,
   rateLimitedOut,
+  resumeCommand,
 } from "./pacing";
 
 describe("callGapMs", () => {
@@ -82,5 +86,92 @@ describe("rateLimitedOut", () => {
     ).toBe(false);
     expect(rateLimitedOut([{ error: "groq returned HTTP 503" }])).toBe(false);
     expect(rateLimitedOut([])).toBe(false);
+  });
+});
+
+describe("isTransportError", () => {
+  it("is true for rate limits, request timeouts, server errors and a failed request", () => {
+    for (const e of [
+      "Groq returned HTTP 429",
+      "Gemini returned HTTP 503",
+      "Groq returned HTTP 408",
+      "Groq request failed",
+    ]) {
+      expect(isTransportError(e)).toBe(true);
+    }
+  });
+
+  it("is false for faults in the reply, a client error and our own timeout", () => {
+    for (const e of [
+      "Groq reply was not valid JSON",
+      "Groq reply had no text",
+      "Groq returned HTTP 400",
+      "Groq request timed out",
+      undefined,
+    ]) {
+      expect(isTransportError(e)).toBe(false);
+    }
+  });
+});
+
+describe("permanentlyRefused", () => {
+  it("is true when every call got a client error other than 408 and 429", () => {
+    expect(
+      permanentlyRefused([
+        { error: "Groq returned HTTP 401" },
+        { error: "Groq returned HTTP 401" },
+      ]),
+    ).toBe(true);
+    expect(permanentlyRefused([{ error: "Groq returned HTTP 404" }])).toBe(
+      true,
+    );
+  });
+
+  it("is false for transport errors, replies, mixed calls and no calls", () => {
+    expect(permanentlyRefused([{ error: "Groq returned HTTP 429" }])).toBe(
+      false,
+    );
+    expect(permanentlyRefused([{ error: "Groq returned HTTP 503" }])).toBe(
+      false,
+    );
+    expect(permanentlyRefused([{ reply: {} }])).toBe(false);
+    expect(
+      permanentlyRefused([{ error: "Groq returned HTTP 401" }, { reply: {} }]),
+    ).toBe(false);
+    expect(permanentlyRefused([])).toBe(false);
+  });
+});
+
+describe("positiveNumber", () => {
+  it("uses the fallback when the setting is absent", () => {
+    expect(positiveNumber("EVAL_GAP_MS", undefined, 60000)).toBe(60000);
+  });
+
+  it("reads a positive number", () => {
+    expect(positiveNumber("EVAL_GAP_MS", "15000", 60000)).toBe(15000);
+  });
+
+  it("throws on an empty, non-numeric, zero or negative setting instead of switching the safeguard off", () => {
+    for (const raw of ["", "abc", "0", "-5", "Infinity"]) {
+      expect(() => positiveNumber("EVAL_GAP_MS", raw, 60000)).toThrow(
+        /EVAL_GAP_MS/,
+      );
+    }
+  });
+});
+
+describe("resumeCommand", () => {
+  it("keeps the profile list so a resume does not run every profile", () => {
+    expect(
+      resumeCommand("groq", ["gym-3-days", "home-2-days"], 5, "out.jsonl"),
+    ).toBe(
+      "npx tsx eval/coachEval.ts groq repeat gym-3-days,home-2-days --repeat 5 --file out.jsonl",
+    );
+  });
+
+  it("omits the list when all profiles were asked for", () => {
+    expect(resumeCommand("gemini", undefined, 3, "out.jsonl")).toBe(
+      "npx tsx eval/coachEval.ts gemini repeat --repeat 3 --file out.jsonl",
+    );
   });
 });

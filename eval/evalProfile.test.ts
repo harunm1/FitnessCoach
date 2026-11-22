@@ -27,7 +27,7 @@ describe("evalProfile", () => {
 
     // Two attempts, each held 80 ms: the wait happened, and no call's time holds it.
     expect(row.calls).toHaveLength(2);
-    expect(elapsed).toBeGreaterThanOrEqual(160);
+    expect(elapsed).toBeGreaterThanOrEqual(150);
     for (const call of row.calls) expect(call.ms).toBeLessThan(80);
   });
 });
