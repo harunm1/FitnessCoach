@@ -84,6 +84,9 @@ describe("personalizeWithCoach", () => {
     expect(mocks.loadInputs).toHaveBeenCalledWith({ tag: "db" }, "owner");
     expect(mocks.claim).toHaveBeenCalledWith({ tag: "db" }, "owner");
     expect(mocks.claim.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.coachModel.mock.invocationCallOrder[0],
+    );
+    expect(mocks.claim.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.generatePlan.mock.invocationCallOrder[0],
     );
     expect(mocks.saveWeek).toHaveBeenCalledWith(
