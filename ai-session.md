@@ -679,3 +679,13 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Got:** A flow-by-flow risk table from code, the live pages and teammates' comments, and three integration tests in `tests/integration/quiz-session.test.ts` (PR #128). AI drafted the tests; they pin behaviour `logSet` already has, so they pass on main.
 
 **Did with it:** Read `logSet` and the schema to confirm each assertion, had a separate review agent read the diff blind (it found no error and suggested a weight assertion, which I added), ran Prettier, ESLint and the type check, and let CI run the integration suite. Two taps in flight at once are not covered; that is noted for Mohammad on #15.
+
+## 22 November (late afternoon): board audit and the first step of the fatigue deload
+
+**Asked:** To read every open issue and pull request against the board and main, close the issues whose boxes are all met, put the merge order in order, and start the enhancement with the most demo and grading value.
+
+**Got:** A table of 19 issues and 9 pull requests with their true column, supported boxes, owner and blocker; three issues closed with dated comments (#11, #72, #66); the merge order with a check per pull request; and, for #93, decision D21 (two signals must agree, thresholds marked unverified) with a pure `proposeDeload` function and nine unit tests written first. AI drafted the test file and the function.
+
+**Did with it:** Checked each issue's boxes against main with `git grep` and `gh` instead of the issue text, ran each new test against the missing module to see it fail, then ran lint, the type check, format check and the full unit suite (1,654 tests), and had a separate review agent read the change blind before the push. The deload screen where a user accepts or declines is a follow-up; this change is the rule only. The review agent found no error; its should-fix items (the wording of D21 and its source, four extra tests, the pull request saying Refs and not Closes) were applied.
+
+**Tools:** gh, git, Prettier, ESLint, tsc, Vitest, one general-purpose review agent. No skills or connectors.
