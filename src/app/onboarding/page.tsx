@@ -1,19 +1,29 @@
-import Link from "next/link";
+import { AccountTheme, ThemeToggle } from "@/components/auth/account-theme";
+import { AppNav } from "@/components/nav/AppNav";
+import theme from "@/components/theme/app-theme.module.css";
 import QuizForm from "@/components/QuizForm";
 import { requireUser } from "@/lib/auth/session";
+import { loadAvatarUrl } from "@/lib/photos/avatar";
 
 export default async function OnboardingPage() {
-  await requireUser();
+  const user = await requireUser();
+  const avatarUrl = await loadAvatarUrl(user.id);
 
   return (
-    <main className="min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12">
+    <AccountTheme
+      className={`${theme.appTheme} min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12`}
+    >
       <div className="mx-auto max-w-2xl">
-        <header className="mb-10 flex items-center justify-between border-b border-foreground/15 pb-5">
-          <Link className="text-sm font-bold tracking-[0.12em]" href="/">
-            FORM
-          </Link>
-          <span className="text-xs text-foreground/60">01 / 01</span>
-        </header>
+        <AppNav
+          name={user.name}
+          avatarUrl={avatarUrl}
+          actions={
+            <>
+              <ThemeToggle />
+              <span className="text-xs text-foreground/60">01 / 01</span>
+            </>
+          }
+        />
 
         <div className="mb-8">
           <p className="text-xs font-semibold tracking-[0.14em] text-foreground/60 uppercase">
@@ -29,6 +39,6 @@ export default async function OnboardingPage() {
 
         <QuizForm />
       </div>
-    </main>
+    </AccountTheme>
   );
 }

@@ -8,7 +8,12 @@ const { findUnique, storage } = vi.hoisted(() => ({
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/prisma", () => ({ prisma: { user: { findUnique } } }));
 vi.mock("@/lib/storage", () => ({ getPhotoStorage: storage.get }));
-import { loadAvatar, originalKeyFor, profilePhotoFolder } from "./avatar";
+import {
+  loadAvatar,
+  loadAvatarUrl,
+  originalKeyFor,
+  profilePhotoFolder,
+} from "./avatar";
 
 const KEY = "profile/u1/0b9c1f0e-5d1a-4c5e-9f7a-2a1b3c4d5e6f.webp";
 
@@ -72,6 +77,37 @@ describe("loadAvatar", () => {
   it("returns null instead of failing when the database is unavailable", async () => {
     findUnique.mockRejectedValue(new Error("connection refused"));
     expect(await loadAvatar("u1")).toBeNull();
+  });
+});
+
+describe("loadAvatarUrl", () => {
+  it("signs the profile photo", async () => {
+    findUnique.mockResolvedValue({ image: KEY });
+    expect(await loadAvatarUrl("u1")).toBe(`memory://${KEY}?expires=300`);
+  });
+
+  it("returns null when the user has no profile photo", async () => {
+    findUnique.mockResolvedValue({ image: null });
+    expect(await loadAvatarUrl("u1")).toBeNull();
+  });
+
+  it("shows nothing for another user's photo", async () => {
+    findUnique.mockResolvedValue({
+      image: "profile/u2/0b9c1f0e-5d1a-4c5e-9f7a-2a1b3c4d5e6f.webp",
+    });
+    expect(await loadAvatarUrl("u1")).toBeNull();
+  });
+
+  it("returns null and logs the cause when storage is unavailable", async () => {
+    findUnique.mockResolvedValue({ image: KEY });
+    storage.get.mockImplementation(() => {
+      throw new Error("Missing: R2_BUCKET");
+    });
+    expect(await loadAvatarUrl("u1")).toBeNull();
+    expect(console.error).toHaveBeenCalledWith(
+      "[photos] nav: couldn't load the profile photo",
+      expect.objectContaining({ userId: "u1" }),
+    );
   });
 });
 
