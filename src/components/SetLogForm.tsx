@@ -3,17 +3,20 @@
 import { useActionState } from "react";
 import { logSet } from "@/app/session/actions";
 import type { SetLogActionState } from "@/lib/workout/setLogSchema";
+import { weightPlaceholder } from "@/lib/workout/weightPlaceholder";
 
 type SetLogFormProps = {
   exerciseId: string;
   targetReps: number;
   nextSetNumber: number;
+  equipment?: string | null; // the exercise's equipment, for the weight field's hint
 };
 
 export default function SetLogForm({
   exerciseId,
   targetReps,
   nextSetNumber,
+  equipment = null,
 }: SetLogFormProps) {
   const initialState: SetLogActionState = { status: "idle", message: "" };
   const [state, formAction, isPending] = useActionState(
@@ -44,7 +47,7 @@ export default function SetLogForm({
           max={9999.99}
           min={0.01}
           name="weightKg"
-          placeholder="Bodyweight"
+          placeholder={weightPlaceholder(equipment)}
           step="0.01"
           type="number"
         />

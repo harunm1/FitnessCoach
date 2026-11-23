@@ -11,6 +11,7 @@ import {
 } from "@/app/account/billing-actions";
 import type { BillingOverview, BillingInterval } from "@/lib/billing/types";
 import styles from "./account.module.css";
+import LocalTime from "@/components/LocalTime";
 
 export function BillingControls({
   overview,
@@ -155,10 +156,7 @@ export function BillingControls({
       {overview.paidUntil && (
         <p className={styles.trialFinePrint}>
           Paid access through{" "}
-          <time dateTime={overview.paidUntil}>
-            {new Date(overview.paidUntil).toUTCString()}
-          </time>
-          .
+          <LocalTime iso={overview.paidUntil} kind="datetime" />.
         </p>
       )}
       <div className={styles.billingButtons}>

@@ -271,8 +271,9 @@ export default function BodyMap({ exercises }: BodyMapProps) {
             </div>
           )}
           <p className="mt-4 mb-0 border-t border-foreground/10 pt-3 text-[10px] leading-4 text-foreground/50">
-            Library references only; this panel does not provide medical advice
-            or AI-generated coaching yet.
+            Exercise library references. For pain or an injury, stop the
+            movement and see a health professional. Ask the coach on the Coach
+            page about your own training.
           </p>
         </aside>
       </div>
