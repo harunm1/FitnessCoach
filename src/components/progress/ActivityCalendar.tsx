@@ -77,12 +77,12 @@ export default function ActivityCalendar({
           <tr>
             {WEEKDAYS.map((weekday) => (
               <th
-                className="pb-2 text-[10px] font-semibold tracking-[0.08em] text-foreground/55 uppercase"
+                className="pb-2 text-sm font-bold text-foreground/80"
                 key={weekday}
                 scope="col"
               >
                 <abbr title={weekday} className="no-underline">
-                  {weekday.slice(0, 1)}
+                  {weekday}
                 </abbr>
               </th>
             ))}
@@ -101,7 +101,7 @@ export default function ActivityCalendar({
                       aria-current={selected ? "date" : undefined}
                       aria-label={dayLabel(day, dayActivity)}
                       className={[
-                        "relative flex aspect-square min-h-10 items-center justify-center text-sm",
+                        "relative flex aspect-square min-h-12 items-center justify-center text-base font-medium",
                         dayActivity
                           ? "bg-foreground font-semibold text-background"
                           : "text-foreground/70 hover:bg-foreground/5",
