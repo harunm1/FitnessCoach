@@ -63,7 +63,7 @@ describe("root page", () => {
   it("has exactly one h1, naming the product", () => {
     const headings = [...render().matchAll(/<h1[^>]*>(.*?)<\/h1>/g)];
     expect(headings).toHaveLength(1);
-    expect(headings[0][1].replace(/<[^>]*>/g, "")).toBe("FORM");
+    expect(headings[0][1].replace(/<[^>]*>/g, "")).toBe("FitnessCoach");
   });
 
   it("keeps the tagline", () => {
