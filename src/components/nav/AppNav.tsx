@@ -44,9 +44,9 @@ export function AppNav({
       <AccountBrand light />
       <nav
         aria-label="Main"
-        className="order-last w-full overflow-x-auto sm:order-none sm:w-auto sm:flex-1"
+        className="order-last w-full min-w-0 sm:order-none sm:w-auto sm:flex-1"
       >
-        <ul className="m-0 flex list-none gap-5 p-0">
+        <ul className="m-0 flex list-none flex-wrap items-center gap-x-4 gap-y-2 p-0">
           {NAV_LINKS.map(({ page, href, label }) => (
             <li key={page}>
               <Link
@@ -54,8 +54,8 @@ export function AppNav({
                 aria-current={current === page ? "page" : undefined}
                 className={
                   current === page
-                    ? "text-sm font-semibold underline decoration-2 underline-offset-4"
-                    : "text-sm opacity-70 hover:opacity-100"
+                    ? "text-sm font-semibold whitespace-nowrap underline decoration-2 underline-offset-4"
+                    : "text-sm whitespace-nowrap opacity-70 hover:opacity-100"
                 }
               >
                 {label}
