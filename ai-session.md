@@ -661,3 +661,51 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Got:** Implementation examples for a shared navigation component with the user's profile badge, a unified theme file (moved from `progress-theme.module.css` to `theme/app-theme.module.css` and renamed to `appTheme`), a home page that redirects signed-in users and uses Get started as its main action, and a session body map using `react-muscle-highlighter`. AI also generated tests for the changes.
 
 **Did with it:** Reviewed and adapted the suggested implementations to fit the existing project structure. Chose FitnessCoach as the single app name and kept the account page's own controls. Ran tests, lint, typecheck, and Prettier locally, then checked every page on localhost in both light and dark modes, including navigation and signed-in user flows. Discussed the session body map change with Mohammad, got his approval, and then implemented the fix.
+
+### 22 November 2026, coach stream fix (#123, #124), Why this plan follow-ups (#126), Personalize with the coach (#58)
+
+**Before asking:** Farnaz and Mohammad reported on 21 Nov that the coach on the live deploy showed the "can't answer" line above a reply, logged `coach: stream failed unknown`, and returned 429 after a few tries. I wanted the cause found before the freeze, not guessed: provider, keys, Vercel limits, or our own code.
+
+**Asked:** To reproduce the failure locally with the deploy's provider order, trace where an error without a code could be thrown after a successful save, and write a regression test before any fix. Then to apply Mohammad's two #88 review follow-ups, and to build the #58 action in the order Shubham asked for on #51.
+
+**Got:** Local probes showed Groq and Gemini answering normally. A throwaway route under `next dev` showed that `revalidatePath` throws `Invariant: static generation store missing` inside the response stream's `pull`, after the exchange is saved; the 429 was our own 5-a-minute chat limit. AI drafted the regression test (red on main), the one-line removal, the #88 changes with tests, and the #58 modules (a pure `personalizePlan` with injected steps, an input loader, the Server Action, a button) with tests written first.
+
+**Did with it:** Checked the Next source for the invariant, ran each new test against main's code to see it fail, ran lint, typecheck and the full unit suite locally, and had a separate review agent read each change blind before pushing; its findings (a leaking console spy, a test that passed on main too) were fixed. The fix is in #124 for Shubham's review, the #88 follow-ups in #126 for Mohammad's, and the Personalize button is left for Mohammad to place on his plan screen.
+
+## 22 November (evening): repeated set save test, demo risk check
+
+**Asked:** To check which demo flows are on main and on the live deploy, and to prove that saving the same set twice stores one row (#42).
+
+**Got:** A flow-by-flow risk table from code, the live pages and teammates' comments, and three integration tests in `tests/integration/quiz-session.test.ts` (PR #128). AI drafted the tests; they pin behaviour `logSet` already has, so they pass on main.
+
+**Did with it:** Read `logSet` and the schema to confirm each assertion, had a separate review agent read the diff blind (it found no error and suggested a weight assertion, which I added), ran Prettier, ESLint and the type check, and let CI run the integration suite. Two taps in flight at once are not covered; that is noted for Mohammad on #15.
+
+## 22 November (late afternoon): board audit and the first step of the fatigue deload
+
+**Asked:** To read every open issue and pull request against the board and main, close the issues whose boxes are all met, put the merge order in order, and start the enhancement with the most demo and grading value.
+
+**Got:** A table of 19 issues and 9 pull requests with their true column, supported boxes, owner and blocker; three issues closed with dated comments (#11, #72, #66); the merge order with a check per pull request; and, for #93, decision D21 (two signals must agree, thresholds marked unverified) with a pure `proposeDeload` function and nine unit tests written first. AI drafted the test file and the function.
+
+**Did with it:** Checked each issue's boxes against main with `git grep` and `gh` instead of the issue text, ran each new test against the missing module to see it fail, then ran lint, the type check, format check and the full unit suite (1,654 tests), and had a separate review agent read the change blind before the push. The deload screen where a user accepts or declines is a follow-up; this change is the rule only. The review agent found no error; its should-fix items (the wording of D21 and its source, four extra tests, the pull request saying Refs and not Closes) were applied.
+
+**Tools:** gh, git, Prettier, ESLint, tsc, Vitest, one general-purpose review agent. No skills or connectors.
+
+## 22 November (evening): importing workouts from a Hevy export
+
+**Asked:** To let a user bring their history from the app they already use (a Hevy CSV), with the sessions marked as imported and never counted as logged live in FitnessCoach (#131).
+
+**Got:** A column and date-format spec with sources (`docs/IMPORT_FORMATS.md`), decision D22, and the code: a small CSV reader, a date reader for Toronto time, a Hevy parser with unit conversion, name matching to the library with a user mapping step, a save that skips workouts already imported, an Import page, and an "Imported" label and count on Progress. AI drafted the parsers, the tests and the page.
+
+**Did with it:** Read the Hevy and Strong help pages myself and found they publish no column list, so the columns come from third-party importers and are marked unverified in the doc; refused ambiguous dates instead of guessing day-first or month-first. Wrote each test before its code and ran lint, the type check, the format check and the full unit suite (1,711 tests). Two separate review agents read the change blind: the first found three errors (a test that sorted numbers as text, two file names mapped to one exercise breaking a unique key, names like `constructor` breaking the mapping) and nine smaller points, all fixed; the second found no error. The integration test could not be run locally because there is no Docker, so CI runs it.
+
+**Tools:** gh, git, Firecrawl (search, scrape, developer search), Prettier, ESLint, tsc, Vitest, two general-purpose review agents. No skills.
+
+## 22 November (evening): bugs found on the live site
+
+**Asked:** To fix what I found using the live app with a trial account: a coach reply cut off mid-sentence and saved that way, replies that were too long and added safety and nutrition lines nobody asked for, a quiz that reset to its defaults after saving, a starter plan for an experienced full-gym user with no barbell lift, a coach panel saying the coach was not live, and times shown in UTC.
+
+**Got:** Nine issues with the live evidence (#137 to #145) and four pull requests: a note on replies that stop at the token limit and shorter prompts (#146), the quiz showing its saved answers and stating the strength and run split (#148), a starter plan that uses the user's level and equipment (#149), and the copy, local time and weight hint fixes (#150). AI drafted the tests and the changes.
+
+**Did with it:** Wrote each failing test before its change, ran lint, the type check, the format check and the full unit suite on each branch, and had a separate review agent read each branch blind before it was pushed. The reviews found real faults that I fixed: a quiz form that still reset after a second save with the same message, a note that could be saved as the whole reply, and extra accessory choices that put an overhead press on a pull day. Not done: eval cases for the reply length (#142 stays open), the starter plan's warm-up, supersets, cardio and deload week (#145 asked for them), and a separate strength-days and run-days question (#143).
+
+**Tools:** gh, git, Prettier, ESLint, tsc, Vitest, four general-purpose review agents. No skills.
