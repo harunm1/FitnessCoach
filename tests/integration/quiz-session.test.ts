@@ -25,6 +25,7 @@ vi.mock("next/navigation", () => ({
   redirect: (path: string) => {
     throw new Error(`redirect:${path}`);
   },
+  useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }),
 }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/prisma", async () => {
