@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { AccountBrand } from "@/components/auth/account-ui";
+import { AccountBrand, AccountIcon } from "@/components/auth/account-ui";
+import { ThemeToggle } from "@/components/auth/account-theme";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { UserBadge } from "@/components/photos/UserBadge";
 
 export type NavPage = "session" | "coach" | "progress" | "photos" | "account";
@@ -70,6 +72,12 @@ export function AppNav({
           imageUrl={avatarUrl}
           current={current === "account"}
         />
+        <ThemeToggle />
+        <span className="flex shrink-0 items-center gap-1.5 text-sm text-foreground/70">
+          <AccountIcon name="shield" size={16} />
+          <span className="max-sm:hidden">Verified account</span>
+        </span>
+        <SignOutButton />
         {actions}
       </div>
     </header>

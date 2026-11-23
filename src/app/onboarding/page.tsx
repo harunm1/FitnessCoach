@@ -1,4 +1,4 @@
-import { AccountTheme, ThemeToggle } from "@/components/auth/account-theme";
+import { AccountTheme } from "@/components/auth/account-theme";
 import { AppNav } from "@/components/nav/AppNav";
 import theme from "@/components/theme/app-theme.module.css";
 import QuizForm from "@/components/QuizForm";
@@ -17,12 +17,7 @@ export default async function OnboardingPage() {
         <AppNav
           name={user.name}
           avatarUrl={avatarUrl}
-          actions={
-            <>
-              <ThemeToggle />
-              <span className="text-xs text-foreground/60">01 / 01</span>
-            </>
-          }
+          actions={<span className="text-sm text-foreground/60">01 / 01</span>}
         />
 
         <div className="mb-8">

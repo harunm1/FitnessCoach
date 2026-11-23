@@ -9,7 +9,7 @@ import { BODY_MAP_MUSCLE_NAMES } from "@/lib/body-map/muscles";
 import { getNextPlanDayIndex } from "@/lib/workout/progression";
 import { finishWorkout, startOrResumeWorkout } from "./actions";
 import { requireUser } from "@/lib/auth/session";
-import { AccountTheme, ThemeToggle } from "@/components/auth/account-theme";
+import { AccountTheme } from "@/components/auth/account-theme";
 import { AppNav } from "@/components/nav/AppNav";
 import theme from "@/components/theme/app-theme.module.css";
 import { loadAvatarUrl } from "@/lib/photos/avatar";
@@ -132,15 +132,12 @@ export default async function SessionPage() {
           name={user.name}
           avatarUrl={avatarUrl}
           actions={
-            <>
-              <ThemeToggle />
-              <Link
-                className="shrink-0 text-xs text-foreground/60 underline underline-offset-4"
-                href="/onboarding"
-              >
-                Edit profile
-              </Link>
-            </>
+            <Link
+              className="shrink-0 text-sm text-foreground/60 underline underline-offset-4"
+              href="/onboarding"
+            >
+              Edit profile
+            </Link>
           }
         />
 

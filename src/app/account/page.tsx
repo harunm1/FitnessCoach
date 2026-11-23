@@ -1,11 +1,10 @@
 import { Suspense } from "react";
 import { BillingPanel } from "@/components/auth/billing-panel";
 import { requireAccount } from "@/lib/auth/access";
-import { SignOutButton } from "@/components/auth/sign-out-button";
 import { TrialButton } from "@/components/auth/trial-button";
 import { AccountIcon } from "@/components/auth/account-ui";
 import styles from "@/components/auth/account.module.css";
-import { AccountTheme, ThemeToggle } from "@/components/auth/account-theme";
+import { AccountTheme } from "@/components/auth/account-theme";
 import { ChangePasswordDialog } from "@/components/auth/change-password-dialog";
 import { ProfilePhotoForm } from "@/components/auth/profile-photo-form";
 import { AppNav } from "@/components/nav/AppNav";
@@ -70,15 +69,6 @@ export default async function AccountPage({
           name={user.name}
           avatarUrl={avatar?.url ?? null}
           className=""
-          actions={
-            <>
-              <ThemeToggle />
-              <span className={styles.headerLabel}>
-                <AccountIcon name="shield" size={16} /> Verified account
-              </span>
-              <SignOutButton />
-            </>
-          }
         />
       </div>
       <div className={styles.accountContent}>
