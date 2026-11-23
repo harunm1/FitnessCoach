@@ -4,6 +4,8 @@ A web app that turns a short quiz into a weekly gym, running or hybrid plan the 
 
 Team project for ECE1724 Advanced Web Development, University of Toronto, Fall 2026.
 
+Presentation (Google Slides): https://docs.google.com/presentation/d/1qStAGGqVM_kv_KNh8ksFTns8zuOtFmZUXxy1Mu5-WK8/edit
+
 ## Status
 
 As of 10 November 2026, checked against `main`, the open pull requests and the project board.

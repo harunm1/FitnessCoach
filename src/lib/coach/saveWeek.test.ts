@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { buildHybridWeek, type HybridProfile } from "./hybridWeek";
-import type { PrismaClient } from "@/generated/prisma/client";
+import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { saveWeek, weekToPlanData } from "./saveWeek";
 import type { CategorisedExercise } from "./verify";
 
@@ -137,5 +137,102 @@ describe("saveWeek", () => {
     await expect(saveWeek(prisma, "u1", week, "DEFAULT")).rejects.toThrow(
       "insert failed",
     );
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+  });
+});
+
+describe("saveWeek when Postgres aborts it", () => {
+  // A quiz save that already holds the old plan's row lock and then needs the User
+  // row deadlocks with saveWeek; Postgres may abort saveWeek, which Prisma reports as
+  // P2034. These mocks only count transactions; the real re-run against PostgreSQL is
+  // in tests/integration/schema-constraints.test.ts.
+  const ABORTED = "P2034";
+  const UNIQUE_VIOLATION = "P2002";
+  const SAVED_PLAN_ID = 9;
+  const CALLS_WITH_ONE_RETRY = 2;
+
+  function knownError(code: string) {
+    return new Prisma.PrismaClientKnownRequestError("aborted", {
+      code,
+      clientVersion: Prisma.prismaVersion.client,
+    });
+  }
+
+  function prismaFailing(...failures: Error[]) {
+    const remaining = [...failures];
+    const $transaction = vi.fn(async () => {
+      const failure = remaining.shift();
+      if (failure) throw failure;
+      return { id: SAVED_PLAN_ID };
+    });
+    return { $transaction } as unknown as PrismaClient;
+  }
+
+  const week = buildHybridWeek(profile, library);
+
+  it("retries once, logs the retry and saves the plan after an abort", async () => {
+    const prisma = prismaFailing(knownError(ABORTED));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await expect(saveWeek(prisma, "u1", week, "COACH")).resolves.toEqual({
+      planId: SAVED_PLAN_ID,
+    });
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(CALLS_WITH_ONE_RETRY);
+    expect(warn).toHaveBeenCalledOnce();
+    warn.mockRestore();
+  });
+
+  it("throws the abort when the retry is aborted too", async () => {
+    const prisma = prismaFailing(knownError(ABORTED), knownError(ABORTED));
+
+    await expect(saveWeek(prisma, "u1", week, "COACH")).rejects.toMatchObject({
+      code: ABORTED,
+    });
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(CALLS_WITH_ONE_RETRY);
+  });
+
+  it("does not retry a unique violation", async () => {
+    const prisma = prismaFailing(knownError(UNIQUE_VIOLATION));
+
+    await expect(saveWeek(prisma, "u1", week, "COACH")).rejects.toMatchObject({
+      code: UNIQUE_VIOLATION,
+    });
+
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+  });
+
+  it("runs beforeSave in the retry too, inside the new transaction", async () => {
+    // Each attempt runs its callback against a fresh stand-in transaction; the first
+    // is aborted at the deactivate step, after beforeSave has run.
+    const beforeSave = vi.fn(async () => {});
+    let attempt = 0;
+    const $transaction = vi.fn(
+      async (run: (tx: Prisma.TransactionClient) => Promise<unknown>) => {
+        attempt += 1;
+        const aborted = attempt === 1;
+        const tx = {
+          $queryRaw: vi.fn(async () => []),
+          plan: {
+            updateMany: vi.fn(async () => {
+              if (aborted) throw knownError(ABORTED);
+              return { count: 0 };
+            }),
+            create: vi.fn(async () => ({ id: SAVED_PLAN_ID })),
+          },
+        } as unknown as Prisma.TransactionClient;
+        return run(tx);
+      },
+    );
+    const prisma = { $transaction } as unknown as PrismaClient;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await expect(
+      saveWeek(prisma, "u1", week, "COACH", beforeSave),
+    ).resolves.toEqual({ planId: SAVED_PLAN_ID });
+
+    expect(beforeSave).toHaveBeenCalledTimes(CALLS_WITH_ONE_RETRY);
+    warn.mockRestore();
   });
 });
