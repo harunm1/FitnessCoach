@@ -112,3 +112,14 @@
 .appTheme :global(path[fill="#d6d9d1"]) {
   fill: var(--map-neutral);
 }
+
+/* Readable body text for the four demo-critical pages; compact numeric controls keep their explicit sizes. */
+.readablePage :global(.text-sm) {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+.readablePage :global(.text-xs) {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}

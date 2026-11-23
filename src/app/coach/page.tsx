@@ -35,7 +35,7 @@ export default async function CoachPage() {
     <AccountTheme
       className={`${theme.appTheme} min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12`}
     >
-      <div className="mx-auto max-w-2xl">
+      <div className={`mx-auto max-w-7xl ${theme.readablePage}`}>
         <AppNav
           current="coach"
           name={user.name}
