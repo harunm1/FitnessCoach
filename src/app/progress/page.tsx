@@ -202,7 +202,7 @@ export default async function ProgressPage({
     <AccountTheme
       className={`${theme.appTheme} min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12`}
     >
-      <div className="mx-auto max-w-3xl">
+      <div className={`mx-auto max-w-7xl ${theme.readablePage}`}>
         <AppNav current="progress" name={user.name} avatarUrl={avatarUrl} />
 
         <p className="text-xs font-semibold tracking-[0.14em] text-foreground/60 uppercase">

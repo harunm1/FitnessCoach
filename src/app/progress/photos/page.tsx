@@ -81,7 +81,7 @@ export default async function ProgressPhotosPage({
     <AccountTheme
       className={`${theme.appTheme} min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12`}
     >
-      <div className="mx-auto max-w-3xl">
+      <div className={`mx-auto max-w-7xl ${theme.readablePage}`}>
         <AppNav current="photos" name={user.name} avatarUrl={avatarUrl} />
 
         <section className="mb-8">
