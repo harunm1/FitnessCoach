@@ -94,7 +94,7 @@ export function BillingControls({
         <h2 id="billing-heading" className={styles.cardTitle}>
           Your membership
         </h2>
-        <span className={styles.tierPill}>Test mode</span>
+        <span className={styles.tierPill}>Demo billing</span>
       </div>
       <p className={styles.introText}>Manage your membership and billing.</p>
       {overview.available && overview.canSubscribe && (
@@ -135,8 +135,8 @@ export function BillingControls({
       )}
       {!overview.available && (
         <p className={styles.trialFinePrint}>
-          New subscriptions aren’t available right now. Your current access is
-          unchanged.
+          Billing changes are disabled for this demo. Your current account
+          access and training features are still available.
           {overview.hasCustomer &&
             " You can still manage or refresh your membership below."}
         </p>
