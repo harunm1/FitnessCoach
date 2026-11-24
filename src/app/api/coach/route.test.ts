@@ -35,6 +35,7 @@ import { coachAttempts } from "@/app/coach/limits";
 function request(
   input: unknown = { message: "How long should I rest between sets?" },
   headers: Record<string, string> = {},
+  signal?: AbortSignal,
 ) {
   return new Request("https://fitness.test/api/coach", {
     method: "POST",
@@ -44,6 +45,7 @@ function request(
       ...headers,
     },
     body: JSON.stringify(input),
+    signal,
   });
 }
 async function events(response: Response) {
@@ -281,5 +283,63 @@ describe("guarded streaming coach endpoint", () => {
     await reader.cancel();
     expect(stopped).toHaveBeenCalledOnce();
     expect(mocks.save).not.toHaveBeenCalled();
+  });
+  // #125 reported that an abort closes the controller and a later throw then writes to it.
+  // Checked 24 Nov against route.ts: every close() is followed by a return, so no such path
+  // exists. These tests pin the abort branches so a reorder of close() and return() fails.
+  describe("abort handling (#125)", () => {
+    async function readAfterAbort(abort: () => void, response: Response) {
+      const reader = response.body!.getReader();
+      const decoder = new TextDecoder();
+      const first = decoder.decode((await reader.read()).value);
+      abort();
+      let rest = "";
+      let failure: unknown = null;
+      try {
+        for (let chunk = await reader.read(); !chunk.done;) {
+          rest += decoder.decode(chunk.value, { stream: true });
+          chunk = await reader.read();
+        }
+      } catch (error) {
+        failure = error;
+      }
+      return { first, rest, failure };
+    }
+    it("stops after an abort: no further text, no saved exchange, no error", async () => {
+      const ac = new AbortController();
+      const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        const response = await POST(request(undefined, {}, ac.signal));
+        const { first, rest, failure } = await readAfterAbort(
+          () => ac.abort(),
+          response,
+        );
+        expect(first).toContain("Rest 90 seconds.");
+        expect(failure).toBeNull();
+        expect(rest).not.toContain("Keep your form controlled.");
+        expect(rest).not.toContain('"saved"');
+        expect(mocks.save).not.toHaveBeenCalled();
+        expect(errors).not.toHaveBeenCalled();
+      } finally {
+        errors.mockRestore();
+      }
+    });
+    it("ends the stream cleanly when the log write fails while stopping after an abort", async () => {
+      const ac = new AbortController();
+      mocks.persist.mockRejectedValue(new Error("log database unavailable"));
+      const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        const response = await POST(request(undefined, {}, ac.signal));
+        const { failure, rest } = await readAfterAbort(
+          () => ac.abort(),
+          response,
+        );
+        expect(failure).toBeNull();
+        expect(rest).not.toContain('"saved"');
+        expect(mocks.save).not.toHaveBeenCalled();
+      } finally {
+        errors.mockRestore();
+      }
+    });
   });
 });
