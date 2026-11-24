@@ -80,6 +80,10 @@ describe("progress photos page", () => {
     expect(html).toContain("72.5 kg");
     expect(html).toContain("Week 4");
     expect(html).toContain('value="7"');
+    // Each photo opens full size (#16): a button named for its date and weight.
+    expect(html).toMatch(
+      /aria-label="Enlarge progress photo from Nov\.? 12, 2026, 72\.5 kg"/,
+    );
   });
 
   it("shows dates in Toronto time", async () => {
