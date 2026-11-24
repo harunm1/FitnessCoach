@@ -118,8 +118,8 @@ export type GenerateOptions = {
   takeProviderEvents?: () => ProviderEvent[]; // from providerEventCollector
   now?: () => number;
   // The #43 verdict on the user's message (guardrails.ts), the same on every record
-  // of this call. A plan call has no message to screen, so it stays null; the chat
-  // path (#53) supplies it.
+  // of this call. A plan call has no message to screen, so it stays null. A chat
+  // record takes its verdict in recordChatCall (chat.ts), not through this option.
   guardrailVerdict?: Guard["action"] | null;
   // Demo mode (D12, #59), from demoPlans(): one attempt only, so a failure of any
   // kind reaches these plans at once; they are tried before the rule-based plan.

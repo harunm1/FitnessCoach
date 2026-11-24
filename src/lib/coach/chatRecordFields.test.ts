@@ -1,4 +1,4 @@
-// A chat call's record carries the provider's token counts, and a null guardrail
+// Given a usage event, a chat call's record carries the provider's token counts (the chat adapters do not emit one yet), and a null guardrail
 // verdict until the chat path passes the screening result on (#41, after #56).
 import { describe, expect, it } from "vitest";
 import { CHAT_PROMPT_VERSION, recordChatCall } from "./chat";

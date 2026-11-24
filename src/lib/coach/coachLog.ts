@@ -29,7 +29,7 @@ export type CoachRecord = {
   providerEvents: ProviderEvent[]; // retries and switches during this call
   inputTokens: number | null; // from the provider's response; null when it sent no count
   outputTokens: number | null; // reply tokens as the provider reports them (Gemini: answer plus thinking)
-  guardrailVerdict: Guard["action"] | null; // the #43 verdict on the user's message; null when none was screened, as for a plan
+  guardrailVerdict: Guard["action"] | null; // the #43 verdict on the user's message; null when none was passed in: always for a plan, and for a chat record until recordChatCall is given the screening result
   problems?: string[];
   raw?: unknown; // the model's reply as parsed, kept beside the plan we saved
   error?: string;
