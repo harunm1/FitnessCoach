@@ -40,11 +40,12 @@ const STRENGTH_CHECKS = [
   "Sets, reps, rest and target effort (RPE 6 to 9) are within the allowed ranges.",
 ];
 
-// weeklyCapKm (verifyRunning.ts): 10% over last week's logged distance, or a starting volume
-// by activity level when nothing is logged. With running included, the strength part covers
-// only some of the days asked for, so the days sentence is left out.
+// weeklyCapKm (verifyRunning.ts): 10% over last week's logged distance but never below one
+// 1 km run, or a starting volume by activity level when nothing is logged. With running
+// included, the strength part covers only some of the days asked for, so the days sentence
+// is left out.
 const RUNNING_CHECK =
-  "Weekly running distance stays within a safe cap: at most 10% more than last week's logged distance, or a starting amount for your activity level if you have not logged runs yet.";
+  "Weekly running distance stays within a safe cap: at most 10% more than last week's logged distance (never less than 1 km), or a starting amount for your activity level if you have not logged runs yet.";
 
 // Verifier problems are written for the model; these make the common ones read to the user.
 const SECOND_PERSON: [string, string][] = [
@@ -78,7 +79,11 @@ function sourceRow({ source, records }: WhyInput): WhyRow {
       details: [],
     };
   }
-  const served = records.findLast((r) => r.provider !== undefined);
+  // Only a reply that passed wrote the saved plan; a rejected or failed attempt's provider
+  // is never named, even when the passing attempt's record was lost (#88 review).
+  const served = records.findLast(
+    (r) => PASSED.has(r.outcome) && r.provider !== undefined,
+  );
   const who = served
     ? ` (${[served.provider, served.model].filter(Boolean).join(", ")})`
     : "";

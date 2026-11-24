@@ -709,3 +709,13 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Did with it:** Wrote each failing test before its change, ran lint, the type check, the format check and the full unit suite on each branch, and had a separate review agent read each branch blind before it was pushed. The reviews found real faults that I fixed: a quiz form that still reset after a second save with the same message, a note that could be saved as the whole reply, and extra accessory choices that put an overhead press on a pull day. Not done: eval cases for the reply length (#142 stays open), the starter plan's warm-up, supersets, cardio and deload week (#145 asked for them), and a separate strength-days and run-days question (#143).
 
 **Tools:** gh, git, Prettier, ESLint, tsc, Vitest, four general-purpose review agents. No skills.
+
+## 22 November (night): a study guide for the Q&A
+
+**Asked:** For one document I can use to answer any question from the instructor and TAs on 4 December, written for listening: the app in 60 seconds, one user journey, every component with why and how it fails, who built what, the course's Q&A topics with a short answer first, fifteen follow-ups, the plan to 6 December and a glossary.
+
+**Got:** `docs/STUDY_GUIDE.md`, read from the code on main rather than from the docs alone, with a table of the open pull requests that change an answer once merged. AI drafted the text from the files I pointed it at.
+
+**Did with it:** A separate review agent that had not seen the draft checked every claim against the code, the docs and `gh`. It found five errors, which I fixed: the coach does not read logged sets, the plan-request limit lives on the user row, the order of checks in the coach route, the test file count (109), and that retries and demo mode apply to plan calls, not to streamed chat. It also found overclaims that I corrected: model-written plans and the deload rule are not on main yet, and the double-tap save error is suspected, not reproduced. The changed lines were re-read by me only, with no second agent pass.
+
+**Tools:** gh, git, Prettier, one general-purpose review agent. No skills or connectors.

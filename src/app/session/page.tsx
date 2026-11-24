@@ -4,6 +4,7 @@ import BodyMap from "@/components/BodyMap";
 import ExerciseCueDetails from "@/components/ExerciseCueDetails";
 import RestTimer from "@/components/RestTimer";
 import RunMetricsForm from "@/components/RunMetricsForm";
+import LocalTime from "@/components/LocalTime";
 import SetLogForm from "@/components/SetLogForm";
 import { BODY_MAP_MUSCLE_NAMES } from "@/lib/body-map/muscles";
 import { getNextPlanDayIndex } from "@/lib/workout/progression";
@@ -165,10 +166,10 @@ export default async function SessionPage() {
                 role="status"
               >
                 Workout in progress since{" "}
-                {new Intl.DateTimeFormat("en", {
-                  hour: "numeric",
-                  minute: "2-digit",
-                }).format(activeWorkout.startedAt)}
+                <LocalTime
+                  iso={activeWorkout.startedAt.toISOString()}
+                  kind="time"
+                />
               </p>
             ) : null}
 
@@ -241,6 +242,7 @@ export default async function SessionPage() {
                                 exerciseId={slot.exerciseId}
                                 nextSetNumber={sets.length + 1}
                                 targetReps={slot.reps}
+                                equipment={slot.exercise.equipment}
                               />
                             )}
                           </>
