@@ -220,6 +220,9 @@ describe("the streamed chat in demo mode (the call the chat screen makes)", () =
 `,
       { status: HTTP_OK },
     );
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
   const ask = async (stream: ReturnType<typeof coachChatStream>) => {
     let reply = "";
     for await (const piece of stream([{ role: "user", content: "Row cue?" }])) {
@@ -255,5 +258,24 @@ describe("the streamed chat in demo mode (the call the chat screen makes)", () =
       DEMO_TIMEOUT_MS,
     ]);
     timeout.mockRestore();
+  });
+
+  it("moves to the other provider when the first stream hangs until its limit", async () => {
+    // The first call's signal is already timed out; every later one is a real signal.
+    const real = AbortSignal.timeout.bind(AbortSignal);
+    let calls = 0;
+    vi.spyOn(AbortSignal, "timeout").mockImplementation((ms) =>
+      calls++ === 0
+        ? AbortSignal.abort(new DOMException("limit", "TimeoutError"))
+        : real(ms),
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init: RequestInit) => {
+        if (url.includes("groq")) throw init.signal?.reason;
+        return geminiStream("Keep it flat.");
+      }),
+    );
+    await expect(ask(coachChatStream(DEMO))).resolves.toBe("Keep it flat.");
   });
 });
