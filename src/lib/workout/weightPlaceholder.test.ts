@@ -13,4 +13,17 @@ describe("weightPlaceholder", () => {
       (equipment) => expect(weightPlaceholder(equipment)).toBe("Load in kg"),
     );
   });
+  // #144: the dataset (free-exercise-db, checked 24 Nov) also has foam roll, exercise ball,
+  // bands and "other"; none of them is a plain kilogram load.
+  it("says Bodyweight for foam roll and exercise ball exercises", () => {
+    ["foam roll", "exercise ball"].forEach((equipment) =>
+      expect(weightPlaceholder(equipment)).toBe("Bodyweight"),
+    );
+  });
+
+  it("makes the load optional for bands and other equipment", () => {
+    ["bands", "other"].forEach((equipment) =>
+      expect(weightPlaceholder(equipment)).toBe("Load in kg (optional)"),
+    );
+  });
 });
