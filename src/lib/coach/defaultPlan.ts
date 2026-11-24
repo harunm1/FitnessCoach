@@ -8,6 +8,7 @@ import {
   type VerifyProfile,
 } from "./verify";
 import { LIMITS, type PlanInput } from "./schema";
+import { pickWarmup } from "./warmup";
 
 // The fallback asks for a moderate effort: 7 is "about three reps left" (#65).
 const DEFAULT_RPE = 7;
@@ -161,15 +162,21 @@ export function buildDefaultPlan(
       const ordered = level
         ? [...picked].sort((a, b) => compoundRank(a) - compoundRank(b))
         : picked;
+      // An experienced user's day opens with a warm-up chosen by its lead lift (D25); it
+      // takes one of the day's slots, so the last accessory is the one that gives way.
+      const warmup = heavy
+        ? pickWarmup(library, profile, ordered[0].primaryMuscles[0])
+        : undefined;
+      const lifts = ordered
+        .slice(0, LIMITS.exercisesPerDay.max - (warmup ? 1 : 0))
+        .map((exercise) => ({
+          exerciseId: exercise.id,
+          ...(heavy && isCompound(exercise) ? COMPOUND : ACCESSORY),
+          rpe: DEFAULT_RPE,
+        }));
       return {
         name: day.name,
-        exercises: ordered
-          .slice(0, LIMITS.exercisesPerDay.max)
-          .map((exercise) => ({
-            exerciseId: exercise.id,
-            ...(heavy && isCompound(exercise) ? COMPOUND : ACCESSORY),
-            rpe: DEFAULT_RPE,
-          })),
+        exercises: warmup ? [warmup, ...lifts] : lifts,
       };
     }),
   };
