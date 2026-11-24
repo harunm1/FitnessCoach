@@ -56,6 +56,7 @@ model User {
   workouts      Workout[]
   conversations Conversation[]
   photos        ProgressPhoto[]
+  bodyWeights   BodyWeight[]
   coachEvents   CoachEvent[]
 }
 
@@ -399,6 +400,23 @@ model ProgressPhoto {
   takenAt    DateTime @default(now())
   weightKg   Decimal? @db.Decimal(5, 2)
   note       String?
+}
+
+// One weigh-in per user per day (D24, #16); logging the same day again
+// replaces it. The 20 to 400 kg and 300-character bounds are CHECKs in the
+// migration, since Prisma's schema has no CHECK.
+model BodyWeight {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  weightKg  Decimal  @db.Decimal(5, 2)
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Also serves the chart's query (this user's rows by date).
+  @@unique([userId, date])
 }
 
 // Better Auth persistence. Existing user IDs and fitness relations are preserved.
