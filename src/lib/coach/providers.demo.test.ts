@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   coachChatModel,
+  coachChatStream,
   coachModel,
   DEMO_TIMEOUT_MS,
   groqModel,
@@ -207,5 +208,52 @@ describe("the call limit", () => {
     );
     expect(fetchMock).toHaveBeenCalledTimes(ONE_CALL_EACH);
     expect(Date.now() - started).toBeLessThan(WELL_UNDER_DEFAULT_MS);
+  });
+});
+
+describe("the streamed chat in demo mode (the call the chat screen makes)", () => {
+  const DEFAULT_LIMIT_MS = 30_000;
+  const geminiStream = (text: string) =>
+    new Response(
+      `data: ${JSON.stringify({ candidates: [{ content: { parts: [{ text }] } }] })}
+
+`,
+      { status: HTTP_OK },
+    );
+  const ask = async (stream: ReturnType<typeof coachChatStream>) => {
+    let reply = "";
+    for await (const piece of stream([{ role: "user", content: "Row cue?" }])) {
+      reply += piece;
+    }
+    return reply;
+  };
+
+  it("limits each streamed call to 8 s in demo mode and 30 s otherwise", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => geminiStream("Keep your back flat.")),
+    );
+    const timeout = vi.spyOn(AbortSignal, "timeout");
+    await ask(coachChatStream({ ...DEMO, COACH_PROVIDER: "gemini" }));
+    expect(timeout).toHaveBeenLastCalledWith(DEMO_TIMEOUT_MS);
+    await ask(coachChatStream({ ...BOTH, COACH_PROVIDER: "gemini" }));
+    expect(timeout).toHaveBeenLastCalledWith(DEFAULT_LIMIT_MS);
+    timeout.mockRestore();
+  });
+
+  it("gives both providers the 8 s limit when the first one is down", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) =>
+        url.includes("groq") ? rateLimited() : geminiStream("Keep it flat."),
+      ),
+    );
+    const timeout = vi.spyOn(AbortSignal, "timeout");
+    await expect(ask(coachChatStream(DEMO))).resolves.toBe("Keep it flat.");
+    expect(timeout.mock.calls.map(([ms]) => ms)).toEqual([
+      DEMO_TIMEOUT_MS,
+      DEMO_TIMEOUT_MS,
+    ]);
+    timeout.mockRestore();
   });
 });

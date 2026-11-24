@@ -706,6 +706,7 @@ async function openStream(
   url: string,
   headers: Record<string, string>,
   body: unknown,
+  timeoutMs = TIMEOUT_MS,
 ): Promise<Response> {
   let res: Response;
   try {
@@ -713,7 +714,7 @@ async function openStream(
       method: "POST",
       headers: { "Content-Type": "application/json", ...headers },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (e) {
     const timedOut = (e as Error).name === "TimeoutError";
@@ -737,20 +738,27 @@ async function openStream(
   return res;
 }
 
-export function groqChatStream(apiKey: string, model = GROQ_MODEL): ChatStream {
-  return (messages) => requireText("Groq", groqPieces(apiKey, model, messages));
+export function groqChatStream(
+  apiKey: string,
+  model = GROQ_MODEL,
+  { timeoutMs }: CallOptions = {},
+): ChatStream {
+  return (messages) =>
+    requireText("Groq", groqPieces(apiKey, model, messages, timeoutMs));
 }
 
 async function* groqPieces(
   apiKey: string,
   model: string,
   messages: CoachChatMessage[],
+  timeoutMs?: number,
 ): AsyncIterable<string> {
   const res = await openStream(
     "Groq",
     GROQ_URL,
     { Authorization: `Bearer ${apiKey}` },
     { ...groqChatBody(model, messages), stream: true },
+    timeoutMs,
   );
   let truncated = false;
   let sawText = false;
@@ -779,21 +787,24 @@ async function* groqPieces(
 export function geminiChatStream(
   apiKey: string,
   model = GEMINI_MODEL,
+  { timeoutMs }: CallOptions = {},
 ): ChatStream {
   return (messages) =>
-    requireText("Gemini", geminiPieces(apiKey, model, messages));
+    requireText("Gemini", geminiPieces(apiKey, model, messages, timeoutMs));
 }
 
 async function* geminiPieces(
   apiKey: string,
   model: string,
   messages: CoachChatMessage[],
+  timeoutMs?: number,
 ): AsyncIterable<string> {
   const res = await openStream(
     "Gemini",
     `${geminiUrl(model).replace(":generateContent", ":streamGenerateContent")}?alt=sse`,
     { "x-goog-api-key": apiKey },
     geminiChatBody(messages),
+    timeoutMs,
   );
   let truncated = false;
   let sawText = false;
@@ -868,7 +879,10 @@ export function coachChatStream(
   if (lead !== "groq" && lead !== "gemini") {
     throw new Error(`COACH_PROVIDER must be groq or gemini, not "${lead}"`);
   }
-  // GROQ_MODEL and GEMINI_MODEL override the defaults, as in coachChatModel.
+  // GROQ_MODEL and GEMINI_MODEL override the defaults, as in coachChatModel. In demo
+  // mode each streamed call stops at DEMO_TIMEOUT_MS like the plan and plain chat
+  // calls (D12); the limit covers the whole read, as the 30 s one does.
+  const { timeoutMs } = retryOptionsFor(env);
   const make = (name: string, key: string) => {
     const modelName =
       name === "groq"
@@ -876,8 +890,8 @@ export function coachChatStream(
         : env.GEMINI_MODEL || GEMINI_MODEL;
     return servedStream(
       name === "groq"
-        ? groqChatStream(key, modelName)
-        : geminiChatStream(key, modelName),
+        ? groqChatStream(key, modelName, { timeoutMs })
+        : geminiChatStream(key, modelName, { timeoutMs }),
       name === "groq" ? "Groq" : "Gemini",
       modelName,
       onEvent,
