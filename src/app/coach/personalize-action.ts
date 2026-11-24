@@ -20,9 +20,6 @@ import { loadPersonalizeInputs } from "@/lib/coach/personalizeInputs";
 import { coachModel } from "@/lib/coach/providers";
 import { saveWeek } from "@/lib/coach/saveWeek";
 import { prisma } from "@/lib/prisma";
-import { TIER_MESSAGE } from "./copy";
-
-const FORBIDDEN = 403;
 
 // useActionState passes the previous state; it is not needed, so it is not declared.
 export async function personalizeWithCoach(): Promise<PersonalizeState> {
@@ -37,7 +34,7 @@ export async function personalizeWithCoach(): Promise<PersonalizeState> {
   if (!account.ok) {
     return {
       status: "error",
-      message: account.status === FORBIDDEN ? TIER_MESSAGE : account.message,
+      message: account.message,
     };
   }
   const userId = account.user.id;

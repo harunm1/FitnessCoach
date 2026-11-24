@@ -2,7 +2,6 @@
 // #107 plan-request claim before any model call, then save and refresh.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { UNAVAILABLE_MESSAGE } from "@/lib/coach/personalize";
-import { TIER_MESSAGE } from "./copy";
 
 const mocks = vi.hoisted(() => ({
   requireTier: vi.fn(),
@@ -33,7 +32,6 @@ vi.mock("@/lib/coach/personalizeInputs", () => ({
 import { personalizeWithCoach } from "./personalize-action";
 
 const UNAUTHORISED = 401;
-const FORBIDDEN = 403;
 const COOLDOWN_SECONDS = 30;
 const slot = { sets: 3, reps: 10, restSeconds: 90, rpe: 7 } as const;
 const day = {
@@ -59,10 +57,7 @@ beforeEach(() => {
 });
 
 describe("personalizeWithCoach", () => {
-  it.each([
-    [UNAUTHORISED, "Sign in again."],
-    [FORBIDDEN, TIER_MESSAGE],
-  ])(
+  it.each([[UNAUTHORISED, "Sign in again."]])(
     "stops at authentication (%i) before the claim or any model call",
     async (status, message) => {
       mocks.requireTier.mockResolvedValue({

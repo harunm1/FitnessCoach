@@ -23,7 +23,6 @@ export default function PersonalizeButton() {
       </Button>
       {state.status !== "idle" && (
         <p
-          aria-live="polite"
           className="m-0 text-sm text-foreground/70"
           role={state.status === "error" ? "alert" : "status"}
         >
