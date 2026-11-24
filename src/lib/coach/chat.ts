@@ -107,8 +107,9 @@ const FOLLOW_UP = new RegExp(
 
 // "What about head and neck position?" names a new detail of the lift just discussed
 // (live bug, 23 Nov 2026). It is a follow-up when the detail is a technique or body word
-// (CUE_WORDS), or when its words are in the coach's reply or the user's message before it;
-// "what about bitcoin prices" is neither, so it is still redirected.
+// (CUE_WORDS) or a word of the last two messages, and every word of it must be one of
+// those: "what about bitcoin prices" or "what about your position on immigration" have a
+// word that is neither, so they are still redirected.
 const ABOUT = new RegExp(
   String.raw`^${LEAD}(?:what|how) about (?:(?:my|the|your) )?(?<topic>[\w'-]+(?: [\w'-]+){0,4}?)${TAIL}`,
   "i",
@@ -142,15 +143,52 @@ const CUE_WORDS = new Set([
   "bracing",
   "range",
 ]);
-const wordsOf = (text: string) => text.toLowerCase().match(/[a-z]{3,}/g) ?? [];
+const STOP_WORDS = new Set([
+  "and",
+  "the",
+  "you",
+  "your",
+  "for",
+  "with",
+  "that",
+  "this",
+  "about",
+  "how",
+  "what",
+  "are",
+  "can",
+  "does",
+  "should",
+  "when",
+  "one",
+  "any",
+  "its",
+  "but",
+  "not",
+  "has",
+  "was",
+  "why",
+  "too",
+  "also",
+]);
+const SINGULAR = (word: string) => word.replace(/s$/, "");
+const wordsOf = (text: string) =>
+  (text.toLowerCase().match(/[a-z]{3,}/g) ?? []).filter(
+    (word) => !STOP_WORDS.has(word),
+  );
+// Every word of the detail must be a technique word or a whole word the coach or the user
+// used in the last two messages; one unrelated word ("bitcoin", "immigration") makes it
+// off-topic again.
 function detailFromRecent(topic: string, recent: ChatMessage[]): boolean {
-  const earlier = recent
-    .slice(-2)
-    .map((m) => m.content)
-    .join(" ")
-    .toLowerCase();
-  return wordsOf(topic).some(
-    (word) => CUE_WORDS.has(word) || earlier.includes(word),
+  const earlier = new Set(
+    recent.slice(-2).flatMap((m) => wordsOf(m.content).map(SINGULAR)),
+  );
+  const detail = wordsOf(topic);
+  return (
+    detail.length > 0 &&
+    detail.every(
+      (word) => CUE_WORDS.has(SINGULAR(word)) || earlier.has(SINGULAR(word)),
+    )
   );
 }
 

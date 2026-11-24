@@ -39,7 +39,26 @@ describe("CoachMarkdown", () => {
     expect(out).not.toContain("javascript:");
   });
 
-  it("keeps plain text and line breaks readable", () => {
-    expect(html("Hold the bar close.")).toContain("Hold the bar close.");
+  it("keeps a single line break inside a paragraph visible", () => {
+    const out = html(
+      ["Warm up first.", "Set 1: 8 reps"].join(String.fromCharCode(10)),
+    );
+    expect(out).toContain("whitespace-pre-line");
+    expect(out).toContain(
+      "Warm up first." + String.fromCharCode(10) + "Set 1: 8 reps",
+    );
+  });
+
+  it("does not load images from a reply", () => {
+    const out = html("![x](https://evil.example/p.png)");
+    expect(out).not.toContain("<img");
+    expect(out).not.toContain("evil.example/p.png");
+  });
+
+  it("opens links in a new tab without handing over the opener", () => {
+    const out = html("[docs](https://example.com/a)");
+    expect(out).toContain('target="_blank"');
+    expect(out).toContain("noopener");
+    expect(out).not.toContain("node=");
   });
 });

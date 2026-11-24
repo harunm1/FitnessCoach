@@ -549,6 +549,15 @@ describe("coachReply follow-ups that name a new detail of the same lift", () => 
     "What about bitcoin prices?",
     "What about the weather in Paris?",
     "what about my homework",
+    "What about bitcoin and the economy?",
+    "what about you writing me a poem",
+    "what about your position on immigration",
+    "what about the head of state",
+    "what about the range of crypto prices",
+    "how about the path to the White House",
+    "what about the stock market close",
+    "what about bar trivia tonight",
+    "what about the best rap albums",
   ])("still redirects an unrelated question: %s", async (text) => {
     const model = vi.fn<CoachChatModel>().mockResolvedValue("x");
     const turn = await coachReply(model, ctx, rdlTurn, text);
@@ -583,7 +592,7 @@ describe("the coach prompt: tension is not pain, and the plan sets the numbers",
     );
   });
 
-  it("lets a tension message reach the coach, and still stops a sharp pain message", async () => {
+  it("keeps the word list as it was: a tension message reaches the coach and a sharp pain message still stops (a regression guard; the prompt tests above fail without the change)", async () => {
     const model = vi.fn<CoachChatModel>().mockResolvedValue("Brace first.");
     const tension = await coachReply(
       model,

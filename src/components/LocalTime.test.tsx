@@ -27,7 +27,7 @@ describe("LocalTime", () => {
   });
 });
 
-// Live report, 23 Nov 2026: "Workout in progress since 5:55 PM" for a morning start. Vercel
+// Live report, 23 Nov 2026: a morning start shown as a UTC afternoon hour. Vercel
 // runs in UTC, so a time formatted on the server shows the UTC hour.
 describe("LocalTime with a UTC server (the live site)", () => {
   const morning = "2026-11-23T15:55:00.000Z"; // 10:55 AM in Toronto, 3:55 PM in UTC
