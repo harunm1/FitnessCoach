@@ -769,3 +769,13 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Did with it:** A separate review agent that had not seen the draft checked it against the code and found three errors that I fixed: "Why this plan" is not on any screen on main, the quiz is reached from Edit profile and shows a saved message with a link rather than the plan, and the cached plans do not back the chat step. I also fixed the backup step numbers, the missing Start workout click and the 4:40 cut. The changed lines were re-read by me only. The signed-in walk, the timings and the seed account are not done: creating the demo account's mailbox was refused, so they wait on that.
 
 **Tools:** gh, git, Prettier, Playwright, one general-purpose review agent. No skills.
+
+## 24 November (evening): photo enlarge and the body weight log
+
+**Asked:** For two Progress page features under #16: clicking a progress photo opens it full size in an accessible dialog, and a body weight log (date, kg, optional note) with a line chart. Design first in `docs/ARCHITECTURE.md`, tests first, no new dependency.
+
+**Got:** `PhotoViewer` on the Base UI dialog already in the project, mounted in the Progress strip and the gallery. Decision D24 (a new `BodyWeight` table, one row per user per day, rather than reusing the photo's weight column), migration `20261124190000_add_body_weight` with CHECKs, the `logBodyWeight` Server Action, the form and a small SVG chart. AI wrote the code and tests from my brief.
+
+**Did with it:** Each change went through a review agent that had not seen the work. The photo review found three errors, which were fixed test-first: the dialog left the dark theme, a long note could not be reached on a phone, and the focus trap had no test. The weight review found the chart caption printing values like 63.099999999999994, and that a refused entry wiped the form. A second agent checked each fix. Lint, type check, format check and the targeted tests ran before each push, and CI was green on the exact commit before it reached main.
+
+**Tools:** gh, git, Prettier, ESLint, tsc, Vitest, Prisma (validate, migrate diff), review agents (pr-review-toolkit code-reviewer, a blind pass and a delta check per change). No skills.
