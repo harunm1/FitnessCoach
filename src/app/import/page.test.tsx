@@ -17,6 +17,9 @@ vi.mock("@/lib/storage", () => ({
 vi.mock("@/components/import/ImportForm", () => ({
   ImportForm: () => <form data-testid="import-form" />,
 }));
+vi.mock("@/components/auth/sign-out-button", () => ({
+  SignOutButton: () => <button type="button">Sign out</button>,
+}));
 import ImportPage from "./page";
 
 beforeEach(() => {
