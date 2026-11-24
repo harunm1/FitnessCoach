@@ -21,6 +21,9 @@ const record: CoachRecord = {
   latencyMs: 125,
   outcome: "ok",
   providerEvents: [],
+  inputTokens: null,
+  outputTokens: null,
+  guardrailVerdict: null,
 };
 
 function athlete() {

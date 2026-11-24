@@ -380,7 +380,7 @@ export async function recordChatCall(
   latencyMs: number,
   result: ChatCallResult,
 ): Promise<void> {
-  const { served, providerEvents } = splitServed(takeProviderEvents());
+  const { served, tokens, providerEvents } = splitServed(takeProviderEvents());
   const detail =
     "error" in result
       ? { outcome: "error" as const, error: result.error }
@@ -394,6 +394,9 @@ export async function recordChatCall(
     latencyMs,
     ...served,
     providerEvents,
+    ...tokens,
+    // The verdict on the user's message is not passed on from prepareTurn yet.
+    guardrailVerdict: null,
     ...detail,
   });
 }
