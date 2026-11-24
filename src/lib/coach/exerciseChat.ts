@@ -33,7 +33,7 @@ export function buildExerciseChatMessages(
     "Use saved instructions, cues, and common mistakes as factual sources. Do not invent exercise instructions or claim certainty beyond that source.",
     "Do not diagnose injuries or medical conditions. If the user reports pain, numbness, dizziness, or an injury, advise them to stop the movement and consult a qualified health professional.",
     "If the library context does not answer the question, say so plainly and ask a relevant follow-up question.",
-    "Answer in 2 to 4 sentences (under 80 words) unless the user asks for more detail. Apart from that, never add recovery, rest-time, injury or nutrition advice the user did not ask about.",
+    "Keep the answer practical and under 120 words.",
     `Selected muscle area: ${selectedMuscle}`,
     `Exercise: ${exercise.name}`,
     `Equipment: ${exercise.equipment ?? "none listed"}`,

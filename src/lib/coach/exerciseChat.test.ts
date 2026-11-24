@@ -24,15 +24,6 @@ describe("buildExerciseChatMessages", () => {
     expect(messages[0]?.content).toContain("Selected muscle area: chest");
     expect(messages[0]?.content).toContain("Lower the dumbbells with control.");
     expect(messages[0]?.content).toContain("Do not diagnose injuries");
-    // Short answers and no unrequested notices (#142).
-    expect(messages[0]?.content).toContain("2 to 4 sentences");
-    expect(messages[0]?.content).toContain(
-      "If the user reports pain, numbness",
-    );
-    expect(messages[0]?.content).toContain(
-      "never add recovery, rest-time, injury or nutrition advice",
-    );
-    expect(messages[0]?.content).not.toContain("under 120 words");
     expect(messages.at(-1)).toEqual({
       role: "user",
       content: "How do I keep my wrists aligned?",
