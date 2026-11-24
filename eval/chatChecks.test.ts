@@ -12,8 +12,9 @@ import { CHAT_PROMPT_VERSION, prepareTurn } from "../src/lib/coach/chat";
 
 const words = (count: number) => Array(count).fill("word").join(" ");
 
-// Rebuilt from the three lines quoted in #142 (recovery, joint pain, nutrition) around a
-// short floor-press answer. It is not the recorded reply, which the issue does not keep.
+// Built around the one line #142 quotes ("aim for 48 h of light activity"); the pain and
+// nutrition lines are written to match the issue's description of them. It is not the
+// recorded reply, which the issue does not keep.
 const FLOOR_PRESS_REPLY =
   "Yes, floor press works as a bench swap: keep the same sets and reps. " +
   "Aim for 48 h of light activity between pressing days to recover. " +
@@ -21,15 +22,18 @@ const FLOOR_PRESS_REPLY =
   "Keep your protein up so the muscle can grow.";
 
 describe("checkChatReply: length", () => {
-  it("passes a reply at the word and sentence limits", () => {
-    const reply = `${words(MAX_REPLY_WORDS - 3)}. Two. Three. Four.`;
+  it("passes a reply one word under the limit and at four sentences", () => {
+    const reply = `${words(MAX_REPLY_WORDS - 4)}. Two. Three. Four.`;
     expect(MAX_REPLY_SENTENCES).toBe(4);
     expect(checkChatReply(reply, { raises: [] })).toEqual([]);
   });
 
-  it("flags one word over the limit", () => {
-    const reply = `${words(MAX_REPLY_WORDS + 1)}.`;
-    expect(checkChatReply(reply, { raises: [] })).toEqual(["too-many-words"]);
+  it("flags a reply of 80 words, since the prompt says under 80", () => {
+    const reply = `${words(MAX_REPLY_WORDS - 1)}.`;
+    expect(checkChatReply(reply, { raises: [] })).toEqual([]);
+    expect(
+      checkChatReply(`${words(MAX_REPLY_WORDS)}.`, { raises: [] }),
+    ).toEqual(["too-many-words"]);
   });
 
   it("flags a fifth sentence", () => {
@@ -83,6 +87,45 @@ describe("checkChatReply: unrequested notices", () => {
     ]);
   });
 
+  it.each([
+    "Rest a day between sessions.",
+    "Take a rest day tomorrow to let your muscles bounce back.",
+    "Take a deload week if you feel beat up.",
+    "Mind the soreness tomorrow.",
+    "Ice your elbow afterward.",
+  ])("flags the recovery wording %j", (reply) => {
+    expect(checkChatReply(reply, { raises: [] })).toEqual([
+      "unrequested-recovery",
+    ]);
+  });
+
+  it.each([
+    "If it hurts, stop.",
+    "Some discomfort is normal, but consult a doctor.",
+  ])("flags the pain wording %j", (reply) => {
+    expect(checkChatReply(reply, { raises: [] })).toEqual(["unrequested-pain"]);
+  });
+
+  it.each([
+    "Fuel up before training and eat well.",
+    "Eat enough food so you can grow.",
+    "Stay hydrated and drink water.",
+    "Make sure you're eating enough carbs.",
+  ])("flags the nutrition wording %j", (reply) => {
+    expect(checkChatReply(reply, { raises: [] })).toEqual([
+      "unrequested-nutrition",
+    ]);
+  });
+
+  it.each([
+    "Train within 2 hours of waking if you like.",
+    "Hold 2 h before you train.",
+    "Rest 90 seconds between sets.",
+    "Keep your elbows tucked and the bar close.",
+  ])("does not flag ordinary coaching: %j", (reply) => {
+    expect(checkChatReply(reply, { raises: [] })).toEqual([]);
+  });
+
   it("does not flag rest between sets, which the plan itself gives", () => {
     expect(
       checkChatReply("Rest 90 seconds between sets.", { raises: [] }),
@@ -105,6 +148,17 @@ describe("CHAT_CASES", () => {
     const raised = new Set(CHAT_CASES.flatMap((c) => c.raises));
     expect([...raised].sort()).toEqual(["nutrition", "pain", "recovery"]);
     expect(CHAT_CASES.some((c) => c.detail)).toBe(true);
+  });
+
+  it("answers the cases marked as guardrail ones with a fixed reply", async () => {
+    const fixed = CHAT_CASES.filter((x) => !x.reachesModel);
+    expect(fixed.length).toBeGreaterThan(0);
+    await Promise.all(
+      fixed.map(async (c) => {
+        const turn = await prepareTurn(c.context, [], c.message);
+        expect(turn, c.id).toHaveProperty("fixed");
+      }),
+    );
   });
 
   it("sends each model case to the model, not to a fixed guardrail reply", async () => {

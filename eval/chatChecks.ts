@@ -1,8 +1,14 @@
 // Checks for one chat reply (#142), the code side of the chat prompt's two rules: answers
-// are 2 to 4 sentences, under 80 words, unless the user asks for more; and recovery,
-// pain or nutrition lines appear only when the user's message raised that topic.
+// are 2 to 4 sentences, under 80 words (80 itself is flagged), unless the user asks for
+// more; and recovery, pain or nutrition lines appear only when the user's message raised
+// that topic. Word lists, so a screen: a hit needs a human read and a clean result is not
+// proof. Sentences are counted by end marks, so a bulleted reply is limited by its word
+// count only. Rest time between sets is not flagged, although the prompt forbids
+// unrequested rest-time advice: the plan itself gives rest, and the eval context carries
+// none, so a rest time in a reply needs a human read.
 // Pure: no model, no network. eval/chatEval.ts feeds it live replies.
 
+// The prompt says "under 80 words", so a reply of this many words or more is too long.
 export const MAX_REPLY_WORDS = 80;
 export const MAX_REPLY_SENTENCES = 4;
 
@@ -10,17 +16,15 @@ export type Topic = "recovery" | "pain" | "nutrition";
 export type Violation =
   "too-many-words" | "too-many-sentences" | `unrequested-${Topic}`;
 
-// One pattern per topic. Rest between sets is plan content, so "rest" alone is not a
-// recovery notice.
 const NOTICE_PATTERNS: Record<Topic, RegExp> = {
-  // Matches "aim for 48 h of light activity", "recovery day", "get enough sleep"; not "Rest 90 seconds between sets".
+  // Matches "aim for 48 h of light activity", "take a rest day", "deload week", "mind the soreness", "ice your elbow"; not "Rest 90 seconds between sets" or "within 2 hours of waking".
   recovery:
-    /\brecover(?:y|ing)?\b|\blight activity\b|\b\d+\s?(?:h|hours?)\b|\bsleep\b/i,
-  // Matches "joint pain", "see a professional", "injury"; not "keep your elbows tucked".
-  pain: /\bpain\b|\binjur(?:y|ies|ed)\b|\bsee a (?:doctor|physio\w*|professional)\b|\bnumbness\b/i,
-  // Matches "protein", "calories", "ask a dietitian"; not "keep the bar close".
+    /\brecover(?:y|ing)?\b|\blight activity\b|\b\d+\s?(?:h|hours?)\s+(?:of\s+)?(?:rest|recovery|light|off)\b|\brest(?:ing)? (?:a |an |one |two |\d+ )?days?\b|\bdeload\b|\bsore(?:ness)?\b|\bice\b|\bsleep\b/i,
+  // Matches "joint pain", "if it hurts, stop", "see a professional", "consult a doctor", "discomfort"; not "keep your elbows tucked".
+  pain: /\bpain\b|\bhurts?\b|\bdiscomfort\b|\binjur(?:y|ies|ed)\b|\bsee a (?:doctor|physio\w*|professional)\b|\bconsult\b|\bnumbness\b/i,
+  // Matches "protein", "calories", "eat well", "enough food", "stay hydrated", "fuel up", "carbs"; not "keep the bar close".
   nutrition:
-    /\bprotein\b|\bcalor(?:ie|ies)\b|\bdiet(?:itian)?\b|\bnutrition\b|\bsupplements?\b|\bmeals?\b|\bcreatine\b/i,
+    /\bprotein\b|\bcalor(?:ie|ies)\b|\bdiet(?:itian)?\b|\bnutrition\b|\bsupplements?\b|\bmeals?\b|\bcreatine\b|\beat(?:ing)?\b|\bfood\b|\bcarbs?\b|\bhydrat\w*|\bfuel\b|\bdrink water\b/i,
 };
 
 const TOPICS = Object.keys(NOTICE_PATTERNS) as Topic[];
@@ -43,7 +47,7 @@ export function checkChatReply(
   const length: Violation[] = expected.detail
     ? []
     : [
-        ...(wordCount(reply) > MAX_REPLY_WORDS
+        ...(wordCount(reply) >= MAX_REPLY_WORDS
           ? (["too-many-words"] as const)
           : []),
         ...(sentenceCount(reply) > MAX_REPLY_SENTENCES
