@@ -107,7 +107,7 @@ const FOLLOW_UP = new RegExp(
 
 // "What about head and neck position?" names a new detail of the lift just discussed
 // (live bug, 23 Nov 2026). It is a follow-up when the detail is a technique or body word
-// (CUE_WORDS) or a word of the last two messages, and every word of it must be one of
+// (CUE_WORDS) or a word of the coach's last reply, and every word of it must be one of
 // those: "what about bitcoin prices" or "what about your position on immigration" have a
 // word that is neither, so they are still redirected.
 const ABOUT = new RegExp(
@@ -165,6 +165,17 @@ const STOP_WORDS = new Set([
   "its",
   "but",
   "not",
+  "a",
+  "an",
+  "or",
+  "as",
+  "up",
+  "by",
+  "if",
+  "so",
+  "be",
+  "i",
+  "we",
   "of",
   "on",
   "in",

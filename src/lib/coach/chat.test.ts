@@ -556,6 +556,8 @@ describe("coachReply follow-ups that name a new detail of the same lift", () => 
     "What about the bar path?",
     "what about my elbows",
     "what about my hands",
+    "how about a hip hinge",
+    "what about head or neck position",
     "what about my toes",
   ])("goes to the coach: %s", async (text) => {
     const model = vi.fn<CoachChatModel>().mockResolvedValue("Keep it neutral.");
@@ -595,7 +597,7 @@ describe("coachReply follow-ups that name a new detail of the same lift", () => 
         { role: "user", content: "How do I do an RDL, and bitcoin?" },
         rdlTurn[1],
       ],
-      "what about bitcoin today please",
+      "what about bitcoin please",
     );
     expect(turn.source).toBe("GUARDRAIL");
   });
