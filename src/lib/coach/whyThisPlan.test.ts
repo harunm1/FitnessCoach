@@ -199,7 +199,9 @@ describe("whyThisPlan", () => {
     expect(rows[2]?.details).toEqual(["a", "b", "c", "and 2 more."]);
   });
 
-  it("states the running cap in words that are true with and without logged runs", () => {
+  // #88 review: weeklyCapKm never goes below one 1 km run, so "at most 10% more" alone
+  // was false after a short logged jog.
+  it("states the running cap in words that are true with and without logged runs, including the 1 km floor", () => {
     const rows = whyThisPlan({
       source: "COACH",
       records: [record({ outcome: "ok", ...served })],
@@ -207,8 +209,27 @@ describe("whyThisPlan", () => {
     });
 
     expect(rows[1]?.details.at(-1)).toBe(
-      "Weekly running distance stays within a safe cap: at most 10% more than last week's logged distance, or a starting amount for your activity level if you have not logged runs yet.",
+      "Weekly running distance stays within a safe cap: at most 10% more than last week's logged distance (never less than 1 km), or a starting amount for your activity level if you have not logged runs yet.",
     );
+  });
+
+  // #88 review: when the passing attempt's record is missing, the only record with a
+  // provider is the rejected one, and that provider did not write the saved plan.
+  it("does not name the provider of a rejected reply when the passing record is missing", () => {
+    const rows = whyThisPlan({ source: "COACH", records: [rejected] });
+
+    expect(rows[0]?.summary).toBe("Written by the coach.");
+  });
+
+  // A cached demo plan (D12) has no provider of its own; the rejected attempt before it
+  // did not write the plan either.
+  it("does not name a rejected reply's provider for a cached plan served after it", () => {
+    const rows = whyThisPlan({
+      source: "COACH",
+      records: [rejected, record({ attempt: 1, outcome: "cached" })],
+    });
+
+    expect(rows[0]?.summary).toBe("Written by the coach.");
   });
 
   it("leaves out the running line when the plan has no running", () => {

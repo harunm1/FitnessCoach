@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import LocalTime from "@/components/LocalTime";
 import { BillingPanel } from "@/components/auth/billing-panel";
 import { requireAccount } from "@/lib/auth/access";
 import { SignOutButton } from "@/components/auth/sign-out-button";
@@ -138,9 +139,10 @@ export default async function AccountPage({
                 <>
                   <p role="status" className={styles.trialStatus}>
                     Your free trial is active until{" "}
-                    <time dateTime={access.trialEndsAt.toISOString()}>
-                      {access.trialEndsAt.toUTCString()}
-                    </time>
+                    <LocalTime
+                      iso={access.trialEndsAt.toISOString()}
+                      kind="datetime"
+                    />
                     .
                   </p>
                   <progress

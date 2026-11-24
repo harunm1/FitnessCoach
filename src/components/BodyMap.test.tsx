@@ -25,6 +25,14 @@ function fillOf(container: HTMLElement, slug: string) {
 afterEach(cleanup);
 
 describe("BodyMap", () => {
+  it("does not say the coach is not available yet (#140)", () => {
+    render(<BodyMap exercises={exercises} />);
+    expect(screen.queryByText(/AI-generated coaching yet/)).toBeNull();
+    expect(
+      screen.getByText(/stop the movement and see a health professional/),
+    ).toBeTruthy();
+  });
+
   it("draws the front muscles green on the body diagram", () => {
     const { container } = render(<BodyMap exercises={exercises} />);
     expect(fillOf(container, "chest")).toBe("#2f6345");
