@@ -269,9 +269,10 @@ describe("coachReplyStream uses the chat turn's checks", () => {
         `turn ${HISTORY_TURNS - MAX_HISTORY_MESSAGES} `,
       ),
     ).toBe(true);
-    expect(messages.every((m) => m.content.length <= MAX_MESSAGE_CHARS)).toBe(
-      true,
-    );
+    // The cap is on what the user and the coach said, not on the system prompt.
+    expect(
+      messages.slice(1).every((m) => m.content.length <= MAX_MESSAGE_CHARS),
+    ).toBe(true);
   });
 
   it("answers an empty message without opening the stream", async () => {

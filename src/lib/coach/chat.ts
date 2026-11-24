@@ -105,6 +105,112 @@ const FOLLOW_UP = new RegExp(
   "i",
 );
 
+// "What about head and neck position?" names a new detail of the lift just discussed
+// (live bug, 23 Nov 2026). It is a follow-up when the detail is a technique or body word
+// (CUE_WORDS) or a word of the coach's last reply, and every word of it must be one of
+// those: "what about bitcoin prices" or "what about your position on immigration" have a
+// word that is neither, so they are still redirected.
+const ABOUT = new RegExp(
+  String.raw`^${LEAD}(?:what|how) about (?:(?:my|the|your) )?(?<topic>[\w'-]+(?: [\w'-]+){0,4}?)${TAIL}`,
+  "i",
+);
+const CUE_WORDS = new Set([
+  "head",
+  "neck",
+  "grip",
+  "stance",
+  "foot",
+  "feet",
+  "toe",
+  "heel",
+  "breathing",
+  "breath",
+  "position",
+  "positioning",
+  "posture",
+  "tempo",
+  "depth",
+  "path",
+  "elbow",
+  "wrist",
+  "spine",
+  "chin",
+  "gaze",
+  "hand",
+  "placement",
+  "width",
+  "angle",
+  "bracing",
+  "range",
+]);
+const STOP_WORDS = new Set([
+  "and",
+  "the",
+  "you",
+  "your",
+  "for",
+  "with",
+  "that",
+  "this",
+  "about",
+  "how",
+  "what",
+  "are",
+  "can",
+  "does",
+  "should",
+  "when",
+  "one",
+  "any",
+  "its",
+  "but",
+  "not",
+  "a",
+  "an",
+  "or",
+  "as",
+  "up",
+  "by",
+  "if",
+  "so",
+  "be",
+  "i",
+  "we",
+  "of",
+  "on",
+  "in",
+  "to",
+  "at",
+  "is",
+  "it",
+  "my",
+  "me",
+  "do",
+  "has",
+  "was",
+  "why",
+  "too",
+  "also",
+]);
+const SINGULAR = (word: string) => word.replace(/s$/, "");
+const wordsOf = (text: string) =>
+  (text.toLowerCase().match(/[a-z]+/g) ?? []).filter(
+    (word) => !STOP_WORDS.has(word),
+  );
+// Every word of the detail must be a technique word or a whole word of the coach's last
+// reply (not the user's own earlier message, which could plant words); one unrelated word ("bitcoin", "immigration") makes it
+// off-topic again.
+function detailFromRecent(topic: string, recent: ChatMessage[]): boolean {
+  const earlier = new Set(wordsOf(recent.at(-1)?.content ?? "").map(SINGULAR));
+  const detail = wordsOf(topic);
+  return (
+    detail.length > 0 &&
+    detail.every(
+      (word) => CUE_WORDS.has(SINGULAR(word)) || earlier.has(SINGULAR(word)),
+    )
+  );
+}
+
 // The words after "what do you mean by", if any, must appear in the coach's reply.
 // "that", "this" and "it" point at the reply as a whole, so they always count.
 const POINTS_AT_REPLY: ReadonlySet<string> = new Set(["that", "this", "it"]);
@@ -127,6 +233,17 @@ const FIXED_REPLIES: ReadonlySet<string> = new Set([
 
 function isFollowUp(text: string, recent: ChatMessage[]): boolean {
   const last = recent.at(-1);
+  const about = ABOUT.exec(text)?.groups?.topic;
+  if (
+    about &&
+    text.split(/\s+/).filter(Boolean).length <= MAX_FOLLOW_UP_WORDS &&
+    last?.role === "assistant" &&
+    !FIXED_REPLIES.has(last.content) &&
+    mentionsTraining(last.content) &&
+    detailFromRecent(about, recent)
+  ) {
+    return true;
+  }
   const match = FOLLOW_UP.exec(text);
   return (
     text.split(/\s+/).filter(Boolean).length <= MAX_FOLLOW_UP_WORDS &&
@@ -144,7 +261,8 @@ function isFollowUp(text: string, recent: ChatMessage[]): boolean {
 // chat-v4 (22 Nov, #137, #142): the nutrition redirect is only for a nutrition question and
 // pain advice only for a pain report; answers are 2 to 4 sentences. A live reply had
 // volunteered all three and then run out of tokens.
-export const CHAT_PROMPT_VERSION = "chat-v4";
+// chat-v5 (23 Nov): tension is not pain (form cues first); sets and reps follow the plan.
+export const CHAT_PROMPT_VERSION = "chat-v5";
 
 // Profile values (equipment and muscle names) go into the system prompt, so each is
 // kept to one short piece of a line: no newlines to start a fake instruction, no
@@ -163,7 +281,11 @@ export function buildCoachSystemPrompt(ctx: CoachContext): string {
     "You are FitnessCoach, a strength and running coach inside a training app.",
     "Answer only about this user's training, recovery and the session below. Answer in 2 to 4 sentences (under 80 words) unless the user asks for more detail.",
     "Suggest exercise swaps only from movements the user's equipment allows, and say why in one line.",
-    "Never diagnose and never name a medication or dose. If the user reports pain, tell them to stop that exercise and see a professional. Apart from that, never add recovery, rest-time or injury advice the user did not ask about.",
+    "Never diagnose and never name a medication or dose.",
+    "If the user reports sharp, stabbing or shooting pain, numbness, tingling or a sudden injury, tell them to stop that exercise and see a professional.",
+    "Tension, tightness or stiffness is not pain: give form cues first (setup, bracing, range of motion, load), and add that sharp pain or tension that does not settle means stopping and seeing a professional.",
+    "When you give sets, reps or load for an exercise in the session below, use the sets and reps the plan gives that exercise, and do not suggest a different scheme unless the user asks to change the plan.",
+    "Never add recovery, rest-time or injury advice the user did not ask about, apart from the stop-and-see-a-professional line above.",
     "Give no diet, calorie, supplement or meal advice. Only if the user asks about diet, calories, supplements or meals, say it is outside what you coach and suggest a registered dietitian. Never mention nutrition otherwise.",
     "",
     `Goal: ${ctx.goal}. Level: ${ctx.level}. Days a week: ${ctx.daysPerWeek}.`,

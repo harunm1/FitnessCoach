@@ -23,9 +23,9 @@
     "db:migrate:test": "tsx scripts/migrate-test.ts"
   },
   "dependencies": {
-    "@base-ui/react": "^1.9.0",
     "@aws-sdk/client-s3": "^3.1167.0",
     "@aws-sdk/s3-request-presigner": "^3.1167.0",
+    "@base-ui/react": "^1.9.0",
     "@better-auth/prisma-adapter": "1.7.14",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
@@ -39,7 +39,9 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-easy-crop": "^6.2.4",
+    "react-markdown": "^10.1.0",
     "react-muscle-highlighter": "^1.2.0",
+    "remark-gfm": "^4.0.1",
     "server-only": "0.0.1",
     "sharp": "^0.35.5",
     "stripe": "23.1.0",

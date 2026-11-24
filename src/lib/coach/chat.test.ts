@@ -137,12 +137,12 @@ describe("buildCoachSystemPrompt", () => {
     expect(prompt).toMatch(/Never mention nutrition otherwise/);
     // Short answers, and no unrequested safety or recovery lines (#142).
     expect(prompt).toMatch(/2 to 4 sentences/);
-    // A pain report still gets the stop-and-see-a-professional line.
+    // A sharp pain report still gets the stop-and-see-a-professional line (tension has its own, v5).
     expect(prompt).toMatch(
-      /If the user reports pain, tell them to stop that exercise and see a professional/,
+      /sharp, stabbing or shooting pain.*stop that exercise and see a professional/,
     );
-    expect(prompt).toMatch(/never add recovery, rest-time or injury advice/);
-    expect(CHAT_PROMPT_VERSION).toBe("chat-v4");
+    expect(prompt).toMatch(/never add recovery, rest-time or injury advice/i);
+    expect(CHAT_PROMPT_VERSION).toBe("chat-v5");
     expect(prompt).not.toMatch(/under 120 words/);
     expect(prompt).toContain("Equipment: dumbbell, body only.");
     expect(prompt).toContain("rest day");
@@ -534,5 +534,124 @@ describe("coachReply hardening", () => {
     ] as unknown as ChatMessage[];
     const turn = await coachReply(model, ctx, history, "Can you explain that?");
     expect(turn).toEqual({ reply: "Sure.", source: "COACH" });
+  });
+});
+
+// Live bug, 23 Nov 2026: "What about head and neck position?" right after a Romanian
+// deadlift answer was refused as off-topic, because the guard read the last message alone.
+describe("coachReply follow-ups that name a new detail of the same lift", () => {
+  const rdlTurn: ChatMessage[] = [
+    { role: "user", content: "How do I do a Romanian deadlift?" },
+    {
+      role: "assistant",
+      content:
+        "Hinge at the hips, keep the bar close and your back flat, and lower until your hamstrings stretch.",
+    },
+  ];
+
+  it.each([
+    "What about head and neck position?",
+    "And what about my grip?",
+    "how about foot placement",
+    "What about the bar path?",
+    "what about my elbows",
+    "what about my hands",
+    "how about a hip hinge",
+    "what about head or neck position",
+    "what about my toes",
+  ])("goes to the coach: %s", async (text) => {
+    const model = vi.fn<CoachChatModel>().mockResolvedValue("Keep it neutral.");
+    const turn = await coachReply(model, ctx, rdlTurn, text);
+    expect(turn.source).toBe("COACH");
+  });
+
+  it.each([
+    "What about bitcoin prices?",
+    "What about the weather in Paris?",
+    "what about my homework",
+    "What about bitcoin and the economy?",
+    "what about you writing me a poem",
+    "what about your position on immigration",
+    "what about the head of state",
+    "what about the range of crypto prices",
+    "how about the path to the White House",
+    "what about the stock market close",
+    "what about bar trivia tonight",
+    "what about the best rap albums",
+    "what about the head of the UN",
+    "what about the head of HR",
+    "what about your position on AI",
+  ])("still redirects an unrelated question: %s", async (text) => {
+    const model = vi.fn<CoachChatModel>().mockResolvedValue("x");
+    const turn = await coachReply(model, ctx, rdlTurn, text);
+    expect(turn.source).toBe("GUARDRAIL");
+    expect(model).not.toHaveBeenCalled();
+  });
+
+  it("does not take words from the user's own earlier message as context", async () => {
+    const model = vi.fn<CoachChatModel>().mockResolvedValue("x");
+    const turn = await coachReply(
+      model,
+      ctx,
+      [
+        { role: "user", content: "How do I do an RDL, and bitcoin?" },
+        rdlTurn[1],
+      ],
+      "what about bitcoin please",
+    );
+    expect(turn.source).toBe("GUARDRAIL");
+  });
+
+  it("does not relax the redirect when there is no training turn before it", async () => {
+    const model = vi.fn<CoachChatModel>().mockResolvedValue("x");
+    const turn = await coachReply(
+      model,
+      ctx,
+      [],
+      "What about head and neck position?",
+    );
+    expect(turn.source).toBe("GUARDRAIL");
+  });
+});
+
+// Live bugs, 23 Nov 2026: "tension in my lower back on RDLs" was answered with "stop
+// immediately and see a professional", and sets and reps advice contradicted the plan.
+describe("the coach prompt: tension is not pain, and the plan sets the numbers", () => {
+  const prompt = buildCoachSystemPrompt(ctx);
+
+  it("sends sharp pain to stop and a professional, and tension to form cues first", () => {
+    expect(prompt).toMatch(/sharp, stabbing or shooting pain/i);
+    expect(prompt).toMatch(/tension, tightness or stiffness is not pain/i);
+    expect(prompt).toMatch(/form cues first/i);
+    // The old blanket rule is gone: any pain report is no longer the only trigger.
+    expect(prompt).not.toContain(
+      "if the user reports pain, tell them to stop that exercise and see a professional",
+    );
+  });
+
+  it("keeps the word list as it was: a tension message reaches the coach and a sharp pain message still stops (a regression guard; the prompt tests above fail without the change)", async () => {
+    const model = vi.fn<CoachChatModel>().mockResolvedValue("Brace first.");
+    const tension = await coachReply(
+      model,
+      ctx,
+      [],
+      "I feel tension in my lower back on RDLs",
+    );
+    expect(tension.source).toBe("COACH");
+    const sharp = await coachReply(
+      model,
+      ctx,
+      [],
+      "I felt a sharp pain in my shoulder on bench press",
+    );
+    expect(sharp.source).toBe("GUARDRAIL");
+    expect(model).toHaveBeenCalledOnce();
+  });
+
+  it("tells the model to use the plan's sets and reps for an exercise in it", () => {
+    expect(prompt).toMatch(
+      /use the sets and reps the plan gives that exercise/i,
+    );
+    expect(prompt).toContain("Dumbbell bench press 3 x 10");
   });
 });
