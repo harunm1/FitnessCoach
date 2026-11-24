@@ -689,3 +689,33 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Did with it:** Checked each issue's boxes against main with `git grep` and `gh` instead of the issue text, ran each new test against the missing module to see it fail, then ran lint, the type check, format check and the full unit suite (1,654 tests), and had a separate review agent read the change blind before the push. The deload screen where a user accepts or declines is a follow-up; this change is the rule only. The review agent found no error; its should-fix items (the wording of D21 and its source, four extra tests, the pull request saying Refs and not Closes) were applied.
 
 **Tools:** gh, git, Prettier, ESLint, tsc, Vitest, one general-purpose review agent. No skills or connectors.
+
+## 22 November (evening): importing workouts from a Hevy export
+
+**Asked:** To let a user bring their history from the app they already use (a Hevy CSV), with the sessions marked as imported and never counted as logged live in FitnessCoach (#131).
+
+**Got:** A column and date-format spec with sources (`docs/IMPORT_FORMATS.md`), decision D22, and the code: a small CSV reader, a date reader for Toronto time, a Hevy parser with unit conversion, name matching to the library with a user mapping step, a save that skips workouts already imported, an Import page, and an "Imported" label and count on Progress. AI drafted the parsers, the tests and the page.
+
+**Did with it:** Read the Hevy and Strong help pages myself and found they publish no column list, so the columns come from third-party importers and are marked unverified in the doc; refused ambiguous dates instead of guessing day-first or month-first. Wrote each test before its code and ran lint, the type check, the format check and the full unit suite (1,711 tests). Two separate review agents read the change blind: the first found three errors (a test that sorted numbers as text, two file names mapped to one exercise breaking a unique key, names like `constructor` breaking the mapping) and nine smaller points, all fixed; the second found no error. The integration test could not be run locally because there is no Docker, so CI runs it.
+
+**Tools:** gh, git, Firecrawl (search, scrape, developer search), Prettier, ESLint, tsc, Vitest, two general-purpose review agents. No skills.
+
+## 22 November (evening): bugs found on the live site
+
+**Asked:** To fix what I found using the live app with a trial account: a coach reply cut off mid-sentence and saved that way, replies that were too long and added safety and nutrition lines nobody asked for, a quiz that reset to its defaults after saving, a starter plan for an experienced full-gym user with no barbell lift, a coach panel saying the coach was not live, and times shown in UTC.
+
+**Got:** Nine issues with the live evidence (#137 to #145) and four pull requests: a note on replies that stop at the token limit and shorter prompts (#146), the quiz showing its saved answers and stating the strength and run split (#148), a starter plan that uses the user's level and equipment (#149), and the copy, local time and weight hint fixes (#150). AI drafted the tests and the changes.
+
+**Did with it:** Wrote each failing test before its change, ran lint, the type check, the format check and the full unit suite on each branch, and had a separate review agent read each branch blind before it was pushed. The reviews found real faults that I fixed: a quiz form that still reset after a second save with the same message, a note that could be saved as the whole reply, and extra accessory choices that put an overhead press on a pull day. Not done: eval cases for the reply length (#142 stays open), the starter plan's warm-up, supersets, cardio and deload week (#145 asked for them), and a separate strength-days and run-days question (#143).
+
+**Tools:** gh, git, Prettier, ESLint, tsc, Vitest, four general-purpose review agents. No skills.
+
+## 22 November (night): a study guide for the Q&A
+
+**Asked:** For one document I can use to answer any question from the instructor and TAs on 4 December, written for listening: the app in 60 seconds, one user journey, every component with why and how it fails, who built what, the course's Q&A topics with a short answer first, fifteen follow-ups, the plan to 6 December and a glossary.
+
+**Got:** `docs/STUDY_GUIDE.md`, read from the code on main rather than from the docs alone, with a table of the open pull requests that change an answer once merged. AI drafted the text from the files I pointed it at.
+
+**Did with it:** A separate review agent that had not seen the draft checked every claim against the code, the docs and `gh`. It found five errors, which I fixed: the coach does not read logged sets, the plan-request limit lives on the user row, the order of checks in the coach route, the test file count (109), and that retries and demo mode apply to plan calls, not to streamed chat. It also found overclaims that I corrected: model-written plans and the deload rule are not on main yet, and the double-tap save error is suspected, not reproduced. The changed lines were re-read by me only, with no second agent pass.
+
+**Tools:** gh, git, Prettier, one general-purpose review agent. No skills or connectors.
