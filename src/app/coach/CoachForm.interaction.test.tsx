@@ -55,7 +55,7 @@ describe("streaming coach form", () => {
     });
     await screen.findByRole("log", { name: "Coach reply" });
     expect(screen.getByRole("log", { name: "Coach reply" }).textContent).toBe(
-      "Rest 90 seconds. ",
+      "Rest 90 seconds.",
     );
     expect(refresh).not.toHaveBeenCalled();
     await act(async () => {
