@@ -72,6 +72,9 @@ async function collect(it: AsyncIterable<string>) {
 
 const base = {
   kind: "chat",
+  inputTokens: null,
+  outputTokens: null,
+  guardrailVerdict: null,
   promptVersion: CHAT_PROMPT_VERSION,
   attempt: 1,
   latencyMs: STEP_MS,
