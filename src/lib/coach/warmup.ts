@@ -6,7 +6,7 @@ import {
   type CategorisedExercise,
   type VerifyProfile,
 } from "./verify";
-import type { PlanExerciseInput } from "./schema";
+import { LIMITS, type PlanExerciseInput } from "./schema";
 
 // free-exercise-db ids (dist/exercises.json, read 24 Nov 2026). Only dynamic moves are
 // listed: most of the 123 stretching entries are static holds (judged by name), a poor way to start a lift.
@@ -29,12 +29,12 @@ const WARMUP_BY_MUSCLE: Record<string, string[]> = {
   "lower back": LOWER,
 };
 
-// One light set of ten, short rest, at the lowest effort the schema allows (LIMITS.rpe.min).
+// One light set of ten, at the shortest rest and lowest effort the schema allows.
 export const WARMUP_PRESCRIPTION = {
   sets: 1,
   reps: 10,
-  restSeconds: 30,
-  rpe: 6,
+  restSeconds: LIMITS.restSeconds.min,
+  rpe: LIMITS.rpe.min,
 } as const;
 
 // The warm-up for a day led by `leadMuscle`, or undefined when no listed exercise is in the

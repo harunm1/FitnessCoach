@@ -134,11 +134,10 @@ describe("the warm-up slot of a starter plan (#145)", () => {
   });
 
   it("skips a warm-up that touches a muscle the user reported trouble with", () => {
-    // Chest trouble: the chest warm-up is out, and so is any strength lift for it.
-    const ids = firstIds({ ...gymProfile, avoidMuscles: ["chest"] });
-    expect(ids).not.toContain("Dynamic_Chest_Stretch");
-    // The Pull day's warm-up has no chest link, so it stays.
-    expect(ids[1]).toBe("Dynamic_Back_Stretch");
+    // Middle back is the chest stretch's secondary muscle; the Push day is still led by the
+    // bench, so the injury filter alone must drop Dynamic_Chest_Stretch for Arm_Circles.
+    const ids = firstIds({ ...gymProfile, avoidMuscles: ["middle back"] });
+    expect(ids[0]).toBe("Arm_Circles");
   });
 
   it("takes the next listed warm-up when the first needs kit the user lacks", () => {
