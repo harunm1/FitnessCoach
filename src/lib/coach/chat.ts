@@ -201,8 +201,8 @@ function isFollowUp(text: string, recent: ChatMessage[]): boolean {
 // Bump when the wording changes, so logged replies can be grouped by prompt.
 // chat-v2 (10 Nov): added the nutrition rule, the same scope as the guardrail in code.
 // chat-v3 (11 Nov): the typed injury line is gone; code-chosen muscles to avoid instead.
-// chat-v4 (23 Nov): tension is not pain (form cues first); sets and reps follow the plan.
-export const CHAT_PROMPT_VERSION = "chat-v4";
+// chat-v5 (23 Nov): tension is not pain (form cues first); sets and reps follow the plan.
+export const CHAT_PROMPT_VERSION = "chat-v5";
 
 // Profile values (equipment and muscle names) go into the system prompt, so each is
 // kept to one short piece of a line: no newlines to start a fake instruction, no
