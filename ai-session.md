@@ -719,3 +719,13 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Did with it:** A separate review agent that had not seen the draft checked every claim against the code, the docs and `gh`. It found five errors, which I fixed: the coach does not read logged sets, the plan-request limit lives on the user row, the order of checks in the coach route, the test file count (109), and that retries and demo mode apply to plan calls, not to streamed chat. It also found overclaims that I corrected: model-written plans and the deload rule are not on main yet, and the double-tap save error is suspected, not reproduced. The changed lines were re-read by me only, with no second agent pass.
 
 **Tools:** gh, git, Prettier, one general-purpose review agent. No skills or connectors.
+
+## 23 November (evening): freeze night, reviews and the live fixes
+
+**Asked:** For a last pass before the feature freeze: update my open pull requests with main, have each read blind by a separate review agent, review Mohammad's #152 and re-check #121 and #122, and fix the bugs I hit at the gym on the live site on one branch.
+
+**Got:** Blind reviews of #146, #147, #148, #149, #98, #130 and #127, and a branch of fixes for the live bugs: the coach's Markdown shown as elements instead of asterisks and table pipes, a follow-up like "What about head and neck position?" kept in context, tension answered with form cues while sharp pain still stops and refers, advice told to follow the plan's sets and reps, and a test that the start time shows the viewer's hour when the server runs in UTC. AI drafted the tests and the changes.
+
+**Did with it:** Wrote the failing test first for each change, ran lint, the type check, the format check and the full unit suite, and had a review agent that had not seen the work read the branch before the push. The reviews of my open pull requests found real faults, which I fixed on their branches: a header with a million columns could keep the server busy for over a minute on the Hevy import (#147), a deadlift was ordered with the light work in the starter plan (#149), and a comment on #98 said the chat path supplies a value that nothing supplies. I took a change to Mohammad's body-map prompt out of #146 and left a note for him instead. #127 waits until after the freeze. Not done: the starter-plan fixes for equipment-poor main lifts, and the other should-fix items listed on each pull request.
+
+**Tools:** gh, git, Prettier, ESLint, tsc, Vitest, review agents (pr-review-toolkit code-reviewer, one per pull request and one for the fix branch). No skills.
