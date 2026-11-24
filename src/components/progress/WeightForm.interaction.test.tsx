@@ -70,4 +70,28 @@ describe("WeightForm", () => {
       (screen.getByLabelText("Weight (kg)") as HTMLInputElement).value,
     ).toBe("");
   });
+
+  it("clears the typed values once a refused entry is fixed and saved", async () => {
+    logBodyWeight
+      .mockResolvedValueOnce({
+        status: "error",
+        message: "Enter a weight between 20 and 400 kg.",
+        values: { date: "2026-11-20", weightKg: "5", note: "after run" },
+      })
+      .mockResolvedValueOnce({ status: "saved", date: "2026-11-20" });
+    render(<WeightForm today="2026-11-24" />);
+    await submit("5", "after run");
+    await submit("81.5", "after run");
+
+    expect(screen.getByRole("alert").textContent).toBe("");
+    expect(
+      (screen.getByLabelText("Weight (kg)") as HTMLInputElement).value,
+    ).toBe("");
+    expect(
+      (screen.getByLabelText("Note (optional)") as HTMLInputElement).value,
+    ).toBe("");
+    expect((screen.getByLabelText("Day") as HTMLInputElement).value).toBe(
+      "2026-11-24",
+    );
+  });
 });
