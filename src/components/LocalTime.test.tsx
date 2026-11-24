@@ -26,3 +26,28 @@ describe("LocalTime", () => {
     vi.unstubAllEnvs();
   });
 });
+
+// Live report, 23 Nov 2026: "Workout in progress since 5:55 PM" for a morning start. Vercel
+// runs in UTC, so a time formatted on the server shows the UTC hour.
+describe("LocalTime with a UTC server (the live site)", () => {
+  const morning = "2026-11-23T15:55:00.000Z"; // 10:55 AM in Toronto, 3:55 PM in UTC
+
+  it("does not show the UTC hour when the server renders", () => {
+    vi.stubEnv("TZ", "UTC");
+    const html = renderToStaticMarkup(<LocalTime iso={morning} kind="time" />);
+    vi.unstubAllEnvs();
+    expect(html).toContain("10:55 AM");
+    expect(html).not.toContain("3:55 PM");
+  });
+
+  it("shows the browser's own hour once mounted, whatever the server's zone was", () => {
+    vi.stubEnv("TZ", "America/Toronto");
+    render(<LocalTime iso={morning} kind="time" />);
+    expect(screen.getByText("10:55 AM")).toBeTruthy();
+    cleanup();
+    vi.stubEnv("TZ", "America/Los_Angeles");
+    render(<LocalTime iso={morning} kind="time" />);
+    expect(screen.getByText("7:55 AM")).toBeTruthy();
+    vi.unstubAllEnvs();
+  });
+});
