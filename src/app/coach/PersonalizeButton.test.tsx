@@ -26,6 +26,31 @@ describe("PersonalizeButton", () => {
     );
   });
 
+  // A plan takes seconds to write; the button must not take a second tap meanwhile.
+  it("disables itself and says the coach is writing while the action runs", async () => {
+    let finish: (state: unknown) => void = () => {};
+    action.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    render(<PersonalizeButton />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Personalize with the coach" }),
+    );
+    const pending = await screen.findByRole("button", {
+      name: "The coach is writing your plan...",
+    });
+    expect((pending as HTMLButtonElement).disabled).toBe(true);
+    finish({ status: "saved", message: "New plan saved." });
+    expect((await screen.findByRole("status")).textContent).toBe(
+      "New plan saved.",
+    );
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Personalize with the coach",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(false);
+  });
+
   it("shows a cooldown as an alert", async () => {
     action.mockResolvedValue({
       status: "error",

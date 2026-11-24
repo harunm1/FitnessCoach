@@ -11,10 +11,13 @@ import type { CategorisedExercise, VerifyProfile } from "./verify";
 export const SAVED_MESSAGE =
   "The coach wrote a new plan for you and it passed every check.";
 // A plan written earlier (demo mode, D12) is a coach plan but must not be called new.
+// The sentence is D12's own ("How the screen says so" in docs/ARCHITECTURE.md).
 export const CACHED_MESSAGE =
-  "Here is a coach plan written earlier that passes every check for your profile.";
+  "The coach is busy right now, so here is a plan it wrote earlier for a profile like yours.";
+// The request is claimed before the model runs and stays spent (plan-rate-limit.ts), so
+// the user waits a minute before the next try.
 export const KEPT_MESSAGE =
-  "The coach could not give you a new plan that passed the checks right now, so your current plan stays.";
+  "The coach could not give you a new plan that passed the checks right now, so your current plan stays. You can try again in a minute.";
 export const UNAVAILABLE_MESSAGE =
   "Personalize with the coach is not available right now. Your current plan stays; try again in a minute.";
 export const NO_GYM_PROFILE_MESSAGE =

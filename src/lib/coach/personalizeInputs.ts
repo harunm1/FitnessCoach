@@ -26,9 +26,11 @@ export async function loadPersonalizeInputs(
   });
   if (!profile || profile.trainingMode !== "GYM") return null;
 
-  const library = await database.exercise.findMany({
+  // The prompt lists names (buildPlanPrompt), so the name is selected with the id.
+  const everyExercise = await database.exercise.findMany({
     select: {
       id: true,
+      name: true,
       category: true,
       equipment: true,
       primaryMuscles: true,
@@ -36,9 +38,11 @@ export async function loadPersonalizeInputs(
     },
   });
   const injuryText = (profile.injuries ?? "").toLowerCase();
+  // Muscle names come from the whole library, so an injury still matches a muscle that
+  // only a stretch lists.
   const muscleNames = [
     ...new Set(
-      library.flatMap((exercise) => [
+      everyExercise.flatMap((exercise) => [
         ...exercise.primaryMuscles,
         ...exercise.secondaryMuscles,
       ]),
@@ -52,6 +56,11 @@ export async function loadPersonalizeInputs(
         injuryText.includes(muscle.toLowerCase()),
       ),
     },
-    library,
+    // generatePlan writes strength plans, and the verifier accepts any id in the library
+    // it is given, so the coach is offered strength exercises only (the rule the starter
+    // plan applies in defaultPlan.ts). Cardio and stretching would otherwise pass and be saved.
+    library: everyExercise.filter(
+      (exercise) => exercise.category.toLowerCase() === "strength",
+    ),
   };
 }

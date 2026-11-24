@@ -11,6 +11,7 @@ import {
   type PersonalizeSteps,
 } from "./personalize";
 import { generatePlan, type GeneratedPlan } from "./generatePlan";
+import { loadPersonalizeInputs } from "./personalizeInputs";
 import { ProviderError } from "./providers";
 
 const COOLDOWN_SECONDS = 42;
@@ -148,27 +149,128 @@ describe("personalizePlan", () => {
   });
 });
 
+// What the user is told, in the words the design notes give (D12 and #51).
+describe("personalize messages", () => {
+  // docs/ARCHITECTURE.md, D12 "How the screen says so", is the source of this sentence.
+  it("says a cached plan was written earlier, in D12's wording", () => {
+    expect(CACHED_MESSAGE).toBe(
+      "The coach is busy right now, so here is a plan it wrote earlier for a profile like yours.",
+    );
+  });
+
+  // The claim is spent even when the provider fails (plan-rate-limit.ts), so the user
+  // is told about the one-minute wait instead of hitting the cooldown on a second tap.
+  it("tells the user a kept plan costs a one-minute wait before the next try", () => {
+    expect(KEPT_MESSAGE).toContain("your current plan stays");
+    expect(KEPT_MESSAGE).toContain("minute");
+  });
+});
+
 // The issue's cases through the real generatePlan, with only the model mocked.
 describe("personalizePlan with the real generatePlan", () => {
-  const library = ["Pushups", "Bodyweight_Squat", "Crunches", "Plank"].map(
-    (id) => ({
-      id,
-      category: "strength",
-      equipment: "body only",
-      primaryMuscles: [id === "Pushups" ? "chest" : "quadriceps"],
-      secondaryMuscles: [],
-    }),
-  );
+  const SETS = 3;
+  const REPS = 10;
+  const REST_SECONDS = 90;
+  const RPE = 7;
+  const strengthLibrary = ["Pushups", "Bodyweight_Squat", "Crunches", "Plank"];
+  const library = strengthLibrary.map((id) => ({
+    id,
+    name: id.replaceAll("_", " "),
+    category: "strength",
+    equipment: "body only",
+    primaryMuscles: [id === "Pushups" ? "chest" : "quadriceps"],
+    secondaryMuscles: [],
+  }));
   const profile = {
     daysPerWeek: 1,
     equipment: ["body only"],
     avoidMuscles: [],
   };
-  const realSteps = (model: () => Promise<unknown>) =>
+  const slot = (exercise: string) => ({
+    exercise,
+    sets: SETS,
+    reps: REPS,
+    restSeconds: REST_SECONDS,
+    rpe: RPE,
+  });
+  const reply = (...exercises: string[]) => ({
+    name: "Coach plan",
+    days: [{ name: "Day 1", exercises: exercises.map(slot) }],
+  });
+  const realSteps = (model: (prompt: string) => Promise<unknown>) =>
     steps({
       loadInputs: vi.fn().mockResolvedValue({ profile, library }),
       generate: vi.fn((p, l) => generatePlan(model, p, l)),
     });
+
+  // The issue's success case: a valid model reply goes through the real generatePlan,
+  // is verified, mapped from names to ids, and reaches the save as a coach plan.
+  it("saves a valid model reply, stored by exercise id, and offers the model names not ids", async () => {
+    const prompts: string[] = [];
+    const s = realSteps(async (prompt) => {
+      prompts.push(prompt);
+      return reply("Pushups", "Bodyweight Squat");
+    });
+    expect(await personalizePlan(s)).toEqual({
+      status: "saved",
+      message: SAVED_MESSAGE,
+    });
+    const prompt = prompts[0] ?? "";
+    expect(prompt).toContain("Bodyweight Squat");
+    expect(prompt).not.toContain("Bodyweight_Squat");
+    expect(s.save).toHaveBeenCalledTimes(1);
+    const saved = s.save.mock.calls[0]?.[0];
+    expect(saved?.days[0]?.exercises.map((e) => e.exerciseId)).toEqual([
+      "Pushups",
+      "Bodyweight_Squat",
+    ]);
+  });
+
+  // Shubham's reproduction on #127: with the real generator and a mocked model, a plan of
+  // cardio and stretching passed verification and reached the save, because the loader
+  // offered every category. The real loader now filters, so the verifier rejects it.
+  it("keeps the current plan when the model answers with cardio or stretching, through the real loader", async () => {
+    const everyCategory = [
+      ...library,
+      {
+        ...library[0],
+        id: "Stair_Climb",
+        name: "Stair Climb",
+        category: "cardio",
+      },
+      {
+        ...library[0],
+        id: "Hamstring_Stretch",
+        name: "Hamstring Stretch",
+        category: "stretching",
+      },
+    ];
+    const database = {
+      profile: {
+        findUnique: vi.fn().mockResolvedValue({
+          trainingMode: "GYM",
+          daysPerWeek: 1,
+          equipment: [],
+          injuries: null,
+        }),
+      },
+      exercise: { findMany: vi.fn().mockResolvedValue(everyCategory) },
+    };
+    const s = steps({
+      loadInputs: vi.fn(() =>
+        loadPersonalizeInputs(database as never, "owner"),
+      ),
+      generate: vi.fn((p, l) =>
+        generatePlan(
+          async () => reply("Stair Climb", "Hamstring Stretch"),
+          p,
+          l,
+        ),
+      ),
+    });
+    expect((await personalizePlan(s)).status).toBe("kept");
+    expect(s.save).not.toHaveBeenCalled();
+  });
 
   it("keeps the current plan when the verifier rejects every reply", async () => {
     const s = realSteps(async () => ({ name: "Bad", days: [] }));
