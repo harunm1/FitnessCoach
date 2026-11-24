@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { Client } from "pg";
 import { testDatabaseURL } from "../helpers/database-url";
+import { visibleTextBelowProjectorSize } from "./helpers/projector-readability";
 
 test("the quiz and session pages require sign-in", async ({ page }) => {
   for (const path of ["/onboarding", "/session"]) {
@@ -101,10 +102,36 @@ test("an athlete completes the quiz and logs a session without touching another 
     ]);
     expect(login.status(), "Quiz fixture login should succeed").toBe(200);
     await expect(page).toHaveURL(/\/account$/);
+    await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto(`/session?userId=${other.id}&planId=${privatePlan.id}`);
     await expect(
       page.getByRole("heading", { name: "Set up your profile first" }),
     ).toBeVisible();
+    const mainNav = page.getByRole("navigation", { name: "Main" });
+    const photosLink = mainNav.getByRole("link", {
+      name: "Photos",
+      exact: true,
+    });
+    await expect(photosLink).toBeVisible();
+    expect(
+      await photosLink.evaluate((link) => {
+        const nav = link.closest("nav");
+        const linkRect = link.getBoundingClientRect();
+        const navRect = nav?.getBoundingClientRect();
+        return Boolean(
+          nav &&
+          navRect &&
+          nav.scrollWidth <= nav.clientWidth &&
+          linkRect.left >= navRect.left &&
+          linkRect.right <= navRect.right,
+        );
+      }),
+    ).toBe(true);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
     await expect(
       page.getByText("Other athlete private plan", { exact: true }),
     ).toHaveCount(0);
@@ -130,7 +157,10 @@ test("an athlete completes the quiz and logs a session without touching another 
     await page
       .getByRole("button", { name: "Start workout", exact: true })
       .click();
-    await expect(page.getByRole("status")).toContainText("Workout in progress");
+    await expect(
+      page.getByText(/Workout in progress since/, { exact: false }),
+    ).toBeVisible();
+    expect(await visibleTextBelowProjectorSize(page)).toEqual([]);
 
     const exercise = page.locator("li").filter({
       has: page.getByRole("heading", { name: pressName, exact: true }),

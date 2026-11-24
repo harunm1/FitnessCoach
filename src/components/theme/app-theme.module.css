@@ -18,6 +18,16 @@
   --map-neutral: #d6d9d1;
 }
 
+.readablePage :global(.text-sm) {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+.readablePage :global(.text-xs) {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
 .appTheme.appTheme[data-theme="dark"] {
   --background: #0a0a0a;
   --foreground: #ededed;

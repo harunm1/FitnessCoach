@@ -19,6 +19,9 @@ vi.mock("@/lib/auth/session", () => ({ requireUser }));
 vi.mock("@/lib/progress/load", () => ({ loadFinishedWorkouts }));
 vi.mock("@/lib/prisma", () => ({ prisma: database }));
 vi.mock("@/lib/storage", () => ({ getPhotoStorage: storage.get }));
+vi.mock("@/components/auth/sign-out-button", () => ({
+  SignOutButton: () => <button type="button">Sign out</button>,
+}));
 import ProgressPage from "./page";
 
 function workout(

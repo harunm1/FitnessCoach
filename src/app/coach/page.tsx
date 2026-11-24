@@ -1,6 +1,6 @@
 // The coach screen (#63): the signed-in user's saved conversation and the message box, or the tier or quiz message.
 import Link from "next/link";
-import { AccountTheme, ThemeToggle } from "@/components/auth/account-theme";
+import { AccountTheme } from "@/components/auth/account-theme";
 import { AppNav } from "@/components/nav/AppNav";
 import theme from "@/components/theme/app-theme.module.css";
 import { requireAccount } from "@/lib/auth/access";
@@ -35,13 +35,8 @@ export default async function CoachPage() {
     <AccountTheme
       className={`${theme.appTheme} min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12`}
     >
-      <div className="mx-auto max-w-2xl">
-        <AppNav
-          current="coach"
-          name={user.name}
-          avatarUrl={avatarUrl}
-          actions={<ThemeToggle />}
-        />
+      <div className={`mx-auto max-w-7xl ${theme.readablePage}`}>
+        <AppNav current="coach" name={user.name} avatarUrl={avatarUrl} />
         <h1 className="text-3xl font-semibold">Coach</h1>
         <CoachBody
           canChat={canChat}

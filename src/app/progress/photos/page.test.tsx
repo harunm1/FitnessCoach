@@ -48,6 +48,10 @@ beforeEach(() => {
   findMany.mockResolvedValue([]);
 });
 
+vi.mock("@/components/auth/sign-out-button", () => ({
+  SignOutButton: () => <button type="button">Sign out</button>,
+}));
+
 describe("progress photos page", () => {
   it("loads only the signed-in user's photos, newest first", async () => {
     await render();
