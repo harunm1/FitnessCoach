@@ -10,7 +10,7 @@ import { BODY_MAP_MUSCLE_NAMES } from "@/lib/body-map/muscles";
 import { getNextPlanDayIndex } from "@/lib/workout/progression";
 import { finishWorkout, startOrResumeWorkout } from "./actions";
 import { requireUser } from "@/lib/auth/session";
-import { AccountTheme, ThemeToggle } from "@/components/auth/account-theme";
+import { AccountTheme } from "@/components/auth/account-theme";
 import { AppNav } from "@/components/nav/AppNav";
 import theme from "@/components/theme/app-theme.module.css";
 import { loadAvatarUrl } from "@/lib/photos/avatar";
@@ -127,21 +127,18 @@ export default async function SessionPage() {
     <AccountTheme
       className={`${theme.appTheme} min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12`}
     >
-      <div className="mx-auto max-w-3xl">
+      <div className={`mx-auto max-w-7xl ${theme.readablePage}`}>
         <AppNav
           current="session"
           name={user.name}
           avatarUrl={avatarUrl}
           actions={
-            <>
-              <ThemeToggle />
-              <Link
-                className="shrink-0 text-xs text-foreground/60 underline underline-offset-4"
-                href="/onboarding"
-              >
-                Edit profile
-              </Link>
-            </>
+            <Link
+              className="shrink-0 text-sm text-foreground/60 underline underline-offset-4"
+              href="/onboarding"
+            >
+              Edit profile
+            </Link>
           }
         />
 
@@ -222,7 +219,7 @@ export default async function SessionPage() {
                                 >
                                   {sets.map((set) => (
                                     <li
-                                      className="list-none border border-foreground/15 bg-white px-2 py-1 text-[11px] text-foreground/70"
+                                      className="list-none border border-foreground/15 bg-white px-2 py-1 text-sm text-foreground/70"
                                       key={set.id}
                                     >
                                       Set {set.setNumber}: {set.reps} reps
@@ -267,7 +264,10 @@ export default async function SessionPage() {
                 aria-labelledby="run-entry-title"
                 className="mt-8 border-t border-foreground/15 pt-6"
               >
-                <p className="m-0 text-[10px] font-semibold tracking-[0.12em] text-foreground/55 uppercase">
+                <p
+                  className="m-0 text-[10px] font-semibold tracking-[0.12em] text-foreground/55 uppercase"
+                  data-projector-decorative="true"
+                >
                   Optional workout entry
                 </p>
                 <h2

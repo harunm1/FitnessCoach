@@ -163,6 +163,16 @@ function parseReply(provider: string, text: unknown): unknown {
   }
 }
 
+// Token counts from a response, for the log record (#41). A field is left out when the
+// provider did not send it as a count, so the record says null rather than guess.
+export type Usage = { inputTokens?: number; outputTokens?: number };
+export type UsageReporter = (usage: Usage) => void;
+
+const count = (value: unknown): number | undefined =>
+  typeof value === "number" && Number.isInteger(value) && value >= 0
+    ? value
+    : undefined;
+
 // Groq uses the OpenAI chat-completions format. JSON mode needs the word "JSON" in the
 // prompt, which buildPlanPrompt already has. Low reasoning effort: picking from a
 // given list needs little planning, and fewer output tokens keep a full-library
@@ -170,6 +180,7 @@ function parseReply(provider: string, text: unknown): unknown {
 export function groqModel(
   apiKey: string,
   model = GROQ_MODEL,
+  onUsage?: UsageReporter,
   { timeoutMs }: CallOptions = {},
 ): PlanModel {
   return async (prompt) => {
@@ -184,16 +195,28 @@ export function groqModel(
         reasoning_effort: "low",
       },
       timeoutMs,
-    )) as { choices?: { message?: { content?: unknown } }[] };
+    )) as {
+      choices?: { message?: { content?: unknown } }[];
+      usage?: { prompt_tokens?: unknown; completion_tokens?: unknown };
+    };
+    // Before the parse: a reply that is not JSON was still billed and is logged.
+    onUsage?.({
+      inputTokens: count(data.usage?.prompt_tokens),
+      outputTokens: count(data.usage?.completion_tokens),
+    });
     return parseReply("Groq", data.choices?.[0]?.message?.content);
   };
 }
 
 // Gemini's own REST format. Thinking models can return thought parts first, so take the
-// first part that is the answer.
+// first part that is the answer. Output tokens are the answer's candidatesTokenCount
+// plus thoughtsTokenCount: "response pricing is the sum of output tokens and thinking
+// tokens" (ai.google.dev/gemini-api/docs/thinking, checked 10 Nov 2026). Either one
+// alone still counts; with neither, the output count is unknown.
 export function geminiModel(
   apiKey: string,
   model = GEMINI_MODEL,
+  onUsage?: UsageReporter,
   { timeoutMs }: CallOptions = {},
 ): PlanModel {
   return async (prompt) => {
@@ -209,8 +232,23 @@ export function geminiModel(
     )) as {
       candidates?: {
         content?: { parts?: { text?: unknown; thought?: boolean }[] };
+        finishReason?: unknown;
       }[];
+      usageMetadata?: {
+        promptTokenCount?: unknown;
+        candidatesTokenCount?: unknown;
+        thoughtsTokenCount?: unknown;
+      };
     };
+    const answerTokens = count(data.usageMetadata?.candidatesTokenCount);
+    const thinkingTokens = count(data.usageMetadata?.thoughtsTokenCount);
+    onUsage?.({
+      inputTokens: count(data.usageMetadata?.promptTokenCount),
+      outputTokens:
+        answerTokens === undefined && thinkingTokens === undefined
+          ? undefined
+          : (answerTokens ?? 0) + (thinkingTokens ?? 0),
+    });
     const parts = data.candidates?.[0]?.content?.parts ?? [];
     return parseReply("Gemini", parts.find((p) => !p.thought)?.text);
   };
@@ -219,12 +257,26 @@ export function geminiModel(
 // A chat reply with no text is no answer at all, unlike a plan reply that will not
 // parse (generatePlan asks again for that). It is a ProviderError so the chat chain
 // moves to the other provider; status 200 makes it non-retryable on this one.
-function parseTextReply(provider: string, text: unknown): string {
+function parseTextReply(
+  provider: string,
+  text: unknown,
+  truncated = false,
+): string {
   if (typeof text !== "string" || text.trim() === "") {
     throw new ProviderError(`${provider} reply had no text`, provider, 200);
   }
-  return text.trim();
+  return truncated ? `${text.trim()}${TRUNCATION_NOTE}` : text.trim();
 }
+
+// A chat reply that stopped at the provider's token limit (Groq finish_reason "length",
+// Gemini finishReason "MAX_TOKENS") ends with this note, so the saved text says it is
+// incomplete instead of stopping mid-sentence (#137). The cap counts reasoning tokens
+// too (Gemini's thinking guide says so; Groq's pages do not say), so it sits well above
+// the 4 sentences the prompts ask for. `reasoning_effort` is valid only for the gpt-oss
+// models (Groq API reference, checked 22 Nov 2026): a different GROQ_MODEL needs it removed.
+export const TRUNCATION_NOTE =
+  " (The reply was cut short. Ask again for the rest.)";
+const CHAT_MAX_TOKENS = 600;
 
 // The chat request bodies, shared by the plain and the streamed call so both use the
 // same settings.
@@ -233,7 +285,8 @@ function groqChatBody(model: string, messages: CoachChatMessage[]) {
     model,
     messages: messages.map(({ role, content }) => ({ role, content })),
     temperature: 0.3,
-    max_tokens: 300,
+    max_tokens: CHAT_MAX_TOKENS,
+    reasoning_effort: "low",
   };
 }
 
@@ -252,7 +305,7 @@ function geminiChatBody(messages: CoachChatMessage[]) {
       ? { systemInstruction: { parts: [{ text: systemInstruction }] } }
       : {}),
     contents,
-    generationConfig: { temperature: 0.3, maxOutputTokens: 300 },
+    generationConfig: { temperature: 0.3, maxOutputTokens: CHAT_MAX_TOKENS },
   };
 }
 
@@ -268,8 +321,14 @@ export function groqChatModel(
       { Authorization: `Bearer ${apiKey}` },
       groqChatBody(model, messages),
       timeoutMs,
-    )) as { choices?: { message?: { content?: unknown } }[] };
-    return parseTextReply("Groq", data.choices?.[0]?.message?.content);
+    )) as {
+      choices?: { message?: { content?: unknown }; finish_reason?: unknown }[];
+    };
+    return parseTextReply(
+      "Groq",
+      data.choices?.[0]?.message?.content,
+      data.choices?.[0]?.finish_reason === "length",
+    );
   };
 }
 
@@ -288,6 +347,7 @@ export function geminiChatModel(
     )) as {
       candidates?: {
         content?: { parts?: { text?: unknown; thought?: boolean }[] };
+        finishReason?: unknown;
       }[];
     };
     const parts = data.candidates?.[0]?.content?.parts ?? [];
@@ -298,16 +358,22 @@ export function geminiChatModel(
       .filter((part) => !part.thought && typeof part.text === "string")
       .map((part) => part.text as string)
       .join("");
-    return parseTextReply("Gemini", answer);
+    return parseTextReply(
+      "Gemini",
+      answer,
+      data.candidates?.[0]?.finishReason === "MAX_TOKENS",
+    );
   };
 }
 
 export type ProviderEvent = {
   provider: string;
-  action: "retry" | "fallback" | "served";
+  action: "retry" | "fallback" | "served" | "usage";
   status?: number;
   waitMs?: number;
   model?: string; // on "served": the model that answered
+  inputTokens?: number; // on "usage": counts from the response, when it had them
+  outputTokens?: number;
 };
 
 export type RetryOptions = CallOptions & {
@@ -446,12 +512,20 @@ export function coachModel(
       name === "groq"
         ? env.GROQ_MODEL || GROQ_MODEL
         : env.GEMINI_MODEL || GEMINI_MODEL;
+    const provider = name === "groq" ? "Groq" : "Gemini";
+    // One "usage" event per answered call, so the log record can carry the counts.
+    const onUsage: UsageReporter = (usage) => {
+      if (usage.inputTokens !== undefined || usage.outputTokens !== undefined)
+        options.onEvent?.({ provider, action: "usage", ...usage });
+    };
     return servedBy(
       withRetry(
-        name === "groq" ? groqModel(key, id, call) : geminiModel(key, id, call),
+        name === "groq"
+          ? groqModel(key, id, onUsage, call)
+          : geminiModel(key, id, onUsage, call),
         options,
       ),
-      name === "groq" ? "Groq" : "Gemini",
+      provider,
       id,
       options.onEvent,
     );
@@ -678,13 +752,23 @@ async function* groqPieces(
     { Authorization: `Bearer ${apiKey}` },
     { ...groqChatBody(model, messages), stream: true },
   );
+  let truncated = false;
+  let sawText = false;
   for await (const data of sseData("Groq", res)) {
-    if (data === "[DONE]") return;
-    const piece = (
+    if (data === "[DONE]") {
+      // Only after some text: a note alone would be saved as the whole reply and
+      // would stop the other provider being tried.
+      if (truncated && sawText) yield TRUNCATION_NOTE;
+      return;
+    }
+    const choice = (
       parseEvent("Groq", data) as {
-        choices?: { delta?: { content?: unknown } }[];
+        choices?: { delta?: { content?: unknown }; finish_reason?: unknown }[];
       }
-    ).choices?.[0]?.delta?.content;
+    ).choices?.[0];
+    if (choice?.finish_reason === "length") truncated = true;
+    const piece = choice?.delta?.content;
+    if (typeof piece === "string" && piece.trim()) sawText = true;
     if (typeof piece === "string" && piece) yield piece;
   }
   // Groq ends every complete stream with data: [DONE] (API reference, checked
@@ -711,19 +795,26 @@ async function* geminiPieces(
     { "x-goog-api-key": apiKey },
     geminiChatBody(messages),
   );
+  let truncated = false;
+  let sawText = false;
   for await (const data of sseData("Gemini", res)) {
-    const parts =
-      (
-        parseEvent("Gemini", data) as {
-          candidates?: {
-            content?: { parts?: { text?: unknown; thought?: boolean }[] };
-          }[];
-        }
-      ).candidates?.[0]?.content?.parts ?? [];
-    for (const p of parts) {
-      if (!p.thought && typeof p.text === "string" && p.text) yield p.text;
+    const candidate = (
+      parseEvent("Gemini", data) as {
+        candidates?: {
+          content?: { parts?: { text?: unknown; thought?: boolean }[] };
+          finishReason?: unknown;
+        }[];
+      }
+    ).candidates?.[0];
+    if (candidate?.finishReason === "MAX_TOKENS") truncated = true;
+    for (const p of candidate?.content?.parts ?? []) {
+      if (!p.thought && typeof p.text === "string" && p.text) {
+        if (p.text.trim()) sawText = true;
+        yield p.text;
+      }
     }
   }
+  if (truncated && sawText) yield TRUNCATION_NOTE;
 }
 
 // Falls back only when the primary fails before sending any text. Whitespace is not

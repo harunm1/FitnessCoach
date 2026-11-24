@@ -25,6 +25,7 @@ function workout(
     startedAt: start,
     finishedAt: new Date(start.getTime() + minutes * 60000),
     dayName: "Push",
+    imported: false,
     planDays,
     distanceKm: null,
     runSeconds: null,

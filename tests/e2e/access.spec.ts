@@ -42,7 +42,7 @@ test("trial activation, expiry and tier changes use fresh server permissions", a
       page.getByRole("heading", { name: "Your membership" }),
     ).toBeVisible();
     await expect(
-      page.getByText("New subscriptions aren’t available right now.", {
+      page.getByText("Billing changes are disabled for this demo.", {
         exact: false,
       }),
     ).toBeVisible();

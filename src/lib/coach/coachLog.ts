@@ -2,6 +2,7 @@
 // call that produced it, and the ten-profile eval (#19) can report fallback rates.
 // The sink is passed in: tests collect records in memory; server callers can use
 // prismaCoachSink(user.id) to persist records without storing the prompt (#52).
+import type { Guard } from "./guardrails";
 import type { ProviderEvent } from "./providers";
 
 // Bump when the plan prompt's wording or shape changes, so records from different
@@ -26,6 +27,9 @@ export type CoachRecord = {
   provider?: string; // who answered; absent when no provider replied
   model?: string;
   providerEvents: ProviderEvent[]; // retries and switches during this call
+  inputTokens: number | null; // from the provider's response; null when it sent no count
+  outputTokens: number | null; // reply tokens as the provider reports them (Gemini: answer plus thinking)
+  guardrailVerdict: Guard["action"] | null; // the #43 verdict on the user's message; null when none was passed in: always for a plan, and for a chat record until recordChatCall is given the screening result
   problems?: string[];
   raw?: unknown; // the model's reply as parsed, kept beside the plan we saved
   error?: string;
@@ -50,12 +54,21 @@ export function providerEventCollector() {
   };
 }
 
-// The "served" event names the provider and model; the rest stay as the call's events.
+// The "served" event names the provider and model, and the "usage" event carries the
+// token counts of the call that answered (a provider that failed over sent none); the
+// rest stay as the call's events.
 export function splitServed(events: ProviderEvent[]) {
   const last = events.filter((e) => e.action === "served").at(-1);
+  const usage = events.filter((e) => e.action === "usage").at(-1);
   return {
     served: last ? { provider: last.provider, model: last.model } : {},
-    providerEvents: events.filter((e) => e.action !== "served"),
+    tokens: {
+      inputTokens: usage?.inputTokens ?? null,
+      outputTokens: usage?.outputTokens ?? null,
+    },
+    providerEvents: events.filter(
+      (e) => e.action !== "served" && e.action !== "usage",
+    ),
   };
 }
 

@@ -126,7 +126,10 @@ export default function BodyMap({ exercises }: BodyMapProps) {
       className="mt-10 border-t border-foreground/15 pt-7"
     >
       <div className="mb-5 max-w-xl">
-        <p className="m-0 text-[10px] font-semibold tracking-[0.12em] text-foreground/55 uppercase">
+        <p
+          className="m-0 text-[10px] font-semibold tracking-[0.12em] text-foreground/55 uppercase"
+          data-projector-decorative="true"
+        >
           Explore by muscle
         </p>
         <h2 className="mt-2 mb-0 text-xl font-semibold" id="body-map-title">
@@ -180,7 +183,7 @@ export default function BodyMap({ exercises }: BodyMapProps) {
             {visibleHotspots.map((hotspot) => (
               <button
                 aria-pressed={selectedMuscle === hotspot.id}
-                className={`min-h-8 border px-2.5 text-[11px] transition-colors ${selectedMuscle === hotspot.id ? "border-[#a84025] bg-[#e9734d] text-white" : "border-foreground/15 text-foreground/70 hover:bg-foreground/5"}`}
+                className={`min-h-10 border px-2.5 text-sm transition-colors ${selectedMuscle === hotspot.id ? "border-[#a84025] bg-[#e9734d] text-white" : "border-foreground/15 text-foreground/70 hover:bg-foreground/5"}`}
                 key={hotspot.id}
                 onClick={() => selectMuscle(hotspot.id)}
                 type="button"
@@ -197,7 +200,10 @@ export default function BodyMap({ exercises }: BodyMapProps) {
           className="min-h-72 border border-foreground/15 bg-white p-5"
           id="coach-panel"
         >
-          <p className="m-0 text-[10px] font-semibold tracking-[0.12em] text-[#245c43] uppercase">
+          <p
+            className="m-0 text-[10px] font-semibold tracking-[0.12em] text-[#245c43] uppercase"
+            data-projector-decorative="true"
+          >
             Coach panel
           </p>
           {selectedHotspot ? (
@@ -270,7 +276,7 @@ export default function BodyMap({ exercises }: BodyMapProps) {
               </p>
             </div>
           )}
-          <p className="mt-4 mb-0 border-t border-foreground/10 pt-3 text-[10px] leading-4 text-foreground/50">
+          <p className="mt-4 mb-0 border-t border-foreground/10 pt-3 text-sm leading-5 text-foreground/70">
             Exercise library references. For pain or an injury, stop the
             movement and see a health professional. Ask the coach on the Coach
             page about your own training.

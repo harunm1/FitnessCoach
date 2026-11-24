@@ -14,6 +14,7 @@ import {
   ProviderError,
   geminiChatStream,
   groqChatStream,
+  TRUNCATION_NOTE,
   withStreamFallback,
   type ChatStream,
 } from "./providers";
@@ -125,6 +126,83 @@ describe("withStreamFallback", () => {
   });
 });
 
+describe("a reply cut off at the token limit (#132)", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("ends a Groq reply that stopped at the limit with a visible note", async () => {
+    const sse =
+      'data: {"choices":[{"delta":{"content":"Stop the exercise and"},"finish_reason":null}]}\n\n' +
+      'data: {"choices":[{"delta":{},"finish_reason":"length"}]}\n\n' +
+      "data: [DONE]\n\n";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(sse, { status: 200 })),
+    );
+    const out = await collect(groqChatStream("test-key")([]));
+    expect(out).toEqual(["Stop the exercise and", TRUNCATION_NOTE]);
+  });
+
+  it("treats a truncated stream with no text as no answer, so the other provider is tried", async () => {
+    const empty =
+      'data: {"choices":[{"delta":{},"finish_reason":"length"}]}' +
+      String.fromCharCode(10, 10) +
+      "data: [DONE]" +
+      String.fromCharCode(10, 10);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(empty, { status: 200 })),
+    );
+    await expect(
+      collect(groqChatStream("test-key")([])),
+    ).rejects.toBeInstanceOf(ProviderError);
+    const geminiEmpty =
+      'data: {"candidates":[{"content":{"parts":[{"thought":true,"text":"hmm"}]},"finishReason":"MAX_TOKENS"}]}' +
+      String.fromCharCode(10, 10);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(geminiEmpty, { status: 200 })),
+    );
+    await expect(
+      collect(geminiChatStream("test-key")([])),
+    ).rejects.toBeInstanceOf(ProviderError);
+  });
+
+  it("adds no note when Groq finished normally", async () => {
+    const sse =
+      'data: {"choices":[{"delta":{"content":"Done."},"finish_reason":null}]}\n\n' +
+      'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\n' +
+      "data: [DONE]\n\n";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(sse, { status: 200 })),
+    );
+    expect(await collect(groqChatStream("test-key")([]))).toEqual(["Done."]);
+  });
+
+  it("ends a Gemini reply that hit MAX_TOKENS with the same note", async () => {
+    const sse =
+      'data: {"candidates":[{"content":{"parts":[{"text":"Keep your back"}]},"finishReason":"MAX_TOKENS"}]}\n\n';
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(sse, { status: 200 })),
+    );
+    const out = await collect(geminiChatStream("test-key")([]));
+    expect(out).toEqual(["Keep your back", TRUNCATION_NOTE]);
+  });
+
+  it("adds no note when Gemini finished with STOP", async () => {
+    const sse =
+      'data: {"candidates":[{"content":{"parts":[{"text":"All good."}]},"finishReason":"STOP"}]}\n\n';
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(sse, { status: 200 })),
+    );
+    expect(await collect(geminiChatStream("test-key")([]))).toEqual([
+      "All good.",
+    ]);
+  });
+});
+
 describe("groqChatStream", () => {
   afterEach(() => vi.unstubAllGlobals());
 
@@ -191,9 +269,10 @@ describe("coachReplyStream uses the chat turn's checks", () => {
         `turn ${HISTORY_TURNS - MAX_HISTORY_MESSAGES} `,
       ),
     ).toBe(true);
-    expect(messages.every((m) => m.content.length <= MAX_MESSAGE_CHARS)).toBe(
-      true,
-    );
+    // The cap is on what the user and the coach said, not on the system prompt.
+    expect(
+      messages.slice(1).every((m) => m.content.length <= MAX_MESSAGE_CHARS),
+    ).toBe(true);
   });
 
   it("answers an empty message without opening the stream", async () => {

@@ -43,7 +43,7 @@ export default function RunMetricsForm({
       </label>
       <fieldset className="grid grid-cols-2 gap-2 border-0 p-0">
         <legend className="mb-1.5 text-xs font-semibold">Duration</legend>
-        <label className="grid gap-1.5 text-[10px] text-foreground/60">
+        <label className="grid gap-1.5 text-sm text-foreground/60">
           MINUTES
           <input
             className="h-11 w-full border border-foreground/20 bg-white px-3 text-sm text-foreground outline-none focus:border-foreground focus:ring-2 focus:ring-foreground/10"
@@ -56,7 +56,7 @@ export default function RunMetricsForm({
             type="number"
           />
         </label>
-        <label className="grid gap-1.5 text-[10px] text-foreground/60">
+        <label className="grid gap-1.5 text-sm text-foreground/60">
           SECONDS
           <input
             className="h-11 w-full border border-foreground/20 bg-white px-3 text-sm text-foreground outline-none focus:border-foreground focus:ring-2 focus:ring-foreground/10"
