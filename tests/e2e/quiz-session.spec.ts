@@ -113,7 +113,7 @@ test("an athlete completes the quiz and logs a session without touching another 
     await page
       .getByLabel("How would you describe your experience?")
       .selectOption("BEGINNER");
-    await page.getByLabel("Bodyweight only", { exact: true }).check();
+    await page.getByLabel("Bodyweight", { exact: true }).check();
     await page
       .getByRole("button", { name: "Save profile", exact: true })
       .click();

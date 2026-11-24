@@ -3,11 +3,25 @@ import { AppNav } from "@/components/nav/AppNav";
 import theme from "@/components/theme/app-theme.module.css";
 import QuizForm from "@/components/QuizForm";
 import { requireUser } from "@/lib/auth/session";
+import { answersFromProfile } from "@/lib/onboarding/answers";
 import { loadAvatarUrl } from "@/lib/photos/avatar";
+import { prisma } from "@/lib/prisma";
 
 export default async function OnboardingPage() {
   const user = await requireUser();
   const avatarUrl = await loadAvatarUrl(user.id);
+  // The saved answers, so the form shows them again instead of the defaults (#138).
+  const profile = await prisma.profile.findUnique({
+    where: { userId: user.id },
+    select: {
+      goal: true,
+      level: true,
+      trainingMode: true,
+      daysPerWeek: true,
+      equipment: true,
+      injuries: true,
+    },
+  });
 
   return (
     <AccountTheme
@@ -37,7 +51,7 @@ export default async function OnboardingPage() {
           </p>
         </div>
 
-        <QuizForm />
+        <QuizForm initial={answersFromProfile(profile)} />
       </div>
     </AccountTheme>
   );
