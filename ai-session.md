@@ -769,3 +769,13 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Did with it:** A separate review agent that had not seen the draft checked it against the code and found three errors that I fixed: "Why this plan" is not on any screen on main, the quiz is reached from Edit profile and shows a saved message with a link rather than the plan, and the cached plans do not back the chat step. I also fixed the backup step numbers, the missing Start workout click and the 4:40 cut. The changed lines were re-read by me only. The signed-in walk, the timings and the seed account are not done: creating the demo account's mailbox was refused, so they wait on that.
 
 **Tools:** gh, git, Prettier, Playwright, one general-purpose review agent. No skills.
+
+## 24 November (evening): weight hint for more equipment (#144)
+
+**Asked:** To finish the part of #144 that was left: the KG field hint for foam roll, exercise ball, bands and "other" exercises.
+
+**Got:** A change to `src/lib/workout/weightPlaceholder.ts` and its test. Foam roll shows Bodyweight; bands, exercise ball and "other" show "Optional kg"; everything else except body only still shows "Load in kg". The equipment values were checked against the free-exercise-db file on 24 November. AI drafted the code and tests.
+
+**Did with it:** The two new tests failed before the change. A review agent that had not seen the draft found that two exercise-ball moves are weighted and that the first hint text would be cut off in the narrow field; both fixed.
+
+**Tools:** gh, git, Prettier, ESLint, tsc, Vitest, one review agent. No skills.
