@@ -81,12 +81,14 @@ describe("PhotoViewer", () => {
     expect(document.activeElement).toBe(trigger);
   });
 
-  it("traps focus: the rest of the page is hidden from assistive tech while open", async () => {
+  it("hides the rest of the page from assistive tech while open, inside the themed page too", async () => {
     render(
-      <div>
+      // The dialog is portalled into this same <main>, so its siblings must
+      // still be hidden while it is open.
+      <main data-theme="light">
         <button type="button">Outside</button>
         <PhotoViewer photo={photo} />
-      </div>,
+      </main>,
     );
     expect(screen.getByRole("button", { name: "Outside" })).toBeTruthy();
     await act(async () => {
