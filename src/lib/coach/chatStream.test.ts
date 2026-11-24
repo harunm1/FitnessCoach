@@ -270,6 +270,7 @@ describe("coachReplyStream uses the chat turn's checks", () => {
       ),
     ).toBe(true);
     // The cap is on what the user and the coach said, not on the system prompt.
+    expect(messages[0].role).toBe("system");
     expect(
       messages.slice(1).every((m) => m.content.length <= MAX_MESSAGE_CHARS),
     ).toBe(true);

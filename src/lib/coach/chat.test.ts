@@ -624,8 +624,8 @@ describe("the coach prompt: tension is not pain, and the plan sets the numbers",
     expect(prompt).toMatch(/tension, tightness or stiffness is not pain/i);
     expect(prompt).toMatch(/form cues first/i);
     // The old blanket rule is gone: any pain report is no longer the only trigger.
-    expect(prompt).not.toContain(
-      "if the user reports pain, tell them to stop that exercise and see a professional",
+    expect(prompt).not.toMatch(
+      /if the user reports pain, tell them to stop that exercise/i,
     );
   });
 
