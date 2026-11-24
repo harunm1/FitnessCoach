@@ -1,5 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { buildDefaultPlan } from "./defaultPlan";
+import { buildHybridWeek } from "./hybridWeek";
 import { verifyPlan } from "./verify";
 import type {
   LibraryExercise,
@@ -452,5 +453,62 @@ describe("buildDefaultPlan sizes and verification (#139)", () => {
     expect(plan.days[0].exercises.map((e) => e.exerciseId)).not.toContain(
       "expert-squat",
     );
+  });
+});
+
+describe("the quiz path from #139: fat loss, both, expert, 3 days, full gym", () => {
+  it("gives each strength day more than four exercises, a barbell lift first", () => {
+    const week = buildHybridWeek(
+      {
+        ...fullGymProfile,
+        level: "EXPERT",
+        daysPerWeek: 3,
+        goal: "FAT_LOSS",
+        trainingMode: "BOTH",
+        activityLevel: "ACTIVE",
+        lastWeekKm: 0,
+        easyPaceSecPerKm: 360,
+      },
+      fullGym,
+    );
+    const strength = week.days.filter((d) => d.kind === "STRENGTH");
+    expect(strength.length).toBeGreaterThan(0);
+    for (const day of strength) {
+      expect(day.exercises.length).toBeGreaterThan(4);
+      expect(day.exercises[0].exerciseId).toMatch(/^barbell-/);
+    }
+  });
+});
+
+describe("a deadlift (primary muscle lower back) is a big lift (#145)", () => {
+  it("comes before the accessories on a legs day and gets the heavier prescription", () => {
+    const withDeadlift: CategorisedExercise[] = [
+      ...fullGym,
+      {
+        id: "barbell-deadlift",
+        category: "strength",
+        equipment: "barbell",
+        level: "intermediate",
+        primaryMuscles: ["lower back"],
+        secondaryMuscles: ["hamstrings"],
+      },
+    ];
+    const plan = buildDefaultPlan(
+      { ...fullGymProfile, daysPerWeek: 2, level: "EXPERT" },
+      withDeadlift,
+    );
+    const legs = plan.days[1].exercises; // Lower body: lower back is one of its extras
+    const at = legs.findIndex((e) => e.exerciseId === "barbell-deadlift");
+    expect(at).toBeGreaterThanOrEqual(0);
+    expect(legs[at].sets).toBe(4);
+    legs.slice(0, at).forEach((e) => expect(e.sets).toBe(4));
+    legs.slice(at + 1).forEach((e) => {
+      if (e.sets === 4) return;
+      expect(e.sets).toBe(3);
+    });
+    // Every 4-set lift sits before every 3-set one.
+    const lastHeavy = legs.map((e) => e.sets).lastIndexOf(4);
+    const firstLight = legs.findIndex((e) => e.sets === 3);
+    expect(lastHeavy).toBeLessThan(firstLight);
   });
 });

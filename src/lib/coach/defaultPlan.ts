@@ -77,6 +77,7 @@ const EQUIPMENT_ORDER = [
 const COMPOUND_MUSCLES = [
   "quadriceps",
   "hamstrings",
+  "lower back", // the deadlift: free-exercise-db lists lower back as its first primary muscle
   "glutes",
   "chest",
   "middle back",
@@ -108,7 +109,7 @@ const compoundRank = (exercise: LibraryExercise) => {
 
 // A simplification: a lift is called compound by its first primary muscle and free-weight
 // equipment, not by what the movement is, because the library carries no lift type. A
-// dumbbell fly counts; a leg press (machine) does not.
+// dumbbell fly counts; a leg press (machine) does not. A deadlift counts through lower back.
 const isCompound = (exercise: LibraryExercise) =>
   compoundRank(exercise) < COMPOUND_MUSCLES.length &&
   (exercise.equipment === "barbell" || exercise.equipment === "dumbbell");
