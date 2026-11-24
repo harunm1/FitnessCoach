@@ -88,6 +88,18 @@ describe("importWorkouts", () => {
     expect(state.summary.newWorkouts).toBe(1);
   });
 
+  it("bounds the already-imported lookup to the user's own rows and the file's workout count (#76)", async () => {
+    const state = await importWorkouts(
+      idle,
+      form({ intent: "preview", file: csvFile() }),
+    );
+    if (state.status !== "preview") throw new Error(JSON.stringify(state));
+    const query = database.workout.findMany.mock.calls[0][0];
+    expect(query.take).toBe(state.summary.workouts);
+    expect(query.where.userId).toBe("user-1");
+    expect(query.select).toEqual({ importKey: true });
+  });
+
   it("refuses a missing file, a non-CSV name and an oversize file", async () => {
     const none = await importWorkouts(idle, form({ intent: "preview" }));
     const wrongName = await importWorkouts(
