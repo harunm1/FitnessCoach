@@ -6,12 +6,13 @@
 import { revalidatePath } from "next/cache";
 import { requireTier } from "@/lib/auth/access";
 import { claimCoachPlanRequest } from "@/lib/auth/plan-rate-limit";
-import { COACH_TIERS } from "@/lib/auth/tier";
+import { PLAN_TIERS } from "@/lib/auth/tier";
 import { providerEventCollector } from "@/lib/coach/coachLog";
 import { prismaCoachSink } from "@/lib/coach/coachSink";
 import { demoPlans } from "@/lib/coach/demoPlans";
 import { generatePlan } from "@/lib/coach/generatePlan";
 import {
+  UNAVAILABLE_MESSAGE,
   personalizePlan,
   type PersonalizeState,
 } from "@/lib/coach/personalize";
@@ -25,7 +26,14 @@ const FORBIDDEN = 403;
 
 // useActionState passes the previous state; it is not needed, so it is not declared.
 export async function personalizeWithCoach(): Promise<PersonalizeState> {
-  const account = await requireTier(COACH_TIERS);
+  // Every tier can request a plan (#51); only the coach chat is a pro feature. A database
+  // failure in the access lookup is an error state, with no claim and no model call.
+  let account: Awaited<ReturnType<typeof requireTier>>;
+  try {
+    account = await requireTier(PLAN_TIERS);
+  } catch {
+    return { status: "error", message: UNAVAILABLE_MESSAGE };
+  }
   if (!account.ok) {
     return {
       status: "error",

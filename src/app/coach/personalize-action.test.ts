@@ -1,6 +1,7 @@
 // The "Personalize with the coach" Server Action (#58): authentication first, then the
 // #107 plan-request claim before any model call, then save and refresh.
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { UNAVAILABLE_MESSAGE } from "@/lib/coach/personalize";
 import { TIER_MESSAGE } from "./copy";
 
 const mocks = vi.hoisted(() => ({
@@ -77,6 +78,28 @@ describe("personalizeWithCoach", () => {
       expect(mocks.generatePlan).not.toHaveBeenCalled();
     },
   );
+
+  // #51: every tier can request a plan; only the coach chat is a pro feature. An expired
+  // trial resolves to FREE inside requireTier, so FREE in the list covers it too.
+  it("lets every tier request a plan, FREE and an expired TRIAL included (#51)", async () => {
+    await personalizeWithCoach();
+    const [allowed] = mocks.requireTier.mock.calls[0] ?? [];
+    expect(allowed).toEqual(
+      expect.arrayContaining(["FREE", "TRIAL", "PRO", "ADMIN"]),
+    );
+  });
+
+  it("returns a generic error, with no claim or model call, when the access lookup throws", async () => {
+    mocks.requireTier.mockRejectedValue(new Error("connection refused: db"));
+    expect(await personalizeWithCoach()).toEqual({
+      status: "error",
+      message: UNAVAILABLE_MESSAGE,
+    });
+    expect(mocks.claim).not.toHaveBeenCalled();
+    expect(mocks.coachModel).not.toHaveBeenCalled();
+    expect(mocks.generatePlan).not.toHaveBeenCalled();
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
 
   it("claims for the session user before the model, saves a coach plan as strength days and refreshes the session screen", async () => {
     const state = await personalizeWithCoach();
