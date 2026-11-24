@@ -1,11 +1,11 @@
 import { z } from "zod";
 
-// Bounds shared with the CHECKs in 20261124190000_add_body_weight (D24) and
-// with the progress photo form, so a weight valid in one place is valid in all.
-export const MIN_WEIGHT_KG = 20;
-export const MAX_WEIGHT_KG = 400;
-export const MAX_NOTE_LENGTH = 300;
-export const EARLIEST_DAY = "2000-01-01";
+import {
+  EARLIEST_DAY,
+  MAX_NOTE_LENGTH,
+  MAX_WEIGHT_KG,
+  MIN_WEIGHT_KG,
+} from "./weightLimits";
 
 const WEIGHT_MESSAGE = `Enter a weight between ${MIN_WEIGHT_KG} and ${MAX_WEIGHT_KG} kg.`;
 const DATE_MESSAGE = "Choose the day you weighed yourself.";
@@ -31,12 +31,16 @@ function isCalendarDay(text: string): boolean {
   return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(text);
 }
 
-// Some keyboards type "81,5"; the database keeps two decimals.
+// Up to three digits, then optionally a "." or "," and more digits (rounded below):
+// "81.5" and "81,5" (some keyboards) pass; "0x50", "1e2" and "81.5.2" do not,
+// though Number() would read the first two as 80 and 100.
+const WEIGHT_TEXT = /^\d{1,3}([.,]\d+)?$/;
+
 const weightSchema = z
   .string({ error: WEIGHT_MESSAGE })
   .trim()
   .transform((text) =>
-    text === "" ? Number.NaN : Number(text.replace(",", ".")),
+    WEIGHT_TEXT.test(text) ? Number(text.replace(",", ".")) : Number.NaN,
   )
   .pipe(
     z

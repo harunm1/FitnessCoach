@@ -7,8 +7,9 @@ import {
 const SIZE = { width: 600, height: 200, padding: 16 };
 
 // A line of the user's weigh-ins over time, oldest on the left (D24). Plain
-// SVG drawn on the server; the label gives the range for screen readers and
-// the list next to it gives every value as text.
+// SVG drawn on the server. For screen readers the label gives the first and
+// last weigh-ins and the caption the lightest and heaviest; the section's list
+// gives the five latest as text.
 export default function WeightChart({ entries }: { entries: WeightPoint[] }) {
   const chart = weightChart(entries, SIZE);
   if (!chart) return null;
@@ -42,7 +43,7 @@ export default function WeightChart({ entries }: { entries: WeightPoint[] }) {
       <figcaption className="flex justify-between text-xs text-foreground/60">
         <span>{dayLabel(first.date)}</span>
         <span>
-          {chart.minKg} to {chart.maxKg} kg
+          Lightest {chart.lowestKg} kg, heaviest {chart.highestKg} kg
         </span>
         <span>{dayLabel(last.date)}</span>
       </figcaption>

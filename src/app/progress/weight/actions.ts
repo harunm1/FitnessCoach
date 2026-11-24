@@ -9,7 +9,11 @@ import { parseWeightEntry } from "@/lib/progress/weight";
 export type WeightActionState =
   | { status: "idle" }
   | { status: "saved"; date: string }
-  | { status: "error"; message: string };
+  | { status: "error"; message: string; values?: WeightFormValues };
+
+// What the user typed, sent back with an error so the form can show it again
+// (React resets a form after every action).
+export type WeightFormValues = { date: string; weightKg: string; note: string };
 
 const PROGRESS_PATH = "/progress";
 const UNAVAILABLE = "Your weight couldn't be saved right now. Try again.";
@@ -28,15 +32,20 @@ export async function logBodyWeight(
   // Outside try/catch, so a signed-out user is still redirected to sign in.
   const user = await requireUser();
 
-  const parsed = parseWeightEntry(
-    {
-      date: text(formData.get("date")),
-      weightKg: text(formData.get("weightKg")),
-      note: text(formData.get("note")),
-    },
-    dayKey(new Date()),
-  );
-  if (!parsed.ok) return { status: "error", message: parsed.message };
+  const fields = {
+    date: text(formData.get("date")),
+    weightKg: text(formData.get("weightKg")),
+    note: text(formData.get("note")),
+  };
+  const values: WeightFormValues = {
+    date: fields.date ?? "",
+    weightKg: fields.weightKg ?? "",
+    note: fields.note ?? "",
+  };
+  const parsed = parseWeightEntry(fields, dayKey(new Date()));
+  if (!parsed.ok) {
+    return { status: "error", message: parsed.message, values };
+  }
 
   const { date, weightKg, note } = parsed.value;
   // A Postgres date column: midnight UTC names the day without a time zone shift.
@@ -49,7 +58,7 @@ export async function logBodyWeight(
     });
   } catch (error) {
     console.error("[weight] saving failed", { userId: user.id, date, error });
-    return { status: "error", message: UNAVAILABLE };
+    return { status: "error", message: UNAVAILABLE, values };
   }
 
   revalidatePath(PROGRESS_PATH);

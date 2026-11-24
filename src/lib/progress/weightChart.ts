@@ -5,8 +5,10 @@ export type ChartSize = { width: number; height: number; padding: number };
 export type WeightChart = {
   points: (WeightPoint & { x: number; y: number })[];
   path: string; // an SVG path: "M10 30 L290 70"
-  minKg: number;
+  minKg: number; // the axis, padded by MARGIN_KG
   maxKg: number;
+  lowestKg: number; // the user's own lightest and heaviest weigh-ins
+  highestKg: number;
 };
 
 // Room above the heaviest and below the lightest day, so the line never
@@ -24,6 +26,8 @@ const byDate = (a: WeightPoint, b: WeightPoint) => a.date.localeCompare(b.date);
 const STEPS_PER_PX = 10;
 const STEPS_PER_KG = 100;
 const tidy = (value: number) => Math.round(value * STEPS_PER_PX) / STEPS_PER_PX;
+// So 64.1 - 1 is 63.1, not 63.099999999999994.
+const roundKg = (kg: number) => Math.round(kg * STEPS_PER_KG) / STEPS_PER_KG;
 
 // Where each weigh-in sits in a width × height box: days spread left (oldest)
 // to right (newest) by date, heavier higher. Null when there is nothing to draw.
@@ -34,8 +38,10 @@ export function weightChart(
   if (entries.length === 0) return null;
   const sorted = [...entries].sort(byDate);
   const kgs = sorted.map((entry) => entry.weightKg);
-  const minKg = Math.min(...kgs) - MARGIN_KG;
-  const maxKg = Math.max(...kgs) + MARGIN_KG;
+  const lowestKg = Math.min(...kgs);
+  const highestKg = Math.max(...kgs);
+  const minKg = roundKg(lowestKg - MARGIN_KG);
+  const maxKg = roundKg(highestKg + MARGIN_KG);
   const firstDay = dayNumber(sorted[0].date);
   const daySpan = dayNumber(sorted[sorted.length - 1].date) - firstDay;
   const innerWidth = width - 2 * padding;
@@ -56,7 +62,7 @@ export function weightChart(
   const path = points
     .map((point, index) => `${index === 0 ? "M" : "L"}${point.x} ${point.y}`)
     .join(" ");
-  return { points, path, minKg, maxKg };
+  return { points, path, minKg, maxKg, lowestKg, highestKg };
 }
 
 export type WeightSummary = {
@@ -74,10 +80,7 @@ export function weightSummary(entries: WeightPoint[]): WeightSummary | null {
   return {
     latest,
     first,
-    // So 80.4 - 82 shows as -1.6 and not -1.5999999999999943.
-    changeKg:
-      Math.round((latest.weightKg - first.weightKg) * STEPS_PER_KG) /
-      STEPS_PER_KG,
+    changeKg: roundKg(latest.weightKg - first.weightKg),
   };
 }
 

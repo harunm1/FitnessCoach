@@ -65,6 +65,23 @@ describe("weightChart", () => {
   });
 });
 
+describe("weightChart ranges", () => {
+  it("rounds the padded axis and reports the user's own lightest and heaviest", () => {
+    const chart = weightChart(
+      [
+        { date: "2026-11-01", weightKg: 64.1 },
+        { date: "2026-11-02", weightKg: 65 },
+      ],
+      SIZE,
+    );
+    // 64.1 - 1 in floating point is 63.099999999999994.
+    expect(chart?.minKg).toBe(63.1);
+    expect(chart?.maxKg).toBe(66);
+    expect(chart?.lowestKg).toBe(64.1);
+    expect(chart?.highestKg).toBe(65);
+  });
+});
+
 describe("weightSummary", () => {
   it("is empty without entries", () => {
     expect(weightSummary([])).toBeNull();

@@ -44,6 +44,9 @@ describe("parseWeightEntry", () => {
     ["19.99", "Enter a weight between 20 and 400 kg."],
     ["400.01", "Enter a weight between 20 and 400 kg."],
     ["Infinity", "Enter a weight between 20 and 400 kg."],
+    ["0x50", "Enter a weight between 20 and 400 kg."],
+    ["1e2", "Enter a weight between 20 and 400 kg."],
+    ["81.5.2", "Enter a weight between 20 and 400 kg."],
   ])("refuses the weight %j", (weightKg, message) => {
     expect(entry({ weightKg })).toEqual({ ok: false, message });
   });

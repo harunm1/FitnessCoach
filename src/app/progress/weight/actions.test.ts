@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { requireUser, revalidatePath, database } = vi.hoisted(() => ({
   requireUser: vi.fn(),
@@ -22,6 +22,10 @@ function form(fields: Record<string, string>) {
 }
 
 let logged: ReturnType<typeof vi.spyOn>;
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -78,7 +82,7 @@ describe("logBodyWeight", () => {
       idle,
       form({ date: "2026-11-25", weightKg: "81" }),
     );
-    expect(tomorrow).toEqual({
+    expect(tomorrow).toMatchObject({
       status: "error",
       message: "That day hasn't happened yet.",
     });
@@ -94,9 +98,11 @@ describe("logBodyWeight", () => {
       idle,
       form({ date: "2026-11-23", weightKg: "5" }),
     );
+    // The typed values come back, so the form can show them again.
     expect(result).toEqual({
       status: "error",
       message: "Enter a weight between 20 and 400 kg.",
+      values: { date: "2026-11-23", weightKg: "5", note: "" },
     });
     expect(database.bodyWeight.upsert).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
@@ -117,6 +123,7 @@ describe("logBodyWeight", () => {
     expect(result).toEqual({
       status: "error",
       message: "Your weight couldn't be saved right now. Try again.",
+      values: { date: "2026-11-23", weightKg: "81", note: "" },
     });
     expect(logged).toHaveBeenCalledWith(
       "[weight] saving failed",

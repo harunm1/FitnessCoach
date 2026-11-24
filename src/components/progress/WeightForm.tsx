@@ -8,8 +8,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { EARLIEST_DAY, MAX_NOTE_LENGTH } from "@/lib/progress/weight";
 import { dayLabel } from "@/lib/progress/weightChart";
+import { EARLIEST_DAY, MAX_NOTE_LENGTH } from "@/lib/progress/weightLimits";
 
 // Logs one weigh-in (D24). The browser limits are only hints; the Server
 // Action checks every field again.
@@ -18,6 +18,9 @@ export default function WeightForm({ today }: { today: string }) {
     logBodyWeight,
     { status: "idle" },
   );
+  // React resets the form after each action, to these defaults: after an
+  // error they are what the user typed, so nothing has to be typed again.
+  const typed = state.status === "error" ? state.values : undefined;
   return (
     <form
       action={action}
@@ -29,7 +32,7 @@ export default function WeightForm({ today }: { today: string }) {
           id="weight-date"
           name="date"
           type="date"
-          defaultValue={today}
+          defaultValue={typed?.date ?? today}
           min={EARLIEST_DAY}
           max={today}
           required
@@ -45,6 +48,7 @@ export default function WeightForm({ today }: { today: string }) {
           inputMode="decimal"
           autoComplete="off"
           placeholder="81.5"
+          defaultValue={typed?.weightKg ?? ""}
           className="w-28"
           required
         />
@@ -57,18 +61,20 @@ export default function WeightForm({ today }: { today: string }) {
           type="text"
           maxLength={MAX_NOTE_LENGTH}
           placeholder="Morning, before breakfast"
+          defaultValue={typed?.note ?? ""}
         />
       </div>
       <Button type="submit" disabled={pending}>
         {pending ? "Saving…" : "Save weight"}
       </Button>
-      <p
-        role={state.status === "error" ? "alert" : "status"}
-        className="m-0 text-sm sm:col-span-4"
-      >
-        {state.status === "error" && state.message}
+      {/* Two regions, both in the page from the start, so each is announced
+          when filled; a region whose role changes may not be read out. */}
+      <p role="status" className="m-0 text-sm sm:col-span-4">
         {state.status === "saved" &&
           `Saved your weight for ${dayLabel(state.date)}.`}
+      </p>
+      <p role="alert" className="m-0 text-sm sm:col-span-4">
+        {state.status === "error" && state.message}
       </p>
     </form>
   );
