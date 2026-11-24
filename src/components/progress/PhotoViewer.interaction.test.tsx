@@ -19,11 +19,7 @@ const photo = {
   note: "After the first block",
 };
 
-// The date exactly as the app formats it (ICU versions differ on "Nov.").
-const DATE = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "America/Toronto",
-  dateStyle: "medium",
-}).format(photo.takenAt);
+const DATE = "Nov 12, 2026";
 
 afterEach(cleanup);
 
@@ -39,8 +35,13 @@ async function openViewer() {
 }
 
 describe("PhotoViewer", () => {
-  it("shows a thumbnail button with the photo's date and weight", () => {
+  it("shows the thumbnail as a button named for the photo's date and weight", () => {
     render(<PhotoViewer photo={photo} />);
+    expect(
+      screen.getByRole("button", {
+        name: `Enlarge progress photo from ${DATE}, 81.5 kg`,
+      }),
+    ).toBeTruthy();
     const thumbnail = screen.getByAltText(
       `Progress photo from ${DATE}, 81.5 kg`,
     );
@@ -55,7 +56,8 @@ describe("PhotoViewer", () => {
     const title = document.getElementById(
       dialog.getAttribute("aria-labelledby") ?? "",
     );
-    expect(title?.textContent).toBe(`${DATE} · 81.5 kg`);
+    // A hidden prefix says what the dialog shows; the dotted caption is visible.
+    expect(title?.textContent).toBe(`Progress photo, ${DATE} · 81.5 kg`);
     const images = dialog.querySelectorAll("img");
     expect(images).toHaveLength(1);
     expect(images[0].getAttribute("src")).toBe(photo.url);
@@ -77,6 +79,38 @@ describe("PhotoViewer", () => {
     });
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(document.activeElement).toBe(trigger);
+  });
+
+  it("traps focus: the rest of the page is hidden from assistive tech while open", async () => {
+    render(
+      <div>
+        <button type="button">Outside</button>
+        <PhotoViewer photo={photo} />
+      </div>,
+    );
+    expect(screen.getByRole("button", { name: "Outside" })).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: /^Enlarge progress photo/ }),
+      );
+    });
+    await screen.findByRole("dialog");
+    expect(screen.queryByRole("button", { name: "Outside" })).toBeNull();
+  });
+
+  it("opens inside the page's theme, so dark mode applies to it", async () => {
+    render(
+      <main data-theme="dark">
+        <PhotoViewer photo={photo} />
+      </main>,
+    );
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: /^Enlarge progress photo/ }),
+      );
+    });
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog.closest('[data-theme="dark"]')).not.toBeNull();
   });
 
   it("closes with the Close button", async () => {
