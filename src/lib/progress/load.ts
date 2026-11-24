@@ -1,6 +1,7 @@
 // The only progress file that talks to the database (#16). It returns plain objects
 // (types.ts), so the rest of the progress code and the components stay testable.
 import { prisma } from "@/lib/prisma";
+import { IMPORT_SOURCE } from "@/lib/import/save";
 import type { ProgressWorkout } from "./types";
 
 // The user's finished workouts since a date, oldest first. One query loads the
@@ -22,6 +23,8 @@ export async function loadFinishedWorkouts(
       finishedAt: true,
       distanceKm: true,
       durationSeconds: true,
+      source: true,
+      notes: true,
       planDay: { select: { name: true } },
       plan: { select: { days: { select: { kind: true } } } },
       sets: {
@@ -48,7 +51,10 @@ export async function loadFinishedWorkouts(
     startedAt: row.startedAt,
     // The query only returns finished workouts.
     finishedAt: row.finishedAt as Date,
-    dayName: row.planDay?.name ?? null,
+    // An imported workout has no plan day; its title was saved in notes.
+    dayName:
+      row.planDay?.name ?? (row.source === IMPORT_SOURCE ? row.notes : null),
+    imported: row.source === IMPORT_SOURCE,
     planDays: row.plan?.days.filter((day) => day.kind !== "REST").length ?? 0,
     distanceKm: row.distanceKm === null ? null : Number(row.distanceKm),
     runSeconds: row.durationSeconds,

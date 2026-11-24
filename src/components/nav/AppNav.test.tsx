@@ -25,6 +25,7 @@ describe("AppNav", () => {
       { href: "/coach", text: "Coach" },
       { href: "/progress", text: "Progress" },
       { href: "/progress/photos", text: "Photos" },
+      { href: "/import", text: "Import" },
       { href: "/account", text: "Free Demo" },
     ]);
   });
@@ -38,6 +39,7 @@ describe("AppNav", () => {
     ["coach", "/coach"],
     ["progress", "/progress"],
     ["photos", "/progress/photos"],
+    ["import", "/import"],
     ["account", "/account"],
   ] as const)("marks only %s as the current page", (current, href) => {
     const found = links(render({ current }));

@@ -7,6 +7,7 @@ export type DayWorkout = {
   minutes: number;
   exercises: ExerciseGroup[];
   run: { distanceKm: number; time: string; pace: string | null } | null;
+  imported?: boolean; // read from another app's export, not logged in the app (#131)
 };
 
 type DayDetailsProps = {
@@ -41,7 +42,14 @@ export default function DayDetails({ dayLabel, workouts }: DayDetailsProps) {
               key={workout.id}
             >
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h3 className="m-0 text-base font-semibold">{workout.name}</h3>
+                <h3 className="m-0 text-base font-semibold">
+                  {workout.name}
+                  {workout.imported && (
+                    <span className="ml-2 border border-foreground/30 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
+                      Imported
+                    </span>
+                  )}
+                </h3>
                 <p className="m-0 text-xs text-foreground/60">
                   {workout.startTime} · {workout.minutes} min
                 </p>
