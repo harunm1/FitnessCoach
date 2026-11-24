@@ -729,3 +729,13 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Did with it:** Wrote the failing test first for each change, ran lint, the type check, the format check and the full unit suite, and had a review agent that had not seen the work read the branch before the push. The reviews of my open pull requests found real faults, which I fixed on their branches: a header with a million columns could keep the server busy for over a minute on the Hevy import (#147), a deadlift was ordered with the light work in the starter plan (#149), and a comment on #98 said the chat path supplies a value that nothing supplies. I took a change to Mohammad's body-map prompt out of #146 and left a note for him instead. #127 waits until after the freeze. Not done: the starter-plan fixes for equipment-poor main lifts, and the other should-fix items listed on each pull request.
 
 **Tools:** gh, git, Prettier, ESLint, tsc, Vitest, review agents (pr-review-toolkit code-reviewer, one per pull request and one for the fix branch). No skills.
+
+## 23 November (evening): rehearsal of the live demo
+
+**Asked:** For a written click path of the live demo with what the audience must see and a fallback per step, and a walk of every step on the live site, so the demo runs clean at the 24 November rehearsal and on 4 December.
+
+**Got:** `docs/DEMO_SCRIPT.md`, and two issues with a `demo-blocker` label from the part of the walk that needs no account: the top menu is cut off at 1280 x 720 (#153) and text under 14 px on sign-in, sign-up and the session screen (#154). AI drafted the script from the code and the slide plan.
+
+**Did with it:** A separate review agent that had not seen the draft checked it against the code and found three errors that I fixed: "Why this plan" is not on any screen on main, the quiz is reached from Edit profile and shows a saved message with a link rather than the plan, and the cached plans do not back the chat step. I also fixed the backup step numbers, the missing Start workout click and the 4:40 cut. The changed lines were re-read by me only. The signed-in walk, the timings and the seed account are not done: creating the demo account's mailbox was refused, so they wait on that.
+
+**Tools:** gh, git, Prettier, Playwright, one general-purpose review agent. No skills.
