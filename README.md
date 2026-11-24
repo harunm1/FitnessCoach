@@ -125,6 +125,8 @@ npm run db:seed
 npm run dev
 ```
 
+These three commands are the same in PowerShell.
+
 Stop PostgreSQL while keeping its data in the named volume:
 
 ```bash

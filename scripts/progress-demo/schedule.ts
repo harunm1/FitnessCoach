@@ -177,6 +177,7 @@ export function expectedStreaks(now: Date) {
         startedAt: start,
         finishedAt: start,
         dayName: null,
+        imported: false,
         planDays: w.withPlan ? DEMO_PLAN_DAYS : 0,
         distanceKm: null,
         runSeconds: null,

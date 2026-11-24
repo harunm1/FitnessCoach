@@ -190,7 +190,7 @@ describe("the call limit", () => {
   it("stops a stalled call at the given limit and reports a timeout", async () => {
     stalled();
     const started = Date.now();
-    const error = await groqModel(KEY, undefined, {
+    const error = await groqModel(KEY, undefined, undefined, {
       timeoutMs: SHORT_LIMIT_MS,
     })("Build a plan as JSON").catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ProviderError);

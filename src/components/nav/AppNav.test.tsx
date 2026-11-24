@@ -1,5 +1,13 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@/components/auth/account-theme", () => ({
+  ThemeToggle: () => <button type="button">Theme</button>,
+}));
+vi.mock("@/components/auth/sign-out-button", () => ({
+  SignOutButton: () => <button type="button">Sign out</button>,
+}));
+
 import { AppNav } from "./AppNav";
 
 // Every <a> in the markup as { href, text, current }.
@@ -25,6 +33,7 @@ describe("AppNav", () => {
       { href: "/coach", text: "Coach" },
       { href: "/progress", text: "Progress" },
       { href: "/progress/photos", text: "Photos" },
+      { href: "/import", text: "Import" },
       { href: "/account", text: "Free Demo" },
     ]);
   });
@@ -38,6 +47,7 @@ describe("AppNav", () => {
     ["coach", "/coach"],
     ["progress", "/progress"],
     ["photos", "/progress/photos"],
+    ["import", "/import"],
     ["account", "/account"],
   ] as const)("marks only %s as the current page", (current, href) => {
     const found = links(render({ current }));
@@ -60,5 +70,12 @@ describe("AppNav", () => {
     expect(
       render({ actions: <button type="button">Sign out</button> }),
     ).toContain("Sign out");
+  });
+
+  it("includes the common theme, verification and sign-out controls", () => {
+    const html = render();
+    expect(html).toContain("Theme");
+    expect(html).toContain("Verified account");
+    expect(html).toContain("Sign out");
   });
 });

@@ -60,6 +60,9 @@ describe("coachReply records each model call", () => {
     expect(records).toEqual([
       {
         kind: "chat",
+        inputTokens: null,
+        outputTokens: null,
+        guardrailVerdict: null,
         promptVersion: CHAT_PROMPT_VERSION,
         attempt: 1,
         latencyMs: STEP_MS,
@@ -99,6 +102,9 @@ describe("coachReply records each model call", () => {
     expect(records).toEqual([
       {
         kind: "chat",
+        inputTokens: null,
+        outputTokens: null,
+        guardrailVerdict: null,
         promptVersion: CHAT_PROMPT_VERSION,
         attempt: 1,
         latencyMs: STEP_MS,

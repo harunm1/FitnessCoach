@@ -25,6 +25,7 @@ vi.mock("next/navigation", () => ({
   redirect: (path: string) => {
     throw new Error(`redirect:${path}`);
   },
+  useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }),
 }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/prisma", async () => {
@@ -634,6 +635,61 @@ describe("quiz and session authorization with PostgreSQL", () => {
     expect(
       await db.setLog.findFirst({ where: { workoutId: ownWorkout.id } }),
     ).toMatchObject({ reps: 8, setNumber: 1 });
+  });
+
+  describe("repeating a set save (#42)", () => {
+    const submit = (setNumber: number, reps: number) =>
+      logSet(
+        exercises[0],
+        idle,
+        form({ setNumber: String(setNumber), reps: String(reps) }),
+      );
+
+    it("stores one row when the same set is submitted twice", async () => {
+      const ownWorkout = await workout(
+        first.id,
+        await plan(first.id, "First plan"),
+      );
+      await signIn(first);
+      await expect(submit(1, 8)).rejects.toThrow("redirect:/session");
+      await expect(submit(1, 8)).rejects.toThrow("redirect:/session");
+      const rows = await db.setLog.findMany({
+        where: { workoutId: ownWorkout.id },
+      });
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ setNumber: 1, reps: 8 });
+    });
+
+    it("keeps the latest values when a retry carries a correction", async () => {
+      const ownWorkout = await workout(
+        first.id,
+        await plan(first.id, "First plan"),
+      );
+      await signIn(first);
+      await expect(submit(1, 8)).rejects.toThrow("redirect:/session");
+      await expect(submit(1, 9)).rejects.toThrow("redirect:/session");
+      const rows = await db.setLog.findMany({
+        where: { workoutId: ownWorkout.id },
+      });
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ setNumber: 1, reps: 9 });
+    });
+
+    it("adds no row when an earlier set is resent after a later one", async () => {
+      const ownWorkout = await workout(
+        first.id,
+        await plan(first.id, "First plan"),
+      );
+      await signIn(first);
+      await expect(submit(1, 8)).rejects.toThrow("redirect:/session");
+      await expect(submit(2, 8)).rejects.toThrow("redirect:/session");
+      await expect(submit(1, 8)).rejects.toThrow("redirect:/session");
+      const rows = await db.setLog.findMany({
+        where: { workoutId: ownWorkout.id },
+        orderBy: { setNumber: "asc" },
+      });
+      expect(rows.map((row) => row.setNumber)).toEqual([1, 2]);
+    });
   });
 
   it("cannot log an exercise that is only on another user's plan", async () => {

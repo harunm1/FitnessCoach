@@ -15,6 +15,7 @@ export type ProgressWorkout = {
   startedAt: Date;
   finishedAt: Date;
   dayName: string | null; // the plan day, e.g. "Push"; null if the plan was deleted
+  imported: boolean; // read from another app's export (#131), not logged live in the app
   planDays: number; // training days (STRENGTH + RUN) in the workout's plan
   distanceKm: number | null; // set when a run was logged with the workout
   runSeconds: number | null;

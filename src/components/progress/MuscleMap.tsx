@@ -85,7 +85,7 @@ export default function MuscleMap({ slugs, label, labels }: MuscleMapProps) {
   return (
     <figure aria-label={label} className="m-0" role="group">
       <div
-        className="relative mx-auto grid max-w-sm grid-cols-2 gap-4 [&_svg]:h-auto [&_svg]:w-full"
+        className="relative mx-auto grid max-w-3xl grid-cols-2 gap-8 [&_svg]:h-auto [&_svg]:w-full"
         onPointerDown={show}
         onPointerMove={show}
         // A finger lifting also "leaves", so only a mouse hides the label here.
@@ -96,7 +96,7 @@ export default function MuscleMap({ slugs, label, labels }: MuscleMapProps) {
         {(["front", "back"] as const).map((side) => (
           <div key={side}>
             <Body border="none" data={data} defaultFill={NEUTRAL} side={side} />
-            <p className="mt-1 mb-0 text-center text-[10px] tracking-[0.12em] text-foreground/55 uppercase">
+            <p className="mt-2 mb-0 text-center text-sm font-semibold tracking-[0.08em] text-foreground/80 uppercase">
               {side}
             </p>
           </div>

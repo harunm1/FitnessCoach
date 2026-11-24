@@ -6,8 +6,8 @@ import type { Prisma } from "@/generated/prisma/client";
 import { testDatabase } from "../helpers/database";
 
 const MIGRATIONS = "prisma/migrations";
-const DEDUPE = `${MIGRATIONS}/20261110220112_keep_one_active_plan_and_open_workout/migration.sql`;
-const UNIQUES = `${MIGRATIONS}/20261110220243_one_active_plan_one_open_workout/migration.sql`;
+const DEDUPE = `${MIGRATIONS}/20261124180100_keep_one_active_plan_and_open_workout/migration.sql`;
+const UNIQUES = `${MIGRATIONS}/20261124180200_one_active_plan_one_open_workout/migration.sql`;
 const ROLLBACK = "roll back the dedupe test";
 const TRANSACTION_TIMEOUT_MS = 15_000;
 const HOUR_MS = 3_600_000;
@@ -162,7 +162,7 @@ async function dedupeOnDuplicates(tx: Prisma.TransactionClient) {
   };
 }
 
-describe("migration 20261110220112_keep_one_active_plan_and_open_workout", () => {
+describe("migration 20261124180100_keep_one_active_plan_and_open_workout", () => {
   it("keeps the newest active plan and open workout, closes logged duplicates and deletes empty ones", async () => {
     // Arrange, Act: everything runs in one transaction that is then rolled back.
     let result: Awaited<ReturnType<typeof dedupeOnDuplicates>> | undefined;

@@ -11,6 +11,7 @@ import {
 } from "./coachLog";
 import { buildDefaultPlan } from "./defaultPlan";
 import type { CachedPlan } from "./demoPlans";
+import type { Guard } from "./guardrails";
 import { ProviderError, type ProviderEvent } from "./providers";
 import type { PlanInput } from "./schema";
 import {
@@ -116,6 +117,10 @@ export type GenerateOptions = {
   log?: CoachSink; // one record per model call (#41)
   takeProviderEvents?: () => ProviderEvent[]; // from providerEventCollector
   now?: () => number;
+  // The #43 verdict on the user's message (guardrails.ts), the same on every record
+  // of this call. A plan call has no message to screen, so it stays null. A chat
+  // record takes its verdict in recordChatCall (chat.ts), not through this option.
+  guardrailVerdict?: Guard["action"] | null;
   // Demo mode (D12, #59), from demoPlans(): one attempt only, so a failure of any
   // kind reaches these plans at once; they are tried before the rule-based plan.
   demoPlans?: CachedPlan[];
@@ -129,6 +134,7 @@ export async function generatePlan(
     log,
     takeProviderEvents = () => [],
     now = Date.now,
+    guardrailVerdict = null,
     demoPlans,
   }: GenerateOptions = {},
 ): Promise<GeneratedPlan> {
@@ -136,7 +142,11 @@ export async function generatePlan(
   const byId = new Map(library.map((e) => [e.id, e]));
   let problems: string[] = [];
   let attempts = 0;
-  const base = { kind: "plan" as const, promptVersion: PLAN_PROMPT_VERSION };
+  const base = {
+    kind: "plan" as const,
+    promptVersion: PLAN_PROMPT_VERSION,
+    guardrailVerdict,
+  };
   // In demo mode a cached plan, already verified, beats a regeneration that costs
   // another wait; the worst case stays one pass through the provider chain.
   const maxAttempts = demoPlans ? 1 : MAX_ATTEMPTS;
@@ -154,20 +164,23 @@ export async function generatePlan(
         e instanceof ProviderError
           ? []
           : ["the reply was not valid JSON for the plan shape"];
-      const { served, providerEvents } = splitServed(takeProviderEvents());
+      const { served, tokens, providerEvents } =
+        splitServed(takeProviderEvents());
       await writeRecord(log, {
         ...base,
         attempt,
         latencyMs: now() - started,
         outcome: "error",
         ...served,
+        ...tokens,
         providerEvents,
         error: e instanceof Error ? e.message : String(e),
       });
       continue;
     }
     const latencyMs = now() - started;
-    const { served, providerEvents } = splitServed(takeProviderEvents());
+    const { served, tokens, providerEvents } =
+      splitServed(takeProviderEvents());
     const result = verifyPlan(namesToIds(raw, usable), profile, byId);
     if (result.ok) {
       await writeRecord(log, {
@@ -177,6 +190,7 @@ export async function generatePlan(
         outcome: okOutcome(attempt, providerEvents),
         providerEvents,
         ...served,
+        ...tokens,
         raw,
       });
       return {
@@ -194,6 +208,7 @@ export async function generatePlan(
       outcome: "rejected",
       providerEvents,
       ...served,
+      ...tokens,
       problems,
       raw,
     });
@@ -206,6 +221,8 @@ export async function generatePlan(
     latencyMs: 0,
     outcome: cachedPlan ? "cached" : "rule_based",
     providerEvents: [],
+    inputTokens: null, // no model call behind this record
+    outputTokens: null,
     problems,
     ...(cachedPlan ? { cachedProfileId: cachedPlan.profileId } : {}),
   });

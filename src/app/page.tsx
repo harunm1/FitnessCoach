@@ -30,7 +30,7 @@ export default async function Home() {
       <Card className="w-full max-w-sm text-center">
         <CardHeader>
           <CardTitle>
-            <h1 className="text-4xl font-semibold">FORM</h1>
+            <h1 className="text-4xl font-semibold">FitnessCoach</h1>
           </CardTitle>
           <CardDescription>
             A fitness coach for a routine that fits your life.
