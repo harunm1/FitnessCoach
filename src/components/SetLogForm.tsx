@@ -27,7 +27,7 @@ export default function SetLogForm({
   return (
     <form action={formAction} className="mt-4 flex flex-wrap items-end gap-2">
       <input name="setNumber" type="hidden" value={nextSetNumber} />
-      <label className="grid gap-1 text-[10px] font-semibold text-foreground/60">
+      <label className="grid gap-1 text-sm font-semibold text-foreground/60">
         REPS
         <input
           className="h-10 w-20 border border-foreground/20 bg-white px-2 text-sm text-foreground outline-none focus:border-foreground focus:ring-2 focus:ring-foreground/10"
@@ -39,7 +39,7 @@ export default function SetLogForm({
           type="number"
         />
       </label>
-      <label className="grid gap-1 text-[10px] font-semibold text-foreground/60">
+      <label className="grid gap-1 text-sm font-semibold text-foreground/60">
         KG
         <input
           className="h-10 w-24 border border-foreground/20 bg-white px-2 text-sm text-foreground outline-none placeholder:text-foreground/40 focus:border-foreground focus:ring-2 focus:ring-foreground/10"

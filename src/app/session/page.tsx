@@ -219,7 +219,7 @@ export default async function SessionPage() {
                                 >
                                   {sets.map((set) => (
                                     <li
-                                      className="list-none border border-foreground/15 bg-white px-2 py-1 text-[11px] text-foreground/70"
+                                      className="list-none border border-foreground/15 bg-white px-2 py-1 text-sm text-foreground/70"
                                       key={set.id}
                                     >
                                       Set {set.setNumber}: {set.reps} reps
@@ -264,7 +264,10 @@ export default async function SessionPage() {
                 aria-labelledby="run-entry-title"
                 className="mt-8 border-t border-foreground/15 pt-6"
               >
-                <p className="m-0 text-[10px] font-semibold tracking-[0.12em] text-foreground/55 uppercase">
+                <p
+                  className="m-0 text-[10px] font-semibold tracking-[0.12em] text-foreground/55 uppercase"
+                  data-projector-decorative="true"
+                >
                   Optional workout entry
                 </p>
                 <h2
