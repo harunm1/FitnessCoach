@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  CHAT_PROMPT_VERSION,
   EMPTY_REPLY,
   MAX_HISTORY_MESSAGES,
   MAX_MESSAGE_CHARS,
@@ -129,6 +130,20 @@ describe("buildCoachSystemPrompt", () => {
     expect(prompt).toContain("Never diagnose");
     expect(prompt).toMatch(/diet, calorie, supplement or meal advice/);
     expect(prompt).toContain("registered dietitian");
+    // The nutrition line is conditional, so the model does not volunteer it (#132).
+    expect(prompt).toMatch(
+      /Only if the user asks about diet, calories, supplements or meals/,
+    );
+    expect(prompt).toMatch(/Never mention nutrition otherwise/);
+    // Short answers, and no unrequested safety or recovery lines (#142).
+    expect(prompt).toMatch(/2 to 4 sentences/);
+    // A pain report still gets the stop-and-see-a-professional line.
+    expect(prompt).toMatch(
+      /If the user reports pain, tell them to stop that exercise and see a professional/,
+    );
+    expect(prompt).toMatch(/never add recovery, rest-time or injury advice/);
+    expect(CHAT_PROMPT_VERSION).toBe("chat-v4");
+    expect(prompt).not.toMatch(/under 120 words/);
     expect(prompt).toContain("Equipment: dumbbell, body only.");
     expect(prompt).toContain("rest day");
     expect(prompt).not.toMatch(/@|email|name:/i);
