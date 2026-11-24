@@ -1,4 +1,6 @@
 // The unsaved-retry notice (#63, #42): what went wrong, any reply marked as not saved, and a button that sends the same text again.
+import CoachMarkdown from "@/components/coach/CoachMarkdown";
+
 type UnsavedNoticeProps = {
   // The parent form's sender, so retries use the same authenticated endpoint.
   action: (formData: FormData) => void;
@@ -26,9 +28,9 @@ export default function UnsavedNotice({
           <p className="m-0 text-[10px] font-semibold tracking-[0.12em] text-foreground/70 uppercase">
             Not saved
           </p>
-          <p className="mt-1 mb-0 text-sm leading-6 whitespace-pre-line">
-            {reply}
-          </p>
+          <div className="mt-1">
+            <CoachMarkdown text={reply} />
+          </div>
         </div>
       ) : null}
       <form action={action} className="mt-3">

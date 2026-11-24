@@ -1,4 +1,5 @@
 // The saved conversation (#63), oldest first, in a live log so a screen reader reads each new reply.
+import CoachMarkdown from "@/components/coach/CoachMarkdown";
 import type { StoredMessage } from "@/lib/coach/conversation";
 
 type MessageListProps = { messages: StoredMessage[] };
@@ -28,9 +29,15 @@ export default function MessageList({ messages }: MessageListProps) {
             <p className="m-0 text-[10px] font-semibold tracking-[0.12em] text-foreground/70 uppercase">
               {message.role === "USER" ? "You" : "Coach"}
             </p>
-            <p className="mt-1 mb-0 text-sm leading-6 whitespace-pre-line">
-              {message.content}
-            </p>
+            {message.role === "USER" ? (
+              <p className="mt-1 mb-0 text-sm leading-6 whitespace-pre-line">
+                {message.content}
+              </p>
+            ) : (
+              <div className="mt-1">
+                <CoachMarkdown text={message.content} />
+              </div>
+            )}
           </li>
         ))
       )}

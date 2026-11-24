@@ -3,6 +3,14 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import MessageList from "./MessageList";
 
+const TABLE_REPLY = [
+  "**Hinge** first:",
+  "",
+  "| Set | Reps |",
+  "| --- | --- |",
+  "| 1 | 8 |",
+].join(String.fromCharCode(10));
+
 describe("MessageList", () => {
   it("renders the messages oldest first in a polite live log", () => {
     const html = renderToStaticMarkup(
@@ -45,5 +53,19 @@ describe("MessageList", () => {
 
     expect(html).not.toContain("<img");
     expect(html).toContain("&lt;img");
+  });
+
+  it("renders the coach's Markdown as elements and leaves the user's text as typed", () => {
+    const html = renderToStaticMarkup(
+      <MessageList
+        messages={[
+          { id: 1, role: "USER", content: "Use *stars* in my text" },
+          { id: 2, role: "ASSISTANT", content: TABLE_REPLY },
+        ]}
+      />,
+    );
+    expect(html).toContain("<strong>Hinge</strong>");
+    expect(html).toContain("<table");
+    expect(html).toContain("Use *stars* in my text");
   });
 });

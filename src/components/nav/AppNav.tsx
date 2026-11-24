@@ -5,7 +5,8 @@ import { ThemeToggle } from "@/components/auth/account-theme";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { UserBadge } from "@/components/photos/UserBadge";
 
-export type NavPage = "session" | "coach" | "progress" | "photos" | "account";
+export type NavPage =
+  "session" | "coach" | "progress" | "photos" | "import" | "account";
 
 // The main pages a signed-in user can move between, in menu order.
 export const NAV_LINKS: {
@@ -17,6 +18,7 @@ export const NAV_LINKS: {
   { page: "coach", href: "/coach", label: "Coach" },
   { page: "progress", href: "/progress", label: "Progress" },
   { page: "photos", href: "/progress/photos", label: "Photos" },
+  { page: "import", href: "/import", label: "Import" },
 ];
 
 // The bar at the top of every signed-in page: the logo, the main pages,

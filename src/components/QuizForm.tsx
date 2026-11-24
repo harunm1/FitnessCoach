@@ -1,8 +1,19 @@
 "use client";
 
-import { useActionState, useState, type FormEvent } from "react";
+import {
+  startTransition,
+  useActionState,
+  useState,
+  type FormEvent,
+} from "react";
 import Link from "next/link";
 import { saveQuizProfile } from "@/app/onboarding/actions";
+import {
+  DEFAULT_ANSWERS,
+  splitSentence,
+  toggleEquipment,
+  type QuizAnswers,
+} from "@/lib/onboarding/answers";
 import {
   equipmentOptions,
   quizProfileSchema,
@@ -12,7 +23,16 @@ import {
 const controlClassName =
   "mt-2 min-h-11 w-full border border-foreground/20 bg-white px-3 text-sm outline-none focus:border-foreground focus:ring-2 focus:ring-foreground/10";
 
-export default function QuizForm() {
+// `initial` is the saved profile when there is one (#138). The answers live in state, so
+// the form keeps showing them after Save profile instead of going back to the defaults.
+export default function QuizForm({
+  initial = DEFAULT_ANSWERS,
+}: {
+  initial?: QuizAnswers;
+}) {
+  const [answers, setAnswers] = useState<QuizAnswers>(initial);
+  const change = (patch: Partial<QuizAnswers>) =>
+    setAnswers((current) => ({ ...current, ...patch }));
   const initialState: QuizActionState = { status: "idle", message: "" };
   const [state, formAction, isPending] = useActionState(
     saveQuizProfile,
@@ -20,7 +40,11 @@ export default function QuizForm() {
   );
   const [clientError, setClientError] = useState("");
 
+  // Submitted by hand, not through the form's action prop: a form action resets the form
+  // when it finishes, and a controlled radio or checkbox then shows the answer it first
+  // mounted with instead of the current one (React's form reset, checked 22 Nov 2026).
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const parsed = quizProfileSchema.safeParse({
       goal: formData.get("goal"),
@@ -32,7 +56,6 @@ export default function QuizForm() {
     });
 
     if (!parsed.success) {
-      event.preventDefault();
       setClientError(
         parsed.error.issues[0]?.message ?? "Check your answers and try again.",
       );
@@ -40,10 +63,11 @@ export default function QuizForm() {
     }
 
     setClientError("");
+    startTransition(() => formAction(formData));
   }
 
   return (
-    <form action={formAction} className="space-y-7" onSubmit={handleSubmit}>
+    <form className="space-y-7" onSubmit={handleSubmit}>
       <fieldset className="space-y-3">
         <legend className="text-sm font-semibold">
           What is your main goal?
@@ -54,14 +78,15 @@ export default function QuizForm() {
             ["MUSCLE", "Build muscle"],
             ["FAT_LOSS", "Lose body fat"],
             ["GENERAL_FITNESS", "Improve general fitness"],
-          ].map(([value, label], index) => (
+          ].map(([value, label]) => (
             <label
               className="flex min-h-11 cursor-pointer items-center gap-3 border border-foreground/15 bg-white px-3 text-sm has-[:checked]:border-foreground has-[:checked]:bg-foreground/[0.04]"
               key={value}
             >
               <input
                 className="accent-foreground"
-                defaultChecked={index === 0}
+                checked={answers.goal === value}
+                onChange={() => change({ goal: value as QuizAnswers["goal"] })}
                 name="goal"
                 required
                 type="radio"
@@ -82,14 +107,17 @@ export default function QuizForm() {
             ["GYM", "Strength"],
             ["RUNNING", "Running"],
             ["BOTH", "Both"],
-          ].map(([value, label], index) => (
+          ].map(([value, label]) => (
             <label
               className="flex min-h-11 cursor-pointer items-center gap-3 border border-foreground/15 bg-white px-3 text-sm has-[:checked]:border-foreground has-[:checked]:bg-foreground/[0.04]"
               key={value}
             >
               <input
                 className="accent-foreground"
-                defaultChecked={index === 0}
+                checked={answers.trainingMode === value}
+                onChange={() =>
+                  change({ trainingMode: value as QuizAnswers["trainingMode"] })
+                }
                 name="trainingMode"
                 type="radio"
                 value={value}
@@ -106,7 +134,10 @@ export default function QuizForm() {
         </label>
         <select
           className={controlClassName}
-          defaultValue=""
+          value={answers.level}
+          onChange={(event) =>
+            change({ level: event.target.value as QuizAnswers["level"] })
+          }
           id="level"
           name="level"
           required
@@ -126,7 +157,11 @@ export default function QuizForm() {
         </label>
         <select
           className={controlClassName}
-          defaultValue="3"
+          value={answers.daysPerWeek}
+          onChange={(event) =>
+            change({ daysPerWeek: Number(event.target.value) })
+          }
+          aria-describedby="day-split"
           id="daysPerWeek"
           name="daysPerWeek"
         >
@@ -138,19 +173,39 @@ export default function QuizForm() {
         </select>
       </div>
 
+      <p
+        aria-live="polite"
+        className="m-0 text-sm text-foreground/70"
+        id="day-split"
+      >
+        {answers.daysPerWeek} {answers.daysPerWeek === 1 ? "day" : "days"} a
+        week will be{" "}
+        {splitSentence(answers.daysPerWeek, answers.goal, answers.trainingMode)}
+        .
+      </p>
+
       <fieldset className="space-y-3">
         <legend className="text-sm font-semibold">
           What equipment can you use?
         </legend>
         <div className="grid gap-2 sm:grid-cols-2">
-          {equipmentOptions.map((option, index) => (
+          {equipmentOptions.map((option) => (
             <label
               className="flex min-h-11 cursor-pointer items-center gap-3 border border-foreground/15 bg-white px-3 text-sm has-[:checked]:border-foreground has-[:checked]:bg-foreground/[0.04]"
               key={option.value}
             >
               <input
                 className="accent-foreground"
-                defaultChecked={index === 0}
+                checked={answers.equipment.includes(option.value)}
+                onChange={(event) =>
+                  change({
+                    equipment: toggleEquipment(
+                      answers.equipment,
+                      option.value,
+                      event.target.checked,
+                    ),
+                  })
+                }
                 name="equipment"
                 type="checkbox"
                 value={option.value}
@@ -169,6 +224,8 @@ export default function QuizForm() {
         <textarea
           className={`${controlClassName} min-h-24 resize-y py-3`}
           id="injuries"
+          value={answers.injuries}
+          onChange={(event) => change({ injuries: event.target.value })}
           maxLength={500}
           name="injuries"
           placeholder="Share anything you want your plan to account for."

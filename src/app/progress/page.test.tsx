@@ -34,6 +34,7 @@ function workout(
     startedAt: start,
     finishedAt: new Date(start.getTime() + 50 * 60000),
     dayName: "Push",
+    imported: false,
     planDays: 2,
     distanceKm: null,
     runSeconds: null,
@@ -117,6 +118,24 @@ describe("progress page", () => {
     // Last week met the goal of 2; this week has 1 so far and can't break it.
     expect(html).toContain("2 weeks");
     expect(html).toContain("1 week<");
+  });
+
+  it("labels imported workouts, counts them, and keeps them out of the streaks", async () => {
+    loadFinishedWorkouts.mockResolvedValue([
+      workout("2026-11-03T17:00:00Z", { imported: true, dayName: "Push Day" }),
+      workout("2026-11-05T17:00:00Z", { imported: true, dayName: "Pull Day" }),
+      workout("2026-11-10T17:00:00Z", { imported: true, dayName: "Leg Day" }),
+    ]);
+    const html = await render();
+    expect(html).toContain("3 imported sessions");
+    expect(html).toContain("Imported");
+    // Only live sessions feed the streaks, so none of these count.
+    expect(html).toMatch(/Active streak<\/p><p[^>]*>0 weeks/);
+  });
+
+  it("shows no imported line when nothing was imported", async () => {
+    loadFinishedWorkouts.mockResolvedValue([workout("2026-11-10T17:00:00Z")]);
+    expect(await render()).not.toContain("imported session");
   });
 
   it("takes the goal from the last workout with a plan", async () => {

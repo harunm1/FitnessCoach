@@ -84,6 +84,7 @@ function toDayWorkout(workout: ProgressWorkout): DayWorkout {
     minutes: durationMinutes(workout),
     exercises: groupByExercise(workout.sets),
     run,
+    imported: workout.imported,
   };
 }
 
@@ -182,10 +183,15 @@ export default async function ProgressPage({
     };
   }
 
-  const streakInput = workouts.map((workout) => ({
-    startedAt: workout.startedAt,
-    planDays: workout.planDays,
-  }));
+  // Imported sessions are history from another app; only sessions logged here count
+  // toward the streaks (#131).
+  const importedCount = workouts.filter((workout) => workout.imported).length;
+  const streakInput = workouts
+    .filter((workout) => !workout.imported)
+    .map((workout) => ({
+      startedAt: workout.startedAt,
+      planDays: workout.planDays,
+    }));
   const activeWeeks = activeStreakWeeks(streakInput, now).length;
   const goalMetWeeks = goalMetStreak(streakInput, now);
 
@@ -224,6 +230,13 @@ export default async function ProgressPage({
           )}
 
           <StreakCards activeWeeks={activeWeeks} goalMetWeeks={goalMetWeeks} />
+          {importedCount > 0 && (
+            <p className="m-0 text-xs text-foreground/70">
+              {importedCount} imported{" "}
+              {importedCount === 1 ? "session" : "sessions"} from another app,
+              labelled Imported and not counted in the streaks.
+            </p>
+          )}
 
           <div className="grid gap-8 sm:grid-cols-2">
             <ActivityCalendar
