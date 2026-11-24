@@ -521,3 +521,91 @@ describe("coachReply hardening", () => {
     expect(turn).toEqual({ reply: "Sure.", source: "COACH" });
   });
 });
+
+// Live bug, 23 Nov 2026: "What about head and neck position?" right after a Romanian
+// deadlift answer was refused as off-topic, because the guard read the last message alone.
+describe("coachReply follow-ups that name a new detail of the same lift", () => {
+  const rdlTurn: ChatMessage[] = [
+    { role: "user", content: "How do I do a Romanian deadlift?" },
+    {
+      role: "assistant",
+      content:
+        "Hinge at the hips, keep the bar close and your back flat, and lower until your hamstrings stretch.",
+    },
+  ];
+
+  it.each([
+    "What about head and neck position?",
+    "And what about my grip?",
+    "how about foot placement",
+    "What about the bar path?",
+  ])("goes to the coach: %s", async (text) => {
+    const model = vi.fn<CoachChatModel>().mockResolvedValue("Keep it neutral.");
+    const turn = await coachReply(model, ctx, rdlTurn, text);
+    expect(turn.source).toBe("COACH");
+  });
+
+  it.each([
+    "What about bitcoin prices?",
+    "What about the weather in Paris?",
+    "what about my homework",
+  ])("still redirects an unrelated question: %s", async (text) => {
+    const model = vi.fn<CoachChatModel>().mockResolvedValue("x");
+    const turn = await coachReply(model, ctx, rdlTurn, text);
+    expect(turn.source).toBe("GUARDRAIL");
+    expect(model).not.toHaveBeenCalled();
+  });
+
+  it("does not relax the redirect when there is no training turn before it", async () => {
+    const model = vi.fn<CoachChatModel>().mockResolvedValue("x");
+    const turn = await coachReply(
+      model,
+      ctx,
+      [],
+      "What about head and neck position?",
+    );
+    expect(turn.source).toBe("GUARDRAIL");
+  });
+});
+
+// Live bugs, 23 Nov 2026: "tension in my lower back on RDLs" was answered with "stop
+// immediately and see a professional", and sets and reps advice contradicted the plan.
+describe("the coach prompt: tension is not pain, and the plan sets the numbers", () => {
+  const prompt = buildCoachSystemPrompt(ctx);
+
+  it("sends sharp pain to stop and a professional, and tension to form cues first", () => {
+    expect(prompt).toMatch(/sharp, stabbing or shooting pain/i);
+    expect(prompt).toMatch(/tension, tightness or stiffness is not pain/i);
+    expect(prompt).toMatch(/form cues first/i);
+    // The old blanket rule is gone: any pain report is no longer the only trigger.
+    expect(prompt).not.toContain(
+      "if the user reports pain, tell them to stop that exercise and see a professional",
+    );
+  });
+
+  it("lets a tension message reach the coach, and still stops a sharp pain message", async () => {
+    const model = vi.fn<CoachChatModel>().mockResolvedValue("Brace first.");
+    const tension = await coachReply(
+      model,
+      ctx,
+      [],
+      "I feel tension in my lower back on RDLs",
+    );
+    expect(tension.source).toBe("COACH");
+    const sharp = await coachReply(
+      model,
+      ctx,
+      [],
+      "I felt a sharp pain in my shoulder on bench press",
+    );
+    expect(sharp.source).toBe("GUARDRAIL");
+    expect(model).toHaveBeenCalledOnce();
+  });
+
+  it("tells the model to use the plan's sets and reps for an exercise in it", () => {
+    expect(prompt).toMatch(
+      /use the sets and reps the plan gives that exercise/i,
+    );
+    expect(prompt).toContain("Dumbbell bench press 3 x 10");
+  });
+});
