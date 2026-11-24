@@ -6,6 +6,7 @@ import { parseHevyDate } from "./hevyDate";
 
 export const MAX_IMPORT_BYTES = 2_000_000;
 export const MAX_IMPORT_ROWS = 20_000;
+const MAX_COLUMNS = 64; // a Hevy export has about 20; a wider header is not one
 
 const MAX_REPS = 1000;
 const MAX_TITLE_LENGTH = 200;
@@ -85,8 +86,19 @@ export function parseHevyCsv(text: string): HevyParse {
     );
   }
 
+  if (rows[0].length > MAX_COLUMNS) {
+    return fail(
+      `This file has more than ${MAX_COLUMNS} columns, so it is not a Hevy workout export.`,
+    );
+  }
   const header = rows[0].map((name) => name.trim().toLowerCase());
-  const column = (name: string) => header.indexOf(name);
+  // Each column's position is found once, not per cell, so a row costs the same
+  // however many columns there are.
+  const position = new Map<string, number>();
+  header.forEach((name, i) => {
+    if (!position.has(name)) position.set(name, i);
+  });
+  const column = (name: string) => position.get(name) ?? -1;
   const hasWeight = column("weight_kg") >= 0 || column("weight_lbs") >= 0;
   const missing = [
     ...REQUIRED.filter((name) => column(name) < 0),
@@ -97,8 +109,10 @@ export function parseHevyCsv(text: string): HevyParse {
       `This does not look like a Hevy workout export. Missing columns: ${missing.join(", ")}.`,
     );
   }
-  const cell = (row: string[], name: string) =>
-    column(name) < 0 ? "" : (row[column(name)] ?? "").trim();
+  const cell = (row: string[], name: string) => {
+    const i = column(name);
+    return i < 0 ? "" : (row[i] ?? "").trim();
+  };
 
   const workouts = new Map<string, ImportWorkout>();
   const perExercise = new Map<string, number>();
@@ -112,6 +126,10 @@ export function parseHevyCsv(text: string): HevyParse {
       errors.push(`Row ${rowNumber}: ${message}`);
     };
 
+    if (row.length < header.length) {
+      problem("this row has fewer values than the header.");
+      return;
+    }
     if (cell(row, "set_type").toLowerCase() === "warmup") {
       skippedWarmups += 1;
       return;

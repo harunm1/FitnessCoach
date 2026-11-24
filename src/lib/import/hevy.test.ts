@@ -127,3 +127,19 @@ A,"20 Jun 2024, 18:30","20 Jun 2024, 19:00",${name},normal,${w},${r},
     expect(parseHevyCsv(HEADER + "\n").ok).toBe(false);
   });
 });
+
+describe("parseHevyCsv hostile and damaged files", () => {
+  it("refuses a header wider than any Hevy export, before reading any row", () => {
+    const wide = `${"x,".repeat(100)}${HEADER}\n${"a\n".repeat(50)}`;
+    const result = parseHevyCsv(wide);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/columns/i);
+  });
+
+  it("refuses a row shorter than the header and names the row", () => {
+    const text = `${HEADER}\nPush,"20 Jun 2024, 6:30 pm","20 Jun 2024, 7:20 pm",Bench Press (Barbell),normal,100`;
+    const result = parseHevyCsv(text);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/Row 2/);
+  });
+});
