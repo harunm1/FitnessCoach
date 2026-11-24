@@ -121,6 +121,10 @@ describe("checkChatReply: unrequested notices", () => {
     "Train within 2 hours of waking if you like.",
     "Hold 2 h before you train.",
     "Rest 90 seconds between sets.",
+    "Tuesday and Thursday are rest days.",
+    "Week 4 is a deload.",
+    "It won't hurt to add a set.",
+    "Consult the plan for today's loads.",
     "Keep your elbows tucked and the bar close.",
   ])("does not flag ordinary coaching: %j", (reply) => {
     expect(checkChatReply(reply, { raises: [] })).toEqual([]);

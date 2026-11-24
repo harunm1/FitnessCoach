@@ -16,7 +16,11 @@ import {
   coachReply,
   type CoachContext,
 } from "../src/lib/coach/chat";
-import { coachChatModel } from "../src/lib/coach/providers";
+import {
+  coachChatModel,
+  GEMINI_MODEL,
+  GROQ_MODEL,
+} from "../src/lib/coach/providers";
 import { CHAT_CASES } from "./chatCases";
 import { checkChatReply } from "./chatChecks";
 
@@ -49,8 +53,9 @@ async function main() {
       id: chatCase.id,
       prompt: CHAT_PROMPT_VERSION,
       model:
-        (mode === "groq" ? process.env.GROQ_MODEL : process.env.GEMINI_MODEL) ??
-        "default",
+        mode === "groq"
+          ? process.env.GROQ_MODEL || GROQ_MODEL
+          : process.env.GEMINI_MODEL || GEMINI_MODEL,
       source: turn.source,
       reply: turn.reply,
       violations,
