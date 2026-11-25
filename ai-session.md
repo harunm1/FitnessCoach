@@ -790,6 +790,16 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Tools:** git, gh, Prettier, ESLint, tsc, Vitest, Prisma (validate), review agents (pr-review-toolkit code-reviewer, a blind pass and a delta check). No skills.
 
+## 24 November (evening): saved coach replies for the live demo
+
+**Asked:** For the last code gap on #59 before the 4 December demo: when demo mode is on and both model providers fail or time out, the coach answers the scripted demo question with a stored reply, marked on screen as a saved example and never shown as live, still passing the reply check, and never used outside demo mode. Design first, tests first.
+
+**Got:** A design note under D12 in `docs/ARCHITECTURE.md` (where the replies live, how they are keyed, how they are kept honest, and the options it beat), `src/lib/coach/demoReplies.ts` with its JSON file, a recording script `scripts/demo-replies.ts`, a new `example` event on the chat stream, and the label "Saved example, not a live reply" in the chat screen's notice. The three stored replies are real coach replies to the three quick replies, recorded once through the normal chat pipeline (three Groq calls). AI wrote the code and tests from my brief.
+
+**Did with it:** Wrote the failing tests first for the stream, the route, the client protocol, the form and the notice, and checked one later test by reverting its line of code. Lint, the type check, the format check and the coach tests (1,186) passed before review. A review agent that had not seen the work found no error. It found one test that could not fail: it checked the live reply bubble after the bubble was already gone, so it now watches every change on the page and fails when the stored reply is made to show in the bubble. It also found that the stored reply to "Swap this exercise" is a question back, so the demo script now taps "Too easy". A second agent checked those fixes. Not done: the network-off rehearsal and the verified demo account (#59), and the "Too easy" reply's claim that a cable face pull uses the same equipment as a dumbbell raise, which passes the checks but is loose.
+
+**Tools:** gh, git, Prettier, ESLint, tsc, Vitest, tsx (one recording run), review agents (pr-review-toolkit code-reviewer, a blind pass and a delta check). No skills.
+
 ## 24 November (evening): the coach turning away a workout question
 
 **Asked:** Why the coach sometimes answered "explain one of the workouts for me" and sometimes did not. The brief: find which path ended each failed turn before changing anything, then fix the top cause test-first.
