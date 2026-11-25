@@ -171,7 +171,10 @@ export function buildDefaultPlan(
     if (reportedJoints.length === 0) return exercise;
 
     const original = jointMapping(exercise.id);
-    if (!original || !original.joints.some((joint) => reportedJoints.includes(joint))) {
+    if (
+      !original ||
+      !original.joints.some((joint) => reportedJoints.includes(joint))
+    ) {
       return exercise;
     }
 
