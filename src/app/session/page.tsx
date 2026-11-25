@@ -211,8 +211,7 @@ export default async function SessionPage() {
                             className="mt-1 mb-0 text-xs font-medium text-foreground/70"
                             role="note"
                           >
-                            Swapped for {slot.exercise.name}:{" "}
-                            {slot.substitutionReason}
+                            Substitution: {slot.substitutionReason}
                           </p>
                         ) : null}
                         <p className="mt-1 mb-0 text-xs text-foreground/60 capitalize">

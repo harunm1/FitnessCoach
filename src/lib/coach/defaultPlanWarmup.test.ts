@@ -153,6 +153,37 @@ describe("the warm-up slot of a starter plan (#145)", () => {
     }
   });
 
+  it.each(["INTERMEDIATE", "EXPERT"] as const)(
+    "verifies the reviewed %s knee-pain profile",
+    (level) => {
+      const jointLibrary = [
+        ...library,
+        lift("Incline_Push-Up", "body only", "chest"),
+        lift("Crunches", "body only", "abdominals"),
+      ];
+      const profile = {
+        ...gymProfile,
+        level,
+        reportedJoints: ["knee" as const],
+      };
+      const plan = buildDefaultPlan(profile, jointLibrary);
+      expect(
+        verifyPlan(
+          plan,
+          profile,
+          new Map(jointLibrary.map((exercise) => [exercise.id, exercise])),
+        ).ok,
+      ).toBe(true);
+      expect(
+        plan.days
+          .flatMap((day) => day.exercises)
+          .some((exercise) =>
+            STRETCHES.some((stretch) => stretch.id === exercise.exerciseId),
+          ),
+      ).toBe(false);
+    },
+  );
+
   it("adds nothing when the library holds no listed warm-up", () => {
     const withWarmup = buildDefaultPlan(gymProfile, library);
     const without = buildDefaultPlan(gymProfile, STRENGTH);
