@@ -1,5 +1,5 @@
 // The import page (#131): bring workout history from another app (a Hevy CSV export).
-import { AccountTheme, ThemeToggle } from "@/components/auth/account-theme";
+import { AccountTheme } from "@/components/auth/account-theme";
 import { AppNav } from "@/components/nav/AppNav";
 import { ImportForm } from "@/components/import/ImportForm";
 import theme from "@/components/theme/app-theme.module.css";
@@ -38,12 +38,7 @@ export default async function ImportPage() {
       className={`${theme.appTheme} min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12`}
     >
       <div className="mx-auto max-w-3xl">
-        <AppNav
-          current="import"
-          name={user.name}
-          avatarUrl={avatarUrl}
-          actions={<ThemeToggle />}
-        />
+        <AppNav current="import" name={user.name} avatarUrl={avatarUrl} />
         <section className="mb-8">
           <h1 className="text-3xl font-semibold sm:text-4xl">
             Import workouts
