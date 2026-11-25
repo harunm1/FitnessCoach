@@ -20,5 +20,5 @@ test("a Google error return explains itself on the sign-in page", async ({
   page,
 }) => {
   await page.goto("/sign-in?provider=google&error=account_not_linked");
-  await expect(page.getByRole("alert")).toContainText("not verified");
+  await expect(page.locator("#auth-error")).toContainText("not verified");
 });
