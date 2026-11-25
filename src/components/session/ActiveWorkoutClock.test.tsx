@@ -121,8 +121,8 @@ describe("ActiveWorkoutClock", () => {
     await settle();
     await advance(TEN_MINUTES);
     expect(screen.getByText("00:10:00")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Resume workout" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Pause workout" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Resume clock" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Pause clock" })).toBeNull();
   });
 
   it("Pause stops the clock now and keeps the banked time the server returned", async () => {
@@ -132,10 +132,10 @@ describe("ActiveWorkoutClock", () => {
     });
     await settle();
     await act(async () => {
-      screen.getByRole("button", { name: "Pause workout" }).click();
+      screen.getByRole("button", { name: "Pause clock" }).click();
     });
     expect(pauseWorkoutClock).toHaveBeenCalledWith(iso(NOW));
-    expect(screen.getByRole("button", { name: "Resume workout" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Resume clock" })).toBeTruthy();
     await advance(FIFTY_MINUTES);
     expect(screen.getByText("00:10:00")).toBeTruthy();
   });
@@ -144,10 +144,10 @@ describe("ActiveWorkoutClock", () => {
     renderClock({ bankedSeconds: BANKED_TEN_MINUTES, activeSinceMs: null });
     await settle();
     await act(async () => {
-      screen.getByRole("button", { name: "Resume workout" }).click();
+      screen.getByRole("button", { name: "Resume clock" }).click();
     });
     expect(resumeWorkoutClock).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole("button", { name: "Pause workout" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Pause clock" })).toBeTruthy();
     await advance(5 * SECOND_MS);
     expect(screen.getByText("00:10:05")).toBeTruthy();
   });
@@ -160,12 +160,12 @@ describe("ActiveWorkoutClock", () => {
     renderClock({ activeSinceMs: NOW - TEN_MINUTES, lastSetMs: NOW });
     await settle();
     await act(async () => {
-      screen.getByRole("button", { name: "Pause workout" }).click();
+      screen.getByRole("button", { name: "Pause clock" }).click();
     });
     expect(screen.getByRole("alert").textContent).toContain(
       "no workout in progress",
     );
-    expect(screen.getByRole("button", { name: "Pause workout" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Pause clock" })).toBeTruthy();
   });
 });
 
@@ -182,8 +182,10 @@ describe("idle auto-pause", () => {
     renderClock({ lastSetMs: NOW - THIRTY_FIVE_MINUTES });
     await settle();
     expect(document.body.textContent).toContain("Resume or finish?");
-    expect(screen.getByRole("button", { name: "Resume workout" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Finish workout" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Resume clock" })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Finish workout now" }),
+    ).toBeTruthy();
   });
 
   it("does not pause before 30 idle minutes", async () => {
@@ -238,11 +240,11 @@ describe("idle auto-pause", () => {
     renderClock({ lastSetMs: NOW - THIRTY_FIVE_MINUTES });
     await settle();
     await act(async () => {
-      screen.getByRole("button", { name: "Resume workout" }).click();
+      screen.getByRole("button", { name: "Resume clock" }).click();
     });
     expect(resumeWorkoutClock).toHaveBeenCalledTimes(1);
     expect(document.body.textContent).not.toContain("Resume or finish?");
-    expect(screen.getByRole("button", { name: "Pause workout" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Pause clock" })).toBeTruthy();
   });
 });
 

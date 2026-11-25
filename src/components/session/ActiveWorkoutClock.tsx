@@ -243,7 +243,7 @@ export default function ActiveWorkoutClock(props: ActiveWorkoutClockProps) {
           onClick={running ? pause : resume}
           type="button"
         >
-          {running ? "Pause workout" : "Resume workout"}
+          {running ? "Pause clock" : "Resume clock"}
         </button>
       </span>
       {!running && (
@@ -258,7 +258,7 @@ export default function ActiveWorkoutClock(props: ActiveWorkoutClockProps) {
           </span>
           <form action={finishWorkout}>
             <button className={buttonClass} type="submit">
-              Finish workout
+              Finish workout now
             </button>
           </form>
         </div>
