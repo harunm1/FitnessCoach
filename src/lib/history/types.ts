@@ -33,7 +33,7 @@ export type WorkoutDetail = {
 export type ExerciseHistory = {
   id: string;
   name: string;
-  // True when the set limit cut the list: older workouts are not shown.
+  // True when the set limit cut the list: older sets are not shown.
   olderHidden: boolean;
   // Newest workout first; sets in set order.
   workouts: { workoutId: number; startedAt: Date; sets: HistorySet[] }[];

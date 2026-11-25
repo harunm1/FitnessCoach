@@ -48,6 +48,7 @@ describe("AppNav", () => {
     ["coach", "/coach"],
     ["progress", "/progress"],
     ["photos", "/progress/photos"],
+    ["history", "/history"],
     ["import", "/import"],
     ["account", "/account"],
   ] as const)("marks only %s as the current page", (current, href) => {

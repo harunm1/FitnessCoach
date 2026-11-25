@@ -47,7 +47,7 @@ beforeEach(() => {
 });
 
 describe("/history", () => {
-  const render = async (page?: string) =>
+  const render = async (page?: string | string[]) =>
     renderToStaticMarkup(
       await HistoryPage({ searchParams: Promise.resolve({ page }) }),
     );
@@ -84,6 +84,27 @@ describe("/history", () => {
     );
     expect(second).toContain('href="/history?page=3"');
     expect(second).toContain('href="/history"');
+  });
+
+  it("marks History as the current menu page and keeps list semantics", async () => {
+    history.loadHistoryPage.mockResolvedValue({
+      rows: [row(9)],
+      hasNext: false,
+    });
+    const html = await render();
+    expect(html).toContain('aria-current="page" class');
+    expect(html).toMatch(/aria-current="page"[^>]*href="\/history"/);
+    expect(html).toContain('<ol role="list"');
+  });
+
+  it("reads the first of a repeated page parameter", async () => {
+    history.loadHistoryPage.mockResolvedValue({ rows: [], hasNext: false });
+    renderToStaticMarkup(
+      await HistoryPage({
+        searchParams: Promise.resolve({ page: ["2", "3"] }),
+      }),
+    );
+    expect(history.loadHistoryPage).toHaveBeenCalledWith("session-owner", 2);
   });
 
   it("treats a junk page number as the first page", async () => {
@@ -211,7 +232,10 @@ describe("/history/exercise/[exerciseId]", () => {
     expect(html).toContain('href="/history/41"');
     expect(html).toContain("<polyline");
     expect(html).toContain("Top weight per workout, 55 to 65 kg");
-    expect(html).not.toContain("Older workouts");
+    expect(html).not.toContain("Older sets");
+    expect(html).toContain('<svg aria-hidden="true"');
+    expect(html).not.toContain('role="img"');
+    expect(html).toContain('<ol role="list"');
   });
 
   it("says when older workouts are left out", async () => {
@@ -219,7 +243,7 @@ describe("/history/exercise/[exerciseId]", () => {
       ...exercise,
       olderHidden: true,
     });
-    expect(await render("Bench")).toContain("Older workouts are not shown");
+    expect(await render("Bench")).toContain("Older sets are not shown");
   });
 
   it("answers 404 for an exercise the user never logged", async () => {

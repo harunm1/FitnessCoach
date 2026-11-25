@@ -14,7 +14,8 @@ import type {
 import { groupInOrder, minutesBetween, workoutName } from "./view";
 
 // The newest sets of one exercise read for its page; years of three sessions a week.
-// When a page hits it, the last (possibly cut) workout is dropped and the page says so.
+// Past it, the last (possibly cut) workout is dropped, unless it is the only one, and
+// the page says older sets are not shown.
 export const EXERCISE_SET_LIMIT = 500;
 
 const finishedBy = (userId: string) => ({
@@ -160,7 +161,8 @@ export async function loadExerciseHistory(
       { setNumber: "asc" },
       { id: "asc" },
     ],
-    take: EXERCISE_SET_LIMIT,
+    // One extra row says whether older sets exist.
+    take: EXERCISE_SET_LIMIT + 1,
     select: {
       ...setFields,
       workout: { select: { id: true, startedAt: true } },
@@ -170,13 +172,16 @@ export async function loadExerciseHistory(
   if (sets.length === 0) return null;
 
   // Already newest workout first and in set order from the query.
-  const grouped = [...groupInOrder(sets, (set) => set.workout.id)];
-  const olderHidden = sets.length === EXERCISE_SET_LIMIT && grouped.length > 1;
-  const complete = olderHidden ? grouped.slice(0, -1) : grouped;
-  const workouts = complete.map(([workoutId, grouped]) => ({
+  const olderHidden = sets.length > EXERCISE_SET_LIMIT;
+  const shown = sets.slice(0, EXERCISE_SET_LIMIT);
+  const grouped = [...groupInOrder(shown, (set) => set.workout.id)];
+  // The last workout read may be cut by the limit; drop it unless it is the only one.
+  const complete =
+    olderHidden && grouped.length > 1 ? grouped.slice(0, -1) : grouped;
+  const workouts = complete.map(([workoutId, workoutSets]) => ({
     workoutId,
-    startedAt: grouped[0].workout.startedAt,
-    sets: grouped.map(toSet),
+    startedAt: workoutSets[0].workout.startedAt,
+    sets: workoutSets.map(toSet),
   }));
   return {
     id: exerciseId,

@@ -85,7 +85,7 @@ export function ExerciseHistoryView({
 
       {exercise.olderHidden && (
         <p className="m-0 text-xs text-foreground/60">
-          Older workouts are not shown.
+          Older sets are not shown.
         </p>
       )}
 

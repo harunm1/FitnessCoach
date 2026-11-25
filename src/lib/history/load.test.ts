@@ -197,7 +197,7 @@ describe("loadExerciseHistory", () => {
           exerciseId: "Bench",
           workout: { userId: "session-owner", finishedAt: { not: null } },
         },
-        take: EXERCISE_SET_LIMIT,
+        take: EXERCISE_SET_LIMIT + 1,
       }),
     );
   });
@@ -214,7 +214,7 @@ describe("loadExerciseHistory", () => {
 
   it("drops a workout cut by the set limit and says older ones are hidden", async () => {
     const at = (day: number) => new Date(Date.UTC(2026, 10, day, 17));
-    const rows = Array.from({ length: EXERCISE_SET_LIMIT }, (_, i) => ({
+    const rows = Array.from({ length: EXERCISE_SET_LIMIT + 1 }, (_, i) => ({
       setNumber: (i % 2) + 1,
       reps: 5,
       weightKg: decimal("60.00"),
@@ -223,9 +223,10 @@ describe("loadExerciseHistory", () => {
       workout: { id: 1000 - Math.floor(i / 2), startedAt: at(1) },
       exercise: { name: "Bench Press" },
     }));
-    // The last two sets belong to workout 1, which may have more sets past the limit.
+    // The last three sets read belong to workout 1; the third is past the limit.
     rows[EXERCISE_SET_LIMIT - 2].workout = { id: 1, startedAt: at(1) };
     rows[EXERCISE_SET_LIMIT - 1].workout = { id: 1, startedAt: at(1) };
+    rows[EXERCISE_SET_LIMIT].workout = { id: 1, startedAt: at(1) };
     setLog.findMany.mockResolvedValue(rows);
     const history = await loadExerciseHistory("session-owner", "Bench");
     expect(history?.olderHidden).toBe(true);
@@ -233,6 +234,36 @@ describe("loadExerciseHistory", () => {
     expect(history?.workouts.every((entry) => entry.sets.length === 2)).toBe(
       true,
     );
+  });
+
+  it("hides nothing when the user has exactly the limit of sets", async () => {
+    const rows = Array.from({ length: EXERCISE_SET_LIMIT }, (_, i) => ({
+      setNumber: 1,
+      reps: 5,
+      weightKg: decimal("60.00"),
+      rpe: null,
+      workout: { id: EXERCISE_SET_LIMIT - i, startedAt: start },
+      exercise: { name: "Bench Press" },
+    }));
+    setLog.findMany.mockResolvedValue(rows);
+    const history = await loadExerciseHistory("session-owner", "Bench");
+    expect(history?.olderHidden).toBe(false);
+    expect(history?.workouts).toHaveLength(EXERCISE_SET_LIMIT);
+  });
+
+  it("keeps a single workout cut by the limit, and still says sets are hidden", async () => {
+    const rows = Array.from({ length: EXERCISE_SET_LIMIT + 1 }, (_, i) => ({
+      setNumber: i + 1,
+      reps: 5,
+      weightKg: decimal("60.00"),
+      rpe: null,
+      workout: { id: 7, startedAt: start },
+      exercise: { name: "Bench Press" },
+    }));
+    setLog.findMany.mockResolvedValue(rows);
+    const history = await loadExerciseHistory("session-owner", "Bench");
+    expect(history?.olderHidden).toBe(true);
+    expect(history?.workouts[0].sets).toHaveLength(EXERCISE_SET_LIMIT);
   });
 
   it("returns null when the user never logged it (the page answers 404)", async () => {
