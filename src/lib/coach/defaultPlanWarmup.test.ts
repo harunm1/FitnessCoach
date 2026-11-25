@@ -112,6 +112,35 @@ describe("the warm-up slot of a starter plan (#145)", () => {
     );
   });
 
+  it.each(["BEGINNER", "INTERMEDIATE", "EXPERT"] as const)(
+    "verifies a %s plan with joint pain without unmapped warm-ups or lifts",
+    (level) => {
+      const jointLibrary = [
+        ...library,
+        lift("Butt_Lift_Bridge", "body only", "glutes"),
+        lift("Crunches", "body only", "abdominals"),
+      ];
+      const profile = {
+        ...gymProfile,
+        level,
+        reportedJoints: ["shoulder" as const],
+      };
+      const plan = buildDefaultPlan(profile, jointLibrary);
+      expect(
+        verifyPlan(
+          plan,
+          profile,
+          new Map(jointLibrary.map((exercise) => [exercise.id, exercise])),
+        ).ok,
+      ).toBe(true);
+      for (const day of plan.days) {
+        expect(
+          day.exercises.map((exercise) => exercise.exerciseId).sort(),
+        ).toEqual(["Butt_Lift_Bridge", "Crunches"].sort());
+      }
+    },
+  );
+
   it("leaves a beginner's plan, and a plan with no level, without one", () => {
     for (const level of ["BEGINNER", undefined] as const) {
       const ids = buildDefaultPlan(
@@ -123,6 +152,37 @@ describe("the warm-up slot of a starter plan (#145)", () => {
       );
     }
   });
+
+  it.each(["INTERMEDIATE", "EXPERT"] as const)(
+    "verifies the reviewed %s knee-pain profile",
+    (level) => {
+      const jointLibrary = [
+        ...library,
+        lift("Incline_Push-Up", "body only", "chest"),
+        lift("Crunches", "body only", "abdominals"),
+      ];
+      const profile = {
+        ...gymProfile,
+        level,
+        reportedJoints: ["knee" as const],
+      };
+      const plan = buildDefaultPlan(profile, jointLibrary);
+      expect(
+        verifyPlan(
+          plan,
+          profile,
+          new Map(jointLibrary.map((exercise) => [exercise.id, exercise])),
+        ).ok,
+      ).toBe(true);
+      expect(
+        plan.days
+          .flatMap((day) => day.exercises)
+          .some((exercise) =>
+            STRETCHES.some((stretch) => stretch.id === exercise.exerciseId),
+          ),
+      ).toBe(false);
+    },
+  );
 
   it("adds nothing when the library holds no listed warm-up", () => {
     const withWarmup = buildDefaultPlan(gymProfile, library);

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ExerciseGroup } from "@/lib/progress/view";
 
 export type DayWorkout = {
@@ -16,7 +17,7 @@ type DayDetailsProps = {
 };
 
 // Everything logged on the selected day (#16): each workout's name and length, its
-// sets grouped by exercise, and the run if one was logged.
+// sets grouped by exercise, the run if one was logged, and a link to its full page (D29).
 export default function DayDetails({ dayLabel, workouts }: DayDetailsProps) {
   if (!dayLabel) {
     return (
@@ -78,6 +79,12 @@ export default function DayDetails({ dayLabel, workouts }: DayDetailsProps) {
                   ))}
                 </ul>
               )}
+              <Link
+                className="mt-3 inline-flex min-h-11 items-center text-sm font-medium underline"
+                href={`/history/${workout.id}`}
+              >
+                Open {workout.name}
+              </Link>
             </li>
           ))}
         </ul>

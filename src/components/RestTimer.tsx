@@ -1,10 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { restSecondsRemaining } from "@/lib/workout/restRemaining";
 
 type RestTimerProps = {
   restSeconds: number;
   exerciseName: string;
+  // When the newest set of this exercise was logged. A set logged within the rest time
+  // starts the countdown by itself; an older one (a page reload) does not.
+  lastLoggedAtIso: string;
+  // The server's clock when the page was built. The set time is the server's too, so the
+  // elapsed time does not depend on this device's clock being right.
+  serverNowIso: string;
 };
 
 function formatTime(seconds: number): string {
@@ -16,15 +23,36 @@ function formatTime(seconds: number): string {
 export default function RestTimer({
   restSeconds,
   exerciseName,
+  lastLoggedAtIso,
+  serverNowIso,
 }: RestTimerProps) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(restSeconds);
   const [isRunning, setIsRunning] = useState(false);
 
+  // The newest server time, read when a set is logged. Keeping it out of the effect's inputs
+  // means a page refresh for another exercise does not restart a timer the user paused.
+  const serverNow = useRef(serverNowIso);
   useEffect(() => {
-    const timeout = window.setTimeout(() => setIsHydrated(true), 0);
+    serverNow.current = serverNowIso;
+  }, [serverNowIso]);
+
+  // Runs after mount and whenever a new set is logged: starts the rest by itself.
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setIsHydrated(true);
+      const remaining = restSecondsRemaining(
+        Date.parse(lastLoggedAtIso),
+        Date.parse(serverNow.current),
+        restSeconds,
+      );
+      if (remaining !== null) {
+        setSecondsLeft(remaining);
+        setIsRunning(true);
+      }
+    }, 0);
     return () => window.clearTimeout(timeout);
-  }, []);
+  }, [lastLoggedAtIso, restSeconds]);
 
   useEffect(() => {
     if (!isRunning || secondsLeft <= 0) return;
@@ -95,7 +123,12 @@ export default function RestTimer({
                 ? "Restart rest"
                 : "Resume timer"}
       </button>
-      {secondsLeft !== restSeconds && (
+      {isRunning && (
+        <button className={buttonClassName} onClick={reset} type="button">
+          Skip rest
+        </button>
+      )}
+      {!isRunning && secondsLeft !== restSeconds && (
         <button className={buttonClassName} onClick={reset} type="button">
           Reset
         </button>

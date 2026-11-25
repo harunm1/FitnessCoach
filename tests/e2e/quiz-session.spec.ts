@@ -176,9 +176,35 @@ test("an athlete completes the quiz and logs a session without touching another 
     });
     await exercise.getByLabel("REPS", { exact: true }).fill("8");
     await exercise.getByLabel("KG", { exact: true }).fill("12");
+    await exercise.getByLabel("Pain during", { exact: true }).fill("6");
     await exercise
       .getByRole("button", { name: "Log set 1", exact: true })
       .click();
+    await expect(
+      exercise.getByRole("button", { name: "Log set 2", exact: true }),
+    ).toBeDisabled();
+    await expect(
+      exercise.getByText(/Set 1: 8 reps.*pain 6\/10 during/),
+    ).toBeVisible();
+    await exercise
+      .getByRole("button", { name: "Correct logged set 1", exact: true })
+      .click();
+    await exercise.getByLabel("Pain during", { exact: true }).fill("");
+    await exercise
+      .getByRole("button", { name: "Save correction for set 1", exact: true })
+      .click();
+    await expect(
+      exercise.getByRole("button", { name: "Log set 2", exact: true }),
+    ).toBeEnabled();
+    await expect(
+      exercise.getByLabel("Pain during", { exact: true }),
+    ).toHaveValue("");
+    await expect(
+      exercise.getByLabel("Pain this morning (before workout)", {
+        exact: true,
+      }),
+    ).toHaveValue("");
+    await expect(exercise.getByRole("status")).toHaveCount(0);
     await expect(
       page.getByText("Set 1: 8 reps · 12 kg", { exact: true }),
     ).toBeVisible();

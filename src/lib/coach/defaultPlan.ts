@@ -155,6 +155,7 @@ export function buildDefaultPlan(
   );
   const extras = level ? EXTRAS_BY_LEVEL[level] : 0;
   const heavy = level === "INTERMEDIATE" || level === "EXPERT";
+  // Best fit first; stable sorting preserves library order for equal scores.
   const ranked = [...usable].sort((a, b) => score(a, level) - score(b, level));
   const reportedJoints = profile.reportedJoints ?? [];
 
@@ -171,10 +172,8 @@ export function buildDefaultPlan(
     if (reportedJoints.length === 0) return exercise;
 
     const original = jointMapping(exercise.id);
-    if (
-      !original ||
-      !original.joints.some((joint) => reportedJoints.includes(joint))
-    ) {
+    if (!original) return undefined;
+    if (!original.joints.some((joint) => reportedJoints.includes(joint))) {
       return exercise;
     }
 
@@ -209,7 +208,8 @@ export function buildDefaultPlan(
         const match = ranked.find(
           (e) =>
             e.primaryMuscles.includes(muscle) &&
-            !picked.some((chosen) => chosen.id === e.id),
+            !picked.some((chosen) => chosen.id === e.id) &&
+            resolveJointAware(e) !== undefined,
         );
         if (!match) continue;
 
@@ -223,7 +223,7 @@ export function buildDefaultPlan(
         }
       }
 
-      for (const exercise of ranked) {
+      for (const exercise of usable) {
         if (picked.length >= 2) break;
         const resolved = resolveJointAware(exercise);
         if (resolved && !picked.some((chosen) => chosen.id === resolved.id)) {
@@ -242,8 +242,24 @@ export function buildDefaultPlan(
       const ordered = level
         ? [...picked].sort((a, b) => compoundRank(a) - compoundRank(b))
         : picked;
+      // D25: the lead lift chooses the warm-up, which takes one of the day's slots.
+      // Reported joint pain excludes unmapped warm-ups instead of assuming safety.
       const warmup = heavy
-        ? pickWarmup(library, profile, ordered[0].primaryMuscles[0])
+        ? pickWarmup(
+            reportedJoints.length
+              ? library.filter((exercise) => {
+                  const mapping = jointMapping(exercise.id);
+                  return (
+                    mapping &&
+                    !mapping.joints.some((joint) =>
+                      reportedJoints.includes(joint),
+                    )
+                  );
+                })
+              : library,
+            profile,
+            ordered[0].primaryMuscles[0],
+          )
         : undefined;
       const lifts = ordered
         .slice(0, LIMITS.exercisesPerDay.max - (warmup ? 1 : 0))

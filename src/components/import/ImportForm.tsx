@@ -80,7 +80,9 @@ export function ImportForm() {
           />
         </fieldset>
       )}
-      {state.status === "saved" && <ImportResultPanel result={state.result} />}
+      {state.status === "saved" && (
+        <ImportResultPanel result={state.result} report={state.report} />
+      )}
     </form>
   );
 }

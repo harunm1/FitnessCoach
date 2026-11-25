@@ -24,9 +24,12 @@ describe("SetLogForm pain traffic light", () => {
     fireEvent.change(screen.getByLabelText("Pain during"), {
       target: { value: "2" },
     });
-    fireEvent.change(screen.getByLabelText("Pain next morning"), {
-      target: { value: "1" },
-    });
+    fireEvent.change(
+      screen.getByLabelText("Pain this morning (before workout)"),
+      {
+        target: { value: "1" },
+      },
+    );
 
     expect(screen.getByRole("status").textContent).toContain("repeat");
     expect(
@@ -47,6 +50,15 @@ describe("SetLogForm pain traffic light", () => {
       (screen.getByRole("button", { name: "Log set 2" }) as HTMLButtonElement)
         .disabled,
     ).toBe(false);
+  });
+
+  it("shows stop when only this morning's score is entered", () => {
+    render(<SetLogForm exerciseId="squat" targetReps={10} nextSetNumber={1} />);
+    fireEvent.change(
+      screen.getByLabelText("Pain this morning (before workout)"),
+      { target: { value: "6" } },
+    );
+    expect(screen.getByRole("status").textContent).toContain("stop");
   });
 
   it("shows stop and allows saving the stop-scored set", () => {
@@ -81,5 +93,42 @@ describe("SetLogForm pain traffic light", () => {
       (screen.getByRole("button", { name: "Log set 4" }) as HTMLButtonElement)
         .disabled,
     ).toBe(true);
+  });
+
+  it("offers a correction for a recorded stop score instead of logging another set", () => {
+    render(
+      <SetLogForm
+        exerciseId="squat"
+        targetReps={10}
+        nextSetNumber={2}
+        blocked
+        correction={{
+          setNumber: 1,
+          reps: 8,
+          weightKg: "12",
+          painDuringSession: 6,
+          painNextMorning: null,
+        }}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Correct logged set 1" }),
+    );
+    expect(
+      (screen.getByLabelText("Pain during") as HTMLInputElement).value,
+    ).toBe("6");
+    expect((screen.getByLabelText("REPS") as HTMLInputElement).value).toBe("8");
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Save correction for set 1",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(false);
+    expect(
+      document.querySelector<HTMLInputElement>('input[name="setNumber"]')
+        ?.value,
+    ).toBe("1");
+    expect(screen.queryByText(/Record next-morning pain/)).toBeNull();
   });
 });
