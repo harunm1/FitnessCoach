@@ -295,7 +295,7 @@ export async function finishWorkout() {
 
   if (workout) {
     const finishedAt = new Date();
-    // Duration counts active time only (D34): paused time and an idle stretch are left out.
+    // Duration counts active time only (D36): paused time and an idle stretch are left out.
     // A run keeps the duration it recorded itself.
     const activeSeconds = finishedActiveSeconds(
       clockOf(workout),
@@ -303,7 +303,13 @@ export async function finishWorkout() {
       finishedAt.getTime(),
     );
     await prisma.workout.updateMany({
-      where: { id: workout.id, userId: user.id, finishedAt: null },
+      where: {
+        id: workout.id,
+        userId: user.id,
+        finishedAt: null,
+        // The stretch that was read: a pause from another tab in between is not overwritten.
+        activeSince: workout.activeSince,
+      },
       data: {
         finishedAt,
         activeSince: null,

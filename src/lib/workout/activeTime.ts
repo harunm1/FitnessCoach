@@ -1,4 +1,4 @@
-// The workout clock's pause and resume math (D34). Duration counts active time only:
+// The workout clock's pause and resume math (D36). Duration counts active time only:
 // `bankedSeconds` is the active time before the current stretch, `activeSinceMs` the start
 // of the running stretch (null while paused). Pure, so the server action and the screen
 // share one rule.

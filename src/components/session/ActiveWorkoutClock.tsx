@@ -1,6 +1,6 @@
 "use client";
 
-// The live workout clock (D34): active time only, manual Pause and Resume, and an automatic
+// The live workout clock (D36): active time only, manual Pause and Resume, and an automatic
 // pause after 30 idle minutes that starts at the last activity. The screen turning off or the
 // tab being hidden does NOT pause it, because that is when the user is resting.
 import { useEffect, useRef, useState } from "react";
@@ -27,7 +27,14 @@ type ActiveWorkoutClockProps = {
 
 const TICK_MS = 1000;
 const STORE_EVERY_MS = 5000;
-const INTERACTION_EVENTS = ["pointerdown", "keydown", "touchstart", "input"];
+const INTERACTION_EVENTS = [
+  "pointerdown",
+  "keydown",
+  "touchstart",
+  "input",
+  "wheel",
+  "scroll",
+];
 const SECONDS_PER_HOUR = 3600;
 const SECONDS_PER_MINUTE = 60;
 
@@ -150,11 +157,14 @@ export default function ActiveWorkoutClock(props: ActiveWorkoutClockProps) {
       }
     };
     INTERACTION_EVENTS.forEach((name) =>
-      document.addEventListener(name, onActivity, { passive: true }),
+      document.addEventListener(name, onActivity, {
+        passive: true,
+        capture: true, // scroll does not bubble, so catch it on the way down
+      }),
     );
     return () =>
       INTERACTION_EVENTS.forEach((name) =>
-        document.removeEventListener(name, onActivity),
+        document.removeEventListener(name, onActivity, { capture: true }),
       );
   }, [workoutId]);
 
@@ -246,23 +256,23 @@ export default function ActiveWorkoutClock(props: ActiveWorkoutClockProps) {
           {running ? "Pause clock" : "Resume clock"}
         </button>
       </span>
-      {!running && (
-        <div
-          className="flex flex-wrap items-center gap-3 text-sm"
-          role="status"
-        >
-          <span>
-            {pausedByIdle
-              ? "No set or tap for 30 minutes, so the workout was paused at your last activity. Resume or finish?"
-              : "The workout is paused. Resume or finish?"}
-          </span>
-          <form action={finishWorkout}>
-            <button className={buttonClass} type="submit">
-              Finish workout now
-            </button>
-          </form>
-        </div>
-      )}
+      {/* Always in the page, so a screen reader announces the text when it is filled. */}
+      <div className="flex flex-wrap items-center gap-3 text-sm" role="status">
+        {!running && (
+          <>
+            <span>
+              {pausedByIdle
+                ? "No set, tap or scroll for 30 minutes, so the workout was paused at your last activity. Resume or finish?"
+                : "The workout is paused. Resume or finish?"}
+            </span>
+            <form action={finishWorkout}>
+              <button className={buttonClass} type="submit">
+                Finish workout now
+              </button>
+            </form>
+          </>
+        )}
+      </div>
       {error && (
         <p className="m-0 text-sm text-red-800" role="alert">
           {error}

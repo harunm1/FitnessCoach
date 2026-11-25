@@ -260,7 +260,7 @@ model Workout {
   finishedAt          DateTime?
   distanceKm          Decimal?  @db.Decimal(6, 2)
   durationSeconds     Int?
-  // The workout clock (D34): duration counts active time only. `activeBankedSeconds` is the
+  // The workout clock (D36): duration counts active time only. `activeBankedSeconds` is the
   // active time before the current stretch, `activeSince` when the running stretch began
   // (null while paused or once finished). Active time now = banked + (now - activeSince).
   activeBankedSeconds Int       @default(0)

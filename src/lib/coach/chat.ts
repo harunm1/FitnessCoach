@@ -142,6 +142,16 @@ const CUE_WORDS = new Set([
   "angle",
   "bracing",
   "range",
+  // Words of a short question about the same lift (audit B4, 25 Nov 2026).
+  "look",
+  "looking",
+  "tuck",
+  "tucked",
+  "eyes",
+  "eye",
+  "where",
+  "right",
+  "wrong",
 ]);
 const STOP_WORDS = new Set([
   "and",
@@ -191,6 +201,11 @@ const STOP_WORDS = new Set([
   "why",
   "too",
   "also",
+  "then",
+  "there",
+  "here",
+  "would",
+  "could",
 ]);
 const SINGULAR = (word: string) => word.replace(/s$/, "");
 const wordsOf = (text: string) =>
@@ -241,6 +256,17 @@ function isFollowUp(text: string, recent: ChatMessage[]): boolean {
     !FIXED_REPLIES.has(last.content) &&
     mentionsTraining(last.content) &&
     detailFromRecent(about, recent)
+  ) {
+    return true;
+  }
+  // Any other short question made only of technique words and words of the coach's last
+  // reply ("Where should I look?", "Should I tuck my chin?"): same test as "what about".
+  if (
+    text.split(/\s+/).filter(Boolean).length <= MAX_FOLLOW_UP_WORDS &&
+    last?.role === "assistant" &&
+    !FIXED_REPLIES.has(last.content) &&
+    mentionsTraining(last.content) &&
+    detailFromRecent(text, recent)
   ) {
     return true;
   }

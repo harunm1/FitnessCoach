@@ -21,7 +21,7 @@ type RestTimerProps = {
   serverNowIso: string;
 };
 
-// The countdown is a deadline (D34): `running` holds the end time, so a sleeping screen or a
+// The countdown is a deadline (D36): `running` holds the end time, so a sleeping screen or a
 // throttled background tab cannot slow it down, and the next look at the clock is right.
 type Phase =
   | { kind: "idle" }
@@ -30,6 +30,9 @@ type Phase =
   | { kind: "done" };
 
 const CHECK_MS = 250;
+// A rest that ended longer ago than this (the page was asleep) is shown as complete but does
+// not play a tone for a rest the user has already left behind.
+const LATE_ALERT_MS = 10_000;
 
 function formatTime(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
@@ -90,7 +93,7 @@ export default function RestTimer({
       setPhase({ kind: "done" });
       if (alertedEnd.current !== endsAtMs) {
         alertedEnd.current = endsAtMs;
-        alertRestEnded();
+        if (now - endsAtMs <= LATE_ALERT_MS) alertRestEnded();
       }
     };
     const interval = window.setInterval(check, CHECK_MS);
@@ -189,6 +192,7 @@ export default function RestTimer({
       {isRunning && (
         <>
           <button
+            aria-label={`Subtract ${ADJUST_SECONDS} seconds`}
             className={buttonClassName}
             onClick={() => adjust(-ADJUST_SECONDS)}
             type="button"
@@ -196,6 +200,7 @@ export default function RestTimer({
             -{ADJUST_SECONDS} s
           </button>
           <button
+            aria-label={`Add ${ADJUST_SECONDS} seconds`}
             className={buttonClassName}
             onClick={() => adjust(ADJUST_SECONDS)}
             type="button"

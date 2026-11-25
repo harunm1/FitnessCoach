@@ -880,6 +880,18 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Tools:** git, gh, Prisma, Vitest, tsc, ESLint, Prettier, review agents. No skills beyond the migration-safety guide.
 
+## 25 November: live-site bugs from the audit (B1 to B6)
+
+**Asked:** Fix six faults found on the deployed site: absurd workout durations, a 0.02 kg set, coach replies cut off, a follow-up question refused as off-topic, a Sign out button invisible in light mode, and two theme toggles on the import page.
+
+**Got:** One commit per fault. Durations come from one helper: start to finish only, a run uses its own recorded time, and a workout left open longer than six hours reads "Not timed" (history, Progress and the session screen). A set weight under 0.25 kg is refused with a message that names the minimum. The streaming reader keeps a last server-sent event that has no newline after it. A short question made only of technique words and words of the coach's last reply is no longer refused. Sign out takes its colours from the account tokens with the app foreground as fallback (the global `--muted` is a near-white background). The import page no longer passes a second theme toggle to the nav.
+
+**Did with it:** Wrote each failing test first and watched it fail. A review agent that had not seen the work found no errors and five should-fix points; the session screen showing a different run time from history, a zero-length imported workout reading "1 min", and the weight message and input minimum were fixed test-first.
+
+**Limits, said plainly:** The cause of the 0.02 kg set was not found in the import or units code, so the change blocks new entries only; the existing row stays as it is. The cut-off replies are fixed for a body that ends without a newline; that this is what happened live is not confirmed. The off-topic fix widens a word-list rule and does not reproduce the live thread. The six-hour and 0.25 kg limits are my choices, not measured. No live browser check.
+
+**Tools:** git, gh, Vitest, tsc, ESLint, Prettier, review agent (pr-review-toolkit code-reviewer). Skill: systematic-debugging.
+
 ## 25 November: logging sets without a connection (D31)
 
 **Asked:** A user who loses the connection in the middle of a workout must not lose sets, and it has to be shown in the demo: sets logged offline wait on the device, sync when the connection returns, and a replay or double tap never stores a set twice.
@@ -890,12 +902,23 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Tools:** git, gh, Vitest, Playwright, ESLint, tsc, Prettier, Prisma; MDN pages read on 25 November. Skills: idempotency and side effects, Prisma migration safety.
 
-## 25 November: session clock and rest alerts (D34)
+<<<<<<< HEAD
+
+## 25 November: session clock and rest alerts (D36)
 
 **Asked:** A Hevy-style workout clock and rest timer: the rest countdown keeps running when the screen is off, the workout can be paused, an idle workout pauses itself, duration counts only active time, and the end of a rest can play a tone, vibrate or notify, all switched on by the user.
 
-**Got:** Decision D34 in `docs/ARCHITECTURE.md` before any code. The rest timer now counts to a fixed end time instead of one tick per second, so a sleeping screen or a throttled tab cannot slow it; it has +15 and -15 buttons, and Skip still ends it. The workout is not paused when the page is hidden. The clock has Pause clock and Resume clock buttons, and after 30 minutes with no set and no tap it pauses at the time of the last activity (not when the page noticed) and asks "Resume or finish?". Two new columns on `Workout` (an additive migration) bank the active time, and Finish workout stores it as the duration, so paused and idle time is not counted. An "Alerts on this device" box on the account page has Sound (a two-note tone made in code with the Web Audio API, with a volume slider and a test button), Vibrate and Notification, all off by default and saved on the device. The browser's notification permission is asked only when the Notification box is ticked. The limit is written in the decision and on the page: on an iPhone a web page cannot notify in the background unless it is installed to the Home Screen with Web Push, so the sound plays only while the page is open.
+**Got:** Decision D36 in `docs/ARCHITECTURE.md` before any code. The rest timer now counts to a fixed end time instead of one tick per second, so a sleeping screen or a throttled tab cannot slow it; it has +15 and -15 buttons, and Skip still ends it. The workout is not paused when the page is hidden. The clock has Pause clock and Resume clock buttons, and after 30 minutes with no set and no tap it pauses at the time of the last activity (not when the page noticed) and asks "Resume or finish?". Two new columns on `Workout` (an additive migration) bank the active time, and Finish workout stores it as the duration, so paused and idle time is not counted. An "Alerts on this device" box on the account page has Sound (a two-note tone made in code with the Web Audio API, with a volume slider and a test button), Vibrate and Notification, all off by default and saved on the device. The browser's notification permission is asked only when the Notification box is ticked. The limit is written in the decision and on the page: on an iPhone a web page cannot notify in the background unless it is installed to the Home Screen with Web Push, so the sound plays only while the page is open.
 
 **Did with it:** Read Hevy's rest-timer help (+15/-15, timer sound and volume) and MDN and WebKit pages on the Web Audio autoplay rule, Notification permission, Vibration API support and Web Push on iPhone, all on 25 November. Wrote the tests first and watched them fail (pause and resume math, the idle pause backdated to the last activity, the alert firing once, each switch obeyed, the permission asked only from the toggle, the server actions, the clock component). A Playwright spec logs a set, watches the rest count down, adds 15 seconds, skips it, pauses and resumes the clock, and loads a workout idle for hours to see it paused at its last activity; it passed locally against a production build. The first run of that spec caught two of my mistakes in the test setup (database timestamps in the machine's zone, and a second button with the same name already on the page, so the clock buttons were renamed). Lint, type check, format check and all unit tests pass.
 
 **Tools:** git, gh, Prisma, Vitest, Playwright, ESLint, tsc, Prettier, review agents; Firecrawl for the MDN, WebKit and Hevy pages. No skills.
+=======
+
+## 25 November: competitor research (JEFIT, Hevy, Google Health, JuggernautAI)
+
+The program model needed evidence before the template and coach work, so I read each app's own pages: JEFIT's FAQ and logging page, Hevy's help centre, feature pages and App Store listing, Google's Health Coach help and developer pages for Fit, Fitbit and Health Connect, and JuggernautAI's home, pricing and App Store listing. Every page was read on 25 November and is dated in `docs/COMPETITORS.md`, which holds one table (feature by app, a source key in every cell), what FitnessCoach takes, and what it does differently, each line tied to an issue or task. Reviews and the apps' own comparison articles were left out as evidence. Findings that changed the plan: JEFIT already combines editable library plans with an adaptive 12-week plan, Hevy's Trainer says it is rule-based and not AI, and Hevy's camera overlays the last progress photo for matching the pose, which the camera task now takes. Google Fit's APIs and the Fitbit Web API are being retired, so we do not integrate with them. I recorded the program-model direction as D35 in `docs/ARCHITECTURE.md`. Limits: vendor claims, not tested in the apps; some cells come from search excerpts (marked in the sources table); JuggernautAI's FAQ answers did not load; Strong and Fitbod were not covered; Firecrawl credits ran out partway, so three pages were read with a plain fetch.
+
+**Tools:** Firecrawl (search, scrape), a plain page fetch, git. Skills: none beyond the task file.
+
+> > > > > > > origin/main

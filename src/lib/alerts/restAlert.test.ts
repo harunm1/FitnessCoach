@@ -1,4 +1,4 @@
-// Tests for the rest-end alert (D34): everything is off until the user turns it on, each
+// Tests for the rest-end alert (D36): everything is off until the user turns it on, each
 // channel obeys its own switch, the notification shows only while the tab is hidden, and
 // the permission is asked only when the user turns Notification on.
 import { describe, expect, it, vi } from "vitest";

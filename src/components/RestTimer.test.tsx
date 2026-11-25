@@ -169,7 +169,7 @@ describe("RestTimer auto start", () => {
   });
 });
 
-// Rest alerts, +15 / -15 and the deadline clock (D34).
+// Rest alerts, +15 / -15 and the deadline clock (D36).
 const FIFTEEN = 15;
 const NINETY_SECONDS = 90;
 const NINETY_SECONDS_MS = 90_000;
@@ -177,6 +177,7 @@ const SIXTY_SECONDS_MS = 60_000;
 const HUNDRED_SECONDS_MS = 100_000;
 const FOUR_MINUTES_MS = 240_000;
 const THIRTY = 30;
+const FIVE_SECONDS_MS = 5000;
 const SEVENTY_FIVE = 75;
 
 function setHidden(hidden: boolean) {
@@ -197,7 +198,7 @@ describe("RestTimer +15 / -15", () => {
     renderTimer(iso(NOW));
     tick(TEN_SECONDS);
     act(() => {
-      screen.getByRole("button", { name: "+15 s" }).click();
+      screen.getByRole("button", { name: "Add 15 seconds" }).click();
     });
     expect(screen.getByText("01:35")).toBeTruthy();
   });
@@ -206,7 +207,7 @@ describe("RestTimer +15 / -15", () => {
     renderTimer(iso(NOW));
     tick(TEN_SECONDS);
     act(() => {
-      screen.getByRole("button", { name: "-15 s" }).click();
+      screen.getByRole("button", { name: "Subtract 15 seconds" }).click();
     });
     expect(screen.getByText("01:05")).toBeTruthy();
   });
@@ -214,7 +215,7 @@ describe("RestTimer +15 / -15", () => {
   it("-15 with less than fifteen seconds left ends the rest like Skip, with no alert", () => {
     renderTimer(iso(NOW - (NINETY_SECONDS - TEN_SECONDS) * ONE_SECOND_MS));
     act(() => {
-      screen.getByRole("button", { name: "-15 s" }).click();
+      screen.getByRole("button", { name: "Subtract 15 seconds" }).click();
     });
     expect(screen.queryByText("Resting")).toBeNull();
     expect(screen.getByText("01:30")).toBeTruthy();
@@ -224,14 +225,16 @@ describe("RestTimer +15 / -15", () => {
 
   it("the adjust buttons appear only while resting", () => {
     renderTimer(iso(NOW - OLD_SET_AGE_MS));
-    expect(screen.queryByRole("button", { name: "+15 s" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "-15 s" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add 15 seconds" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Subtract 15 seconds" }),
+    ).toBeNull();
   });
 
   it("a +15 moves the alert later by fifteen seconds", () => {
     renderTimer(iso(NOW));
     act(() => {
-      screen.getByRole("button", { name: "+15 s" }).click();
+      screen.getByRole("button", { name: "Add 15 seconds" }).click();
     });
     tick(NINETY_SECONDS);
     expect(alertRestEnded).not.toHaveBeenCalled();
@@ -275,14 +278,22 @@ describe("RestTimer rest-end alert", () => {
   it("keeps counting with the screen off: a timer that never ticked is right when the tab wakes", () => {
     renderTimer(iso(NOW));
     setHidden(true);
-    // The browser delivered no timers for 100 seconds (a sleeping phone).
-    vi.setSystemTime(NOW + HUNDRED_SECONDS_MS);
+    // The browser delivered no timers until 5 seconds after the end (a throttled tab).
+    vi.setSystemTime(NOW + NINETY_SECONDS_MS + FIVE_SECONDS_MS);
     wake();
     expect(screen.getByText("Rest complete")).toBeTruthy();
     expect(alertRestEnded).toHaveBeenCalledTimes(1);
     tick(THIRTY);
     expect(alertRestEnded).toHaveBeenCalledTimes(1);
     setHidden(false);
+  });
+
+  it("shows Rest complete but stays silent when the page wakes long after the rest ended", () => {
+    renderTimer(iso(NOW));
+    vi.setSystemTime(NOW + HUNDRED_SECONDS_MS * 2);
+    wake();
+    expect(screen.getByText("Rest complete")).toBeTruthy();
+    expect(alertRestEnded).not.toHaveBeenCalled();
   });
 
   it("shows the true remaining time after a nap shorter than the rest", () => {
@@ -301,12 +312,13 @@ describe("RestTimer rest-end alert", () => {
     setHidden(false);
   });
 
-  it("is late-proof: a four minute gap still fires exactly once", () => {
+  it("is late-proof: repeated wake-ups right after the end fire exactly once", () => {
     renderTimer(iso(NOW));
-    vi.setSystemTime(NOW + FOUR_MINUTES_MS);
+    vi.setSystemTime(NOW + NINETY_SECONDS_MS + FIVE_SECONDS_MS);
     wake();
     wake();
     expect(alertRestEnded).toHaveBeenCalledTimes(1);
+    expect(FOUR_MINUTES_MS).toBeGreaterThan(NINETY_SECONDS_MS);
   });
 
   it("fires again for the next rest", () => {

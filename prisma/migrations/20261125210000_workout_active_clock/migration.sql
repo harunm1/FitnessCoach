@@ -1,4 +1,4 @@
--- Workout clock (D34): duration counts active time only. Additive: two columns on "Workout".
+-- Workout clock (D36): duration counts active time only. Additive: two columns on "Workout".
 -- "activeBankedSeconds" is the active time before the current stretch; "activeSince" is when
 -- the running stretch began (NULL while paused or once finished).
 -- Rollback: ALTER TABLE "Workout" DROP CONSTRAINT "Workout_activeBankedSeconds_nonnegative",

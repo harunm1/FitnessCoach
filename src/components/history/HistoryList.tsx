@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { minutesLabel } from "@/lib/workout/duration";
 import type { HistoryRow } from "@/lib/history/types";
 import { dateLabel } from "@/lib/history/view";
 
@@ -50,7 +51,7 @@ export function HistoryList({
                     )}
                   </span>
                   <span className="text-xs text-foreground/60">
-                    {row.minutes} min · {row.sets}{" "}
+                    {minutesLabel(row.minutes)} · {row.sets}{" "}
                     {row.sets === 1 ? "set" : "sets"}
                   </span>
                 </span>

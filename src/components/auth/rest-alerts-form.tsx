@@ -18,7 +18,7 @@ const PERCENT = 100;
 const BLOCKED_MESSAGE =
   "Notifications are blocked for this site. Allow them in your browser's site settings, then turn this on again.";
 
-// The rest-end alerts (D34), saved on this device only: the tone, vibration and the
+// The rest-end alerts (D36), saved on this device only: the tone, vibration and the
 // notification permission are all per device. Everything starts off, and the browser's
 // permission prompt appears only when the Notification box is ticked here.
 export function RestAlertsForm() {
@@ -49,11 +49,13 @@ export function RestAlertsForm() {
       return;
     }
     const result = await requestNotifications();
+    // From the newest saved choices: the user may have moved the volume during the prompt.
+    const latest = readAlertPrefs();
     if (result === "granted") {
-      update({ ...prefs, notify: true });
+      update({ ...latest, notify: true });
       return;
     }
-    update({ ...prefs, notify: false });
+    update({ ...latest, notify: false });
     setMessage(
       result === "denied"
         ? BLOCKED_MESSAGE
@@ -145,8 +147,10 @@ export function RestAlertsForm() {
         iPhone, a web page cannot notify you in the background (screen off or
         another app open) unless it is installed to the Home Screen with Web
         Push, which this app does not use, so the sound plays only while the
-        page is open. The rest countdown itself stays correct while the screen
-        is off.
+        page is open. Chrome on Android also refuses notifications made by a
+        page without a service worker, which this app does not have, so on
+        Android the vibration and sound are the reliable alerts. The rest
+        countdown itself stays correct while the screen is off.
       </p>
     </div>
   );

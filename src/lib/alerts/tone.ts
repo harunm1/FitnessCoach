@@ -1,4 +1,4 @@
-// The rest-end tone, made by an oscillator in the Web Audio API (D34): no audio file to
+// The rest-end tone, made by an oscillator in the Web Audio API (D36): no audio file to
 // download or license. Browsers start an AudioContext suspended until a user gesture, so
 // `unlockAudio` is called from taps (a logged set, the settings test button).
 
@@ -31,11 +31,16 @@ function getContext(): AudioContext | null {
   return context;
 }
 
+// Resuming without a tap can be refused; that must not surface as an unhandled rejection.
+function resumeQuietly(audio: AudioContext): void {
+  audio.resume().catch(() => undefined);
+}
+
 // Creates or resumes the context. Call from inside a tap or click.
 export function unlockAudio(): void {
   try {
     const audio = getContext();
-    if (audio && audio.state === "suspended") void audio.resume();
+    if (audio && audio.state !== "running") resumeQuietly(audio);
   } catch {
     // No audio on this device: the alert is simply silent.
   }
@@ -45,7 +50,7 @@ export function unlockAudio(): void {
 export function playTone(volume: number): void {
   const audio = getContext();
   if (!audio) return;
-  if (audio.state === "suspended") void audio.resume();
+  if (audio.state !== "running") resumeQuietly(audio);
   const level = Math.min(1, Math.max(0, volume));
   const start = audio.currentTime;
   NOTE_HZ.forEach((frequency, index) => {

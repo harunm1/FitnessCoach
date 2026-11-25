@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Tests for the live workout clock (D34): it counts active time, can be paused and resumed,
+// Tests for the live workout clock (D36): it counts active time, can be paused and resumed,
 // pauses by itself after 30 idle minutes with the pause starting at the last activity, shows a
 // "Resume or finish?" prompt, and is NOT paused when the screen turns off or the tab is hidden.
 import { act, cleanup, render, screen } from "@testing-library/react";
@@ -220,6 +220,23 @@ describe("idle auto-pause", () => {
     expect(pauseWorkoutClock).toHaveBeenCalledTimes(1);
     const sent = Date.parse(pauseWorkoutClock.mock.calls[0][0]);
     expect(Math.abs(sent - tapAt)).toBeLessThanOrEqual(SECOND_MS);
+  });
+
+  it("scrolling counts as activity", async () => {
+    renderClock({ lastSetMs: NOW - TWENTY_MINUTES });
+    await settle();
+    await advance(FIVE_MINUTES);
+    act(() => {
+      document.dispatchEvent(new Event("scroll"));
+    });
+    await advance(TWENTY_NINE_MINUTES);
+    expect(pauseWorkoutClock).not.toHaveBeenCalled();
+  });
+
+  it("keeps a status region in the page from the start so a pause is announced", async () => {
+    renderClock({ lastSetMs: NOW });
+    await settle();
+    expect(screen.getByRole("status")).toBeTruthy();
   });
 
   it("uses the last interaction kept on this device across a reload", async () => {

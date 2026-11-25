@@ -1,5 +1,5 @@
 // Tests for pausing and resuming the workout clock, and for the active duration stored at
-// Finish (D34). The user comes from the session, the open workout is the user's own, and a
+// Finish (D36). The user comes from the session, the open workout is the user's own, and a
 // backdated idle pause can neither reach before the running stretch nor into the future.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -79,7 +79,8 @@ describe("pauseWorkoutClock", () => {
       activeBankedSeconds: FORTY_MINUTE_SECONDS,
       activeSince: null,
     });
-    expect(revalidatePath).toHaveBeenCalledWith("/session");
+    // The clock holds its own state; a re-render would remount it and lose the idle notice.
+    expect(revalidatePath).not.toHaveBeenCalled();
   });
 
   it("only touches the signed-in user's open workout", async () => {
@@ -88,10 +89,12 @@ describe("pauseWorkoutClock", () => {
       userId: "session-owner",
       finishedAt: null,
     });
+    // Compare and set on the stretch that was read, so two tabs pausing together bank once.
     expect(database.workout.updateMany.mock.calls[0][0].where).toMatchObject({
       id: OPEN_ID,
       userId: "session-owner",
       finishedAt: null,
+      activeSince: new Date(STARTED),
     });
   });
 
@@ -114,12 +117,10 @@ describe("pauseWorkoutClock", () => {
     });
   });
 
-  it("treats an unreadable time as now", async () => {
+  it("rejects a time that is not an ISO date and changes nothing", async () => {
     const result = await pauseWorkoutClock("not a date");
-    expect(result).toMatchObject({
-      status: "ok",
-      bankedSeconds: FIFTY_MINUTE_SECONDS,
-    });
+    expect(result.status).toBe("error");
+    expect(database.workout.updateMany).not.toHaveBeenCalled();
   });
 
   it("is a no-op for an already paused workout and reports its state", async () => {
@@ -230,6 +231,16 @@ describe("finishWorkout stores the active time", () => {
     );
     const update = await finish();
     expect(update.data.durationSeconds).toBe(FORTY_MINUTE_SECONDS);
+  });
+
+  it("only finishes the stretch it read (a pause from another tab in between wins)", async () => {
+    const update = await finish();
+    expect(update.where).toMatchObject({
+      id: OPEN_ID,
+      userId: "session-owner",
+      finishedAt: null,
+      activeSince: new Date(STARTED),
+    });
   });
 
   it("keeps a run's own recorded time", async () => {

@@ -83,7 +83,7 @@ export default function ExerciseLogPanel(props: ExerciseLogPanelProps) {
 
   const logSet = async (set: LoggedSetInput) => {
     if (!allowTap()) return;
-    // A tap is the moment the browser lets the rest-end tone start later (D34).
+    // A tap is the moment the browser lets the rest-end tone start later (D36).
     unlockAudio();
     setCoolingDown(true);
     window.clearTimeout(cooldown.current);

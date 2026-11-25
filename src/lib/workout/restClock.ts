@@ -1,4 +1,4 @@
-// The rest timer's end-time math (D34). The countdown is a deadline, not a count of one-second
+// The rest timer's end-time math (D36). The countdown is a deadline, not a count of one-second
 // ticks, so a sleeping screen or a throttled background tab cannot make it run slow.
 
 const MS_PER_SECOND = 1000;

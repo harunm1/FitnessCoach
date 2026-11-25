@@ -38,6 +38,36 @@ describe("loadHistoryPage", () => {
     );
   });
 
+  it("leaves a workout open for 18 hours untimed instead of showing 1120 minutes (B1)", async () => {
+    const longEnd = new Date(start.getTime() + 1120 * 60_000);
+    workout.findMany.mockResolvedValue([
+      {
+        id: 3,
+        startedAt: start,
+        finishedAt: longEnd,
+        source: "live",
+        notes: null,
+        distanceKm: null,
+        durationSeconds: null,
+        planDay: { name: "Lower body" },
+        _count: { sets: 0 },
+      },
+      {
+        id: 2,
+        startedAt: start,
+        finishedAt: longEnd,
+        source: "manual-run",
+        notes: null,
+        distanceKm: decimal("5.00"),
+        durationSeconds: 1800,
+        planDay: { name: "Easy run" },
+        _count: { sets: 0 },
+      },
+    ]);
+    const page = await loadHistoryPage("session-owner", 1);
+    expect(page.rows.map((r) => r.minutes)).toEqual([null, 30]);
+  });
+
   it("counts sets in the query instead of loading them", async () => {
     await loadHistoryPage("session-owner", 1);
     const { select } = workout.findMany.mock.calls[0][0];
@@ -53,6 +83,7 @@ describe("loadHistoryPage", () => {
       source: "live",
       notes: null,
       distanceKm: null,
+      durationSeconds: null,
       planDay: { name: "Push" },
       _count: { sets: 12 },
       ...extra,
@@ -144,7 +175,8 @@ describe("loadWorkoutDetail", () => {
       id: 41,
       name: "Push",
       startedAt: start,
-      minutes: 50,
+      // The run's own recorded 30 minutes, not the 50 between Start and Finish (B1).
+      minutes: 30,
       imported: false,
       notes: "Felt strong",
       run: { distanceKm: 5, seconds: 1800, rpe: 7 },

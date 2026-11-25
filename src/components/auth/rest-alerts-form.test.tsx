@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Tests for the "Alerts on this device" box on the account page (D34): everything starts off,
+// Tests for the "Alerts on this device" box on the account page (D36): everything starts off,
 // each switch saves on this device, the browser's notification permission is asked only when
 // the user turns Notification on, and the iPhone limit is stated plainly.
 import {
@@ -198,6 +198,12 @@ describe("RestAlertsForm", () => {
         ) as HTMLInputElement
       ).disabled,
     ).toBe(true);
+  });
+
+  it("states the Android Chrome limit too", async () => {
+    stubNotification("default");
+    await renderForm();
+    expect(document.body.textContent).toContain("Android");
   });
 
   it("states the iPhone limit plainly", async () => {

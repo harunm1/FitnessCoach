@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import {
@@ -14,7 +14,7 @@ import {
   latestSetMs,
 } from "@/lib/workout/openClock";
 
-// Pause and resume of the workout clock (D34). Called from the browser, by the Pause and Resume
+// Pause and resume of the workout clock (D36). Called from the browser, by the Pause and Resume
 // buttons and by the idle check, which passes the time of the last activity so the pause starts
 // there and not when the page noticed.
 export type ClockResult =
@@ -43,10 +43,16 @@ async function currentState(userId: string): Promise<ClockResult> {
   return workout ? report(clockOf(workout)) : NO_WORKOUT;
 }
 
+const lastActivitySchema = z.iso.datetime();
+
 export async function pauseWorkoutClock(
   lastActivityIso: string,
 ): Promise<ClockResult> {
   const user = await requireUser();
+  const parsed = lastActivitySchema.safeParse(lastActivityIso);
+  if (!parsed.success) {
+    return { status: "error", message: "That time was not understood." };
+  }
   const workout = await findOpenClockWorkout(user.id);
   if (!workout) return NO_WORKOUT;
   const clock = clockOf(workout);
@@ -57,10 +63,7 @@ export async function pauseWorkoutClock(
   // Never earlier than the newest set, which another device may have logged, and never before
   // the running stretch began or after now (pauseClock holds both).
   const newestSetMs = await latestSetMs(workout.id);
-  const wantedMs = Math.max(
-    Number.isFinite(requestedMs) ? requestedMs : nowMs,
-    newestSetMs ?? 0,
-  );
+  const wantedMs = Math.max(requestedMs, newestSetMs ?? 0);
   const paused = pauseClock(clock, wantedMs, nowMs);
 
   // Compare and set on the stretch this call read, so two tabs pausing together bank once.
@@ -74,7 +77,6 @@ export async function pauseWorkoutClock(
     data: { activeBankedSeconds: paused.bankedSeconds, activeSince: null },
   });
   if (count === 0) return currentState(user.id);
-  revalidatePath("/session");
   return report(paused);
 }
 
@@ -96,6 +98,5 @@ export async function resumeWorkoutClock(): Promise<ClockResult> {
     data: { activeSince: new Date(resumed.activeSinceMs ?? Date.now()) },
   });
   if (count === 0) return currentState(user.id);
-  revalidatePath("/session");
   return report(resumed);
 }

@@ -1,4 +1,4 @@
-// Browser proof for the session clock and the rest timer (D34): a logged set starts the rest
+// Browser proof for the session clock and the rest timer (D36): a logged set starts the rest
 // countdown, +15 and Skip work, the workout can be paused and resumed, and a workout that has
 // sat idle is paused at its last activity with a "Resume or finish?" prompt.
 import { randomUUID } from "node:crypto";
@@ -87,13 +87,17 @@ test.describe("session clock and rest timer", () => {
       .toBeLessThan(first);
 
     const before = await restSeconds(page, exerciseName);
-    await page.getByRole("button", { name: "+15 s", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Add 15 seconds", exact: true })
+      .click();
     // Fifteen seconds were added (a second or two may have run out meanwhile).
     expect(await restSeconds(page, exerciseName)).toBeGreaterThan(
       before + EXTRA_SECONDS - ELAPSED_ALLOWANCE,
     );
 
-    await page.getByRole("button", { name: "-15 s", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Subtract 15 seconds", exact: true })
+      .click();
     expect(await restSeconds(page, exerciseName)).toBeLessThanOrEqual(before);
 
     await page.getByRole("button", { name: "Skip rest", exact: true }).click();
