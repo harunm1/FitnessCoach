@@ -779,3 +779,13 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Did with it:** Each change went through a review agent that had not seen the work. The photo review found three errors, which were fixed test-first: the dialog left the dark theme, a long note could not be reached on a phone, and the focus trap had no test. The weight review found the chart caption printing values like 63.099999999999994, and that a refused entry wiped the form. A second agent checked each fix. Lint, type check, format check and the targeted tests ran before each push, and CI was green on the exact commit before it reached main.
 
 **Tools:** gh, git, Prettier, ESLint, tsc, Vitest, Prisma (validate, migrate diff), review agents (pr-review-toolkit code-reviewer, a blind pass and a delta check per change). No skills.
+
+## 24 November (evening): logging a run by hand
+
+**Asked:** For a way to record a run without a watch link. My test that day showed that a plan with an easy run had nowhere to log the run unless a session was started first. The brief: a form on the Progress page (day, km, h:mm:ss, optional effort and note), the pace shown, the latest five runs listed, and the plan's run day marked done. Design first, tests first, and the session screen left to its owner.
+
+**Got:** Decision D25. A run is a finished `Workout` plus its `RunLog` row (the table already existed, with checks, but nothing wrote to it). This beat a new table and beat the workout row alone. Plan days are a rotation, not dates, so the run completes the plan's next day when that day is a run. Also: the `logRun` Server Action, the form and list, migration `20261124200000_run_log_upper_bounds` (300 km, 24 hours), and a Postgres integration test. AI wrote the code and tests from my brief.
+
+**Did with it:** Each new test failed before the code existed. A review agent that had not seen the work read the change and found no errors and three should-fix items. The day view showed a made-up noon start time, a two-hour run showed as 125:30, and a save racing Start on the session screen could take a plan day twice. The first two were fixed test-first; the race is written into D25 as a known cost, with a note for the session screen's owner. A second agent checked the fixes. Lint, type check, format check and the targeted tests ran before the push, and CI was green on the exact commit before it reached main.
+
+**Tools:** git, gh, Prettier, ESLint, tsc, Vitest, Prisma (validate), review agents (pr-review-toolkit code-reviewer, a blind pass and a delta check). No skills.

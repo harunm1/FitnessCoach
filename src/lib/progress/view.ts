@@ -65,10 +65,10 @@ export function durationMinutes(workout: ProgressWorkout): number {
   return Math.max(1, Math.round(ms / 60000));
 }
 
-// "32:05" for a duration in seconds. Rounds the total first, so 359.6 seconds
-// is "6:00", never "5:60".
 const SECONDS_PER_HOUR = 3600;
 
+// "32:05" for a duration in seconds. Rounds the total first, so 359.6 seconds
+// is "6:00", never "5:60".
 export function clock(seconds: number): string {
   const total = Math.round(seconds);
   const minutes = Math.floor(total / 60);

@@ -178,5 +178,7 @@ describe("duration", () => {
     expect(duration(3599)).toBe("59:59");
     expect(duration(3600)).toBe("1:00:00");
     expect(duration(7530)).toBe("2:05:30");
+    // Rounded before the hour check, so never "59:60".
+    expect(duration(3599.6)).toBe("1:00:00");
   });
 });
