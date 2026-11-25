@@ -21,8 +21,10 @@ afterEach(cleanup);
 
 describe("SyncStatusPill", () => {
   it("shows nothing when online with nothing to sync", () => {
-    const { container } = render(<SyncStatusPill {...base} />);
-    expect(container.innerHTML).toBe("");
+    render(<SyncStatusPill {...base} />);
+    // The live region stays mounted and empty, so later messages are announced.
+    expect(screen.getByRole("status").textContent).toBe("");
+    expect(screen.queryByRole("button")).toBeNull();
   });
 
   it("says sets are saved offline and how many wait", () => {
@@ -49,6 +51,26 @@ describe("SyncStatusPill", () => {
     expect(screen.getByRole("status").textContent).toContain("All sets synced");
   });
 
+  it("says a set could not reach the server and offers Try again, not Discard", () => {
+    const onRetry = vi.fn();
+    render(
+      <SyncStatusPill
+        {...base}
+        pending={1}
+        failure={{ kind: "network", message: "Failed to fetch" }}
+        onRetry={onRetry}
+      />,
+    );
+    const status = screen.getByRole("status").textContent;
+    expect(status).toContain("Saved offline, 1 to sync");
+    expect(status).toContain("Could not reach the server; it will try again.");
+    expect(
+      screen.queryByRole("button", { name: "Discard this set" }),
+    ).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
   it("announces a failed sync and offers Try again and Discard as buttons", () => {
     const onRetry = vi.fn();
     const onDiscard = vi.fn();
@@ -56,7 +78,7 @@ describe("SyncStatusPill", () => {
       <SyncStatusPill
         {...base}
         pending={1}
-        failure={{ message: "That set is out of date." }}
+        failure={{ kind: "rejected", message: "That set is out of date." }}
         onRetry={onRetry}
         onDiscard={onDiscard}
       />,

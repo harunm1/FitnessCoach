@@ -135,7 +135,10 @@ export default function SetLogForm({
 
   return (
     <form
-      action={onLog ? undefined : formAction}
+      // The logSet action stays on the form for a submit before the page is interactive
+      // (no JavaScript yet); once hydrated, the queue handler calls preventDefault, which
+      // React honours by not running the action.
+      action={formAction}
       className="mt-4 flex flex-wrap items-end gap-2"
       onSubmit={onLog ? handleQueuedSubmit : undefined}
     >

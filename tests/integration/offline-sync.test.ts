@@ -45,7 +45,6 @@ const REPS = 8;
 const EDITED_REPS = 9;
 const SET_ONE = 1;
 const SET_TWO = 2;
-const BOTH = 2;
 const LOW_PAIN = 1;
 const STOP_PAIN = PAIN_TRAFFIC_THRESHOLDS.stopMin;
 const IP_SUFFIX_LENGTH = 4;
@@ -136,6 +135,14 @@ function queued(workoutId: number, overrides: Record<string, unknown> = {}) {
   };
 }
 
+async function appliedKeys(workoutId: number) {
+  const keys = await db.queuedSetKey.findMany({
+    where: { workoutId },
+    orderBy: { createdAt: "asc" },
+  });
+  return keys.map((key) => key.clientId);
+}
+
 beforeAll(async () => {
   passwordHash = await hashPassword(password);
   await db.exercise.create({
@@ -186,12 +193,9 @@ describe("syncQueuedSet", () => {
 
     const rows = await db.setLog.findMany({ where: { workoutId: workout.id } });
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({
-      clientId: set.clientId,
-      setNumber: SET_ONE,
-      reps: REPS,
-    });
+    expect(rows[0]).toMatchObject({ setNumber: SET_ONE, reps: REPS });
     expect(rows[0].weightKg?.toString()).toBe("12.5");
+    expect(await appliedKeys(workout.id)).toEqual([set.clientId]);
   });
 
   it("stores one row when the same queued set is replayed", async () => {
@@ -233,7 +237,7 @@ describe("syncQueuedSet", () => {
       orderBy: { setNumber: "asc" },
     });
     expect(rows.map((row) => row.setNumber)).toEqual([SET_ONE, SET_TWO]);
-    expect(rows.map((row) => row.clientId)).toEqual([
+    expect(await appliedKeys(workout.id)).toEqual([
       first.clientId,
       second.clientId,
     ]);
@@ -250,10 +254,47 @@ describe("syncQueuedSet", () => {
 
     const rows = await db.setLog.findMany({ where: { workoutId: workout.id } });
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({
-      reps: EDITED_REPS,
-      clientId: edit.clientId,
+    expect(rows[0]).toMatchObject({ reps: EDITED_REPS });
+  });
+
+  it("never lets a replay of an older edit overwrite a later one", async () => {
+    const workout = await openWorkout(owner.id);
+    await signIn(owner);
+    const original = queued(workout.id);
+    const edit = queued(workout.id, { reps: EDITED_REPS });
+    await syncQueuedSet(original);
+    await syncQueuedSet(edit);
+
+    // The first request arrives late, after the edit was saved.
+    expect(await syncQueuedSet(original)).toEqual({ status: "duplicate" });
+
+    expect(
+      await db.setLog.findFirst({ where: { workoutId: workout.id } }),
+    ).toMatchObject({ reps: EDITED_REPS });
+  });
+
+  it("answers a replay of a saved set as saved even after the workout is finished", async () => {
+    const workout = await openWorkout(owner.id);
+    await signIn(owner);
+    const set = queued(workout.id);
+    await syncQueuedSet(set);
+    await db.workout.update({
+      where: { id: workout.id },
+      data: { finishedAt: new Date() },
     });
+
+    expect(await syncQueuedSet(set)).toEqual({ status: "duplicate" });
+  });
+
+  it("does not reveal another user's applied key", async () => {
+    const otherWorkout = await openWorkout(other.id);
+    await signIn(other);
+    const set = queued(otherWorkout.id);
+    await syncQueuedSet(set);
+    await openWorkout(owner.id);
+    await signIn(owner);
+
+    expect((await syncQueuedSet(set)).status).toBe("error");
   });
 
   it("refuses a known clientId sent for a different set", async () => {
@@ -373,38 +414,18 @@ describe("syncQueuedSet", () => {
     ).toMatchObject({ setNumber: SET_ONE, painDuringSession: LOW_PAIN });
   });
 
-  it("has a unique index on (workoutId, clientId)", async () => {
+  it("keeps one key per (workoutId, clientId) and removes keys with the workout", async () => {
     const workout = await openWorkout(owner.id);
-    const clientId = randomUUID();
-    await db.setLog.create({
-      data: {
-        workoutId: workout.id,
-        exerciseId,
-        setNumber: SET_ONE,
-        reps: REPS,
-        clientId,
-      },
-    });
-    await expect(
-      db.setLog.create({
-        data: {
-          workoutId: workout.id,
-          exerciseId,
-          setNumber: SET_TWO,
-          reps: REPS,
-          clientId,
-        },
-      }),
-    ).rejects.toThrow();
-    const many = await db.setLog.createMany({
-      data: [SET_ONE, SET_TWO].map((setNumber) => ({
-        workoutId: workout.id,
-        exerciseId,
-        setNumber: setNumber + BOTH,
-        reps: REPS,
-      })),
-    });
-    // Rows without a clientId (every row logged before D31) never collide.
-    expect(many.count).toBe(BOTH);
+    const key = {
+      workoutId: workout.id,
+      clientId: randomUUID(),
+      exerciseId,
+      setNumber: SET_ONE,
+    };
+    await db.queuedSetKey.create({ data: key });
+    await expect(db.queuedSetKey.create({ data: key })).rejects.toThrow();
+
+    await db.workout.delete({ where: { id: workout.id } });
+    expect(await appliedKeys(workout.id)).toEqual([]);
   });
 });

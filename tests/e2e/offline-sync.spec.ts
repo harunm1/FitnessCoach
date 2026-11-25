@@ -90,11 +90,12 @@ async function logSet(page: Page, exerciseName: string, setNumber: number) {
 }
 
 async function savedSets(db: Client, workoutId: number) {
-  const { rows } = await db.query<{
-    setNumber: number;
-    clientId: string | null;
-  }>(
-    'SELECT "setNumber", "clientId" FROM "SetLog" WHERE "workoutId" = $1 ORDER BY "setNumber"',
+  const { rows } = await db.query<{ setNumber: number; keyed: boolean }>(
+    `SELECT s."setNumber", EXISTS (
+       SELECT 1 FROM "QueuedSetKey" k
+       WHERE k."workoutId" = s."workoutId" AND k."exerciseId" = s."exerciseId" AND k."setNumber" = s."setNumber"
+     ) AS keyed
+     FROM "SetLog" s WHERE s."workoutId" = $1 ORDER BY s."setNumber"`,
     [workoutId],
   );
   return rows;
@@ -144,7 +145,8 @@ test.describe("offline set logging", () => {
     await expect(page.getByText("Set 2: 8 reps · 20 kg")).toBeVisible();
     const rows = await savedSets(db, workoutId);
     expect(rows.map((row) => row.setNumber)).toEqual([SET_ONE, SET_TWO]);
-    expect(rows.every((row) => row.clientId !== null)).toBe(true);
+    // Each set came through the queue, so each has its applied clientId.
+    expect(rows.every((row) => row.keyed)).toBe(true);
   });
 
   test("a set the server could not receive survives a reload and syncs after it", async ({

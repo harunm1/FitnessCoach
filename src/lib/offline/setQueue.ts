@@ -23,7 +23,12 @@ export type SetQueueOptions = {
   onSynced?: (count: number) => void;
   // Runs a replay under a lock shared by every tab (Web Locks); in-tab only by default.
   withLock?: <T>(run: () => Promise<T>) => Promise<T>;
+  // Wait before trying again after a request got no answer (the `online` event alone
+  // misses a weak signal, where the browser still reports online).
+  retryDelayMs?: number;
 };
+
+const DEFAULT_RETRY_DELAY_MS = 15_000;
 
 export function createSetQueue(options: SetQueueOptions) {
   const now = options.now ?? Date.now;
@@ -33,6 +38,8 @@ export function createSetQueue(options: SetQueueOptions) {
   let userId: string | null = null;
   let running: Promise<void> | null = null;
   let runAgain = false;
+  let retryTimer: ReturnType<typeof setTimeout> | undefined;
+  const retryDelayMs = options.retryDelayMs ?? DEFAULT_RETRY_DELAY_MS;
   let snapshot: QueueSnapshot = {
     items: [],
     online: options.isOnline(),
@@ -69,6 +76,10 @@ export function createSetQueue(options: SetQueueOptions) {
       justSynced: result.failure === null && snapshot.items.length === 0,
     });
     if (result.synced > 0) options.onSynced?.(result.synced);
+    // A refused set waits for the user; a set that got no answer is tried again later.
+    if (result.failure?.kind === "network") {
+      retryTimer = setTimeout(() => void sync(), retryDelayMs);
+    }
   }
 
   async function replayUntilSettled(owner: string): Promise<void> {
@@ -84,6 +95,7 @@ export function createSetQueue(options: SetQueueOptions) {
       runAgain = true;
       return running;
     }
+    clearTimeout(retryTimer);
     update({ syncing: true });
     running = (async () => {
       try {

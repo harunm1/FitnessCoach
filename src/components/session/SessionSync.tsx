@@ -32,18 +32,19 @@ export default function SessionSync({ userId }: { userId: string }) {
 
   useEffect(() => onSessionSetsSynced(() => router.refresh()), [router]);
 
-  // A network failure just waits for the next try; only a refusal needs the user.
-  const refused = queue.failure?.kind === "rejected" ? queue.failure : null;
+  const failure = queue.failure;
 
   return (
     <SyncStatusPill
-      failure={refused}
+      failure={failure}
       justSynced={queue.justSynced}
       online={queue.online}
       pending={queue.items.length}
       syncing={queue.syncing}
       onDiscard={() => {
-        if (refused) void sessionSetQueue.discard(refused.clientId);
+        if (failure?.kind === "rejected") {
+          void sessionSetQueue.discard(failure.clientId);
+        }
       }}
       onRetry={() => void sessionSetQueue.sync()}
     />

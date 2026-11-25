@@ -12,6 +12,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 // The queue mode never calls the logSet action; mocking it keeps Prisma out of the test.
 vi.mock("@/app/session/actions", () => ({ logSet: vi.fn() }));
 
+import { logSet } from "@/app/session/actions";
 import SetLogForm, { type LoggedSetInput } from "./SetLogForm";
 
 const TARGET_REPS = 10;
@@ -62,6 +63,16 @@ describe("SetLogForm with the offline queue", () => {
     // crypto.randomUUID() gives a version 4 UUID: 36 characters, "4" after the second dash.
     expect(set.clientId).toHaveLength(UUID_LENGTH);
     expect(set.clientId[UUID_VERSION_INDEX]).toBe("4");
+  });
+
+  it("keeps the logSet action on the form for a submit before the page is interactive", async () => {
+    const { onLog, container } = renderForm(SET_ONE);
+    expect(
+      container.querySelector("form")?.getAttribute("action"),
+    ).toBeTruthy();
+    await submit("8", "12");
+    expect(onLog).toHaveBeenCalledTimes(1);
+    expect(logSet).not.toHaveBeenCalled();
   });
 
   it("sends an empty weight as no weight", async () => {

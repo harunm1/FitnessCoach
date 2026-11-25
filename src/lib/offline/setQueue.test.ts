@@ -1,7 +1,7 @@
 // The offline set queue as the session view uses it (D31): sets logged offline wait on the
 // device, replay when the browser is back online or the page loads, and a failure is shown
 // and kept, never dropped.
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createMemoryStore } from "./queueStore";
 import { createSetQueue, type NewQueuedSet } from "./setQueue";
 import type { QueuedSet, SyncOutcome } from "./types";
@@ -13,6 +13,11 @@ const SET_ONE = 1;
 const SET_TWO = 2;
 const BOTH = 2;
 const NOW = 10_000;
+const RETRY_MS = 5_000;
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 function newSet(clientId: string, setNumber = SET_ONE): NewQueuedSet {
   return {
@@ -31,6 +36,7 @@ function setup(options: {
   online: boolean;
   send?: (item: QueuedSet) => Promise<SyncOutcome>;
   initial?: QueuedSet[];
+  retryDelayMs?: number;
 }) {
   let online = options.online;
   const store = createMemoryStore(options.initial ?? []);
@@ -44,6 +50,7 @@ function setup(options: {
     isOnline: () => online,
     now: () => NOW,
     onSynced,
+    retryDelayMs: options.retryDelayMs,
   });
   return {
     queue,
@@ -204,6 +211,39 @@ describe("createSetQueue", () => {
     await queue.idle();
     expect(queue.getSnapshot().items).toHaveLength(1);
     expect(queue.getSnapshot().failure?.kind).toBe("network");
+  });
+
+  it("tries a set again by itself a little later when its request failed", async () => {
+    vi.useFakeTimers();
+    const send = vi
+      .fn<(item: QueuedSet) => Promise<SyncOutcome>>()
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockResolvedValueOnce({ status: "saved" });
+    const { queue } = setup({ online: true, send, retryDelayMs: RETRY_MS });
+    await queue.start(USER);
+    await queue.enqueue(newSet("a"));
+    await queue.idle();
+    expect(queue.getSnapshot().items).toHaveLength(1);
+
+    await vi.advanceTimersByTimeAsync(RETRY_MS);
+    await queue.idle();
+
+    expect(send).toHaveBeenCalledTimes(BOTH);
+    expect(queue.getSnapshot()).toMatchObject({ items: [], failure: null });
+  });
+
+  it("does not retry a set the server refused until the user asks", async () => {
+    vi.useFakeTimers();
+    const { queue, send } = setup({
+      online: true,
+      send: async () => ({ status: "error", message: "Refused." }),
+      retryDelayMs: RETRY_MS,
+    });
+    await queue.start(USER);
+    await queue.enqueue(newSet("a"));
+    await queue.idle();
+    await vi.advanceTimersByTimeAsync(RETRY_MS * BOTH);
+    expect(send).toHaveBeenCalledTimes(1);
   });
 
   it("removes a set only when the user discards it", async () => {
