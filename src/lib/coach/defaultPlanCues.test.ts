@@ -115,6 +115,15 @@ describe("the starter plan prefers exercises with cues (#103)", () => {
     expect(picked).not.toContain("handstand-pushup");
   });
 
+  it("keeps a beginner's rows that have no level or an unknown one", () => {
+    const unknown = bodyOnly.map((e, i) => ({
+      ...e,
+      level: i % 2 ? "expert" : undefined,
+    }));
+    const picked = pickedIds(noEquipment, unknown);
+    expect(picked.length).toBeGreaterThan(0);
+  });
+
   it("keeps a barbell lift ahead of a cued dumbbell lift for an expert", () => {
     const lib = [
       move("barbell-bench", "barbell", "chest", { level: "INTERMEDIATE" }),

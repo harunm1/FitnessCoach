@@ -58,7 +58,7 @@ const SPLITS: Record<number, Split[]> = {
 // How many accessory muscles a day adds: the more experienced the user, the longer the day.
 const EXTRAS_BY_LEVEL = { BEGINNER: 0, INTERMEDIATE: 1, EXPERT: 3 } as const;
 const LEVEL_RANK = { BEGINNER: 0, INTERMEDIATE: 1, EXPERT: 2 } as const;
-// An exercise above the user's level goes behind every fit at or below it.
+// Kept as a guard: `usable` already leaves out exercises above the user's level (#103).
 const ABOVE_LEVEL_PENALTY = 100;
 const UNLISTED_EQUIPMENT_RANK = 99;
 // Half a point: an exercise without cues goes behind one with cues of the same level and
