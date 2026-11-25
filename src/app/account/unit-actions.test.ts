@@ -9,7 +9,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth/session", () => ({ requireUser }));
 vi.mock("@/lib/prisma", () => ({ prisma: database }));
 vi.mock("next/cache", () => ({ revalidatePath }));
-import { saveUnitPrefs } from "./unit-actions";
+import { saveUnitPrefs, setWeightUnit } from "./unit-actions";
 
 const idle = { status: "idle" as const };
 
@@ -73,5 +73,29 @@ describe("saveUnitPrefs", () => {
     );
     expect(result.status).toBe("error");
     expect(revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("setWeightUnit", () => {
+  it("changes only the weight unit of the signed-in user and refreshes the pages", async () => {
+    const result = await setWeightUnit("KG");
+    expect(result).toEqual({ status: "saved" });
+    expect(database.user.update).toHaveBeenCalledWith({
+      where: { id: "session-owner" },
+      data: { weightUnit: "KG" },
+    });
+    expect(revalidatePath).toHaveBeenCalledWith("/", "layout");
+  });
+
+  it("refuses a value that is not kg or lb", async () => {
+    const result = await setWeightUnit("stone");
+    expect(result.status).toBe("error");
+    expect(database.user.update).not.toHaveBeenCalled();
+  });
+
+  it("reports a database failure without throwing", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    database.user.update.mockRejectedValue(new Error("down"));
+    expect((await setWeightUnit("LB")).status).toBe("error");
   });
 });

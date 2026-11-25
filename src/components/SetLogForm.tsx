@@ -7,7 +7,12 @@ import {
   painTrafficLight,
 } from "@/lib/coach/painTrafficLight";
 import type { SetLogActionState } from "@/lib/workout/setLogSchema";
-import { weightLabel, type WeightUnit } from "@/lib/units/convert";
+import {
+  fromKgForEdit,
+  weightLabel,
+  type WeightUnit,
+} from "@/lib/units/convert";
+import WeightUnitSwitch from "@/components/WeightUnitSwitch";
 import { weightPlaceholder } from "@/lib/workout/weightPlaceholder";
 
 type SetLogFormProps = {
@@ -23,7 +28,6 @@ type SetLogFormProps = {
     painDuringSession: number | null;
     painNextMorning: number | null;
   };
-  weightUnit?: WeightUnit; // what the user chose (D29); the form posts it back
   weightUnit?: WeightUnit; // what the user chose (D30); the form posts it back
 };
 
@@ -85,8 +89,12 @@ export default function SetLogForm({
         <input
           className="h-10 w-24 border border-foreground/20 bg-white px-2 text-sm text-foreground outline-none placeholder:text-foreground/40 focus:border-foreground focus:ring-2 focus:ring-foreground/10"
           inputMode="decimal"
-          key={`weight-${setNumber}`}
-          defaultValue={correcting ? (correction?.weightKg ?? "") : ""}
+          key={`weight-${setNumber}-${weightUnit}`}
+          defaultValue={
+            correcting && correction?.weightKg
+              ? fromKgForEdit(Number(correction.weightKg), weightUnit)
+              : ""
+          }
           max={9999.99}
           min={0.01}
           name="weightKg"
@@ -95,6 +103,7 @@ export default function SetLogForm({
           type="number"
         />
       </label>
+      <WeightUnitSwitch current={weightUnit} />
       <label className="grid gap-1 text-sm font-semibold text-foreground/60">
         Pain during
         <input

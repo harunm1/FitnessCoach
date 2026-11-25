@@ -9,7 +9,9 @@ import {
   fromKg,
   fromKgBody,
   fromKm,
+  fromKgForEdit,
   fromKmPrecise,
+  unitsFromRow,
   parseDistanceUnit,
   parseWeightUnit,
   toKg,
@@ -139,5 +141,32 @@ describe("prefilling a stored distance", () => {
   it("leaves kilometres as stored", () => {
     expect(fromKmPrecise(10, "KM")).toBe(10);
     expect(fromKmPrecise(10, "MI")).toBe(6.2137);
+  });
+});
+
+describe("the defaults", () => {
+  it("are pounds for weight and kilometres for distance", () => {
+    expect(unitsFromRow(null)).toEqual({
+      weightUnit: "LB",
+      distanceUnit: "KM",
+    });
+    expect(unitsFromRow({ weightUnit: "x", distanceUnit: 3 })).toEqual({
+      weightUnit: "LB",
+      distanceUnit: "KM",
+    });
+  });
+});
+
+describe("prefilling a stored weight for a saved correction", () => {
+  it("round-trips every stored hundredth of a kg to 1000 kg through pounds", () => {
+    for (let hundredths = 1; hundredths <= 100000; hundredths += 1) {
+      const kg = hundredths / 100;
+      expect(toKg(fromKgForEdit(kg, "LB"), "LB")).toBe(kg);
+    }
+  });
+
+  it("leaves kilograms as stored and drops trailing zeros in pounds", () => {
+    expect(fromKgForEdit(11.34, "KG")).toBe(11.34);
+    expect(fromKgForEdit(11.34, "LB")).toBe(25);
   });
 });

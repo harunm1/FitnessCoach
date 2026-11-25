@@ -25,11 +25,11 @@ describe("loadUnitPrefs", () => {
     });
   });
 
-  it("falls back to pounds and miles when there is no row", async () => {
+  it("falls back to pounds and kilometres when there is no row", async () => {
     database.user.findUnique.mockResolvedValue(null);
     await expect(loadUnitPrefs("u1")).resolves.toEqual({
       weightUnit: "LB",
-      distanceUnit: "MI",
+      distanceUnit: "KM",
     });
   });
 });

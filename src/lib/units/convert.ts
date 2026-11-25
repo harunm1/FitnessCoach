@@ -43,6 +43,13 @@ export function fromKgBody(kg: number, unit: WeightUnit): number {
     : toHundredths(kg);
 }
 
+// A stored weight to put back in a box that will be saved again (a corrected set): pounds to
+// two places, which converts back to the stored kilograms (half of 0.01 lb is 0.0023 kg, under
+// the 0.005 kg that rounding to hundredths allows), kilograms as stored.
+export function fromKgForEdit(kg: number, unit: WeightUnit): number {
+  return unit === "LB" ? toHundredths(kg / KG_PER_LB) : kg;
+}
+
 // A typed distance in the user's unit, as the kilometres the database keeps.
 export function toKm(value: number, unit: DistanceUnit): number {
   return toHundredths(unit === "MI" ? value * KM_PER_MI : value);
@@ -139,7 +146,7 @@ export type UnitPrefs = { weightUnit: WeightUnit; distanceUnit: DistanceUnit };
 // What a new user gets, and what a missing row falls back to (D30).
 export const DEFAULT_UNITS: UnitPrefs = {
   weightUnit: "LB",
-  distanceUnit: "MI",
+  distanceUnit: "KM",
 };
 
 // The units on a user row, or the defaults for a missing row or a value that is not a unit,

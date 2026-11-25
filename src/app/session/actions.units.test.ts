@@ -9,6 +9,8 @@ const { requireUser, revalidatePath, redirect, database } = vi.hoisted(() => ({
   database: {
     workout: { findFirst: vi.fn(), update: vi.fn() },
     setLog: { upsert: vi.fn() },
+    $queryRaw: vi.fn(),
+    $transaction: vi.fn(),
   },
 }));
 vi.mock("server-only", () => ({}));
@@ -37,6 +39,10 @@ beforeEach(() => {
   requireUser.mockResolvedValue({ id: "session-owner" });
   database.workout.findFirst.mockResolvedValue(openWorkout);
   database.setLog.upsert.mockResolvedValue({});
+  // logSet runs inside a transaction (the pain-score lock); the same mocks serve as its client.
+  database.$transaction.mockImplementation((work: (tx: unknown) => unknown) =>
+    work(database),
+  );
   database.workout.update.mockResolvedValue({});
 });
 

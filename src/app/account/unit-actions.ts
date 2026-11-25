@@ -12,6 +12,30 @@ export type UnitPrefsState =
 
 // Saves the display units for the signed-in user (D30). The user comes from the session,
 // never the form. Stored values stay kg and km, so only what is shown changes.
+// The kg/lb switch on the session screen (D30): changes the weight unit alone, so the user does
+// not leave the workout. Called from the browser with the unit as a plain string.
+export async function setWeightUnit(unit: string): Promise<UnitPrefsState> {
+  const user = await requireUser();
+  const weightUnit = parseWeightUnit(unit);
+  if (!weightUnit) {
+    return { status: "error", message: "Choose kg or lb." };
+  }
+  try {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { weightUnit },
+    });
+  } catch (error) {
+    console.error("[units] switching failed", { userId: user.id, error });
+    return {
+      status: "error",
+      message: "Your unit couldn't be changed. Try again.",
+    };
+  }
+  revalidatePath("/", "layout");
+  return { status: "saved" };
+}
+
 export async function saveUnitPrefs(
   _previousState: UnitPrefsState,
   formData: FormData,

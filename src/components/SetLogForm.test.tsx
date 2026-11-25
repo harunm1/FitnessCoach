@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/app/session/actions", () => ({
   logSet: vi.fn(),
 }));
+vi.mock("@/app/account/unit-actions", () => ({ setWeightUnit: vi.fn() }));
 
 import SetLogForm from "./SetLogForm";
 

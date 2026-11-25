@@ -4,6 +4,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("@/app/account/unit-actions", () => ({ setWeightUnit: vi.fn() }));
 vi.mock("@/app/session/actions", () => ({
   logSet: vi.fn(),
   saveRunMetrics: vi.fn(),
@@ -41,6 +42,22 @@ describe("session logging", () => {
     expect(html).toContain("LB");
     expect(html).toContain('placeholder="Load in lb"');
     expect(html).toMatch(/name="weightUnit"[^>]*value="LB"/);
+  });
+
+  it("puts a kg/lb switch next to the weight box, with the current unit pressed", () => {
+    const html = renderToStaticMarkup(
+      <SetLogForm
+        exerciseId="e1"
+        targetReps={5}
+        nextSetNumber={1}
+        equipment="barbell"
+        weightUnit="LB"
+      />,
+    );
+    // A pressed button for lb and an unpressed one for kg, each ending at its closing tag.
+    expect(html).toMatch(/<button[^>]*aria-pressed="true"[^>]*>lb<\/button>/);
+    expect(html).toMatch(/<button[^>]*aria-pressed="false"[^>]*>kg<\/button>/);
+    expect(html).toContain("Weight unit");
   });
 
   it("keeps kilograms when asked for them", () => {

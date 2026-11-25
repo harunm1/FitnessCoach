@@ -46,7 +46,7 @@ model User {
   lastCoachPlanRequestedAt DateTime?
   // Display units only (D30): every stored weight is kg and every distance km.
   weightUnit               WeightUnit   @default(LB)
-  distanceUnit             DistanceUnit @default(MI)
+  distanceUnit             DistanceUnit @default(KM)
   createdAt                DateTime     @default(now())
   updatedAt                DateTime     @updatedAt
 
