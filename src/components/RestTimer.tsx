@@ -9,6 +9,9 @@ type RestTimerProps = {
   // When the newest set of this exercise was logged. A set logged within the rest time
   // starts the countdown by itself; an older one (a page reload) does not.
   lastLoggedAtIso: string;
+  // The server's clock when the page was built. The set time is the server's too, so the
+  // elapsed time does not depend on this device's clock being right.
+  serverNowIso: string;
 };
 
 function formatTime(seconds: number): string {
@@ -21,6 +24,7 @@ export default function RestTimer({
   restSeconds,
   exerciseName,
   lastLoggedAtIso,
+  serverNowIso,
 }: RestTimerProps) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(restSeconds);
@@ -32,7 +36,7 @@ export default function RestTimer({
       setIsHydrated(true);
       const remaining = restSecondsRemaining(
         Date.parse(lastLoggedAtIso),
-        Date.now(),
+        Date.parse(serverNowIso),
         restSeconds,
       );
       if (remaining !== null) {
@@ -41,7 +45,7 @@ export default function RestTimer({
       }
     }, 0);
     return () => window.clearTimeout(timeout);
-  }, [lastLoggedAtIso, restSeconds]);
+  }, [lastLoggedAtIso, serverNowIso, restSeconds]);
 
   useEffect(() => {
     if (!isRunning || secondsLeft <= 0) return;

@@ -49,7 +49,7 @@ describe("BodyMap", () => {
   });
 
   // Live feedback 24 Nov, item 3: the question box was hidden behind a second tap.
-  it("shows the coach chat as soon as a muscle is picked, without opening an exercise", () => {
+  it("shows the coach chat as soon as a muscle is picked, because the first exercise opens by itself", () => {
     render(<BodyMap exercises={exercises} />);
     expect(screen.queryByTestId("coach-chat")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Chest" }));

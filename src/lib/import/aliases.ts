@@ -2,7 +2,9 @@
 // 24 Nov, item 9; design in docs/IMPORT_FORMATS.md). Each target is an exact library name,
 // checked against free-exercise-db dist/exercises.json fetched 25 Nov 2026 (876 exercises). A
 // target the library does not hold leaves the title unmatched, so the user maps it by hand.
-// Only close equivalents are listed: a wrong match writes sets to the wrong exercise.
+// Left out on purpose (verifier, 25 Nov): "Hip Thrust (Smith Machine)" (the library's Smith Machine
+// Hip Raise trains the abs), "Box Jump" (the library one is repeated jumps) and "Pull Up
+// (Assisted)" (Hevy's weight is the help, not a load). Only close equivalents are listed: a wrong match writes sets to the wrong exercise.
 // The keys are compared through matchKey, so case, hyphens and plurals do not matter.
 export const ALIAS_TARGETS: Record<string, string> = {
   // Names from the first matcher (#131, 22 Nov 2026).
@@ -27,7 +29,6 @@ export const ALIAS_TARGETS: Record<string, string> = {
   "Dumbbell Row": "One-Arm Dumbbell Row",
   "Seated Cable Row - V Grip (Cable)": "Seated Cable Rows",
   "Seated Cable Row - Bar Grip": "Seated Cable Rows",
-  "Pull Up (Assisted)": "Band Assisted Pull-Up",
 
   // Arms.
   "Bicep Curl (Barbell)": "Barbell Curl",
@@ -46,8 +47,6 @@ export const ALIAS_TARGETS: Record<string, string> = {
   // Legs, glutes, core.
   "Front Squat": "Front Barbell Squat",
   "Reverse Lunge (Dumbbell)": "Dumbbell Rear Lunge",
-  "Hip Thrust (Smith Machine)": "Smith Machine Hip Raise",
-  "Box Jump": "Box Jump (Multiple Response)",
   "Jump Squat": "Freehand Jump Squat",
   "Lying Leg Raise": "Flat Bench Lying Leg Raise",
   "Cable Woodchopper": "Standing Cable Wood Chop",

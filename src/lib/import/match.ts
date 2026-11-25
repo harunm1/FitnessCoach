@@ -33,13 +33,33 @@ function splitEquipment(title: string) {
   return found ? { base: found[1], equipment: found[2] } : null;
 }
 
+// "Assisted" is the help given, not a load, so "Pull Up (Assisted)" never falls to a plain "Pull Up".
+function equipmentForms({
+  base,
+  equipment,
+}: {
+  base: string;
+  equipment: string;
+}) {
+  return equipment === "assisted" ? [] : [`${equipment} ${base}`, base];
+}
+
 export function matchExercises(titles: string[], library: LibraryName[]) {
   const byKey = new Map<string, string[]>();
   library.forEach(({ id, name }) => {
     const key = matchKey(name);
     byKey.set(key, [...(byKey.get(key) ?? []), id]);
   });
+  // The exact name first (case and spacing only), so a library name always finds itself even
+  // when another name shares its spelling key; the key is the fallback.
+  const byExact = new Map<string, string[]>();
+  library.forEach(({ id, name }) => {
+    const exact = normalizeTitle(name);
+    byExact.set(exact, [...(byExact.get(exact) ?? []), id]);
+  });
   const unique = (name: string) => {
+    const exactIds = byExact.get(normalizeTitle(name)) ?? [];
+    if (exactIds.length > 0) return exactIds.length === 1 ? exactIds[0] : null;
     const ids = byKey.get(matchKey(name)) ?? [];
     return ids.length === 1 ? ids[0] : null;
   };
@@ -53,7 +73,7 @@ export function matchExercises(titles: string[], library: LibraryName[]) {
     const candidates = [
       title,
       ALIASES.get(matchKey(title)) ?? "",
-      ...(split ? [`${split.equipment} ${split.base}`, split.base] : []),
+      ...(split ? equipmentForms(split) : []),
     ].filter((name) => name !== "");
     const id = candidates
       .map(unique)

@@ -113,6 +113,7 @@ export default async function SessionPage() {
   const sessionDay =
     plan?.days.find((day) => day.id === activeWorkout?.planDayId) ??
     (nextDayIndex === null ? undefined : plan?.days[nextDayIndex]);
+  const renderedAtIso = new Date().toISOString();
   const loggedByExercise = new Map<
     string,
     NonNullable<typeof activeWorkout>["sets"]
@@ -236,6 +237,7 @@ export default async function SessionPage() {
                                     sets,
                                   ).toISOString()}
                                   restSeconds={slot.restSeconds}
+                                  serverNowIso={renderedAtIso}
                                 />
                               </>
                             )}

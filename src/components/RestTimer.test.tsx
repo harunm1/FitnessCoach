@@ -12,6 +12,7 @@ const ONE_SECOND_MS = 1000;
 const THREE_SECONDS = 3;
 const TEN_SECONDS = 10;
 const TWENTY_SECONDS = 20;
+const HOUR_MS = 3_600_000;
 const TWENTY_SECONDS_MS = TWENTY_SECONDS * ONE_SECOND_MS;
 
 // Each tick re-arms the timer in an effect, so advance one second per act.
@@ -40,6 +41,7 @@ function renderTimer(lastLoggedAtIso: string) {
     <RestTimer
       exerciseName="Bench Press"
       lastLoggedAtIso={lastLoggedAtIso}
+      serverNowIso={iso(Date.now())}
       restSeconds={REST}
     />,
   );
@@ -49,6 +51,25 @@ function renderTimer(lastLoggedAtIso: string) {
   });
   return view;
 }
+
+describe("RestTimer with a wrong device clock", () => {
+  it("counts from the server's clock, so a device an hour ahead still starts the rest", () => {
+    vi.setSystemTime(NOW + HOUR_MS);
+    render(
+      <RestTimer
+        exerciseName="Bench Press"
+        lastLoggedAtIso={iso(NOW - TEN_SECONDS * ONE_SECOND_MS)}
+        restSeconds={REST}
+        serverNowIso={iso(NOW)}
+      />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(0);
+    });
+    expect(screen.getByText("Resting")).toBeTruthy();
+    expect(screen.getByText("01:20")).toBeTruthy();
+  });
+});
 
 describe("RestTimer auto start", () => {
   it("starts resting without a click when the set was just logged", () => {
@@ -78,6 +99,7 @@ describe("RestTimer auto start", () => {
       <RestTimer
         exerciseName="Bench Press"
         lastLoggedAtIso={iso(NOW + TWENTY_SECONDS_MS)}
+        serverNowIso={iso(NOW + TWENTY_SECONDS_MS)}
         restSeconds={REST}
       />,
     );

@@ -174,15 +174,37 @@ describe("matchExercises, alias before the bare name", () => {
     { id: "hammer", name: "Hammer Curls" },
     { id: "cablehammer", name: "Cable Hammer Curls - Rope Attachment" },
     { id: "pullups", name: "Pullups" },
-    { id: "assisted", name: "Band Assisted Pull-Up" },
   ];
 
   it("keeps the equipment the alias names instead of dropping it", () => {
-    const result = matchExercises(
-      ["Hammer Curl (Cable)", "Pull Up (Assisted)"],
-      equipmentLibrary,
-    );
+    const result = matchExercises(["Hammer Curl (Cable)"], equipmentLibrary);
     expect(result.matched["Hammer Curl (Cable)"]).toBe("cablehammer");
-    expect(result.matched["Pull Up (Assisted)"]).toBe("assisted");
+  });
+});
+
+// Verifier pass 1 (25 Nov): findings 1, 2, 3 and 4.
+describe("matchExercises, verifier findings", () => {
+  it("keeps an exact library name matching when another name shares its spelling key", () => {
+    const squats = [
+      { id: "a", name: "Squats - With Bands" },
+      { id: "b", name: "Squat with Bands" },
+    ];
+    const result = matchExercises(["Squats - With Bands"], squats);
+    expect(result.matched["Squats - With Bands"]).toBe("a");
+  });
+
+  it("leaves unmatched the names whose library neighbour is a different movement or load", () => {
+    const lib = [
+      { id: "raise", name: "Smith Machine Hip Raise" },
+      { id: "assist", name: "Band Assisted Pull-Up" },
+      { id: "pullups", name: "Pullups" },
+      { id: "multi", name: "Box Jump (Multiple Response)" },
+    ];
+    const titles = [
+      "Hip Thrust (Smith Machine)",
+      "Pull Up (Assisted)",
+      "Box Jump",
+    ];
+    expect(matchExercises(titles, lib).unmatched).toEqual(titles);
   });
 });

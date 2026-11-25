@@ -1,5 +1,5 @@
 // The two panels of the import page (#131): what a file would add, with a select for each
-// exercise name we could not match, and what was saved. Plain markup, no state.
+// exercise name we could not match, and what was saved. The result panel keeps one ref to take focus.
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import type { ImportSummary } from "@/app/import/actions";
