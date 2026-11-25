@@ -16,10 +16,6 @@ type ActivityCalendarProps = {
   nextMonth: string;
 };
 
-// The heading of the day's details (DayDetails). Link keeps the scroll position, and
-// on a phone the details sit below the calendar, so a day link jumps to them (D29).
-const DAY_DETAILS_ID = "day-title";
-
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 function monthLabel(month: string) {
@@ -43,7 +39,10 @@ function dayLabel(day: string, activity?: CalendarDay) {
 }
 
 // A month of days with workouts highlighted (#16). Every day is a link, so a tap
-// (not a hover) opens its details; this is a mobile-first page.
+// (not a hover) opens its details; this is a mobile-first page. A day link has no #fragment
+// and scroll={false}: picking a date updates the panel in place and never moves the page
+// (live bug L3, 25 Nov 2026, replacing the jump to the details that D29 added). The link
+// stays focused after the navigation, so keyboard users keep their place.
 export default function ActivityCalendar({
   month,
   weeks,
@@ -116,7 +115,8 @@ export default function ActivityCalendar({
                           ? "border border-foreground/40"
                           : "",
                       ].join(" ")}
-                      href={`${hrefFor({ month, day })}#${DAY_DETAILS_ID}`}
+                      href={hrefFor({ month, day })}
+                      scroll={false}
                     >
                       {Number(day.slice(8))}
                       {dayActivity?.hasRun && (

@@ -54,16 +54,12 @@ describe("ActivityCalendar", () => {
 
   it("marks the selected day and links every day", () => {
     expect(html).toMatch(/aria-current="date"[^>]*November 8/);
-    expect(html).toContain(
-      'href="/progress?month=2026-11&amp;day=2026-11-30#day-title"',
-    );
+    expect(html).toContain('href="/progress?month=2026-11&amp;day=2026-11-30"');
   });
 
-  it("scrolls a tapped day's details into view, not the month arrows", () => {
-    // Below 640 px the details sit under the calendar and Link keeps the scroll
-    // position, so the day links jump to the details' heading (D29).
+  it("adds no #fragment to the month arrows or the day links (live bug L3)", () => {
     expect(html).toContain('href="/progress?month=2026-10&amp;day="');
-    expect(html).not.toContain("month=2026-10&amp;day=#day-title");
+    expect(html).not.toContain("month=2026-10&amp;day=#");
   });
 });
 
