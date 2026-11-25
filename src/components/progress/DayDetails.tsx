@@ -28,7 +28,7 @@ function paceSuffix(run: NonNullable<DayWorkout["run"]>, unit: DistanceUnit) {
 type DayDetailsProps = {
   dayLabel: string | null; // "Sunday, November 8"; null when no day is selected
   workouts: DayWorkout[];
-  units?: UnitPrefs; // what the user chose (D29); the numbers are stored in kg and km
+  units?: UnitPrefs; // what the user chose (D30); the numbers are stored in kg and km
 };
 
 // Everything logged on the selected day (#16): each workout's name and length, its

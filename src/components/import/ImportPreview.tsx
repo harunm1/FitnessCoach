@@ -24,7 +24,7 @@ export function ImportPreview({
   unmatched: string[];
   moreUnmatched?: number;
   library: LibraryName[];
-  weightUnit?: WeightUnit; // what the user chose (D29)
+  weightUnit?: WeightUnit; // what the user chose (D30)
 }) {
   const alreadyImported = summary.workouts - summary.newWorkouts;
   return (

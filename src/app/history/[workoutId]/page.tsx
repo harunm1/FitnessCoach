@@ -4,6 +4,7 @@ import { WorkoutDetailView } from "@/components/history/WorkoutDetailView";
 import { requireUser } from "@/lib/auth/session";
 import { loadWorkoutDetail } from "@/lib/history/load";
 import { parseWorkoutId } from "@/lib/history/params";
+import { loadUnitPrefs } from "@/lib/units/prefs";
 import { navAvatar } from "../avatar";
 
 export const dynamic = "force-dynamic";
@@ -16,9 +17,10 @@ export default async function WorkoutPage({ params }: { params: Params }) {
   const user = await requireUser();
   const workoutId = parseWorkoutId((await params).workoutId);
   if (workoutId === null) notFound();
-  const [workout, avatarUrl] = await Promise.all([
+  const [workout, avatarUrl, units] = await Promise.all([
     loadWorkoutDetail(user.id, workoutId),
     navAvatar(user.id),
+    loadUnitPrefs(user.id),
   ]);
   if (!workout) notFound();
   return (
@@ -28,7 +30,7 @@ export default async function WorkoutPage({ params }: { params: Params }) {
       name={user.name}
       title={workout.name}
     >
-      <WorkoutDetailView workout={workout} />
+      <WorkoutDetailView workout={workout} units={units} />
     </HistoryShell>
   );
 }

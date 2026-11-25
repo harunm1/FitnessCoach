@@ -8,7 +8,7 @@ import type { RunMetricsActionState } from "@/lib/workout/runMetricsSchema";
 type RunMetricsFormProps = {
   distanceKm: string | null;
   durationSeconds: number | null;
-  distanceUnit?: DistanceUnit; // what the user chose (D29); the form posts it back
+  distanceUnit?: DistanceUnit; // what the user chose (D30); the form posts it back
 };
 
 export default function RunMetricsForm({

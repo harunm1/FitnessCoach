@@ -7,8 +7,9 @@ import type {
 } from "@/lib/history/types";
 
 const NOT_FOUND = "NEXT_HTTP_ERROR_FALLBACK;404";
-const { requireUser, history, notFound } = vi.hoisted(() => ({
+const { requireUser, loadUnitPrefs, history, notFound } = vi.hoisted(() => ({
   requireUser: vi.fn(),
+  loadUnitPrefs: vi.fn(),
   history: {
     loadHistoryPage: vi.fn(),
     loadWorkoutDetail: vi.fn(),
@@ -22,6 +23,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("next/navigation", () => ({ notFound }));
 vi.mock("@/lib/auth/session", () => ({ requireUser }));
 vi.mock("@/lib/history/load", () => history);
+vi.mock("@/lib/units/prefs", () => ({ loadUnitPrefs }));
 vi.mock("./avatar", () => ({ navAvatar: vi.fn().mockResolvedValue(null) }));
 vi.mock("@/components/auth/sign-out-button", () => ({
   SignOutButton: () => <button type="button">Sign out</button>,
@@ -44,6 +46,7 @@ const row = (id: number, extra: Partial<HistoryRow> = {}): HistoryRow => ({
 beforeEach(() => {
   vi.clearAllMocks();
   requireUser.mockResolvedValue({ id: "session-owner", name: "Sam" });
+  loadUnitPrefs.mockResolvedValue({ weightUnit: "KG", distanceUnit: "KM" });
 });
 
 describe("/history", () => {
@@ -146,6 +149,19 @@ describe("/history/[workoutId]", () => {
     ],
   };
 
+  it("shows the sets in pounds and the run in miles for a user who chose them (D30)", async () => {
+    loadUnitPrefs.mockResolvedValue({ weightUnit: "LB", distanceUnit: "MI" });
+    history.loadWorkoutDetail.mockResolvedValue(detail);
+    const html = await render("41");
+    expect(loadUnitPrefs).toHaveBeenCalledWith("session-owner");
+    expect(html).toContain("10 reps × 132.5 lb");
+    expect(html).toContain("8 reps × 138 lb · RPE 9");
+    expect(html).toContain("3.11 mi in 30:00");
+    expect(html).toContain("9:39 /mi");
+    expect(html).not.toContain(" kg");
+    expect(html).not.toContain(" km");
+  });
+
   it("shows every exercise with its sets, the run and the notes", async () => {
     history.loadWorkoutDetail.mockResolvedValue(detail);
     const html = await render("41");
@@ -236,6 +252,15 @@ describe("/history/exercise/[exerciseId]", () => {
     expect(html).toContain('<svg aria-hidden="true"');
     expect(html).not.toContain('role="img"');
     expect(html).toContain('<ol role="list"');
+  });
+
+  it("shows the best set and the top-weight line in pounds for a user who chose them (D30)", async () => {
+    loadUnitPrefs.mockResolvedValue({ weightUnit: "LB", distanceUnit: "MI" });
+    history.loadExerciseHistory.mockResolvedValue(exercise);
+    const html = await render("Bench");
+    expect(html).toContain("6 reps × 143.5 lb · RPE 8");
+    expect(html).toContain("Top weight per workout, 121.5 to 143.5 lb");
+    expect(html).not.toContain(" kg");
   });
 
   it("says when older workouts are left out", async () => {

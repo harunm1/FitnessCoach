@@ -1,13 +1,29 @@
 import Link from "next/link";
 import type { WorkoutDetail } from "@/lib/history/types";
 import { dateLabel, setLabel } from "@/lib/history/view";
-import { duration, pace } from "@/lib/progress/view";
+import { duration } from "@/lib/progress/view";
+import {
+  formatDistance,
+  formatPace,
+  STORED_UNITS,
+  type UnitPrefs,
+} from "@/lib/units/convert";
 
 // One finished workout in full (D29): when and how long, the run, every exercise
 // with each set (reps, kg, RPE), and the notes.
-export function WorkoutDetailView({ workout }: { workout: WorkoutDetail }) {
+export function WorkoutDetailView({
+  workout,
+  units = STORED_UNITS,
+}: {
+  workout: WorkoutDetail;
+  units?: UnitPrefs; // what the user chose (D30); the numbers are stored in kg and km
+}) {
   const runPace = workout.run
-    ? pace(workout.run.distanceKm, workout.run.seconds)
+    ? formatPace(
+        workout.run.distanceKm,
+        workout.run.seconds,
+        units.distanceUnit,
+      )
     : null;
   return (
     <div className="grid gap-8">
@@ -26,7 +42,8 @@ export function WorkoutDetailView({ workout }: { workout: WorkoutDetail }) {
             Run
           </h2>
           <p className="mt-2 mb-0 text-sm">
-            {workout.run.distanceKm} km in {duration(workout.run.seconds)}
+            {formatDistance(workout.run.distanceKm, units.distanceUnit)} in{" "}
+            {duration(workout.run.seconds)}
             {runPace && ` · ${runPace}`}
             {workout.run.rpe !== null && ` · RPE ${workout.run.rpe}`}
           </p>
@@ -53,7 +70,7 @@ export function WorkoutDetailView({ workout }: { workout: WorkoutDetail }) {
                 <ol role="list" className="mt-2 mb-0 grid gap-1 p-0 text-sm">
                   {exercise.sets.map((set) => (
                     <li className="list-none" key={set.setNumber}>
-                      Set {set.setNumber}: {setLabel(set)}
+                      Set {set.setNumber}: {setLabel(set, units.weightUnit)}
                     </li>
                   ))}
                 </ol>

@@ -14,7 +14,7 @@ import WeightForm from "./WeightForm";
 type BodyWeightSectionProps = {
   entries: WeightEntry[]; // oldest first
   today: string; // the user's day, "2026-11-24"
-  units?: UnitPrefs; // what the user chose (D29); weights are stored in kg
+  units?: UnitPrefs; // what the user chose (D30); weights are stored in kg
 };
 
 const RECENT_SHOWN = 5;

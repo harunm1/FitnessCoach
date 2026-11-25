@@ -7,7 +7,7 @@ import {
   type WeightUnit,
 } from "./convert";
 
-// What a form typed in the user's unit becomes before the existing checks run (D29): those
+// What a form typed in the user's unit becomes before the existing checks run (D30): those
 // checks, their limits and the database all stay in kilograms and kilometres.
 
 export const WEIGHT_UNIT_MESSAGE = "Choose kg or lb for the weight.";

@@ -16,7 +16,7 @@ export default function PhotoViewer({
   weightUnit = "KG",
 }: {
   photo: GalleryPhoto;
-  weightUnit?: WeightUnit; // what the user chose (D29)
+  weightUnit?: WeightUnit; // what the user chose (D30)
 }) {
   const alt = photoAlt(photo, weightUnit);
   // The app's theme tokens live on the page's <main data-theme>, not on <html>,

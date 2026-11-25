@@ -24,6 +24,7 @@ type SetLogFormProps = {
     painNextMorning: number | null;
   };
   weightUnit?: WeightUnit; // what the user chose (D29); the form posts it back
+  weightUnit?: WeightUnit; // what the user chose (D30); the form posts it back
 };
 
 export default function SetLogForm({

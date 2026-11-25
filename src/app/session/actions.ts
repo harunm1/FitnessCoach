@@ -35,7 +35,7 @@ export async function saveRunMetrics(
     return { status: "error", message: DISTANCE_UNIT_MESSAGE };
   }
   const parsed = runMetricsSchema.safeParse({
-    // Typed in the unit the form showed; stored in km (D29).
+    // Typed in the unit the form showed; stored in km (D30).
     distanceKm: distanceFieldToKm(formData.get("distanceKm"), distanceUnit),
     durationMinutes: formData.get("durationMinutes"),
     durationSeconds: formData.get("durationSeconds"),
@@ -102,10 +102,9 @@ export async function logSet(
   const parsed = setLogSchema.safeParse({
     setNumber: formData.get("setNumber"),
     reps: formData.get("reps"),
-    weightKg: formData.get("weightKg"),
     painDuringSession: formData.get("painDuringSession"),
     painNextMorning: formData.get("painNextMorning"),
-    // Typed in the unit the form showed; stored in kg (D29).
+    // Typed in the unit the form showed; stored in kg (D30).
     weightKg: weightFieldToKg(formData.get("weightKg"), weightUnit),
   });
   if (!parsed.success) {

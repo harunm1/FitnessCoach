@@ -59,6 +59,17 @@ describe("minutesBetween", () => {
   });
 });
 
+describe("setLabel in pounds", () => {
+  it("converts the stored kilograms and names the unit", () => {
+    expect(setLabel({ reps: 8, weightKg: 61.23, rpe: 8 }, "LB")).toBe(
+      "8 reps × 135 lb · RPE 8",
+    );
+    expect(setLabel({ reps: 12, weightKg: null, rpe: null }, "LB")).toBe(
+      "12 reps",
+    );
+  });
+});
+
 describe("setLabel", () => {
   it("shows reps, kg and RPE when each was logged", () => {
     expect(setLabel({ reps: 8, weightKg: 60, rpe: 8 })).toBe(

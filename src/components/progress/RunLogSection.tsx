@@ -11,7 +11,7 @@ import RunForm from "./RunForm";
 type RunLogSectionProps = {
   runs: RecentRun[]; // newest first
   today: string; // the user's day, "2026-11-24"
-  distanceUnit?: DistanceUnit; // what the user chose (D29); distances are stored in km
+  distanceUnit?: DistanceUnit; // what the user chose (D30); distances are stored in km
 };
 
 function details(run: RecentRun, unit: DistanceUnit) {

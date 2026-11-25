@@ -36,7 +36,7 @@ export default function RunForm({
   distanceUnit = "KM",
 }: {
   today: string;
-  distanceUnit?: DistanceUnit; // what the user chose (D29); the form posts it back
+  distanceUnit?: DistanceUnit; // what the user chose (D30); the form posts it back
 }) {
   const [state, action, pending] = useActionState<RunActionState, FormData>(
     logRun,

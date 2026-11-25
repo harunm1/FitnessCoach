@@ -36,7 +36,7 @@ export function photoDate(takenAt: Date): string {
   return `${MONTHS[part("month") - 1]} ${part("day")}, ${part("year")}`;
 }
 
-// "Progress photo from Nov 12, 2026, 81.5 kg" (or in pounds, D29): the alt text, so a screen
+// "Progress photo from Nov 12, 2026, 81.5 kg" (or in pounds, D30): the alt text, so a screen
 // reader hears the date and, when it was logged, the weight.
 export function photoAlt(
   { takenAt, weightKg }: LabelledPhoto,

@@ -12,7 +12,7 @@ import {
   MIN_WEIGHT_KG,
 } from "./weightLimits";
 
-// The limits are kilograms; the message names them in the unit the user typed in (D29).
+// The limits are kilograms; the message names them in the unit the user typed in (D30).
 function weightMessage(unit: WeightUnit) {
   const [min, max] = weightBounds(MIN_WEIGHT_KG, MAX_WEIGHT_KG, unit);
   return `Enter a weight between ${min} and ${max} ${weightLabel(unit)}.`;

@@ -27,7 +27,7 @@ const PHOTOS_PATH = "/progress/photos";
 const UNAVAILABLE = "Photos can't be saved right now. Try again later.";
 const NOT_FOUND = "That photo couldn't be found.";
 
-// The limits are kilograms; the message names them in the unit the user typed in (D29).
+// The limits are kilograms; the message names them in the unit the user typed in (D30).
 function detailsSchema(unit: WeightUnit) {
   const [min, max] = weightBounds(20, 400, unit);
   const weightMessage = `Enter a weight between ${min} and ${max} ${weightLabel(unit)}.`;
@@ -71,7 +71,7 @@ export async function uploadProgressPhoto(
   const unit = readWeightUnit(formData);
   if (!unit) return { status: "error", message: WEIGHT_UNIT_MESSAGE };
   const details = detailsSchema(unit).safeParse({
-    // Typed in the unit the form showed; stored in kg (D29).
+    // Typed in the unit the form showed; stored in kg (D30).
     weightKg: weightFieldToKg(optionalText(formData.get("weightKg")), unit),
     note: optionalText(formData.get("note")),
   });

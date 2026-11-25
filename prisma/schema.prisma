@@ -44,7 +44,7 @@ model User {
   tier                     Tier         @default(FREE)
   trialEndsAt              DateTime?
   lastCoachPlanRequestedAt DateTime?
-  // Display units only (D29): every stored weight is kg and every distance km.
+  // Display units only (D30): every stored weight is kg and every distance km.
   weightUnit               WeightUnit   @default(LB)
   distanceUnit             DistanceUnit @default(MI)
   createdAt                DateTime     @default(now())

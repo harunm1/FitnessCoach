@@ -89,7 +89,7 @@ describe("progress photos page", () => {
     );
   });
 
-  it("shows a photo's weight in pounds when the user chose pounds (D29)", async () => {
+  it("shows a photo's weight in pounds when the user chose pounds (D30)", async () => {
     findUnique.mockResolvedValue({ image: null, weightUnit: "LB" });
     findMany.mockResolvedValue([
       {

@@ -69,7 +69,7 @@ export async function logRun(
   if (!unit) {
     return { status: "error", message: DISTANCE_UNIT_MESSAGE, values };
   }
-  // Typed in the unit the form showed; checked and stored in km (D29).
+  // Typed in the unit the form showed; checked and stored in km (D30).
   const parsed = parseRunEntry(
     { ...fields, distanceKm: distanceFieldToKm(fields.distanceKm, unit) },
     dayKey(new Date()),

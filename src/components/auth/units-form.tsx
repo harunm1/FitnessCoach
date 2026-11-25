@@ -40,7 +40,7 @@ function Choice({
   );
 }
 
-// The units setting on the account page (D29): one choice for weights, one for distances.
+// The units setting on the account page (D30): one choice for weights, one for distances.
 // What is stored stays kg and km; only what is typed and shown changes.
 export function UnitsForm({ weightUnit, distanceUnit }: UnitPrefs) {
   const initial: UnitPrefsState = { status: "idle" };

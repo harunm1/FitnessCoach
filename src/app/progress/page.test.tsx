@@ -312,7 +312,7 @@ describe("progress page", () => {
     expect(html).toContain("Easy loop");
   });
 
-  it("shows body weight, runs and pace in the user's chosen pounds and miles (D29)", async () => {
+  it("shows body weight, runs and pace in the user's chosen pounds and miles (D30)", async () => {
     database.user.findUnique.mockResolvedValue({
       image: null,
       weightUnit: "LB",

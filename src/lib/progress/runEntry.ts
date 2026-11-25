@@ -20,7 +20,7 @@ import {
   SLOWEST_SEC_PER_KM,
 } from "./runLimits";
 
-// The limits are kilometres; the message names them in the unit the user typed in (D29).
+// The limits are kilometres; the message names them in the unit the user typed in (D30).
 function distanceMessage(unit: DistanceUnit) {
   const [min, max] = distanceBounds(MIN_RUN_KM, MAX_RUN_KM, unit);
   return `Enter a distance between ${min} and ${max} ${distanceLabel(unit)}.`;

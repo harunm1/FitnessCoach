@@ -7,7 +7,7 @@ type PhotoStripProps = {
   // The newest photos with signed links, or null when storage is unavailable.
   photos: GalleryPhoto[] | null;
   total: number;
-  weightUnit?: WeightUnit; // what the user chose (D29)
+  weightUnit?: WeightUnit; // what the user chose (D30)
 };
 
 const dateFormat = new Intl.DateTimeFormat("en-CA", {

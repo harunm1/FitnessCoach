@@ -1,4 +1,4 @@
-// The chosen unit shows everywhere a weight or a distance is typed or read (D29). Stored
+// The chosen unit shows everywhere a weight or a distance is typed or read (D30). Stored
 // values are kilograms and kilometres; these tests give pounds and miles to each component
 // and check the label, the converted number and the unit posted back with the form.
 import { renderToStaticMarkup } from "react-dom/server";

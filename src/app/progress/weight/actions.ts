@@ -51,7 +51,7 @@ export async function logBodyWeight(
   if (!unit) {
     return { status: "error", message: WEIGHT_UNIT_MESSAGE, values };
   }
-  // Typed in the unit the form showed; checked and stored in kg (D29).
+  // Typed in the unit the form showed; checked and stored in kg (D30).
   const parsed = parseWeightEntry(
     { ...fields, weightKg: weightFieldToKg(fields.weightKg, unit) },
     dayKey(new Date()),

@@ -10,7 +10,7 @@ export type UnitPrefsState =
   | { status: "saved" }
   | { status: "error"; message: string };
 
-// Saves the display units for the signed-in user (D29). The user comes from the session,
+// Saves the display units for the signed-in user (D30). The user comes from the session,
 // never the form. Stored values stay kg and km, so only what is shown changes.
 export async function saveUnitPrefs(
   _previousState: UnitPrefsState,

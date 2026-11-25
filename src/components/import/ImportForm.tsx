@@ -11,7 +11,7 @@ import { ImportPreview, ImportResultPanel } from "./ImportPreview";
 export function ImportForm({
   weightUnit = "KG",
 }: {
-  weightUnit?: WeightUnit; // what the user chose (D29)
+  weightUnit?: WeightUnit; // what the user chose (D30)
 }) {
   const [state, dispatch, pending] = useActionState<ImportState, FormData>(
     importWorkouts,

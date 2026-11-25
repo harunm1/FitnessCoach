@@ -19,7 +19,7 @@ export default function WeightForm({
   weightUnit = "KG",
 }: {
   today: string;
-  weightUnit?: WeightUnit; // what the user chose (D29); the form posts it back
+  weightUnit?: WeightUnit; // what the user chose (D30); the form posts it back
 }) {
   const [state, action, pending] = useActionState<WeightActionState, FormData>(
     logBodyWeight,

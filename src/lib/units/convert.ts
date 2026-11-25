@@ -1,4 +1,4 @@
-// Unit conversion for the display preference (D29). Everything stored is in kilograms and
+// Unit conversion for the display preference (D30). Everything stored is in kilograms and
 // kilometres; these helpers convert at the edges only (typed input in, shown text out).
 
 export type WeightUnit = "KG" | "LB";
@@ -126,7 +126,7 @@ export function parseDistanceUnit(value: unknown): DistanceUnit | null {
 
 export type UnitPrefs = { weightUnit: WeightUnit; distanceUnit: DistanceUnit };
 
-// What a new user gets, and what a missing row falls back to (D29).
+// What a new user gets, and what a missing row falls back to (D30).
 export const DEFAULT_UNITS: UnitPrefs = {
   weightUnit: "LB",
   distanceUnit: "MI",

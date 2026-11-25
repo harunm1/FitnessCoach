@@ -42,7 +42,7 @@ export async function shrinkThenUpload(
 export function PhotoUploadForm({
   weightUnit = "KG",
 }: {
-  weightUnit?: WeightUnit; // what the user chose (D29); the form posts it back
+  weightUnit?: WeightUnit; // what the user chose (D30); the form posts it back
 }) {
   const [minWeight, maxWeight] = weightBounds(20, 400, weightUnit);
   const [state, action, pending] = useActionState<PhotoActionState, FormData>(
