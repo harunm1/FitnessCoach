@@ -195,6 +195,32 @@ describe("MuscleStats", () => {
     expect(html).toContain("chest");
     expect(html).toContain("2 of 4 · 50%");
   });
+
+  // Live bug L2: an exercise with no muscle data used to count as nothing, silently.
+  it("names exercises with no muscle data as unmapped, next to the muscles", () => {
+    const html = render(
+      <MuscleStats
+        shares={[{ muscle: "chest", workouts: 2, share: 0.5 }]}
+        workouts={4}
+        unmapped={["Odd Lift", "Another"]}
+      />,
+    );
+    expect(html).toContain("Unmapped: Odd Lift, Another");
+    expect(html).toContain("not counted toward any muscle");
+  });
+
+  it("still names unmapped exercises when no muscle was counted", () => {
+    const html = render(
+      <MuscleStats shares={[]} workouts={0} unmapped={["Odd Lift"]} />,
+    );
+    expect(html).toContain("Unmapped: Odd Lift");
+  });
+
+  it("says nothing about unmapped exercises when there are none", () => {
+    expect(
+      render(<MuscleStats shares={[]} workouts={0} unmapped={[]} />),
+    ).not.toContain("Unmapped");
+  });
 });
 
 describe("MuscleMap", () => {
