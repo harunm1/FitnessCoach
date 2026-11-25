@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { restSecondsRemaining } from "@/lib/workout/restRemaining";
 
 type RestTimerProps = {
@@ -30,13 +30,20 @@ export default function RestTimer({
   const [secondsLeft, setSecondsLeft] = useState(restSeconds);
   const [isRunning, setIsRunning] = useState(false);
 
+  // The newest server time, read when a set is logged. Keeping it out of the effect's inputs
+  // means a page refresh for another exercise does not restart a timer the user paused.
+  const serverNow = useRef(serverNowIso);
+  useEffect(() => {
+    serverNow.current = serverNowIso;
+  }, [serverNowIso]);
+
   // Runs after mount and whenever a new set is logged: starts the rest by itself.
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       setIsHydrated(true);
       const remaining = restSecondsRemaining(
         Date.parse(lastLoggedAtIso),
-        Date.parse(serverNowIso),
+        Date.parse(serverNow.current),
         restSeconds,
       );
       if (remaining !== null) {
@@ -45,7 +52,7 @@ export default function RestTimer({
       }
     }, 0);
     return () => window.clearTimeout(timeout);
-  }, [lastLoggedAtIso, serverNowIso, restSeconds]);
+  }, [lastLoggedAtIso, restSeconds]);
 
   useEffect(() => {
     if (!isRunning || secondsLeft <= 0) return;

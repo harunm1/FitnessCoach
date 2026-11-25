@@ -71,6 +71,30 @@ describe("RestTimer with a wrong device clock", () => {
   });
 });
 
+describe("RestTimer when the page refreshes", () => {
+  it("does not restart a paused timer when only the server time changes", () => {
+    const view = renderTimer(iso(NOW));
+    tick(TEN_SECONDS);
+    act(() => {
+      screen.getByRole("button", { name: "Pause timer" }).click();
+    });
+    expect(screen.getByText("Paused")).toBeTruthy();
+    view.rerender(
+      <RestTimer
+        exerciseName="Bench Press"
+        lastLoggedAtIso={iso(NOW)}
+        restSeconds={REST}
+        serverNowIso={iso(NOW + TEN_SECONDS * ONE_SECOND_MS)}
+      />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(0);
+    });
+    expect(screen.getByText("Paused")).toBeTruthy();
+    expect(screen.getByText("01:20")).toBeTruthy();
+  });
+});
+
 describe("RestTimer auto start", () => {
   it("starts resting without a click when the set was just logged", () => {
     renderTimer(iso(NOW));
