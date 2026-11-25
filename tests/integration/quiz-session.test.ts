@@ -797,6 +797,36 @@ describe("quiz and session authorization with PostgreSQL", () => {
     ).toBeNull();
   });
 
+  it("shows elapsed time during a workout and its duration after finishing", async () => {
+    const ownWorkout = await workout(
+      first.id,
+      await plan(first.id, "Timed plan"),
+    );
+    const startedAt = new Date(Date.now() - 3_723_000);
+    await db.workout.update({
+      where: { id: ownWorkout.id },
+      data: { startedAt },
+    });
+    await signIn(first);
+
+    const activeHtml = renderToStaticMarkup(await SessionPage());
+    expect(activeHtml).toContain("Elapsed workout time");
+    expect(activeHtml).toContain('role="timer"');
+    expect(activeHtml).not.toContain("Workout duration");
+
+    await expect(finishWorkout()).rejects.toThrow("redirect:/session");
+    const saved = await db.workout.findUniqueOrThrow({
+      where: { id: ownWorkout.id },
+    });
+    const seconds = Math.floor(
+      (saved.finishedAt!.getTime() - startedAt.getTime()) / 1000,
+    );
+    const finishedHtml = renderToStaticMarkup(await SessionPage());
+    expect(finishedHtml).toContain("Workout duration");
+    expect(finishedHtml).toContain(`dateTime="PT${seconds}S"`);
+    expect(finishedHtml).not.toContain("Elapsed workout time");
+  });
+
   it("saves run metrics and finishes only the owner's workout", async () => {
     const ownWorkout = await workout(
       first.id,
