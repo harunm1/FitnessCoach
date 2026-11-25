@@ -1,3 +1,4 @@
+import { formatWeight, type WeightUnit } from "@/lib/units/convert";
 // Pure helpers for the history pages (D29): names, lengths, set labels, the best set
 // and the points of the top-weight line. No database, no React.
 
@@ -50,8 +51,9 @@ export function minutesBetween(startedAt: Date, finishedAt: Date): number {
   );
 }
 
-export function setLabel(set: SetValues): string {
-  const weight = set.weightKg === null ? "" : ` × ${set.weightKg} kg`;
+export function setLabel(set: SetValues, unit: WeightUnit = "KG"): string {
+  const weight =
+    set.weightKg === null ? "" : ` × ${formatWeight(set.weightKg, unit)}`;
   const effort = set.rpe === null ? "" : ` · RPE ${set.rpe}`;
   const reps = set.reps === 1 ? "rep" : "reps";
   return `${set.reps} ${reps}${weight}${effort}`;

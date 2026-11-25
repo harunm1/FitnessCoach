@@ -16,14 +16,27 @@ import {
 import { getNextPlanDayIndex } from "@/lib/workout/progression";
 import { requireUser } from "@/lib/auth/session";
 import { painTrafficLight } from "@/lib/coach/painTrafficLight";
+import {
+  DISTANCE_UNIT_MESSAGE,
+  WEIGHT_UNIT_MESSAGE,
+  distanceFieldToKm,
+  readDistanceUnit,
+  readWeightUnit,
+  weightFieldToKg,
+} from "@/lib/units/input";
 
 export async function saveRunMetrics(
   _previousState: RunMetricsActionState,
   formData: FormData,
 ): Promise<RunMetricsActionState> {
   const user = await requireUser();
+  const distanceUnit = readDistanceUnit(formData);
+  if (!distanceUnit) {
+    return { status: "error", message: DISTANCE_UNIT_MESSAGE };
+  }
   const parsed = runMetricsSchema.safeParse({
-    distanceKm: formData.get("distanceKm"),
+    // Typed in the unit the form showed; stored in km (D30).
+    distanceKm: distanceFieldToKm(formData.get("distanceKm"), distanceUnit),
     durationMinutes: formData.get("durationMinutes"),
     durationSeconds: formData.get("durationSeconds"),
   });
@@ -82,12 +95,17 @@ export async function logSet(
   formData: FormData,
 ): Promise<SetLogActionState> {
   const user = await requireUser();
+  const weightUnit = readWeightUnit(formData);
+  if (!weightUnit) {
+    return { status: "error", message: WEIGHT_UNIT_MESSAGE };
+  }
   const parsed = setLogSchema.safeParse({
     setNumber: formData.get("setNumber"),
     reps: formData.get("reps"),
-    weightKg: formData.get("weightKg"),
     painDuringSession: formData.get("painDuringSession"),
     painNextMorning: formData.get("painNextMorning"),
+    // Typed in the unit the form showed; stored in kg (D30).
+    weightKg: weightFieldToKg(formData.get("weightKg"), weightUnit),
   });
   if (!parsed.success) {
     return {

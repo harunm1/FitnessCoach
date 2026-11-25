@@ -4,13 +4,21 @@ import {
   type WeightPoint,
 } from "@/lib/progress/weightChart";
 
+import { formatBodyWeight, type WeightUnit } from "@/lib/units/convert";
+
 const SIZE = { width: 600, height: 200, padding: 16 };
 
 // A line of the user's weigh-ins over time, oldest on the left (D24). Plain
 // SVG drawn on the server. For screen readers the label gives the first and
 // last weigh-ins and the caption the lightest and heaviest; the section's list
 // gives the five latest as text.
-export default function WeightChart({ entries }: { entries: WeightPoint[] }) {
+export default function WeightChart({
+  entries,
+  weightUnit = "KG",
+}: {
+  entries: WeightPoint[];
+  weightUnit?: WeightUnit;
+}) {
   const chart = weightChart(entries, SIZE);
   if (!chart) return null;
   const first = chart.points[0];
@@ -19,7 +27,7 @@ export default function WeightChart({ entries }: { entries: WeightPoint[] }) {
     <figure className="m-0 grid gap-1">
       <svg
         role="img"
-        aria-label={`Body weight from ${dayLabel(first.date)} to ${dayLabel(last.date)}: ${first.weightKg} kg to ${last.weightKg} kg`}
+        aria-label={`Body weight from ${dayLabel(first.date)} to ${dayLabel(last.date)}: ${formatBodyWeight(first.weightKg, weightUnit)} to ${formatBodyWeight(last.weightKg, weightUnit)}`}
         viewBox={`0 0 ${SIZE.width} ${SIZE.height}`}
         className="h-auto w-full border border-foreground/15"
       >
@@ -43,7 +51,8 @@ export default function WeightChart({ entries }: { entries: WeightPoint[] }) {
       <figcaption className="flex justify-between text-xs text-foreground/60">
         <span>{dayLabel(first.date)}</span>
         <span>
-          Lightest {chart.lowestKg} kg, heaviest {chart.highestKg} kg
+          Lightest {formatBodyWeight(chart.lowestKg, weightUnit)}, heaviest{" "}
+          {formatBodyWeight(chart.highestKg, weightUnit)}
         </span>
         <span>{dayLabel(last.date)}</span>
       </figcaption>

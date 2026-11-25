@@ -869,3 +869,13 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Did with it:** Read the Better Auth Google and account-linking docs (v1.7.15, the project pins 1.7.14) and the installed linking code, and Google's branding and console help pages, all on 25 November. Wrote the tests first and watched them fail: the callback test runs the real Better Auth handler against PostgreSQL with only Google's token endpoint faked; turning off the verified-email rule makes the linking test fail. A review agent that had not seen the work found no error but pointed out that an unverified Google email still created a user and sent a verification email; that is now refused, with a test written first. Not done: a click-through of the real Google consent screen (no client exists yet) and a test of the sign-in page's error handling on its own.
 
 **Tools:** git, gh, Vitest, Playwright spec (runs in CI), ESLint, tsc, Prettier, Context7, Firecrawl (Google help pages), review agents. No skills beyond reading Better Auth's docs.
+
+## 25 November: units preference (kg or lb, km or mi)
+
+**Asked:** A setting for pounds or kilograms and miles or kilometres, with every logged value stored in one unit, shown and typed in the chosen one, and the Hevy preview following the setting.
+
+**Got:** Decision D30: weights stay in kilograms and distances in kilometres in the database; two new `User` columns (default pounds and kilometres) say how they are shown. Pure conversion helpers, a settings action and a toggle on the account page, and the session, Progress, photos, history and import screens changed to follow the setting. Forms send the unit they displayed, and the server converts typed pounds and miles back before the existing checks.
+
+**Did with it:** Wrote the failing tests first (the conversion helpers, each action, the display of each screen) and checked that they failed without the change. Looked up the pound and mile factors in NIST SP 811 Appendix B.8. A review agent that had not seen the work found one real fault: the saved-run form showed miles to two places, so saving it unchanged turned 10 km into 9.99 km. It was fixed test-first and a second agent checked the fix. Lint, type check, format check and the unit tests pass; the migration from empty runs in CI. No live browser check.
+
+**Tools:** git, gh, Prisma, Vitest, tsc, ESLint, Prettier, review agents. No skills beyond the migration-safety guide.

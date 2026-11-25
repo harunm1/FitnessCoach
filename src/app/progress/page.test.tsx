@@ -67,7 +67,11 @@ beforeEach(() => {
   vi.useFakeTimers({ now: new Date("2026-11-12T17:00:00Z"), toFake: ["Date"] });
   requireUser.mockResolvedValue({ id: "session-owner", name: "Free Demo" });
   loadFinishedWorkouts.mockResolvedValue([]);
-  database.user.findUnique.mockResolvedValue({ image: null });
+  database.user.findUnique.mockResolvedValue({
+    image: null,
+    weightUnit: "KG",
+    distanceUnit: "KM",
+  });
   database.progressPhoto.findMany.mockResolvedValue([]);
   database.progressPhoto.count.mockResolvedValue(0);
   database.bodyWeight.findMany.mockResolvedValue([]);
@@ -306,6 +310,41 @@ describe("progress page", () => {
     expect(html).toContain("5.2 km");
     expect(html).toContain("6:00 /km");
     expect(html).toContain("Easy loop");
+  });
+
+  it("shows body weight, runs and pace in the user's chosen pounds and miles (D30)", async () => {
+    database.user.findUnique.mockResolvedValue({
+      image: null,
+      weightUnit: "LB",
+      distanceUnit: "MI",
+    });
+    database.bodyWeight.findMany.mockResolvedValue([
+      {
+        date: new Date("2026-11-10T00:00:00Z"),
+        weightKg: { toString: () => "81.65" },
+        note: null,
+      },
+    ]);
+    database.workout.findMany.mockResolvedValue([
+      {
+        id: 3,
+        startedAt: new Date("2026-11-11T17:00:00Z"),
+        distanceKm: { toString: () => "5.20" },
+        durationSeconds: 1872,
+        notes: null,
+        source: "manual-run",
+        planDay: null,
+        run: { rpe: 6 },
+      },
+    ]);
+    const html = await render();
+    expect(html).toContain("Latest: 180 lb on Nov 10, 2026");
+    expect(html).toContain("3.23 mi");
+    expect(html).toContain("9:39 /mi");
+    expect(html).toContain("Weight (lb)");
+    expect(html).toContain("Distance (mi)");
+    expect(html).not.toContain("81.65 kg");
+    expect(html).not.toContain("5.2 km");
   });
 
   it("does not render for a signed-out user", async () => {

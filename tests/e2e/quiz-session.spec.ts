@@ -175,7 +175,7 @@ test("an athlete completes the quiz and logs a session without touching another 
       has: page.getByRole("heading", { name: pressName, exact: true }),
     });
     await exercise.getByLabel("REPS", { exact: true }).fill("8");
-    await exercise.getByLabel("KG", { exact: true }).fill("12");
+    await exercise.getByLabel("LB", { exact: true }).fill("25");
     await exercise.getByLabel("Pain during", { exact: true }).fill("6");
     await exercise
       .getByRole("button", { name: "Log set 1", exact: true })
@@ -206,7 +206,7 @@ test("an athlete completes the quiz and logs a session without touching another 
     ).toHaveValue("");
     await expect(exercise.getByRole("status")).toHaveCount(0);
     await expect(
-      page.getByText("Set 1: 8 reps · 12 kg", { exact: true }),
+      page.getByText("Set 1: 8 reps · 25 lb", { exact: true }),
     ).toBeVisible();
     await page.getByLabel("Distance (km)", { exact: true }).fill("5.25");
     await page.getByLabel("MINUTES", { exact: true }).fill("30");

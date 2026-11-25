@@ -1,3 +1,4 @@
+import { formatBodyWeight, type WeightUnit } from "@/lib/units/convert";
 import { DEFAULT_TIME_ZONE } from "@/lib/progress/dates";
 
 type LabelledPhoto = { takenAt: Date; weightKg: number | null };
@@ -35,15 +36,25 @@ export function photoDate(takenAt: Date): string {
   return `${MONTHS[part("month") - 1]} ${part("day")}, ${part("year")}`;
 }
 
-// "Progress photo from Nov 12, 2026, 81.5 kg": the alt text, so a screen
+// "Progress photo from Nov 12, 2026, 81.5 kg" (or in pounds, D30): the alt text, so a screen
 // reader hears the date and, when it was logged, the weight.
-export function photoAlt({ takenAt, weightKg }: LabelledPhoto): string {
+export function photoAlt(
+  { takenAt, weightKg }: LabelledPhoto,
+  unit: WeightUnit = "KG",
+): string {
   const date = `Progress photo from ${photoDate(takenAt)}`;
-  return weightKg === null ? date : `${date}, ${weightKg} kg`;
+  return weightKg === null
+    ? date
+    : `${date}, ${formatBodyWeight(weightKg, unit)}`;
 }
 
 // "Nov 12, 2026 · 81.5 kg": the visible caption and the dialog title.
-export function photoCaption({ takenAt, weightKg }: LabelledPhoto): string {
+export function photoCaption(
+  { takenAt, weightKg }: LabelledPhoto,
+  unit: WeightUnit = "KG",
+): string {
   const date = photoDate(takenAt);
-  return weightKg === null ? date : `${date} · ${weightKg} kg`;
+  return weightKg === null
+    ? date
+    : `${date} · ${formatBodyWeight(weightKg, unit)}`;
 }

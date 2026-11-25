@@ -141,3 +141,43 @@ describe("logBodyWeight", () => {
     expect(database.bodyWeight.upsert).not.toHaveBeenCalled();
   });
 });
+
+describe("logBodyWeight units", () => {
+  it("converts pounds typed under a pound label to kilograms", async () => {
+    const result = await logBodyWeight(
+      idle,
+      form({ date: "2026-11-23", weightKg: "180", weightUnit: "LB" }),
+    );
+    expect(result).toEqual({ status: "saved", date: "2026-11-23" });
+    expect(database.bodyWeight.upsert.mock.calls[0][0].create.weightKg).toBe(
+      81.65,
+    );
+  });
+
+  it("treats a form with no unit as kilograms", async () => {
+    await logBodyWeight(idle, form({ date: "2026-11-23", weightKg: "81.5" }));
+    expect(database.bodyWeight.upsert.mock.calls[0][0].create.weightKg).toBe(
+      81.5,
+    );
+  });
+
+  it("refuses a unit that is not kg or lb", async () => {
+    const result = await logBodyWeight(
+      idle,
+      form({ date: "2026-11-23", weightKg: "180", weightUnit: "stone" }),
+    );
+    expect(result.status).toBe("error");
+    expect(database.bodyWeight.upsert).not.toHaveBeenCalled();
+  });
+
+  it("states the limits in pounds when the form was in pounds", async () => {
+    const result = await logBodyWeight(
+      idle,
+      form({ date: "2026-11-23", weightKg: "10", weightUnit: "LB" }),
+    );
+    expect(result).toMatchObject({
+      status: "error",
+      message: "Enter a weight between 45 and 881 lb.",
+    });
+  });
+});

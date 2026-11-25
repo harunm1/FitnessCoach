@@ -87,3 +87,17 @@ describe("parseWeightEntry", () => {
     });
   });
 });
+
+describe("parseWeightEntry in pounds", () => {
+  it("names the limits in pounds", () => {
+    const result = parseWeightEntry(
+      { date: TODAY, weightKg: "5", note: undefined },
+      TODAY,
+      "LB",
+    );
+    expect(result).toEqual({
+      ok: false,
+      message: "Enter a weight between 45 and 881 lb.",
+    });
+  });
+});

@@ -7,6 +7,7 @@ import {
   setLabel,
   topWeightLine,
 } from "@/lib/history/view";
+import { formatWeight, fromKg, type WeightUnit } from "@/lib/units/convert";
 
 // Room around the line so the stroke at the top and bottom is not clipped.
 const PAD = 4;
@@ -15,8 +16,10 @@ const PAD = 4;
 // workout (oldest on the left), and each workout's sets, newest first.
 export function ExerciseHistoryView({
   exercise,
+  weightUnit = "KG",
 }: {
   exercise: ExerciseHistory;
+  weightUnit?: WeightUnit; // what the user chose (D30)
 }) {
   const best = bestSet(exercise.workouts.flatMap((workout) => workout.sets));
   const line = topWeightLine(
@@ -26,14 +29,15 @@ export function ExerciseHistoryView({
     BOX,
   );
   const lineLabel = line
-    ? `Top weight per workout, ${line.min} to ${line.max} kg over ${line.count} workouts`
+    ? `Top weight per workout, ${fromKg(line.min, weightUnit)} to ${formatWeight(line.max, weightUnit)} over ${line.count} workouts`
     : null;
 
   return (
     <div className="grid gap-8">
       {best && (
         <p className="m-0 text-sm">
-          <span className="font-semibold">Best set:</span> {setLabel(best)}
+          <span className="font-semibold">Best set:</span>{" "}
+          {setLabel(best, weightUnit)}
         </p>
       )}
 
@@ -75,7 +79,7 @@ export function ExerciseHistoryView({
             <ol role="list" className="mt-2 mb-0 grid gap-1 p-0 text-sm">
               {workout.sets.map((set) => (
                 <li className="list-none" key={set.setNumber}>
-                  Set {set.setNumber}: {setLabel(set)}
+                  Set {set.setNumber}: {setLabel(set, weightUnit)}
                 </li>
               ))}
             </ol>

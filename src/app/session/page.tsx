@@ -12,6 +12,8 @@ import { BODY_MAP_MUSCLE_NAMES } from "@/lib/body-map/muscles";
 import { getNextPlanDayIndex } from "@/lib/workout/progression";
 import { finishWorkout, startOrResumeWorkout } from "./actions";
 import { requireUser } from "@/lib/auth/session";
+import { formatDistance, formatWeight } from "@/lib/units/convert";
+import { loadUnitPrefs } from "@/lib/units/prefs";
 import { AccountTheme } from "@/components/auth/account-theme";
 import { AppNav } from "@/components/nav/AppNav";
 import theme from "@/components/theme/app-theme.module.css";
@@ -22,6 +24,7 @@ export const dynamic = "force-dynamic";
 
 export default async function SessionPage() {
   const user = await requireUser();
+  const units = await loadUnitPrefs(user.id);
   // Started now so the photo link loads alongside the plan.
   const avatar = loadAvatarUrl(user.id);
   const plan = await prisma.plan.findFirst({
@@ -276,7 +279,7 @@ export default async function SessionPage() {
                                     >
                                       Set {set.setNumber}: {set.reps} reps
                                       {set.weightKg !== null &&
-                                        ` · ${set.weightKg.toString()} kg`}
+                                        ` · ${formatWeight(Number(set.weightKg), units.weightUnit)}`}
                                       {set.painDuringSession !== null &&
                                         ` · pain ${set.painDuringSession}/10 during`}
                                       {set.painNextMorning !== null &&
@@ -317,6 +320,7 @@ export default async function SessionPage() {
                                       }
                                     : undefined
                                 }
+                                weightUnit={units.weightUnit}
                               />
                             )}
                           </>
@@ -356,13 +360,18 @@ export default async function SessionPage() {
                 {activeWorkout.distanceKm !== null &&
                   activeWorkout.durationSeconds !== null && (
                     <p className="mt-2 mb-0 text-sm text-foreground/70">
-                      Saved run: {activeWorkout.distanceKm.toString()} km in{" "}
-                      {Math.floor(activeWorkout.durationSeconds / 60)} min{" "}
+                      Saved run:{" "}
+                      {formatDistance(
+                        Number(activeWorkout.distanceKm),
+                        units.distanceUnit,
+                      )}{" "}
+                      in {Math.floor(activeWorkout.durationSeconds / 60)} min{" "}
                       {activeWorkout.durationSeconds % 60} sec
                     </p>
                   )}
                 <RunMetricsForm
                   distanceKm={activeWorkout.distanceKm?.toString() ?? null}
+                  distanceUnit={units.distanceUnit}
                   durationSeconds={activeWorkout.durationSeconds}
                 />
               </section>
