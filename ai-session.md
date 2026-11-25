@@ -829,3 +829,13 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Did with it:** Checked each claim against the code (the tier check in the coach route, the sentence-by-sentence stream, the sharp resize that drops location data). The targeted tests for those areas (33 files, 375 tests) pass; no browser run was possible.
 
 **Tools:** git, Vitest, Prettier. No skills.
+
+## 24 November (evening): workout history
+
+**Asked:** Why a past workout cannot be opened from the live Progress page, the smallest fix for that, and a workout history: a paged list, a page for each workout that only its owner can open, and if time allowed, a page for each exercise over time.
+
+**Got:** A diagnosis from the code and the Next.js 16 documentation bundled with the project. On a phone the tapped day's details render under the calendar, and a link keeps the scroll position, so the change happens out of sight. A workout card also had no link. Decision D29: calendar days link to the details' heading, each workout card links to its page, and three new routes: `/history`, `/history/[workoutId]` and `/history/exercise/[exerciseId]`. Every lookup filters on the signed-in user, and a miss answers 404.
+
+**Did with it:** Wrote the failing tests first (loader queries, the pages' 404s, the new links), then the code. Ran lint, the type check, the format check and the affected tests. A review agent that had not seen the work read the branch before the pull request was marked ready. The integration test for owner-only access runs in CI. There was no live browser check, because the local database was down.
+
+**Tools:** gh, git, Prettier, ESLint, tsc, Vitest, Next.js bundled docs, review agents (pr-review-toolkit code-reviewer). No skills.
