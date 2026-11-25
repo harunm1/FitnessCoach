@@ -12,6 +12,7 @@ import {
 } from "@/lib/workout/setLogSchema";
 import { weightFieldToKg } from "@/lib/units/input";
 import {
+  fromKg,
   fromKgForEdit,
   weightLabel,
   type WeightUnit,
@@ -35,6 +36,9 @@ type SetLogFormProps = {
   targetReps: number;
   nextSetNumber: number;
   equipment?: string | null; // the exercise's equipment, for the weight field's hint
+  // The weight the user lifted lately on this exercise, in kilograms (D36): the weight box
+  // starts there instead of empty.
+  suggestedWeightKg?: number | null;
   blocked?: boolean;
   correction?: {
     setNumber: number;
@@ -52,11 +56,28 @@ type SetLogFormProps = {
   busy?: boolean;
 };
 
+// What the weight box shows first: the set being corrected (to two places, so saving it again
+// stores the same kilograms), else the weight lifted lately (D36) to the unit's plate step, so
+// 61.23 kg reads 135 lb and not 134.99, else nothing (the hint shows).
+function weightBoxStart(
+  correction: { weightKg: string | null } | undefined,
+  suggestedWeightKg: number | null,
+  unit: WeightUnit,
+): number | string {
+  if (correction) {
+    return correction.weightKg
+      ? fromKgForEdit(Number(correction.weightKg), unit)
+      : "";
+  }
+  return suggestedWeightKg === null ? "" : fromKg(suggestedWeightKg, unit);
+}
+
 export default function SetLogForm({
   exerciseId,
   targetReps,
   nextSetNumber,
   equipment = null,
+  suggestedWeightKg = null,
   blocked = false,
   correction,
   weightUnit = "KG",
@@ -178,11 +199,11 @@ export default function SetLogForm({
           className="h-10 w-24 border border-foreground/20 bg-white px-2 text-sm text-foreground outline-none placeholder:text-foreground/40 focus:border-foreground focus:ring-2 focus:ring-foreground/10"
           inputMode="decimal"
           key={`weight-${setNumber}-${weightUnit}`}
-          defaultValue={
-            correcting && correction?.weightKg
-              ? fromKgForEdit(Number(correction.weightKg), weightUnit)
-              : ""
-          }
+          defaultValue={weightBoxStart(
+            correcting ? correction : undefined,
+            suggestedWeightKg,
+            weightUnit,
+          )}
           max={9999.99}
           min={weightUnit === "LB" ? 0.55 : 0.25}
           name="weightKg"
@@ -192,6 +213,12 @@ export default function SetLogForm({
         />
       </label>
       <WeightUnitSwitch current={weightUnit} />
+      {!correcting && suggestedWeightKg !== null && (
+        <p className="m-0 basis-full text-xs text-foreground/60">
+          Lifted lately: {fromKg(suggestedWeightKg, weightUnit)}{" "}
+          {weightLabel(weightUnit)}
+        </p>
+      )}
       <label className="grid gap-1 text-sm font-semibold text-foreground/60">
         Pain during
         <input
