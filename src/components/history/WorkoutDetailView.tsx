@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { WorkoutDetail } from "@/lib/history/types";
 import { dateLabel, setLabel } from "@/lib/history/view";
-import { clock, pace } from "@/lib/progress/view";
+import { duration, pace } from "@/lib/progress/view";
 
 // One finished workout in full (D28): when and how long, the run, every exercise
 // with each set (reps, kg, RPE), and the notes.
@@ -26,7 +26,7 @@ export function WorkoutDetailView({ workout }: { workout: WorkoutDetail }) {
             Run
           </h2>
           <p className="mt-2 mb-0 text-sm">
-            {workout.run.distanceKm} km in {clock(workout.run.seconds)}
+            {workout.run.distanceKm} km in {duration(workout.run.seconds)}
             {runPace && ` · ${runPace}`}
             {workout.run.rpe !== null && ` · RPE ${workout.run.rpe}`}
           </p>
@@ -38,7 +38,7 @@ export function WorkoutDetailView({ workout }: { workout: WorkoutDetail }) {
           <h2 className="m-0 text-lg font-semibold" id="exercises-title">
             Exercises
           </h2>
-          <ul className="mt-3 grid gap-4 p-0">
+          <ul role="list" className="mt-3 grid gap-4 p-0">
             {workout.exercises.map((exercise) => (
               <li
                 className="list-none border border-foreground/15 p-4"
@@ -50,7 +50,7 @@ export function WorkoutDetailView({ workout }: { workout: WorkoutDetail }) {
                 >
                   {exercise.name}
                 </Link>
-                <ol className="mt-2 mb-0 grid gap-1 p-0 text-sm">
+                <ol role="list" className="mt-2 mb-0 grid gap-1 p-0 text-sm">
                   {exercise.sets.map((set) => (
                     <li className="list-none" key={set.setNumber}>
                       Set {set.setNumber}: {setLabel(set)}

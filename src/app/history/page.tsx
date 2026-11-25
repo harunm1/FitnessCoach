@@ -8,7 +8,7 @@ import { navAvatar } from "./avatar";
 // New workouts appear as they are finished, so build the list on every visit.
 export const dynamic = "force-dynamic";
 
-type SearchParams = Promise<{ page?: string }>;
+type SearchParams = Promise<{ page?: string | string[] }>;
 
 // Workout history (D28): the signed-in user's finished workouts, newest first.
 export default async function HistoryPage({
@@ -17,7 +17,9 @@ export default async function HistoryPage({
   searchParams: SearchParams;
 }) {
   const user = await requireUser();
-  const page = parsePage((await searchParams).page);
+  const { page: pageParam } = await searchParams;
+  // A repeated ?page= arrives as an array; only one page is shown.
+  const page = parsePage(Array.isArray(pageParam) ? pageParam[0] : pageParam);
   const [{ rows, hasNext }, avatarUrl] = await Promise.all([
     loadHistoryPage(user.id, page),
     navAvatar(user.id),

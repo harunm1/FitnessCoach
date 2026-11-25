@@ -39,10 +39,11 @@ export function ExerciseHistoryView({
 
       {line && lineLabel && (
         <figure className="m-0">
+          {/* The caption below says what the line shows; the drawing is hidden from
+              screen readers so the text is not read twice. */}
           <svg
-            aria-label={lineLabel}
+            aria-hidden="true"
             className="h-16 w-full max-w-sm text-foreground"
-            role="img"
             viewBox={`${-PAD} ${-PAD} ${BOX.width + PAD + PAD} ${BOX.height + PAD + PAD}`}
           >
             <polyline
@@ -59,7 +60,7 @@ export function ExerciseHistoryView({
         </figure>
       )}
 
-      <ol className="m-0 grid gap-4 p-0">
+      <ol role="list" className="m-0 grid gap-4 p-0">
         {exercise.workouts.map((workout) => (
           <li
             className="list-none border border-foreground/15 p-4"
@@ -71,7 +72,7 @@ export function ExerciseHistoryView({
             >
               {dateLabel(workout.startedAt)}
             </Link>
-            <ol className="mt-2 mb-0 grid gap-1 p-0 text-sm">
+            <ol role="list" className="mt-2 mb-0 grid gap-1 p-0 text-sm">
               {workout.sets.map((set) => (
                 <li className="list-none" key={set.setNumber}>
                   Set {set.setNumber}: {setLabel(set)}
@@ -81,6 +82,12 @@ export function ExerciseHistoryView({
           </li>
         ))}
       </ol>
+
+      {exercise.olderHidden && (
+        <p className="m-0 text-xs text-foreground/60">
+          Older workouts are not shown.
+        </p>
+      )}
 
       <Link className="text-sm underline" href="/history">
         ‹ All workouts

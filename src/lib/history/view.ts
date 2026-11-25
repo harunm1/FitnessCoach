@@ -53,7 +53,8 @@ export function minutesBetween(startedAt: Date, finishedAt: Date): number {
 export function setLabel(set: SetValues): string {
   const weight = set.weightKg === null ? "" : ` × ${set.weightKg} kg`;
   const effort = set.rpe === null ? "" : ` · RPE ${set.rpe}`;
-  return `${set.reps} reps${weight}${effort}`;
+  const reps = set.reps === 1 ? "rep" : "reps";
+  return `${set.reps} ${reps}${weight}${effort}`;
 }
 
 // The heaviest set, then the most reps at that weight; a weighted set beats any

@@ -144,6 +144,14 @@ describe("/history/[workoutId]", () => {
     expect(html).toContain('href="/history"');
   });
 
+  it("writes a run of an hour or more as h:mm:ss", async () => {
+    history.loadWorkoutDetail.mockResolvedValue({
+      ...detail,
+      run: { distanceKm: 21.1, seconds: 7530, rpe: null },
+    });
+    expect(await render("41")).toContain("21.1 km in 2:05:30");
+  });
+
   it("answers 404 for a workout the user does not own or that does not exist", async () => {
     history.loadWorkoutDetail.mockResolvedValue(null);
     await expect(render("41")).rejects.toThrow(NOT_FOUND);
@@ -171,6 +179,7 @@ describe("/history/exercise/[exerciseId]", () => {
   const exercise: ExerciseHistory = {
     id: "Bench",
     name: "Bench Press",
+    olderHidden: false,
     workouts: [
       {
         workoutId: 41,
@@ -202,6 +211,15 @@ describe("/history/exercise/[exerciseId]", () => {
     expect(html).toContain('href="/history/41"');
     expect(html).toContain("<polyline");
     expect(html).toContain("Top weight per workout, 55 to 65 kg");
+    expect(html).not.toContain("Older workouts");
+  });
+
+  it("says when older workouts are left out", async () => {
+    history.loadExerciseHistory.mockResolvedValue({
+      ...exercise,
+      olderHidden: true,
+    });
+    expect(await render("Bench")).toContain("Older workouts are not shown");
   });
 
   it("answers 404 for an exercise the user never logged", async () => {

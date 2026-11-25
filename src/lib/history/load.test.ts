@@ -91,6 +91,16 @@ describe("loadWorkoutDetail", () => {
     );
   });
 
+  it("breaks ties in logged time by row id, so imported sets keep the file's order", async () => {
+    await loadWorkoutDetail("session-owner", 41);
+    const { select } = workout.findFirst.mock.calls[0][0];
+    expect(select.sets.orderBy).toEqual([
+      { loggedAt: "asc" },
+      { setNumber: "asc" },
+      { id: "asc" },
+    ]);
+  });
+
   it("returns null when the user does not own it (the page answers 404)", async () => {
     expect(await loadWorkoutDetail("someone-else", 41)).toBeNull();
   });
@@ -192,6 +202,39 @@ describe("loadExerciseHistory", () => {
     );
   });
 
+  it("orders sets newest workout first with a stable tie-break", async () => {
+    await loadExerciseHistory("session-owner", "Bench");
+    expect(setLog.findMany.mock.calls[0][0].orderBy).toEqual([
+      { workout: { startedAt: "desc" } },
+      { workoutId: "desc" },
+      { setNumber: "asc" },
+      { id: "asc" },
+    ]);
+  });
+
+  it("drops a workout cut by the set limit and says older ones are hidden", async () => {
+    const at = (day: number) => new Date(Date.UTC(2026, 10, day, 17));
+    const rows = Array.from({ length: EXERCISE_SET_LIMIT }, (_, i) => ({
+      setNumber: (i % 2) + 1,
+      reps: 5,
+      weightKg: decimal("60.00"),
+      rpe: null,
+      // Two sets a workout.
+      workout: { id: 1000 - Math.floor(i / 2), startedAt: at(1) },
+      exercise: { name: "Bench Press" },
+    }));
+    // The last two sets belong to workout 1, which may have more sets past the limit.
+    rows[EXERCISE_SET_LIMIT - 2].workout = { id: 1, startedAt: at(1) };
+    rows[EXERCISE_SET_LIMIT - 1].workout = { id: 1, startedAt: at(1) };
+    setLog.findMany.mockResolvedValue(rows);
+    const history = await loadExerciseHistory("session-owner", "Bench");
+    expect(history?.olderHidden).toBe(true);
+    expect(history?.workouts.map((entry) => entry.workoutId)).not.toContain(1);
+    expect(history?.workouts.every((entry) => entry.sets.length === 2)).toBe(
+      true,
+    );
+  });
+
   it("returns null when the user never logged it (the page answers 404)", async () => {
     expect(await loadExerciseHistory("session-owner", "Bench")).toBeNull();
   });
@@ -219,6 +262,7 @@ describe("loadExerciseHistory", () => {
     expect(await loadExerciseHistory("session-owner", "Bench")).toEqual({
       id: "Bench",
       name: "Bench Press",
+      olderHidden: false,
       workouts: [
         {
           workoutId: 41,

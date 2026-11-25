@@ -4,7 +4,7 @@ import { AppNav } from "@/components/nav/AppNav";
 import theme from "@/components/theme/app-theme.module.css";
 
 // The frame of every history page (D28): the app theme, the nav bar, a small label
-// and the page title. No nav item is marked current: History has no menu entry yet.
+// and the page title, with History marked as the current page.
 export function HistoryShell({
   name,
   avatarUrl,
@@ -23,7 +23,7 @@ export function HistoryShell({
       className={`${theme.appTheme} min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12`}
     >
       <div className={`mx-auto max-w-3xl ${theme.readablePage}`}>
-        <AppNav name={name} avatarUrl={avatarUrl} />
+        <AppNav current="history" name={name} avatarUrl={avatarUrl} />
         <p className="text-xs font-semibold tracking-[0.14em] text-foreground/60 uppercase">
           {eyebrow}
         </p>

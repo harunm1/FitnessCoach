@@ -33,7 +33,7 @@ export function HistoryList({
           No workouts on this page.
         </p>
       ) : (
-        <ol className="m-0 grid gap-3 p-0">
+        <ol role="list" className="m-0 grid gap-3 p-0">
           {rows.map((row) => (
             <li className="list-none" key={row.id}>
               <Link

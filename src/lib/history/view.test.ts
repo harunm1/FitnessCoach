@@ -65,6 +65,9 @@ describe("setLabel", () => {
       "8 reps × 60 kg · RPE 8",
     );
     expect(setLabel({ reps: 12, weightKg: null, rpe: null })).toBe("12 reps");
+    expect(setLabel({ reps: 1, weightKg: 100, rpe: null })).toBe(
+      "1 rep × 100 kg",
+    );
   });
 });
 

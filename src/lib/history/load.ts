@@ -13,7 +13,8 @@ import type {
 } from "./types";
 import { groupInOrder, minutesBetween, workoutName } from "./view";
 
-// The newest sets of one exercise shown on its page; years of three sessions a week.
+// The newest sets of one exercise read for its page; years of three sessions a week.
+// When a page hits it, the last (possibly cut) workout is dropped and the page says so.
 export const EXERCISE_SET_LIMIT = 500;
 
 const finishedBy = (userId: string) => ({
@@ -101,7 +102,8 @@ export async function loadWorkoutDetail(
       planDay: { select: { name: true } },
       run: { select: { rpe: true } },
       sets: {
-        orderBy: [{ loggedAt: "asc" }, { setNumber: "asc" }],
+        // Imported sets share one loggedAt; the row id keeps the file's order.
+        orderBy: [{ loggedAt: "asc" }, { setNumber: "asc" }, { id: "asc" }],
         select: {
           ...setFields,
           exercise: { select: { id: true, name: true } },
@@ -152,7 +154,12 @@ export async function loadExerciseHistory(
 ): Promise<ExerciseHistory | null> {
   const sets = await prisma.setLog.findMany({
     where: { exerciseId, workout: finishedBy(userId) },
-    orderBy: [{ workout: { startedAt: "desc" } }, { setNumber: "asc" }],
+    orderBy: [
+      { workout: { startedAt: "desc" } },
+      { workoutId: "desc" },
+      { setNumber: "asc" },
+      { id: "asc" },
+    ],
     take: EXERCISE_SET_LIMIT,
     select: {
       ...setFields,
@@ -163,16 +170,18 @@ export async function loadExerciseHistory(
   if (sets.length === 0) return null;
 
   // Already newest workout first and in set order from the query.
-  const workouts = [...groupInOrder(sets, (set) => set.workout.id)].map(
-    ([workoutId, grouped]) => ({
-      workoutId,
-      startedAt: grouped[0].workout.startedAt,
-      sets: grouped.map(toSet),
-    }),
-  );
+  const grouped = [...groupInOrder(sets, (set) => set.workout.id)];
+  const olderHidden = sets.length === EXERCISE_SET_LIMIT && grouped.length > 1;
+  const complete = olderHidden ? grouped.slice(0, -1) : grouped;
+  const workouts = complete.map(([workoutId, grouped]) => ({
+    workoutId,
+    startedAt: grouped[0].workout.startedAt,
+    sets: grouped.map(toSet),
+  }));
   return {
     id: exerciseId,
     name: sets[0].exercise.name,
+    olderHidden,
     workouts,
   };
 }

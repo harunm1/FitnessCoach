@@ -33,6 +33,7 @@ describe("AppNav", () => {
       { href: "/coach", text: "Coach" },
       { href: "/progress", text: "Progress" },
       { href: "/progress/photos", text: "Photos" },
+      { href: "/history", text: "History" },
       { href: "/import", text: "Import" },
       { href: "/account", text: "Free Demo" },
     ]);
