@@ -881,7 +881,7 @@ describe("quiz and session authorization with PostgreSQL", () => {
       await plan(first.id, "Timed plan"),
     );
     // Started 1 h 2 min 3 s ago: an hour of active time banked before a pause, then 123 s
-    // running (D36: duration counts active time only).
+    // running (D37: duration counts active time only).
     const startedAt = new Date(Date.now() - 3_723_000);
     await db.workout.update({
       where: { id: ownWorkout.id },

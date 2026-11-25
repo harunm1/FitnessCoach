@@ -1,4 +1,4 @@
-// Glue between the pure alert rules and the browser (D36). Nothing here asks for a
+// Glue between the pure alert rules and the browser (D37). Nothing here asks for a
 // permission: that happens only from the settings switch (`requestNotifications`).
 import {
   enableNotifications,

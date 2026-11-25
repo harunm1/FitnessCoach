@@ -1,5 +1,5 @@
 // Tests for pausing and resuming the workout clock, and for the active duration stored at
-// Finish (D36). The user comes from the session, the open workout is the user's own, and a
+// Finish (D37). The user comes from the session, the open workout is the user's own, and a
 // backdated idle pause can neither reach before the running stretch nor into the future.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 

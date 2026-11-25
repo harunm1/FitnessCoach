@@ -14,7 +14,7 @@ import {
   latestSetMs,
 } from "@/lib/workout/openClock";
 
-// Pause and resume of the workout clock (D36). Called from the browser, by the Pause and Resume
+// Pause and resume of the workout clock (D37). Called from the browser, by the Pause and Resume
 // buttons and by the idle check, which passes the time of the last activity so the pause starts
 // there and not when the page noticed.
 export type ClockResult =

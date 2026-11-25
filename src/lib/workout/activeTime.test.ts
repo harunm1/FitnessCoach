@@ -1,4 +1,4 @@
-// Tests for the workout clock's pause and resume math (D36): duration counts active time only,
+// Tests for the workout clock's pause and resume math (D37): duration counts active time only,
 // and an idle pause starts at the last activity, not when the page noticed.
 import { describe, expect, it } from "vitest";
 import {

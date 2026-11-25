@@ -61,6 +61,10 @@ export type CoachContext = {
   // Muscle names from the exercise library that code matched to the injury text, as
   // onboarding does for the plan. Only these reach the prompt.
   avoidMuscles?: string[];
+  // A short summary of the user's logged history (D36): training since, weekly rate, usual
+  // time, and the best recent set of a few lifts. Built in code from finished workouts; never
+  // the rows themselves.
+  historyLines?: string[];
   // Today's or the next session, as short lines such as "Bench press 3 x 10".
   sessionLines: string[];
 };
@@ -303,6 +307,7 @@ function asData(text: string | null): string {
 
 export function buildCoachSystemPrompt(ctx: CoachContext): string {
   const avoid = (ctx.avoidMuscles ?? []).map(asData).filter(Boolean);
+  const history = (ctx.historyLines ?? []).map(asData).filter(Boolean);
   return [
     "You are FitnessCoach, a strength and running coach inside a training app.",
     "Answer only about this user's training, recovery and the session below. Answer in 2 to 4 sentences (under 80 words) unless the user asks for more detail.",
@@ -317,6 +322,7 @@ export function buildCoachSystemPrompt(ctx: CoachContext): string {
     `Goal: ${ctx.goal}. Level: ${ctx.level}. Days a week: ${ctx.daysPerWeek}.`,
     `Equipment: ${ctx.equipment.map(asData).filter(Boolean).join(", ") || "body weight only"}.`,
     ...(avoid.length ? [`Muscles to keep load off: ${avoid.join(", ")}.`] : []),
+    ...(history.length ? ["Training history:", ...history] : []),
     "Session:",
     ...(ctx.sessionLines.length ? ctx.sessionLines : ["rest day"]),
   ].join("\n");

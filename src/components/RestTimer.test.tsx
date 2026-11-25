@@ -169,7 +169,7 @@ describe("RestTimer auto start", () => {
   });
 });
 
-// Rest alerts, +15 / -15 and the deadline clock (D36).
+// Rest alerts, +15 / -15 and the deadline clock (D37).
 const FIFTEEN = 15;
 const NINETY_SECONDS = 90;
 const NINETY_SECONDS_MS = 90_000;

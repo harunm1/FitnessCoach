@@ -18,7 +18,7 @@ const PERCENT = 100;
 const BLOCKED_MESSAGE =
   "Notifications are blocked for this site. Allow them in your browser's site settings, then turn this on again.";
 
-// The rest-end alerts (D36), saved on this device only: the tone, vibration and the
+// The rest-end alerts (D37), saved on this device only: the tone, vibration and the
 // notification permission are all per device. Everything starts off, and the browser's
 // permission prompt appears only when the Notification box is ticked here.
 export function RestAlertsForm() {

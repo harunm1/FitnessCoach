@@ -1,4 +1,4 @@
-// The rest-end tone, made by an oscillator in the Web Audio API (D36): no audio file to
+// The rest-end tone, made by an oscillator in the Web Audio API (D37): no audio file to
 // download or license. Browsers start an AudioContext suspended until a user gesture, so
 // `unlockAudio` is called from taps (a logged set, the settings test button).
 

@@ -1,6 +1,6 @@
 "use client";
 
-// The live workout clock (D36): active time only, manual Pause and Resume, and an automatic
+// The live workout clock (D37): active time only, manual Pause and Resume, and an automatic
 // pause after 30 idle minutes that starts at the last activity. The screen turning off or the
 // tab being hidden does NOT pause it, because that is when the user is resting.
 import { useEffect, useRef, useState } from "react";

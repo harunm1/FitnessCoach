@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Tests for the "Alerts on this device" box on the account page (D36): everything starts off,
+// Tests for the "Alerts on this device" box on the account page (D37): everything starts off,
 // each switch saves on this device, the browser's notification permission is asked only when
 // the user turns Notification on, and the iPhone limit is stated plainly.
 import {

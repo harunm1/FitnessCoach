@@ -21,7 +21,7 @@ type RestTimerProps = {
   serverNowIso: string;
 };
 
-// The countdown is a deadline (D36): `running` holds the end time, so a sleeping screen or a
+// The countdown is a deadline (D37): `running` holds the end time, so a sleeping screen or a
 // throttled background tab cannot slow it down, and the next look at the clock is right.
 type Phase =
   | { kind: "idle" }

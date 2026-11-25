@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Tests for the live workout clock (D36): it counts active time, can be paused and resumed,
+// Tests for the live workout clock (D37): it counts active time, can be paused and resumed,
 // pauses by itself after 30 idle minutes with the pause starting at the last activity, shows a
 // "Resume or finish?" prompt, and is NOT paused when the screen turns off or the tab is hidden.
 import { act, cleanup, render, screen } from "@testing-library/react";

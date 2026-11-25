@@ -299,7 +299,7 @@ export async function finishWorkout() {
     const workout = await findOpenClockWorkout(user.id);
     if (!workout) break;
     const finishedAt = new Date();
-    // Duration counts active time only (D36): paused time and an idle stretch are left out.
+    // Duration counts active time only (D37): paused time and an idle stretch are left out.
     // A run keeps the duration it recorded itself.
     const activeSeconds = finishedActiveSeconds(
       clockOf(workout),

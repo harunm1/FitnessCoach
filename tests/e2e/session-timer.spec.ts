@@ -1,4 +1,4 @@
-// Browser proof for the session clock and the rest timer (D36): a logged set starts the rest
+// Browser proof for the session clock and the rest timer (D37): a logged set starts the rest
 // countdown, +15 and Skip work, the workout can be paused and resumed, and a workout that has
 // sat idle is paused at its last activity with a "Resume or finish?" prompt.
 import { randomUUID } from "node:crypto";

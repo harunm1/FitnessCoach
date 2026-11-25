@@ -2,7 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/prisma";
 import type { ActiveClock } from "./activeTime";
 
-// The user's open workout with its clock (D36), found the same way Finish finds it: the user's
+// The user's open workout with its clock (D37), found the same way Finish finds it: the user's
 // own, unfinished, on an active plan of theirs.
 export type OpenClockWorkout = {
   id: number;

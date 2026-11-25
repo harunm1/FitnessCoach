@@ -135,6 +135,9 @@ test.describe("offline set logging", () => {
 
     await context.setOffline(true);
     await logSet(page, exerciseName, SET_ONE);
+    // The form moves to set 2 in the same render that lists set 1: filling it before that
+    // would type into the form that is about to be replaced.
+    await expect(page.getByText("Set 1: 8 reps · 20 lb")).toBeVisible();
     await logSet(page, exerciseName, SET_TWO);
 
     await expect(page.getByText("Saved offline, 2 to sync")).toBeVisible();

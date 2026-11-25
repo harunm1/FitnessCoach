@@ -1,4 +1,4 @@
-// Tests for the rest timer's end-time math (D36): the countdown is a deadline, so a throttled
+// Tests for the rest timer's end-time math (D37): the countdown is a deadline, so a throttled
 // or sleeping tab cannot slow it, and +15 / -15 move the deadline.
 import { describe, expect, it } from "vitest";
 import {

@@ -1,4 +1,4 @@
-// The rest-end alert (D36): sound, vibration and a notification, each off until the user turns
+// The rest-end alert (D37): sound, vibration and a notification, each off until the user turns
 // it on. Preferences live on the device (audio, vibration and the notification permission are
 // per device). Pure with injected effects, so the rules are testable without a browser.
 
