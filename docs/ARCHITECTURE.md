@@ -121,8 +121,14 @@ Evidence for the design choices: one note per paper in [docs/papers](papers/READ
 
 ## Advanced features
 
-Promised: authentication with four access tiers checked on the server; external APIs (the coach).
-Planned ([shortcuts](RESEARCH.md#3-plan-shortcuts-for-the-advanced-features)): real-time (streamed replies, notifications), photo processing (resize, strip location, then-vs-now image), Redux Toolkit for the quiz, body map and workout session, Stripe test mode.
+Counted for the course (checked 24 November against `main`): the two features the proposal promises, with two more built beside them.
+
+1. **Authentication and authorization (promised, built).** Better Auth sign-in, verified email, four tiers; `requireTier(COACH_TIERS)` runs on the server in `/api/coach`.
+2. **External AI API (promised, built).** The coach: Groq with Gemini as fallback, every plan and reply checked in code before it is saved or shown.
+3. **Real-time (extension, built).** `/api/coach` streams the reply a sentence at a time, and each sentence passes the reply check before it goes out (`src/lib/coach/chatStream.ts`).
+4. **File processing (extension, built).** Progress photos are shrunk in the browser, then resized with `sharp` on the server, which drops the metadata including GPS location, and stored in a private R2 bucket (`src/lib/photos/process.ts`).
+
+Stripe test mode is on `main` (#68) but off the demo path. Not built, so not claimed: notifications, a then-vs-now photo image, Redux Toolkit (state is React state plus Server Actions). The presentation names features 1 and 2; 3 and 4 get one line ([minutes of 24 November](meetings/2026-11-24.md)).
 
 ## Open
 
