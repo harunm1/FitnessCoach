@@ -47,6 +47,15 @@ describe("createDataExport", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/account/data");
   });
 
+  it("creates the monthly report", async () => {
+    const result = await createDataExport(
+      idle,
+      form({ kind: "MONTHLY_REPORT" }),
+    );
+    expect(result).toEqual({ status: "created" });
+    expect(createExport.mock.calls[0][1]).toBe("MONTHLY_REPORT");
+  });
+
   it("takes the user from the session, never from the form", async () => {
     await createDataExport(
       idle,

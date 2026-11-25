@@ -3,6 +3,10 @@ import { randomUUID } from "node:crypto";
 import { attachmentDisposition } from "@/lib/downloads/disposition";
 import { prisma } from "@/lib/prisma";
 import type { PhotoStorage } from "@/lib/storage/types";
+import { monthOf } from "@/lib/report/month";
+import { renderReportPdf } from "@/lib/report/pdf";
+import { loadMonthlyReportInput } from "@/lib/report/load";
+import { buildMonthlyReport } from "@/lib/report/summary";
 import { loadUnitPrefs } from "@/lib/units/prefs";
 import { toCsv, type Cell } from "./csv";
 import {
@@ -24,7 +28,7 @@ export { EXPORTS_KEPT, EXPORTS_PER_HOUR, MAX_EXPORT_BYTES };
 
 const ONE_HOUR_MS = 3_600_000;
 
-export type ExportErrorCode = "rate-limited" | "too-large" | "unsupported";
+export type ExportErrorCode = "rate-limited" | "too-large";
 
 export class ExportError extends Error {
   constructor(readonly code: ExportErrorCode) {
@@ -43,9 +47,26 @@ async function csvRowsFor(userId: string, kind: ExportKind): Promise<Cell[][]> {
     ]);
     return workoutCsvRows(sets, units.weightUnit);
   }
-  if (kind === "COACH_CSV")
-    return coachCsvRows(await loadCoachMessages(userId));
-  throw new ExportError("unsupported");
+  return coachCsvRows(await loadCoachMessages(userId));
+}
+
+// The bytes of the file for this kind: a CSV, or the monthly report as a PDF.
+async function buildFile(userId: string, kind: ExportKind, now: Date) {
+  if (kind === "MONTHLY_REPORT") {
+    const [input, units] = await Promise.all([
+      loadMonthlyReportInput(userId, monthOf(now)),
+      loadUnitPrefs(userId),
+    ]);
+    const pdf = await renderReportPdf(
+      buildMonthlyReport(input),
+      units.weightUnit,
+    );
+    return Buffer.from(pdf);
+  }
+  const rows = await csvRowsFor(userId, kind);
+  // The header is one row; more data rows than a file holds is refused, never cut.
+  if (rows.length - 1 > MAX_ROWS) throw new ExportError("too-large");
+  return Buffer.from(toCsv(rows), "utf8");
 }
 
 // Past the newest EXPORTS_KEPT, a user's exports are removed: the file first, then the row, so
@@ -83,10 +104,7 @@ export async function createExport(
   });
   if (recent >= EXPORTS_PER_HOUR) throw new ExportError("rate-limited");
 
-  const rows = await csvRowsFor(userId, kind);
-  // The header is one row; more data rows than a file holds is refused, never cut.
-  if (rows.length - 1 > MAX_ROWS) throw new ExportError("too-large");
-  const body = Buffer.from(toCsv(rows), "utf8");
+  const body = await buildFile(userId, kind, now);
   if (body.byteLength > MAX_EXPORT_BYTES) throw new ExportError("too-large");
 
   const r2Key = exportKey(userId, kind, randomUUID());

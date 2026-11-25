@@ -15,12 +15,11 @@ const DATA_PATH = "/account/data";
 const UNAVAILABLE = "The export couldn't be made right now. Try again later.";
 
 // The kinds a button on the page can ask for.
-const kindSchema = z.enum(["WORKOUT_CSV", "COACH_CSV"]);
+const kindSchema = z.enum(["WORKOUT_CSV", "COACH_CSV", "MONTHLY_REPORT"]);
 
 const MESSAGES = {
   "rate-limited": "You've made a lot of exports this hour. Try again later.",
   "too-large": "That export is too large to make. Contact the team.",
-  unsupported: UNAVAILABLE,
 } as const;
 
 export async function createDataExport(

@@ -40,10 +40,11 @@ describe("Your data page", () => {
     );
   });
 
-  it("offers the two exports", async () => {
+  it("offers the three exports", async () => {
     const html = await render();
     expect(html).toContain("Export workout history (CSV)");
     expect(html).toContain("Export coach conversations (CSV)");
+    expect(html).toContain("Make the monthly report (PDF)");
   });
 
   it("says so when there are no exports yet", async () => {

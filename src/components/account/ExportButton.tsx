@@ -8,7 +8,7 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 
 type ExportButtonProps = {
-  kind: "WORKOUT_CSV" | "COACH_CSV";
+  kind: "WORKOUT_CSV" | "COACH_CSV" | "MONTHLY_REPORT";
   label: string; // e.g. "Export workout history (CSV)"
 };
 

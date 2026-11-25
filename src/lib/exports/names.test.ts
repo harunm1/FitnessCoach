@@ -21,9 +21,9 @@ describe("exportFileName", () => {
     );
   });
 
-  it("names a monthly report as a PDF", () => {
+  it("names a monthly report as a PDF, by the Toronto month", () => {
     expect(exportFileName("MONTHLY_REPORT", LATE_EVENING)).toBe(
-      "fitnesscoach-monthly-report-2026-11-24.pdf",
+      "fitnesscoach-monthly-report-2026-11.pdf",
     );
   });
 });

@@ -9,7 +9,8 @@ const { database } = vi.hoisted(() => ({
       findMany: vi.fn(),
       delete: vi.fn(),
     },
-    setLog: { findMany: vi.fn() },
+    setLog: { findMany: vi.fn(), groupBy: vi.fn() },
+    workout: { findMany: vi.fn() },
     message: { findMany: vi.fn() },
     user: { findUnique: vi.fn() },
   },
@@ -22,7 +23,6 @@ import { MAX_ROWS } from "./limits";
 import {
   createExport,
   EXPORTS_PER_HOUR,
-  ExportError,
   EXPORTS_KEPT,
   MAX_EXPORT_BYTES,
 } from "./create";
@@ -32,6 +32,7 @@ const ONE_HOUR_MS = 3_600_000;
 const HUNDRED_KG = 100;
 const SET_COUNT = 3;
 const UUID_LENGTH = 36;
+const PDF_MAGIC = "%PDF-";
 const BIG_MESSAGE = "x".repeat(MAX_EXPORT_BYTES);
 let storage: MemoryStorage;
 
@@ -59,6 +60,8 @@ beforeEach(() => {
   database.dataExport.findMany.mockResolvedValue([]);
   database.setLog.findMany.mockResolvedValue([setRow()]);
   database.message.findMany.mockResolvedValue([]);
+  database.workout.findMany.mockResolvedValue([]);
+  database.setLog.groupBy.mockResolvedValue([]);
   database.user.findUnique.mockResolvedValue({
     weightUnit: "LB",
     distanceUnit: "KM",
@@ -203,9 +206,48 @@ describe("createExport", () => {
     log.mockRestore();
   });
 
-  it("has no generator for the report yet", async () => {
-    await expect(
-      createExport("u1", "MONTHLY_REPORT", { storage, now: NOW }),
-    ).rejects.toBeInstanceOf(ExportError);
+  it("stores the monthly report as a PDF in R2 and records it", async () => {
+    database.workout.findMany.mockResolvedValue([{ startedAt: NOW }]);
+    database.setLog.findMany.mockResolvedValue([
+      {
+        reps: 5,
+        weightKg: { toString: () => "100" },
+        exercise: { id: "squat", name: "Squat", primaryMuscles: ["quads"] },
+        workout: { startedAt: NOW },
+      },
+    ]);
+    const row = await createExport("u1", "MONTHLY_REPORT", {
+      storage,
+      now: NOW,
+    });
+
+    const [[key, file]] = [...storage.files.entries()];
+    expect(key.endsWith(".pdf")).toBe(true);
+    expect(file.contentType).toBe("application/pdf");
+    expect(file.body.subarray(0, PDF_MAGIC.length).toString()).toBe(PDF_MAGIC);
+    expect(file.contentDisposition).toContain(
+      'filename="fitnesscoach-monthly-report-2026-11.pdf"',
+    );
+    expect(database.dataExport.create).toHaveBeenCalledWith({
+      data: {
+        userId: "u1",
+        kind: "MONTHLY_REPORT",
+        r2Key: key,
+        bytes: file.body.byteLength,
+      },
+    });
+    expect(row.id).toBe("export-1");
+  });
+
+  it("reads only this user's workouts and sets for the report", async () => {
+    database.setLog.findMany.mockResolvedValue([]);
+    await createExport("u1", "MONTHLY_REPORT", { storage, now: NOW });
+    expect(database.workout.findMany.mock.calls[0][0].where).toMatchObject({
+      userId: "u1",
+    });
+    expect(database.setLog.findMany.mock.calls[0][0].where).toMatchObject({
+      workout: { userId: "u1" },
+    });
+    expect(database.setLog.groupBy.mock.calls.length).toBe(0);
   });
 });

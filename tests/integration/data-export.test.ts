@@ -32,6 +32,8 @@ import { GET as downloadPhoto } from "@/app/api/photos/[id]/download/route";
 import { createExport } from "@/lib/exports/create";
 import { EXPORTS_KEPT } from "@/lib/exports/limits";
 import { prisma as db } from "@/lib/prisma";
+import { loadMonthlyReportInput } from "@/lib/report/load";
+import { buildMonthlyReport } from "@/lib/report/summary";
 
 const prefix = `export-${randomUUID()}`;
 const exerciseId = `${prefix}-squat`;
@@ -202,5 +204,77 @@ describe("downloads on PostgreSQL (one user never reaches another's file)", () =
     expect((await call(downloadPhoto, String(photo.id))).status).toBe(
       NOT_FOUND,
     );
+  });
+});
+
+describe("monthly report on PostgreSQL", () => {
+  const MONTH = "2026-11";
+  const BEFORE = 100;
+  const OCTOBER_BEST = 120;
+  const NOVEMBER_LIFT = 110;
+  const NOVEMBER_BEST = 130;
+  const LAST_EVENING = 60;
+  const SESSIONS = 3;
+  // The helper also logs one set in an unfinished workout on 8 November.
+  const SETS = SESSIONS + 1;
+
+  function lift(userId: string, startedAt: string, weightKg: number) {
+    return db.workout.create({
+      data: {
+        userId,
+        startedAt: new Date(startedAt),
+        finishedAt: new Date(startedAt),
+        sets: { create: [{ exerciseId, setNumber: 1, reps: REPS, weightKg }] },
+      },
+    });
+  }
+
+  it("counts the Toronto month, beats only earlier history, and ignores other users", async () => {
+    const { user } = await athlete();
+    const other = await athlete();
+    await lift(user.id, "2026-10-15T17:00:00Z", BEFORE);
+    // 22:00 on 31 Oct in Toronto is already 1 Nov in UTC: October's best, not November's.
+    await lift(user.id, "2026-11-01T02:00:00Z", OCTOBER_BEST);
+    await lift(user.id, "2026-11-10T17:00:00Z", NOVEMBER_LIFT);
+    await lift(user.id, "2026-11-20T17:00:00Z", NOVEMBER_BEST);
+    // 22:00 on 30 Nov in Toronto is already 1 Dec in UTC: still November.
+    await lift(user.id, "2026-12-01T03:00:00Z", LAST_EVENING);
+    await lift(other.user.id, "2026-11-12T17:00:00Z", NOVEMBER_BEST * 2);
+
+    const input = await loadMonthlyReportInput(user.id, MONTH);
+    expect(input.sessions).toBe(SESSIONS);
+    expect(input.sets).toHaveLength(SETS);
+    expect(input.priorBestKg).toEqual({ [exerciseId]: OCTOBER_BEST });
+
+    const report = buildMonthlyReport(input);
+    expect(report.personalBests).toEqual([
+      expect.objectContaining({
+        weightKg: NOVEMBER_BEST,
+        previousKg: OCTOBER_BEST,
+      }),
+    ]);
+    expect(report.muscles[0]).toMatchObject({
+      muscle: "quadriceps",
+      sets: SETS,
+    });
+  });
+
+  it("stores the report in R2 and lets only its owner download it", async () => {
+    const owner = await athlete();
+    const intruder = await athlete();
+    const row = await createExport(owner.user.id, "MONTHLY_REPORT", {
+      storage: files,
+    });
+    expect(row.kind).toBe("MONTHLY_REPORT");
+    expect(files.files.get(row.r2Key)?.contentType).toBe("application/pdf");
+
+    session.userId = owner.user.id;
+    const mine = await call(downloadExport, row.id);
+    expect(mine.status).toBe(OK);
+    expect(mine.headers.get("content-disposition")).toContain(
+      "fitnesscoach-monthly-report-",
+    );
+    session.userId = intruder.user.id;
+    expect((await call(downloadExport, row.id)).status).toBe(NOT_FOUND);
   });
 });

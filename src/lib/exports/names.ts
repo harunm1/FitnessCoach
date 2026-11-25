@@ -1,4 +1,5 @@
 import { dayKey } from "@/lib/progress/dates";
+import { monthOf } from "@/lib/report/month";
 
 // The three kinds of export (D33). The Prisma enum `ExportKind` has the same values.
 export const EXPORT_KINDS = [
@@ -40,7 +41,10 @@ export const exportContentType = (kind: ExportKind) => KINDS[kind].contentType;
 // A name built from the kind and the Toronto day, never from anything the user typed.
 export function exportFileName(kind: ExportKind, createdAt: Date): string {
   const { slug, extension } = KINDS[kind];
-  return `fitnesscoach-${slug}-${dayKey(createdAt)}.${extension}`;
+  // A report covers a month, so its name carries the month; the files are by day.
+  const when =
+    kind === "MONTHLY_REPORT" ? monthOf(createdAt) : dayKey(createdAt);
+  return `fitnesscoach-${slug}-${when}.${extension}`;
 }
 
 // A random name in the user's own folder, so keys neither clash nor can be guessed.
