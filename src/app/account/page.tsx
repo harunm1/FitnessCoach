@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import LocalTime from "@/components/LocalTime";
 import { BillingPanel } from "@/components/auth/billing-panel";
@@ -293,6 +294,11 @@ export default async function AccountPage({
                   All three are off until you turn them on.
                 </p>
                 <RestAlertsForm />
+              </div>
+              <div className={styles.securityBox}>
+                <h3 className={styles.cardTitle}>Your data</h3>
+                <p>Download your workouts and coach conversations.</p>
+                <Link href="/account/data">Open Your data</Link>
               </div>
               <div className={styles.securityBox}>
                 <h3 className={styles.cardTitle}>A secure foundation</h3>
