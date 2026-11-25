@@ -267,8 +267,9 @@ model Workout {
   // The imported workout's start time and title, so uploading a file twice adds nothing.
   importKey       String?
 
-  sets SetLog[]
-  run  RunLog?
+  sets          SetLog[]
+  queuedSetKeys QueuedSetKey[]
+  run           RunLog?
 
   // One open workout per plan (#76): Start looks for an open workout, then creates one,
   // so two taps could open two. Per plan, not per user: a plan switch leaves the old
@@ -312,6 +313,21 @@ model SetLog {
   // One row per set, so saving the same set again after a dropped connection updates
   // it instead of logging it twice (#42).
   @@unique([workoutId, exerciseId, setNumber])
+}
+
+// Every clientId the offline queue has applied (D31): crypto.randomUUID() from the device,
+// one per set attempt. One row per key, written in the same transaction as the set, so a
+// replay of any earlier attempt (not only the latest edit) is answered "already saved"
+// and can never overwrite a later edit. Removed with the workout.
+model QueuedSetKey {
+  workoutId  Int
+  workout    Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  clientId   String
+  exerciseId String
+  setNumber  Int
+  createdAt  DateTime @default(now())
+
+  @@id([workoutId, clientId])
 }
 
 // One run per workout; the unique workoutId makes a repeated save idempotent (#42).
