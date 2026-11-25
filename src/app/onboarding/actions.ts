@@ -10,6 +10,7 @@ import { buildDefaultPlan } from "@/lib/coach/defaultPlan";
 import { saveHybridQuizWeek } from "@/lib/onboarding/hybridQuiz";
 import { verifyPlan } from "@/lib/coach/verify";
 import { requireUser } from "@/lib/auth/session";
+import { parseReportedJoints } from "@/lib/coach/jointSubstitutions";
 
 export async function saveQuizProfile(
   _previousState: QuizActionState,
@@ -39,6 +40,7 @@ export async function saveQuizProfile(
       select: {
         id: true,
         category: true,
+        cues: true,
         level: true,
         equipment: true,
         primaryMuscles: true,
@@ -61,6 +63,7 @@ export async function saveQuizProfile(
       avoidMuscles: muscleNames.filter((muscle) =>
         injuryText.includes(muscle.toLowerCase()),
       ),
+      reportedJoints: parseReportedJoints(parsed.data.injuries),
     };
 
     if (parsed.data.trainingMode !== TrainingMode.GYM) {
@@ -143,6 +146,7 @@ export async function saveQuizProfile(
                   sets: exercise.sets,
                   reps: exercise.reps,
                   restSeconds: exercise.restSeconds,
+                  substitutionReason: exercise.substitutionReason,
                 })),
               },
             })),

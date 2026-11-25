@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import LocalTime from "@/components/LocalTime";
 import { BillingPanel } from "@/components/auth/billing-panel";
@@ -10,6 +11,8 @@ import { ChangePasswordDialog } from "@/components/auth/change-password-dialog";
 import { ProfilePhotoForm } from "@/components/auth/profile-photo-form";
 import { AppNav } from "@/components/nav/AppNav";
 import { loadAvatar } from "@/lib/photos/avatar";
+import { UnitsForm } from "@/components/auth/units-form";
+import { loadUnitPrefs } from "@/lib/units/prefs";
 
 // A request-time display snapshot; permission checks remain in the server guard.
 function trialDaysRemaining(endsAt: Date | null, active: boolean) {
@@ -26,6 +29,7 @@ export default async function AccountPage({
   const { user, access } = await requireAccount();
   const params = await searchParams;
   const avatar = await loadAvatar(user.id);
+  const units = await loadUnitPrefs(user.id);
   const firstName = user.name.trim().split(/\s+/)[0] || "athlete";
   const initials =
     user.name
@@ -277,6 +281,16 @@ export default async function AccountPage({
                   </dd>
                 </div>
               </dl>
+              <div className={styles.securityBox}>
+                <h3 className={styles.cardTitle}>Units</h3>
+                <p>Weights and distances are shown and typed in these units.</p>
+                <UnitsForm {...units} />
+              </div>
+              <div className={styles.securityBox}>
+                <h3 className={styles.cardTitle}>Your data</h3>
+                <p>Download your workouts and coach conversations.</p>
+                <Link href="/account/data">Open Your data</Link>
+              </div>
               <div className={styles.securityBox}>
                 <h3 className={styles.cardTitle}>A secure foundation</h3>
                 <p>

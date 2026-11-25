@@ -58,6 +58,31 @@ describe("buildDefaultPlan", () => {
     ).toEqual(["barbell-squat", "bench-press"]);
   });
 
+  it("preserves library order when filling missing slots without a reported joint", () => {
+    const accessories: CategorisedExercise[] = [
+      {
+        id: "first",
+        category: "strength",
+        equipment: "body only",
+        primaryMuscles: ["biceps"],
+        secondaryMuscles: [],
+      },
+      {
+        id: "second",
+        category: "strength",
+        equipment: "body only",
+        primaryMuscles: ["triceps"],
+        secondaryMuscles: [],
+        cues: ["Keep control"],
+      },
+    ];
+    expect(
+      buildDefaultPlan(profile, accessories).days[0].exercises.map(
+        (exercise) => exercise.exerciseId,
+      ),
+    ).toEqual(["first", "second"]);
+  });
+
   it("rejects a library that cannot provide two safe exercises for every day", () => {
     expect(() => buildDefaultPlan(profile, library.slice(0, 1))).toThrow(
       "Not enough compatible exercises for Full body",
@@ -70,6 +95,75 @@ describe("buildDefaultPlan", () => {
     for (const exercise of plan.days.flatMap((day) => day.exercises)) {
       expect(exercise.rpe).toBe(7);
     }
+  });
+
+  it("fails closed when shoulder pain has no suitable mapped push alternative", () => {
+    const jointProfile: VerifyProfile = {
+      ...profile,
+      reportedJoints: ["shoulder"],
+    };
+    const jointLibrary: CategorisedExercise[] = [
+      {
+        id: "Barbell_Bench_Press_-_Medium_Grip",
+        category: "strength",
+        equipment: "barbell",
+        primaryMuscles: ["chest"],
+        secondaryMuscles: ["triceps"],
+      },
+      {
+        id: "Incline_Push-Up",
+        category: "strength",
+        equipment: "body only",
+        primaryMuscles: ["chest"],
+        secondaryMuscles: ["triceps"],
+      },
+    ];
+
+    expect(() => buildDefaultPlan(jointProfile, jointLibrary)).toThrow(
+      "Not enough compatible exercises",
+    );
+  });
+
+  it("records an exact reason for a real same-pattern hip substitution", () => {
+    const jointProfile: VerifyProfile = {
+      daysPerWeek: 1,
+      equipment: ["body only"],
+      avoidMuscles: [],
+      reportedJoints: ["hip"],
+    };
+    const jointLibrary: CategorisedExercise[] = [
+      {
+        id: "Reverse_Crunch",
+        category: "strength",
+        equipment: "body only",
+        primaryMuscles: ["abdominals"],
+        secondaryMuscles: [],
+      },
+      {
+        id: "Crunches",
+        category: "strength",
+        equipment: "body only",
+        primaryMuscles: ["abdominals"],
+        secondaryMuscles: [],
+      },
+      {
+        id: "Incline_Push-Up",
+        category: "strength",
+        equipment: "body only",
+        primaryMuscles: ["chest"],
+        secondaryMuscles: ["triceps"],
+      },
+    ];
+
+    const plan = buildDefaultPlan(jointProfile, jointLibrary);
+    expect(
+      plan.days[0]?.exercises.map((exercise) => exercise.exerciseId),
+    ).toContain("Crunches");
+    expect(
+      plan.days[0]?.exercises.find(
+        (exercise) => exercise.exerciseId === "Crunches",
+      )?.substitutionReason,
+    ).toBe("avoids hip loading");
   });
 });
 
@@ -352,7 +446,10 @@ describe("buildDefaultPlan sizes and verification (#139)", () => {
     ).days.map((day) => day.exercises.length);
 
   it("adds 0, 1 and 3 accessory muscles for beginner, intermediate and expert", () => {
-    expect(sizes("BEGINNER")).toEqual([3, 3, 3]);
+    // The fixture's lifts are INTERMEDIATE, above a beginner, so only its four BEGINNER
+    // kettlebell and bodyweight moves are left; Pull and Legs fill their second slot with
+    // the kettlebell floor press (#103).
+    expect(sizes("BEGINNER")).toEqual([2, 2, 2]);
     expect(sizes("INTERMEDIATE")).toEqual([4, 4, 4]);
     expect(sizes("EXPERT")).toEqual([6, 6, 5]);
     expect(sizes("EXPERT", 1)).toEqual([7]);

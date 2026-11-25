@@ -216,6 +216,26 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 
 **Did with it:** checked that every earlier case still passes, wrote the decision as D15 in `docs/ARCHITECTURE.md` with the option it beat, and kept the check-in wording short with 9-8-8 and 911 in it. Nothing in the app calls the screen yet; the chat code (#53) does next. A second fresh review found more missed crisis and cardiac wordings, a distress reading from the model replacing the eating-support and pain-stop replies, and crisis messages softened to the check-in by any gym word. I kept the design and tightened it: a reply that already gives specific help now outranks a distress reading; exaggeration counts only when tied to the session and nothing states intent; any message with crisis words that would get the off-topic redirect gets the check-in; and every new wording became a test that failed first (64).
 
+### 8 November 2026, indexes from the session queries (issue #76)
+
+**Before asking:** the design review listed six indexes. I wanted each one tied to a query that runs on `main` today, not added in case it is needed, and a before-and-after query plan on realistic row counts, because on the seeded demo data every table is small enough that Postgres scans it whatever indexes exist.
+
+**Asked:** to list every Prisma read on `main` with its filter and sort, to capture the SQL Prisma actually sends for the session queries, and to check the current Prisma 7 and PostgreSQL docs on `@@index`, migrations and foreign-key indexing.
+
+**Got:** nine reads on `Plan` and `Workout` in `src/app/session/` (six in `actions.ts`, three in `page.tsx`), all sequential scans at 5,000 users and 100,000 workouts; no query on `main` touches `Conversation` or `ProgressPhoto`, and `SetLog.exerciseId` and `PlanExercise.exerciseId` are only reached through unique constraints that already lead with `workoutId` or `planDayId`; the PostgreSQL 16 docs confirm a foreign key gets no index of its own.
+
+**Did with it:** added the two composite indexes the queries justify in one migration, kept the other four out until a pull request adds a query that needs them, and recorded `EXPLAIN ANALYZE` before and after in the pull request. Every session query now reads through an index; the sorts left run on one to four rows.
+
+### 10 November 2026, one active plan, one open workout and range checks in the database (issue #76)
+
+**Before asking:** my schema audit found that two writers deactivate the old plan and insert a new one under different locks, that Start can open two workouts on one plan, and that Postgres accepted an RPE of 99 and a negative weight. I decided the rules belong in the database as constraints, not in more locks in the code, and that each fix needed a test that fails on the current schema first, run against a real PostgreSQL 16.
+
+**Asked:** for the current Prisma 7 syntax for partial unique indexes and whether Prisma can declare CHECK constraints, for a review of the migrations against migration-safety rules, for the query plans of the session queries after the new indexes, and for a test that reproduces each race deterministically instead of by luck. The targeted help came from these tools: Context7 and the Firecrawl connector for the Prisma pages on `partialIndexes` and the database-features matrix and the PostgreSQL page on deadlocks; the `opinionated-prisma` schema-design, indexing, migration-safety and transactions skills; the `coding-skills` isolation-anomalies and expand-contract skills; the `agentic-sdlc` testing-vitest skill; the `backend-design` review-migration and explain-this-query skills and its schema-reviewer agent; and the `pr-review-toolkit` review (code, tests, comments and silent failures) as the independent check.
+
+**Got:** `where` on `@@unique` behind the `partialIndexes` Preview, with a type-checked `{ finishedAt: null }` form; CHECK is "Not yet" in the Prisma schema and Migrate, so it needs a hand-written migration. The first race test passed on the current schema because the quiz's Profile insert locked the User row; with an existing Profile it failed in two different ways depending on which save ran first: two active plans when the coach save ran first, and a deadlock that aborted the coach save when the quiz save ran first.
+
+**Did with it:** added a data migration that keeps the newest active plan and open workout, the two partial unique indexes and two foreign-key indexes, and fifteen CHECK constraints on my tables, leaving the workout's running columns to their owner. I changed the plan for `saveWeek`: it can never see the unique violation, because it holds the User row every plan insert needs, so it retries once on the deadlock abort instead. The reviews then showed that PostgreSQL does not promise which side a deadlock aborts, so I pinned each outcome in its own test and reworded the comments; that a deleted row could pass my first dedupe check, which I fixed and showed failing on the earlier migration; and that a workout with only notes would have been deleted, which it no longer is. Of the seven session queries from #78, Q1 and Q7 now read through the active-plan index and Q2 and Q5 through the open-workout index; every query still reads through an index in under 0.3 ms on the #78 test data.
+
 ### 8 November 2026, shadcn/ui in the foundation (issue #75)
 
 **Before asking:** the course requires shadcn/ui or a similar library, and `main` had none. I decided to set it up once in the foundation with the same choices as my Assignment 4 (Base UI, Nova preset), so the project and the assignment follow one convention, and to move only the root page onto the components so no teammate's screen changes under them.
@@ -749,3 +769,161 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Did with it:** A separate review agent that had not seen the draft checked it against the code and found three errors that I fixed: "Why this plan" is not on any screen on main, the quiz is reached from Edit profile and shows a saved message with a link rather than the plan, and the cached plans do not back the chat step. I also fixed the backup step numbers, the missing Start workout click and the 4:40 cut. The changed lines were re-read by me only. The signed-in walk, the timings and the seed account are not done: creating the demo account's mailbox was refused, so they wait on that.
 
 **Tools:** gh, git, Prettier, Playwright, one general-purpose review agent. No skills.
+
+## 24 November (evening): weight hint for more equipment (#144)
+
+**Asked:** To finish the part of #144 that was left: the KG field hint for foam roll, exercise ball, bands and "other" exercises.
+
+**Got:** A change to `src/lib/workout/weightPlaceholder.ts` and its test. Foam roll shows Bodyweight; bands, exercise ball and "other" show "Optional kg"; everything else except body only still shows "Load in kg". The equipment values were checked against the free-exercise-db file on 24 November. AI drafted the code and tests.
+
+**Did with it:** The two new tests failed before the change. A review agent that had not seen the draft found that two exercise-ball moves are weighted and that the first hint text would be cut off in the narrow field; both fixed.
+
+**Tools:** gh, git, Prettier, ESLint, tsc, Vitest, one review agent. No skills.
+
+## 24 November (evening): photo enlarge and the body weight log
+
+**Asked:** For two Progress page features under #16: clicking a progress photo opens it full size in an accessible dialog, and a body weight log (date, kg, optional note) with a line chart. Design first in `docs/ARCHITECTURE.md`, tests first, no new dependency.
+
+**Got:** `PhotoViewer` on the Base UI dialog already in the project, mounted in the Progress strip and the gallery. Decision D24 (a new `BodyWeight` table, one row per user per day, rather than reusing the photo's weight column), migration `20261124190000_add_body_weight` with CHECKs, the `logBodyWeight` Server Action, the form and a small SVG chart. AI wrote the code and tests from my brief.
+
+**Did with it:** Each change went through a review agent that had not seen the work. The photo review found three errors, which were fixed test-first: the dialog left the dark theme, a long note could not be reached on a phone, and the focus trap had no test. The weight review found the chart caption printing values like 63.099999999999994, and that a refused entry wiped the form. A second agent checked each fix. Lint, type check, format check and the targeted tests ran before each push, and CI was green on the exact commit before it reached main.
+
+**Tools:** gh, git, Prettier, ESLint, tsc, Vitest, Prisma (validate, migrate diff), review agents (pr-review-toolkit code-reviewer, a blind pass and a delta check per change). No skills.
+
+## 24 November (evening): logging a run by hand
+
+**Asked:** For a way to record a run without a watch link. My test that day showed that a plan with an easy run had nowhere to log the run unless a session was started first. The brief: a form on the Progress page (day, km, h:mm:ss, optional effort and note), the pace shown, the latest five runs listed, and the plan's run day marked done. Design first, tests first, and the session screen left to its owner.
+
+**Got:** Decision D27. A run is a finished `Workout` plus its `RunLog` row (the table already existed, with checks, but nothing wrote to it). This beat a new table and beat the workout row alone. Plan days are a rotation, not dates, so the run completes the plan's next day when that day is a run. Also: the `logRun` Server Action, the form and list, migration `20261124200000_run_log_upper_bounds` (300 km, 24 hours), and a Postgres integration test. AI wrote the code and tests from my brief.
+
+**Did with it:** Each new test failed before the code existed. A review agent that had not seen the work read the change and found no errors and three should-fix items. The day view showed a made-up noon start time, a two-hour run showed as 125:30, and a save racing Start on the session screen could take a plan day twice. The first two were fixed test-first; the race is written into D27 as a known cost, with a note for the session screen's owner. A second agent checked the fixes. Lint, type check, format check and the targeted tests ran before the push, and CI was green on the exact commit before it reached main.
+
+**Tools:** git, gh, Prettier, ESLint, tsc, Vitest, Prisma (validate), review agents (pr-review-toolkit code-reviewer, a blind pass and a delta check). No skills.
+
+## 24 November (evening): saved coach replies for the live demo
+
+**Asked:** For the last code gap on #59 before the 4 December demo: when demo mode is on and both model providers fail or time out, the coach answers the scripted demo question with a stored reply, marked on screen as a saved example and never shown as live, still passing the reply check, and never used outside demo mode. Design first, tests first.
+
+**Got:** A design note under D12 in `docs/ARCHITECTURE.md` (where the replies live, how they are keyed, how they are kept honest, and the options it beat), `src/lib/coach/demoReplies.ts` with its JSON file, a recording script `scripts/demo-replies.ts`, a new `example` event on the chat stream, and the label "Saved example, not a live reply" in the chat screen's notice. The three stored replies are real coach replies to the three quick replies, recorded once through the normal chat pipeline (three Groq calls). AI wrote the code and tests from my brief.
+
+**Did with it:** Wrote the failing tests first for the stream, the route, the client protocol, the form and the notice, and checked one later test by reverting its line of code. Lint, the type check, the format check and the coach tests (1,186) passed before review. A review agent that had not seen the work found no error. It found one test that could not fail: it checked the live reply bubble after the bubble was already gone, so it now watches every change on the page and fails when the stored reply is made to show in the bubble. It also found that the stored reply to "Swap this exercise" is a question back, so the demo script now taps "Too easy". A second agent checked those fixes. Not done: the network-off rehearsal and the verified demo account (#59), and the "Too easy" reply's claim that a cable face pull uses the same equipment as a dumbbell raise, which passes the checks but is loose.
+
+**Tools:** gh, git, Prettier, ESLint, tsc, Vitest, tsx (one recording run), review agents (pr-review-toolkit code-reviewer, a blind pass and a delta check). No skills.
+
+## 24 November (evening): the coach turning away a workout question
+
+**Asked:** Why the coach sometimes answered "explain one of the workouts for me" and sometimes did not. The brief: find which path ended each failed turn before changing anything, then fix the top cause test-first.
+
+**Got:** A diagnosis run first. Production records could not be read from this machine, so the real chat pipeline was run six times on the same question with a sample profile. All six turns got the off-topic redirect before any model call, so they left no coach record. The training word list held "workout", "exercise" and "weight" only as whole words. "Explain today's workout" was answered and "explain one of the workouts" was turned away, so to a user the answer looked random. The fix adds a second list of plural and verb forms ("workouts", "exercises", "exercising", "weights") that only keeps a message out of the off-topic redirect, leaves out "plans", "work out" and "routine" as too loose, and records the rule in the architecture doc. AI wrote the diagnostic run, the test cases and the pattern change.
+
+**Did with it:** Five new allow cases failed before the change and pass after it; four redirect cases and three check-in cases guard the boundaries. The targeted coach tests, lint, type check and format check ran before review. A review agent that had not seen the work found two problems. The first version put the new words in the main training list, so a message such as "I want to give up on my workouts" lost the check-in that names 9-8-8 and went to the model. It also let "work out a time for dinner" through. Both were fixed test-first (five new cases failed before the fix), and a second agent checked the fix.
+
+**Tools:** git, gh, tsx, Vitest, ESLint, tsc, Prettier, review agent (pr-review-toolkit code-reviewer). No skills.
+
+## 24 November (evening): checking the advanced-features section
+
+**Asked:** Which advanced features the repo really has, with the demo path and the failure path of each, and anything that would look wrong to a marker.
+
+**Got:** An audit that read the proposal, the architecture doc, the plan and the code for sign-in with tiers, the coach, streamed replies and photo processing. The architecture doc still listed notifications, a then-vs-now photo image and Redux Toolkit as planned, and none of them exist. AI rewrote that section to say what is built and what is not claimed.
+
+**Did with it:** Checked each claim against the code (the tier check in the coach route, the sentence-by-sentence stream, the sharp resize that drops location data). The targeted tests for those areas (33 files, 375 tests) pass; no browser run was possible.
+
+**Tools:** git, Vitest, Prettier. No skills.
+
+## 24 November (evening): workout history
+
+**Asked:** Why a past workout cannot be opened from the live Progress page, the smallest fix for that, and a workout history: a paged list, a page for each workout that only its owner can open, and if time allowed, a page for each exercise over time.
+
+**Got:** A diagnosis from the code and the Next.js 16 documentation bundled with the project. On a phone the tapped day's details render under the calendar, and a link keeps the scroll position, so the change happens out of sight. A workout card also had no link. Decision D29: calendar days link to the details' heading, each workout card links to its page, and three new routes: `/history`, `/history/[workoutId]` and `/history/exercise/[exerciseId]`. Every lookup filters on the signed-in user, and a miss answers 404.
+
+**Did with it:** Wrote the failing tests first (loader queries, the pages' 404s, the new links), then the code. Ran lint, the type check, the format check and the affected tests. A review agent that had not seen the work read the branch before the pull request was marked ready. The integration test for owner-only access runs in CI. There was no live browser check, because the local database was down.
+
+**Tools:** gh, git, Prettier, ESLint, tsc, Vitest, Next.js bundled docs, review agents (pr-review-toolkit code-reviewer). No skills.
+
+## 25 November: live-site polish from the 24 November feedback (items 2, 3, 5, 8, 9)
+
+**Asked:** Five fixes from the feedback on the live site, one commit each and tests first: the rest timer starts when a set is logged, the coach panel under Explore by Muscle shows its chat box on open, the progress photo opens near full screen (#159), the Hevy import says what it did after Import, and more Hevy exercise names match the library.
+
+**Got:** A small helper that works out the rest time left after a set (`src/lib/workout/restRemaining.ts`), so a reload an hour later does not restart the timer; a Skip rest button. The body-map panel opens the first exercise of a picked muscle, so the question box is there at once. A photo dialog of 96% of the viewport. A result panel after Import that takes focus and lists what was left out and why (`src/lib/import/report.ts`). A spelling-tolerant name key and a 36-name alias table (`src/lib/import/matchKey.ts`, `aliases.ts`); on one real 260-workout export the names with no library match fell from 51 of 80 to 6.
+
+**Did with it:** Wrote the failing test for each item first and watched it fail for the right reason. Checked every alias target against the exact names in the free-exercise-db file fetched that day (876 exercises), and checked that no name that matched before moved to another exercise. The export itself was used only as a local input and none of its rows are in the repository; the fixtures are made up. Unmatched names are still listed for the user to map, because a wrong automatic match would put sets under the wrong exercise. The cause of the page "silently resetting" after Import could not be reproduced here; the panel now takes focus so the result cannot be missed.
+
+**Tools:** git, gh, Vitest, ESLint, tsc, Prettier. No skills.
+
+## 25 November: evidence map and live database check for the presentation
+
+**Asked:** A table that ties each line of the presentation rubric to what we show live, the file and database table behind it, and a fallback; a read-only script that shows the newest set and photo rows so the presenter can prove a save in the database; a 90-second demo script.
+
+**Got:** `docs/demo/DEMO_EVIDENCE.md` and `docs/demo/DEMO_SCRIPT.md`, and a script (`scripts/demo-db-peek.ts`) that runs its queries inside a read-only transaction. A first version printed the first line of a database error, which can hold a host or user name; a review agent that had not seen the work caught that and a missing test of the read-only guarantee.
+
+**Did with it:** Checked every file and model named in the table exists on main. Wrote the script's tests first and watched them fail; added a test on a real PostgreSQL that sends only read statements and fails when the read-only line is removed. Ran the script against a scratch database to confirm a write is refused. The signed-in steps on the live site were not rehearsed because no demo account exists, and the script has not been run on the production database.
+
+**Tools:** git, gh, Vitest, Prettier, ESLint, tsc, Playwright (public pages only), Docker (scratch PostgreSQL), review agents (pr-review-toolkit code-reviewer). No skills.
+
+## 25 November: Sign in with Google
+
+**Asked:** Let people sign in with Google so they do not have to create an email and password account, working for the 26 November demo; email and password stays, and the four tiers keep working.
+
+**Got:** Decision D32 and Better Auth's Google provider, switched on only when both `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` exist (otherwise the app runs as before and the button is hidden). A Google email that matches an existing account is linked only when that account's email is already verified and Google reports it verified; a Google identity with an unverified email creates no user. New Google users get the FREE tier. A "Continue with Google" button above the email form on the sign-in and sign-up pages, using Google's own G file, and `docs/GOOGLE_OAUTH_SETUP.md` with the console steps. Creating the Google client and setting the two variables in Vercel are done by hand.
+
+**Did with it:** Read the Better Auth Google and account-linking docs (v1.7.15, the project pins 1.7.14) and the installed linking code, and Google's branding and console help pages, all on 25 November. Wrote the tests first and watched them fail: the callback test runs the real Better Auth handler against PostgreSQL with only Google's token endpoint faked; turning off the verified-email rule makes the linking test fail. A review agent that had not seen the work found no error but pointed out that an unverified Google email still created a user and sent a verification email; that is now refused, with a test written first. Not done: a click-through of the real Google consent screen (no client exists yet) and a test of the sign-in page's error handling on its own.
+
+**Tools:** git, gh, Vitest, Playwright spec (runs in CI), ESLint, tsc, Prettier, Context7, Firecrawl (Google help pages), review agents. No skills beyond reading Better Auth's docs.
+
+## 25 November: units preference (kg or lb, km or mi)
+
+**Asked:** A setting for pounds or kilograms and miles or kilometres, with every logged value stored in one unit, shown and typed in the chosen one, and the Hevy preview following the setting.
+
+**Got:** Decision D30: weights stay in kilograms and distances in kilometres in the database; two new `User` columns (default pounds and kilometres) say how they are shown. Pure conversion helpers, a settings action and a toggle on the account page, and the session, Progress, photos, history and import screens changed to follow the setting. Forms send the unit they displayed, and the server converts typed pounds and miles back before the existing checks.
+
+**Did with it:** Wrote the failing tests first (the conversion helpers, each action, the display of each screen) and checked that they failed without the change. Looked up the pound and mile factors in NIST SP 811 Appendix B.8. A review agent that had not seen the work found one real fault: the saved-run form showed miles to two places, so saving it unchanged turned 10 km into 9.99 km. It was fixed test-first and a second agent checked the fix. Lint, type check, format check and the unit tests pass; the migration from empty runs in CI. No live browser check.
+
+**Tools:** git, gh, Prisma, Vitest, tsc, ESLint, Prettier, review agents. No skills beyond the migration-safety guide.
+
+## 25 November: downloads (exports and photo download)
+
+**Asked:** The course lists "uploading and downloading files" for cloud storage and the app only uploaded and showed photos. Add downloads tied to database records: a Download button on the enlarged photo, and a "Your data" page that exports workout history and coach conversations as CSV, stored in the R2 bucket with a database row, listed with Download links; every download checked so one user can never reach another's file.
+
+**Got:** Decision D33. A new `DataExport` table (additive migration), CSV built on the server with proper quoting and a guard against spreadsheet formulas, the file stored in R2 with its attachment header, and two download routes (`/api/exports/[id]/download`, `/api/photos/[id]/download`) that look the row up by id and the signed-in user, sign a 60-second link and redirect, or send the file themselves if R2 does not honour the header. The monthly PDF report is a separate change that follows.
+
+**Did with it:** Wrote the failing tests first for the CSV, file names, headers, storage options and the rows built (they failed because the modules did not exist), then the code. Read the R2 S3 compatibility page and found that R2 lists `Content-Disposition` for uploads but no response-header override on download, with a 2024 community report of it being ignored, so the design stores the header on the file and checks the link before relying on it. Read the OWASP CSV injection page and chose its Excel-resistant tab prefix. An integration test on PostgreSQL covers each user getting only their own rows and a 404 for another user's export or photo; removing the user filter from either route makes it fail.
+
+**Tools:** git, gh, Prisma, Vitest, tsc, ESLint, Prettier, Firecrawl (R2 and OWASP pages), review agents. Skill: opinionated-prisma migration-safety.
+
+## 25 November: monthly progress report (PDF)
+
+**Asked:** A monthly progress report as a PDF, made on the server, stored and listed like the CSV exports: sessions, sets and volume per muscle group, personal bests, a coach summary only if one is already stored.
+
+**Got:** Decision D34. `pdf-lib` draws the report with the standard fonts; the numbers come from pure code in `src/lib/report/`, tested without a database, and a PostgreSQL test covers the Toronto month edges and an earlier best in the padding day. No coach summary is stored anywhere on `main`, so the line is not in the report.
+
+**Did with it:** Wrote the tests first (they failed because the modules did not exist). Read the pdf-lib documentation through Context7 and found that the standard fonts throw on characters outside Windows-1252, so the report draws "?" for those instead of failing. Checked the npm registry: `pdf-lib` is MIT, pure JavaScript, last released May 2022.
+
+**Tools:** git, gh, Prisma, Vitest, tsc, ESLint, Prettier, Context7 (pdf-lib), npm registry, review agents.
+
+## 25 November: live-site bugs from the audit (B1 to B6)
+
+**Asked:** Fix six faults found on the deployed site: absurd workout durations, a 0.02 kg set, coach replies cut off, a follow-up question refused as off-topic, a Sign out button invisible in light mode, and two theme toggles on the import page.
+
+**Got:** One commit per fault. Durations come from one helper: start to finish only, a run uses its own recorded time, and a workout left open longer than six hours reads "Not timed" (history, Progress and the session screen). A set weight under 0.25 kg is refused with a message that names the minimum. The streaming reader keeps a last server-sent event that has no newline after it. A short question made only of technique words and words of the coach's last reply is no longer refused. Sign out takes its colours from the account tokens with the app foreground as fallback (the global `--muted` is a near-white background). The import page no longer passes a second theme toggle to the nav.
+
+**Did with it:** Wrote each failing test first and watched it fail. A review agent that had not seen the work found no errors and five should-fix points; the session screen showing a different run time from history, a zero-length imported workout reading "1 min", and the weight message and input minimum were fixed test-first.
+
+**Limits, said plainly:** The cause of the 0.02 kg set was not found in the import or units code, so the change blocks new entries only; the existing row stays as it is. The cut-off replies are fixed for a body that ends without a newline; that this is what happened live is not confirmed. The off-topic fix widens a word-list rule and does not reproduce the live thread. The six-hour and 0.25 kg limits are my choices, not measured. No live browser check.
+
+**Tools:** git, gh, Vitest, tsc, ESLint, Prettier, review agent (pr-review-toolkit code-reviewer). Skill: systematic-debugging.
+
+## 25 November: logging sets without a connection (D31)
+
+**Asked:** A user who loses the connection in the middle of a workout must not lose sets, and it has to be shown in the demo: sets logged offline wait on the device, sync when the connection returns, and a replay or double tap never stores a set twice.
+
+**Got:** A design recorded as D31 in `docs/ARCHITECTURE.md` before any code: a queue of logged sets in IndexedDB (localStorage when IndexedDB cannot open), each with a `clientId` from `crypto.randomUUID()`, replayed oldest first on page load, on the browser `online` event and after each new set, one replay at a time under a Web Lock. On the server a new action, `syncQueuedSet`, answers "already saved" for a known `clientId` and otherwise upserts the set and records its key in a new table, `QueuedSetKey`, in the same transaction (an additive migration). The first version kept the key in one column on `SetLog`; an independent review found that a late replay of an older edit could then overwrite a newer one, so every key is now kept. A status pill in the session view says Offline, Saved offline with N to sync, Syncing, or All sets synced, and the set list, the next set number and the rest timer include the queued sets. Service-worker Background Sync was considered and not used: MDN lists it as Limited availability (Chrome only), checked on 25 November.
+
+**Did with it:** Wrote the tests before the code and watched them fail: the queue's order, persistence and failure rules, the pill, the form, the server action against PostgreSQL (a replay and two copies arriving at once each leave one row; another user's workout, a finished workout and a reused key are refused), and a Playwright test that turns the browser offline, logs two sets, turns it back online and checks the database holds each set once. Two mutation checks on the final server code: without the stored key, 7 of the 18 server tests fail; without only the early key lookup, 1 fails, because the key's primary key still rolls a replay back inside the same transaction. While building, I found that waiting for the network before the form could take the next set would block logging on a weak signal, so the form now waits only for the device to store the set. The review also found that a request with no answer was neither shown nor retried, that a set saved just before Finish workout came back as failed, and that the form no longer worked before the page was interactive; each was fixed after a test that failed first. When the teammate pain-score feature (#92) landed on main the same afternoon, queued sets were made to carry the pain scores and the server applies the same stop rule. Added an optional offline step to `docs/DEMO_SCRIPT.md` with the DevTools clicks.
+
+**Tools:** git, gh, Vitest, Playwright, ESLint, tsc, Prettier, Prisma; MDN pages read on 25 November. Skills: idempotency and side effects, Prisma migration safety.
+
+## 25 November: competitor research (JEFIT, Hevy, Google Health, JuggernautAI)
+
+The program model needed evidence before the template and coach work, so I read each app's own pages: JEFIT's FAQ and logging page, Hevy's help centre, feature pages and App Store listing, Google's Health Coach help and developer pages for Fit, Fitbit and Health Connect, and JuggernautAI's home, pricing and App Store listing. Every page was read on 25 November and is dated in `docs/COMPETITORS.md`, which holds one table (feature by app, a source key in every cell), what FitnessCoach takes, and what it does differently, each line tied to an issue or task. Reviews and the apps' own comparison articles were left out as evidence. Findings that changed the plan: JEFIT already combines editable library plans with an adaptive 12-week plan, Hevy's Trainer says it is rule-based and not AI, and Hevy's camera overlays the last progress photo for matching the pose, which the camera task now takes. Google Fit's APIs and the Fitbit Web API are being retired, so we do not integrate with them. I recorded the program-model direction as D35 in `docs/ARCHITECTURE.md`. Limits: vendor claims, not tested in the apps; some cells come from search excerpts (marked in the sources table); JuggernautAI's FAQ answers did not load; Strong and Fitbod were not covered; Firecrawl credits ran out partway, so three pages were read with a plain fetch.
+
+**Tools:** Firecrawl (search, scrape), a plain page fetch, git. Skills: none beyond the task file.

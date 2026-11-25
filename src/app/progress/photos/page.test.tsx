@@ -43,7 +43,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(console, "error").mockImplementation(() => undefined);
   requireUser.mockResolvedValue({ id: "session-owner", name: "Free Demo" });
-  findUnique.mockResolvedValue({ image: null });
+  findUnique.mockResolvedValue({
+    image: null,
+    weightUnit: "KG",
+  });
   storage.get.mockReturnValue(new MemoryStorage());
   findMany.mockResolvedValue([]);
 });
@@ -80,6 +83,27 @@ describe("progress photos page", () => {
     expect(html).toContain("72.5 kg");
     expect(html).toContain("Week 4");
     expect(html).toContain('value="7"');
+    // Each photo opens full size (#16): a button named for its date and weight.
+    expect(html).toMatch(
+      /aria-label="Enlarge progress photo from Nov 12, 2026, 72\.5 kg"/,
+    );
+  });
+
+  it("shows a photo's weight in pounds when the user chose pounds (D30)", async () => {
+    findUnique.mockResolvedValue({ image: null, weightUnit: "LB" });
+    findMany.mockResolvedValue([
+      {
+        id: 7,
+        storageKey: "progress/session-owner/a.webp",
+        takenAt: new Date("2026-11-12T17:00:00Z"),
+        weightKg: { toString: () => "72.50" },
+        note: null,
+      },
+    ]);
+    const html = await render();
+    expect(html).toContain("159.8 lb");
+    expect(html).not.toContain("72.5 kg");
+    expect(html).toContain("Weight (lb, optional)");
   });
 
   it("shows dates in Toronto time", async () => {
@@ -102,7 +126,7 @@ describe("progress photos page", () => {
     const html = await render();
     expect(findUnique).toHaveBeenCalledWith({
       where: { id: "session-owner" },
-      select: { image: true },
+      select: { image: true, weightUnit: true },
     });
     expect(html).toContain("Free Demo");
     expect(html).toContain('data-testid="avatar-icon"');

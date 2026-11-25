@@ -540,17 +540,21 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1px solid var(--line);
+  border: 1px solid
+    var(--line, color-mix(in srgb, var(--foreground) 30%, transparent));
   border-radius: 9px;
   min-height: 44px;
   padding: 9px 14px;
   background: transparent;
-  color: var(--muted);
+  color: var(--text, var(--foreground));
   font-size: 14px;
   cursor: pointer;
 }
 .signOutButton:hover {
-  background: var(--subtle);
+  background: var(
+    --subtle,
+    color-mix(in srgb, var(--foreground) 8%, transparent)
+  );
 }
 .signOutButton:disabled {
   opacity: 0.6;
@@ -1446,4 +1450,55 @@
   .billingPlans {
     grid-template-columns: 1fr;
   }
+}
+
+/* "Continue with Google": light theme of Google's branding guidelines, fixed colours on purpose. */
+.googleBlock {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.googleButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 50px;
+  padding: 0 12px;
+  border: 1px solid #747775;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f1f1f;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.googleButton:hover:not(:disabled) {
+  background: #f2f2f2;
+}
+.googleButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+.googleMark {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+.socialDivider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.socialDivider::before,
+.socialDivider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
 }

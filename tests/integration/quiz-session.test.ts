@@ -637,6 +637,128 @@ describe("quiz and session authorization with PostgreSQL", () => {
     ).toMatchObject({ reps: 8, setNumber: 1 });
   });
 
+  it.each(["painDuringSession", "painNextMorning"])(
+    "saves a stop score in %s and blocks only that exercise",
+    async (painField) => {
+      const ownWorkout = await workout(
+        first.id,
+        await plan(first.id, "First plan", exercises[0], true),
+      );
+      await signIn(first);
+
+      const stopped = await logSet(
+        exercises[0],
+        idle,
+        form({
+          setNumber: "1",
+          reps: "8",
+          weightKg: "12",
+          [painField]: "6",
+        }),
+      );
+
+      expect(stopped.status).toBe("error");
+      expect(stopped.message).toContain("This set was saved");
+      expect(
+        await db.setLog.findFirst({
+          where: { workoutId: ownWorkout.id, exerciseId: exercises[0] },
+        }),
+      ).toMatchObject({
+        setNumber: 1,
+        reps: 8,
+        [painField]: 6,
+      });
+
+      const blocked = await logSet(
+        exercises[0],
+        idle,
+        form({ setNumber: "2", reps: "8", weightKg: "12" }),
+      );
+      expect(blocked.status).toBe("error");
+      expect(blocked.message).toContain("blocked");
+      expect(
+        await db.setLog.count({
+          where: { workoutId: ownWorkout.id, exerciseId: exercises[0] },
+        }),
+      ).toBe(1);
+      await expect(
+        logSet(exercises[1], idle, form({ setNumber: "1", reps: "8" })),
+      ).rejects.toThrow("redirect:/session");
+    },
+  );
+
+  it("allows a recorded stop score to be corrected or cleared before new sets", async () => {
+    const ownWorkout = await workout(
+      first.id,
+      await plan(first.id, "Correction plan"),
+    );
+    await signIn(first);
+    await logSet(
+      exercises[0],
+      idle,
+      form({
+        setNumber: "1",
+        reps: "8",
+        painDuringSession: "6",
+        painNextMorning: "7",
+      }),
+    );
+    await expect(
+      logSet(
+        exercises[0],
+        idle,
+        form({
+          setNumber: "1",
+          reps: "8",
+          painDuringSession: "2",
+          painNextMorning: "",
+        }),
+      ),
+    ).rejects.toThrow("redirect:/session");
+    expect(
+      await db.setLog.findFirst({ where: { workoutId: ownWorkout.id } }),
+    ).toMatchObject({ painDuringSession: 2, painNextMorning: null });
+    await expect(
+      logSet(
+        exercises[0],
+        idle,
+        form({
+          setNumber: "1",
+          reps: "8",
+          painDuringSession: " ",
+          painNextMorning: "",
+        }),
+      ),
+    ).rejects.toThrow("redirect:/session");
+    expect(
+      await db.setLog.findFirst({ where: { workoutId: ownWorkout.id } }),
+    ).toMatchObject({ painDuringSession: null, painNextMorning: null });
+    await expect(
+      logSet(exercises[0], idle, form({ setNumber: "2", reps: "8" })),
+    ).rejects.toThrow("redirect:/session");
+  });
+
+  it("serializes stop recording and a concurrent next-set submission", async () => {
+    const ownWorkout = await workout(
+      first.id,
+      await plan(first.id, "Concurrent plan"),
+    );
+    await signIn(first);
+    await Promise.all([
+      logSet(
+        exercises[0],
+        idle,
+        form({ setNumber: "1", reps: "8", painDuringSession: "6" }),
+      ),
+      logSet(exercises[0], idle, form({ setNumber: "2", reps: "8" })),
+    ]);
+    const saved = await db.setLog.findMany({
+      where: { workoutId: ownWorkout.id },
+    });
+    expect(saved).toHaveLength(1);
+    expect(saved[0]).toMatchObject({ setNumber: 1, painDuringSession: 6 });
+  });
+
   describe("repeating a set save (#42)", () => {
     const submit = (setNumber: number, reps: number) =>
       logSet(
@@ -751,6 +873,36 @@ describe("quiz and session authorization with PostgreSQL", () => {
       (await db.workout.findUniqueOrThrow({ where: { id: otherWorkout.id } }))
         .finishedAt,
     ).toBeNull();
+  });
+
+  it("shows elapsed time during a workout and its duration after finishing", async () => {
+    const ownWorkout = await workout(
+      first.id,
+      await plan(first.id, "Timed plan"),
+    );
+    const startedAt = new Date(Date.now() - 3_723_000);
+    await db.workout.update({
+      where: { id: ownWorkout.id },
+      data: { startedAt },
+    });
+    await signIn(first);
+
+    const activeHtml = renderToStaticMarkup(await SessionPage());
+    expect(activeHtml).toContain("Elapsed workout time");
+    expect(activeHtml).toContain('role="timer"');
+    expect(activeHtml).not.toContain("Workout duration");
+
+    await expect(finishWorkout()).rejects.toThrow("redirect:/session");
+    const saved = await db.workout.findUniqueOrThrow({
+      where: { id: ownWorkout.id },
+    });
+    const seconds = Math.floor(
+      (saved.finishedAt!.getTime() - startedAt.getTime()) / 1000,
+    );
+    const finishedHtml = renderToStaticMarkup(await SessionPage());
+    expect(finishedHtml).toContain("Workout duration");
+    expect(finishedHtml).toContain(`dateTime="PT${seconds}S"`);
+    expect(finishedHtml).not.toContain("Elapsed workout time");
   });
 
   it("saves run metrics and finishes only the owner's workout", async () => {

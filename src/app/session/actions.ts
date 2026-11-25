@@ -15,14 +15,28 @@ import {
 } from "@/lib/workout/runMetricsSchema";
 import { getNextPlanDayIndex } from "@/lib/workout/progression";
 import { requireUser } from "@/lib/auth/session";
+import { painTrafficLight } from "@/lib/coach/painTrafficLight";
+import {
+  DISTANCE_UNIT_MESSAGE,
+  WEIGHT_UNIT_MESSAGE,
+  distanceFieldToKm,
+  readDistanceUnit,
+  readWeightUnit,
+  weightFieldToKg,
+} from "@/lib/units/input";
 
 export async function saveRunMetrics(
   _previousState: RunMetricsActionState,
   formData: FormData,
 ): Promise<RunMetricsActionState> {
   const user = await requireUser();
+  const distanceUnit = readDistanceUnit(formData);
+  if (!distanceUnit) {
+    return { status: "error", message: DISTANCE_UNIT_MESSAGE };
+  }
   const parsed = runMetricsSchema.safeParse({
-    distanceKm: formData.get("distanceKm"),
+    // Typed in the unit the form showed; stored in km (D30).
+    distanceKm: distanceFieldToKm(formData.get("distanceKm"), distanceUnit),
     durationMinutes: formData.get("durationMinutes"),
     durationSeconds: formData.get("durationSeconds"),
   });
@@ -81,10 +95,17 @@ export async function logSet(
   formData: FormData,
 ): Promise<SetLogActionState> {
   const user = await requireUser();
+  const weightUnit = readWeightUnit(formData);
+  if (!weightUnit) {
+    return { status: "error", message: WEIGHT_UNIT_MESSAGE };
+  }
   const parsed = setLogSchema.safeParse({
     setNumber: formData.get("setNumber"),
     reps: formData.get("reps"),
-    weightKg: formData.get("weightKg"),
+    painDuringSession: formData.get("painDuringSession"),
+    painNextMorning: formData.get("painNextMorning"),
+    // Typed in the unit the form showed; stored in kg (D30).
+    weightKg: weightFieldToKg(formData.get("weightKg"), weightUnit),
   });
   if (!parsed.success) {
     return {
@@ -93,76 +114,103 @@ export async function logSet(
     };
   }
 
-  const workout = await prisma.workout.findFirst({
-    where: {
-      userId: user.id,
-      finishedAt: null,
-      plan: { userId: user.id, active: true },
-      planDay: { plan: { userId: user.id } },
-    },
-    orderBy: { startedAt: "desc" },
-    include: {
-      planDay: {
-        include: {
-          exercises: {
-            where: { exerciseId },
-            select: { sets: true },
-          },
-        },
-      },
-      sets: {
-        where: { exerciseId },
-        select: { setNumber: true },
-      },
-    },
-  });
+  const during = parsed.data.painDuringSession ?? 0;
+  const nextMorning = parsed.data.painNextMorning ?? 0;
+  const traffic = painTrafficLight(during, nextMorning);
 
-  const plannedExercise = workout?.planDay?.exercises[0];
-  if (!workout || !plannedExercise) {
-    return {
-      status: "error",
-      message: "Start a workout before logging sets for this exercise.",
-    };
-  }
-
-  const operation = getSetLogOperation(
-    parsed.data.setNumber,
-    workout.sets.map((set) => set.setNumber),
-    plannedExercise.sets,
-  );
-  if (!operation) {
-    return {
-      status: "error",
-      message: "That set is out of date. Refresh the session and try again.",
-    };
-  }
-
+  let result: SetLogActionState | null;
   try {
-    const weightKg =
-      parsed.data.weightKg === undefined
-        ? null
-        : new Prisma.Decimal(parsed.data.weightKg);
-    await prisma.setLog.upsert({
-      where: {
-        workoutId_exerciseId_setNumber: {
-          workoutId: workout.id,
-          exerciseId,
-          setNumber: parsed.data.setNumber,
-        },
-        workout: { userId: user.id },
+    result = await prisma.$transaction(
+      async (tx): Promise<SetLogActionState | null> => {
+        await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${user.id} FOR UPDATE`;
+        const workout = await tx.workout.findFirst({
+          where: {
+            userId: user.id,
+            finishedAt: null,
+            plan: { userId: user.id, active: true },
+            planDay: { plan: { userId: user.id } },
+          },
+          orderBy: { startedAt: "desc" },
+          include: {
+            planDay: {
+              include: {
+                exercises: { where: { exerciseId }, select: { sets: true } },
+              },
+            },
+            sets: {
+              where: { exerciseId },
+              select: {
+                setNumber: true,
+                painDuringSession: true,
+                painNextMorning: true,
+              },
+            },
+          },
+        });
+        const plannedExercise = workout?.planDay?.exercises[0];
+        if (!workout || !plannedExercise) {
+          return {
+            status: "error",
+            message: "Start a workout before logging sets for this exercise.",
+          };
+        }
+        const operation = getSetLogOperation(
+          parsed.data.setNumber,
+          workout.sets.map((set) => set.setNumber),
+          plannedExercise.sets,
+        );
+        if (!operation) {
+          return {
+            status: "error",
+            message:
+              "That set is out of date. Refresh the session and try again.",
+          };
+        }
+        const existingStop = workout.sets.some(
+          (set) =>
+            painTrafficLight(
+              set.painDuringSession ?? 0,
+              set.painNextMorning ?? 0,
+            ).state === "stop",
+        );
+        if (existingStop && operation === "create") {
+          return {
+            status: "error",
+            message:
+              "This exercise is blocked by a recorded stop-range pain score. Correct an incorrectly entered score before logging another set.",
+          };
+        }
+
+        const weightKg =
+          parsed.data.weightKg === undefined
+            ? null
+            : new Prisma.Decimal(parsed.data.weightKg);
+        const painScores = {
+          painDuringSession: parsed.data.painDuringSession ?? null,
+          painNextMorning: parsed.data.painNextMorning ?? null,
+        };
+        await tx.setLog.upsert({
+          where: {
+            workoutId_exerciseId_setNumber: {
+              workoutId: workout.id,
+              exerciseId,
+              setNumber: parsed.data.setNumber,
+            },
+            workout: { userId: user.id },
+          },
+          create: {
+            workoutId: workout.id,
+            exerciseId,
+            setNumber: parsed.data.setNumber,
+            reps: parsed.data.reps,
+            weightKg,
+            ...painScores,
+          },
+          update: { reps: parsed.data.reps, weightKg, ...painScores },
+        });
+        return null;
       },
-      create: {
-        workoutId: workout.id,
-        exerciseId,
-        setNumber: parsed.data.setNumber,
-        reps: parsed.data.reps,
-        weightKg,
-      },
-      update: {
-        reps: parsed.data.reps,
-        weightKg,
-      },
-    });
+    );
   } catch {
     return {
       status: "error",
@@ -170,7 +218,14 @@ export async function logSet(
     };
   }
 
+  if (result) return result;
   revalidatePath("/session");
+  if (traffic.state === "stop") {
+    return {
+      status: "error",
+      message: `${traffic.reason} This set was saved, and further sets for this exercise are blocked.`,
+    };
+  }
   redirect("/session");
 }
 

@@ -8,6 +8,9 @@ import {
   type VerifyProfile,
 } from "./verify";
 import { LIMITS, type PlanInput } from "./schema";
+import { draftExerciseJointMappings } from "./exerciseJointMappings";
+import { findJointSubstitution, type Joint } from "./jointSubstitutions";
+import { pickWarmup } from "./warmup";
 
 // The fallback asks for a moderate effort: 7 is "about three reps left" (#65).
 const DEFAULT_RPE = 7;
@@ -57,9 +60,12 @@ const SPLITS: Record<number, Split[]> = {
 // How many accessory muscles a day adds: the more experienced the user, the longer the day.
 const EXTRAS_BY_LEVEL = { BEGINNER: 0, INTERMEDIATE: 1, EXPERT: 3 } as const;
 const LEVEL_RANK = { BEGINNER: 0, INTERMEDIATE: 1, EXPERT: 2 } as const;
-// An exercise above the user's level goes behind every fit at or below it.
+// Kept as a guard: `usable` already leaves out exercises above the user's level (#103).
 const ABOVE_LEVEL_PENALTY = 100;
 const UNLISTED_EQUIPMENT_RANK = 99;
+// Half a point: an exercise without cues goes behind one with cues of the same level and
+// equipment, but never behind a better level or equipment (#103, D26).
+const NO_CUES_PENALTY = 0.5;
 
 // Big lifts first, for experienced users: free weights, then machines, then the rest.
 const EQUIPMENT_ORDER = [
@@ -91,12 +97,23 @@ type Level = keyof typeof LEVEL_RANK;
 
 // Lower is better: a fit at or below the user's level, then (for intermediate and expert
 // users) free weights before machines before kettlebells and bodyweight. With no level
-// given, every exercise scores the same and the first fit wins, as before.
+// given, exercises score the same unless one has cues, and the first fit wins, as before.
 function score(exercise: LibraryExercise, level: Level | undefined): number {
+  return (
+    levelScore(exercise, level) + (exercise.cues?.length ? 0 : NO_CUES_PENALTY)
+  );
+}
+
+// A row with no level, or one we do not know, is never above the user's.
+const isAboveLevel = (exercise: LibraryExercise, level: Level) =>
+  LEVEL_RANK[(exercise.level ?? "") as Level] > LEVEL_RANK[level];
+
+function levelScore(
+  exercise: LibraryExercise,
+  level: Level | undefined,
+): number {
   if (!level) return 0;
-  // A row with no level, or one we do not know, gets no penalty.
-  const exerciseLevel = LEVEL_RANK[(exercise.level ?? "") as Level];
-  const above = exerciseLevel > LEVEL_RANK[level] ? ABOVE_LEVEL_PENALTY : 0;
+  const above = isAboveLevel(exercise, level) ? ABOVE_LEVEL_PENALTY : 0;
   if (level === "BEGINNER") return above;
   const equipment = EQUIPMENT_ORDER.indexOf(exercise.equipment ?? "body only");
   return above + (equipment < 0 ? UNLISTED_EQUIPMENT_RANK : equipment);
@@ -127,49 +144,138 @@ export function buildDefaultPlan(
   // Strength exercises only: free-exercise-db lists stretches under the same muscles,
   // and the dataset order puts some of them first (#71, found on #15). The `?.` skips,
   // rather than crashes on, an exercise an untyped caller passes without a category.
-  const usable = library.filter(
-    (e) => e.category?.toLowerCase() === "strength" && fitsProfile(e, profile),
-  );
-
+  // With a level known, an exercise above it is left out, not just ranked last (#103): a
+  // slot with nothing at or below the level is skipped, as for any muscle with no fit.
   const level = profile.level;
+  const usable = library.filter(
+    (e) =>
+      e.category?.toLowerCase() === "strength" &&
+      fitsProfile(e, profile) &&
+      !(level && isAboveLevel(e, level)),
+  );
   const extras = level ? EXTRAS_BY_LEVEL[level] : 0;
   const heavy = level === "INTERMEDIATE" || level === "EXPERT";
-  // Best fit first; the sort is stable, so equal scores keep the library's order.
+  // Best fit first; stable sorting preserves library order for equal scores.
   const ranked = [...usable].sort((a, b) => score(a, level) - score(b, level));
+  const reportedJoints = profile.reportedJoints ?? [];
+
+  const jointMapping = (exerciseId: string) =>
+    Object.hasOwn(draftExerciseJointMappings, exerciseId)
+      ? draftExerciseJointMappings[
+          exerciseId as keyof typeof draftExerciseJointMappings
+        ]
+      : undefined;
+
+  const resolveJointAware = (
+    exercise: CategorisedExercise,
+  ): CategorisedExercise | undefined => {
+    if (reportedJoints.length === 0) return exercise;
+
+    const original = jointMapping(exercise.id);
+    if (!original) return undefined;
+    if (!original.joints.some((joint) => reportedJoints.includes(joint))) {
+      return exercise;
+    }
+
+    const replacementId = findJointSubstitution(
+      exercise.id,
+      usable.map((candidate) => candidate.id),
+      reportedJoints,
+      draftExerciseJointMappings,
+    );
+    if (!replacementId) return undefined;
+    return usable.find((candidate) => candidate.id === replacementId);
+  };
+
+  const substitutionReason = (exercise: CategorisedExercise) => {
+    if (reportedJoints.length === 0) return undefined;
+    const avoided = (jointMapping(exercise.id)?.joints ?? []).filter(
+      (joint: Joint) => reportedJoints.includes(joint),
+    );
+    if (avoided.length === 0) return undefined;
+    return avoided.length === 1
+      ? `avoids ${avoided[0]} loading`
+      : `avoids loading ${avoided.join(" and ")}`;
+  };
 
   return {
     name: `${profile.daysPerWeek}-day starter plan`,
     days: days.map((day) => {
       const picked: CategorisedExercise[] = [];
+      const substitutions = new Map<string, string>();
+
       for (const muscle of [...day.muscles, ...day.extras.slice(0, extras)]) {
         const match = ranked.find(
           (e) =>
             e.primaryMuscles.includes(muscle) &&
-            !picked.some((chosen) => chosen.id === e.id),
+            !picked.some((chosen) => chosen.id === e.id) &&
+            resolveJointAware(e) !== undefined,
         );
-        if (match) picked.push(match);
+        if (!match) continue;
+
+        const resolved = resolveJointAware(match);
+        if (resolved && !picked.some((chosen) => chosen.id === resolved.id)) {
+          picked.push(resolved);
+          if (resolved.id !== match.id) {
+            const reason = substitutionReason(match);
+            if (reason) substitutions.set(resolved.id, reason);
+          }
+        }
       }
+
       for (const exercise of usable) {
         if (picked.length >= 2) break;
-        if (!picked.some((chosen) => chosen.id === exercise.id))
-          picked.push(exercise);
+        const resolved = resolveJointAware(exercise);
+        if (resolved && !picked.some((chosen) => chosen.id === resolved.id)) {
+          picked.push(resolved);
+          if (resolved.id !== exercise.id) {
+            const reason = substitutionReason(exercise);
+            if (reason) substitutions.set(resolved.id, reason);
+          }
+        }
       }
+
       if (picked.length < 2) {
         throw new Error(`Not enough compatible exercises for ${day.name}`);
       }
-      // With a level known, the big lifts come first in the day.
+
       const ordered = level
         ? [...picked].sort((a, b) => compoundRank(a) - compoundRank(b))
         : picked;
-      return {
-        name: day.name,
-        exercises: ordered
-          .slice(0, LIMITS.exercisesPerDay.max)
-          .map((exercise) => ({
+      // D25: the lead lift chooses the warm-up, which takes one of the day's slots.
+      // Reported joint pain excludes unmapped warm-ups instead of assuming safety.
+      const warmup = heavy
+        ? pickWarmup(
+            reportedJoints.length
+              ? library.filter((exercise) => {
+                  const mapping = jointMapping(exercise.id);
+                  return (
+                    mapping &&
+                    !mapping.joints.some((joint) =>
+                      reportedJoints.includes(joint),
+                    )
+                  );
+                })
+              : library,
+            profile,
+            ordered[0].primaryMuscles[0],
+          )
+        : undefined;
+      const lifts = ordered
+        .slice(0, LIMITS.exercisesPerDay.max - (warmup ? 1 : 0))
+        .map((exercise) => {
+          const reason = substitutions.get(exercise.id);
+          return {
             exerciseId: exercise.id,
             ...(heavy && isCompound(exercise) ? COMPOUND : ACCESSORY),
             rpe: DEFAULT_RPE,
-          })),
+            ...(reason ? { substitutionReason: reason } : {}),
+          };
+        });
+
+      return {
+        name: day.name,
+        exercises: warmup ? [warmup, ...lifts] : lifts,
       };
     }),
   };

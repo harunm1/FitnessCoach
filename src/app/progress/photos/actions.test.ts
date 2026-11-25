@@ -370,3 +370,24 @@ describe("deleteProgressPhoto", () => {
     );
   });
 });
+
+describe("uploadProgressPhoto units", () => {
+  it("converts a weight typed in pounds to kilograms", async () => {
+    await uploadProgressPhoto(
+      idle,
+      await photoForm({ weightKg: "180", weightUnit: "LB" }),
+    );
+    expect(database.progressPhoto.create.mock.calls[0][0].data.weightKg).toBe(
+      81.65,
+    );
+  });
+
+  it("refuses a unit that is not kg or lb", async () => {
+    const result = await uploadProgressPhoto(
+      idle,
+      await photoForm({ weightKg: "80", weightUnit: "stone" }),
+    );
+    expect(result.status).toBe("error");
+    expect(database.progressPhoto.create).not.toHaveBeenCalled();
+  });
+});

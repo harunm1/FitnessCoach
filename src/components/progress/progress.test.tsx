@@ -54,7 +54,16 @@ describe("ActivityCalendar", () => {
 
   it("marks the selected day and links every day", () => {
     expect(html).toMatch(/aria-current="date"[^>]*November 8/);
-    expect(html).toContain('href="/progress?month=2026-11&amp;day=2026-11-30"');
+    expect(html).toContain(
+      'href="/progress?month=2026-11&amp;day=2026-11-30#day-title"',
+    );
+  });
+
+  it("scrolls a tapped day's details into view, not the month arrows", () => {
+    // Below 640 px the details sit under the calendar and Link keeps the scroll
+    // position, so the day links jump to the details' heading (D29).
+    expect(html).toContain('href="/progress?month=2026-10&amp;day="');
+    expect(html).not.toContain("month=2026-10&amp;day=#day-title");
   });
 });
 
@@ -136,7 +145,7 @@ describe("DayDetails", () => {
                 ],
               },
             ],
-            run: { distanceKm: 5, time: "30:00", pace: "6:00 /km" },
+            run: { distanceKm: 5, seconds: 1800, time: "30:00" },
           },
         ]}
       />,
@@ -146,6 +155,26 @@ describe("DayDetails", () => {
     expect(html).toContain("12 reps");
     expect(html).not.toContain("× null");
     expect(html).toContain("Run: 5 km in 30:00 · 6:00 /km");
+  });
+
+  it("links each workout to its own page in the history", () => {
+    const html = render(
+      <DayDetails
+        dayLabel="Sunday, November 8"
+        workouts={[
+          {
+            id: 41,
+            name: "Push",
+            startTime: "12:00 PM",
+            minutes: 50,
+            exercises: [],
+            run: null,
+          },
+        ]}
+      />,
+    );
+    expect(html).toContain('href="/history/41"');
+    expect(html).toContain("Open Push");
   });
 });
 
@@ -203,6 +232,10 @@ describe("PhotoStrip", () => {
     expect(html).toContain('src="memory://p3.webp?expires=300"');
     expect(html).toContain("See all (7)");
     expect(html).toContain('href="/progress/photos"');
+    // Each photo opens full size in place rather than leaving the page (#16).
+    expect(html.match(/aria-label="Enlarge progress photo from/g)).toHaveLength(
+      3,
+    );
   });
 
   it("invites a first photo when there are none", () => {

@@ -9,6 +9,7 @@ import { requireUser } from "@/lib/auth/session";
 import { MAX_IMPORT_BYTES, parseHevyCsv } from "@/lib/import/hevy";
 import type { ImportWorkout } from "@/lib/import/hevy";
 import { matchExercises, type LibraryName } from "@/lib/import/match";
+import { buildImportReport, type ImportReport } from "@/lib/import/report";
 import { saveImport, type ImportResult } from "@/lib/import/save";
 import { prisma } from "@/lib/prisma";
 import { dayKey } from "@/lib/progress/dates";
@@ -33,7 +34,7 @@ export type ImportState =
       moreUnmatched: number; // names beyond the ones shown; their sets are skipped
       library: LibraryName[];
     }
-  | { status: "saved"; result: ImportResult };
+  | { status: "saved"; result: ImportResult; report: ImportReport };
 
 const UNAVAILABLE = "The import can't run right now. Try again later.";
 const MAX_MAPPED_NAMES = 30;
@@ -127,7 +128,13 @@ export async function importWorkouts(
         { timeout: SAVE_TIMEOUT_MS },
       );
       revalidatePath("/progress");
-      return { status: "saved", result };
+      const report = buildImportReport({
+        skippedWarmups: read.skippedWarmups,
+        skippedRows: read.skippedRows,
+        unmatched,
+        mapping,
+      });
+      return { status: "saved", result, report };
     }
 
     const existing = await prisma.workout.findMany({
@@ -136,6 +143,8 @@ export async function importWorkouts(
         importKey: { in: workouts.map((workout) => workout.key) },
       },
       select: { importKey: true },
+      // At most one row per key in the file, so the limit never cuts a real match (#76).
+      take: workouts.length,
     });
     const days = workouts.map((workout) => dayKey(workout.startedAt)).sort();
     return {

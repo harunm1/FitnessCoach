@@ -6,7 +6,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import type { PhotoStorage } from "./types";
+import type { PhotoStorage, PutOptions, SignOptions } from "./types";
 
 export type R2Config = {
   accountId: string;
@@ -58,13 +58,22 @@ export class R2Storage implements PhotoStorage {
     });
   }
 
-  async put(key: string, body: Buffer, contentType: string): Promise<void> {
+  async put(
+    key: string,
+    body: Buffer,
+    contentType: string,
+    options: PutOptions = {},
+  ): Promise<void> {
     await this.client.send(
       new PutObjectCommand({
         Bucket: this.bucket,
         Key: key,
         Body: body,
         ContentType: contentType,
+        // R2 lists Content-Disposition as supported on PutObject (S3 API compatibility page).
+        ...(options.contentDisposition && {
+          ContentDisposition: options.contentDisposition,
+        }),
       }),
     );
   }
@@ -89,10 +98,22 @@ export class R2Storage implements PhotoStorage {
     );
   }
 
-  async signedUrl(key: string, expiresInSeconds: number): Promise<string> {
+  async signedUrl(
+    key: string,
+    expiresInSeconds: number,
+    options: SignOptions = {},
+  ): Promise<string> {
     return getSignedUrl(
       this.client,
-      new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+      new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        // R2's GetObject documentation lists no response-header override (D33), so a
+        // download route checks that the link really carries it.
+        ...(options.contentDisposition && {
+          ResponseContentDisposition: options.contentDisposition,
+        }),
+      }),
       { expiresIn: expiresInSeconds },
     );
   }

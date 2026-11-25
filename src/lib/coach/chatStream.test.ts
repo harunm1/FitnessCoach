@@ -190,6 +190,31 @@ describe("a reply cut off at the token limit (#132)", () => {
     expect(out).toEqual(["Keep your back", TRUNCATION_NOTE]);
   });
 
+  it("keeps the last Gemini event when the body ends without a newline (B3)", async () => {
+    const sse =
+      'data: {"candidates":[{"content":{"parts":[{"text":"Keep your back flat. "}]}}]}\r\n\r\n' +
+      'data: {"candidates":[{"content":{"parts":[{"text":"Stop the set if it hurts."}]},"finishReason":"STOP"}]}';
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(sse, { status: 200 })),
+    );
+    const out = await collect(geminiChatStream("test-key")([]));
+    expect(out.join("")).toBe("Keep your back flat. Stop the set if it hurts.");
+  });
+
+  it("still ends a Gemini MAX_TOKENS reply with the note when the last event has no newline (B3)", async () => {
+    const sse =
+      'data: {"candidates":[{"content":{"parts":[{"text":"Keep your back"}]},"finishReason":"MAX_TOKENS"}]}';
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(sse, { status: 200 })),
+    );
+    expect(await collect(geminiChatStream("test-key")([]))).toEqual([
+      "Keep your back",
+      TRUNCATION_NOTE,
+    ]);
+  });
+
   it("adds no note when Gemini finished with STOP", async () => {
     const sse =
       'data: {"candidates":[{"content":{"parts":[{"text":"All good."}]},"finishReason":"STOP"}]}\n\n';

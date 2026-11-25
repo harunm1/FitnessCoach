@@ -38,6 +38,24 @@ const library = new Map<string, LibraryExercise>([
       secondaryMuscles: [],
     },
   ],
+  [
+    "Barbell_Bench_Press_-_Medium_Grip",
+    {
+      id: "Barbell_Bench_Press_-_Medium_Grip",
+      equipment: "barbell",
+      primaryMuscles: ["chest"],
+      secondaryMuscles: ["triceps", "shoulders"],
+    },
+  ],
+  [
+    "unmapped",
+    {
+      id: "unmapped",
+      equipment: "body only",
+      primaryMuscles: ["core"],
+      secondaryMuscles: [],
+    },
+  ],
 ]);
 
 const profile: VerifyProfile = {
@@ -113,6 +131,44 @@ describe("verifyPlan", () => {
     expect(result.ok).toBe(false);
     if (!result.ok)
       expect(result.problems).toEqual([expect.stringContaining("needs cable")]);
+  });
+
+  it("rejects a mapped exercise that loads a reported painful joint", () => {
+    const result = verifyPlan(
+      {
+        name: "P",
+        days: [
+          {
+            name: "Day 1",
+            exercises: [
+              slot("Barbell_Bench_Press_-_Medium_Grip"),
+              slot("pushup"),
+            ],
+          },
+        ],
+      },
+      { ...profile, reportedJoints: ["shoulder"] },
+      library,
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok)
+      expect(result.problems.join("\n")).toContain("loads shoulder");
+  });
+
+  it("rejects an unmapped exercise when the user reports painful joints", () => {
+    const result = verifyPlan(
+      {
+        name: "P",
+        days: [
+          { name: "Day 1", exercises: [slot("unmapped"), slot("pushup")] },
+        ],
+      },
+      { ...profile, reportedJoints: ["knee"] },
+      library,
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok)
+      expect(result.problems.join("\n")).toContain("joint load is unmapped");
   });
 
   it("rejects an exercise that works a muscle the user reported trouble with", () => {

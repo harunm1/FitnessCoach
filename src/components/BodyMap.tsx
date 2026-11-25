@@ -106,9 +106,11 @@ export default function BodyMap({ exercises }: BodyMapProps) {
       slug === selectedSlug ? SELECTED : pickable.has(slug) ? WORKED : NEUTRAL,
   }));
 
+  // Picking a muscle opens its first exercise, so the saved instructions and the
+  // coach question box are on screen at once (live feedback 24 Nov, item 3).
   function selectMuscle(id: string) {
     setSelectedMuscle(id);
-    setSelectedExerciseId(null);
+    setSelectedExerciseId(findExercisesForMuscle(id, exercises)[0]?.id ?? null);
   }
 
   // A tap on the body picks the first muscle drawn in that region (the upper
@@ -278,8 +280,7 @@ export default function BodyMap({ exercises }: BodyMapProps) {
           )}
           <p className="mt-4 mb-0 border-t border-foreground/10 pt-3 text-sm leading-5 text-foreground/70">
             Exercise library references. For pain or an injury, stop the
-            movement and see a health professional. Ask the coach on the Coach
-            page about your own training.
+            movement and see a health professional.
           </p>
         </aside>
       </div>

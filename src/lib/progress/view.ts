@@ -1,6 +1,7 @@
 // Helpers that turn workouts into what the progress page shows (#16): the month grid,
 // workouts per day, durations and paces. Pure functions, so they are tested offline.
 import { DEFAULT_TIME_ZONE, dayKey } from "./dates";
+import { workoutMinutes } from "@/lib/workout/duration";
 import type { ProgressSet, ProgressWorkout } from "./types";
 
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -59,11 +60,17 @@ export function groupByDay(
   return days;
 }
 
-// Whole minutes from start to finish, at least 1.
-export function durationMinutes(workout: ProgressWorkout): number {
-  const ms = workout.finishedAt.getTime() - workout.startedAt.getTime();
-  return Math.max(1, Math.round(ms / 60000));
+// Whole minutes from start to finish, at least 1; null when the workout was left
+// open too long to be a workout time (B1).
+export function durationMinutes(workout: ProgressWorkout): number | null {
+  return workoutMinutes({
+    startedAt: workout.startedAt,
+    finishedAt: workout.finishedAt,
+    durationSeconds: workout.runSeconds,
+  });
 }
+
+const SECONDS_PER_HOUR = 3600;
 
 // "32:05" for a duration in seconds. Rounds the total first, so 359.6 seconds
 // is "6:00", never "5:60".
@@ -71,6 +78,16 @@ export function clock(seconds: number): string {
   const total = Math.round(seconds);
   const minutes = Math.floor(total / 60);
   return `${minutes}:${String(total % 60).padStart(2, "0")}`;
+}
+
+// A run's time: "31:12" under an hour, "2:05:30" from an hour on, the way
+// the run form asks for it (h:mm:ss).
+export function duration(seconds: number): string {
+  const total = Math.round(seconds);
+  if (total < SECONDS_PER_HOUR) return clock(total);
+  const hours = Math.floor(total / SECONDS_PER_HOUR);
+  const rest = clock(total % SECONDS_PER_HOUR).padStart("mm:ss".length, "0");
+  return `${hours}:${rest}`;
 }
 
 // "6:24 /km", or null when the run has no usable distance or time.

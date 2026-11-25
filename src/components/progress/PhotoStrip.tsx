@@ -1,10 +1,13 @@
 import Link from "next/link";
+import PhotoViewer from "./PhotoViewer";
 import type { GalleryPhoto } from "@/lib/photos/gallery";
+import type { WeightUnit } from "@/lib/units/convert";
 
 type PhotoStripProps = {
   // The newest photos with signed links, or null when storage is unavailable.
   photos: GalleryPhoto[] | null;
   total: number;
+  weightUnit?: WeightUnit; // what the user chose (D30)
 };
 
 const dateFormat = new Intl.DateTimeFormat("en-CA", {
@@ -13,7 +16,11 @@ const dateFormat = new Intl.DateTimeFormat("en-CA", {
 });
 
 // The newest progress photos with a link to the full gallery (#16).
-export default function PhotoStrip({ photos, total }: PhotoStripProps) {
+export default function PhotoStrip({
+  photos,
+  total,
+  weightUnit = "KG",
+}: PhotoStripProps) {
   return (
     <section
       aria-labelledby="photos-title"
@@ -43,18 +50,12 @@ export default function PhotoStrip({ photos, total }: PhotoStripProps) {
         <ul className="mt-4 grid grid-cols-3 gap-3 p-0">
           {photos.map((photo) => (
             <li className="list-none" key={photo.id}>
-              <Link className="grid gap-1" href="/progress/photos">
-                {/* Signed links expire, so the image optimizer can't cache them. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={photo.url}
-                  alt={`Progress photo from ${dateFormat.format(photo.takenAt)}`}
-                  className="aspect-[3/4] w-full border border-foreground/15 object-cover"
-                />
+              <div className="grid gap-1">
+                <PhotoViewer photo={photo} weightUnit={weightUnit} />
                 <span className="text-xs text-foreground/60">
                   {dateFormat.format(photo.takenAt)}
                 </span>
-              </Link>
+              </div>
             </li>
           ))}
         </ul>
