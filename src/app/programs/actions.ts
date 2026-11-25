@@ -27,7 +27,7 @@ const NO_QUIZ =
 const NO_TEMPLATE = "That template does not exist.";
 
 export type AdaptResult =
-  | { status: "ok"; adaptation: Adaptation }
+  | { status: "ok"; adaptation: Adaptation; names: Record<string, string> }
   | { status: "error"; message: string };
 
 export type SaveResult =
@@ -57,7 +57,19 @@ export async function adaptProgram(templateId: string): Promise<AdaptResult> {
     ctx.library,
     ctx.about,
   );
-  return { status: "ok", adaptation };
+  // Names for every exercise the review shows: the template's and any swapped in.
+  const shown = new Set([
+    ...template.days.flatMap((d) => d.exercises.map((s) => s.exerciseId)),
+    ...adaptation.changes.flatMap((c) =>
+      c.op === "swap" ? [c.exerciseId] : [],
+    ),
+  ]);
+  const names = Object.fromEntries(
+    ctx.library
+      .filter((e) => shown.has(e.id))
+      .map((e) => [e.id, e.name ?? e.id]),
+  );
+  return { status: "ok", adaptation, names };
 }
 
 // Caps on untrusted input sizes, far above anything the page sends.

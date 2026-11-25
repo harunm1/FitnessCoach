@@ -30,6 +30,7 @@ describe("AppNav", () => {
     expect(links(render()).map(({ href, text }) => ({ href, text }))).toEqual([
       { href: "/", text: "FitnessCoach" },
       { href: "/session", text: "Session" },
+      { href: "/programs", text: "Programs" },
       { href: "/coach", text: "Coach" },
       { href: "/progress", text: "Progress" },
       { href: "/progress/photos", text: "Photos" },
@@ -45,6 +46,7 @@ describe("AppNav", () => {
 
   it.each([
     ["session", "/session"],
+    ["programs", "/programs"],
     ["coach", "/coach"],
     ["progress", "/progress"],
     ["photos", "/progress/photos"],

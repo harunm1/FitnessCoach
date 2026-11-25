@@ -4,7 +4,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { CategorisedExercise } from "@/lib/coach/verify";
 import { getTemplate } from "./templates";
-import { applyChanges, parseCoachChanges, type Change } from "./changes";
+import { applyChanges, type Change } from "./changes";
+import { parseCoachChanges } from "./parseChanges";
 
 const library: CategorisedExercise[] = JSON.parse(
   readFileSync("eval/fixtures-library.json", "utf8"),
@@ -71,9 +72,10 @@ describe("applyChanges", () => {
 
   it("keeps the other fields of a swapped slot", () => {
     const { plan } = applyChanges(template, [swap], new Set(["c1"]));
-    const { exerciseId: _id, ...rest } = plan.days[0].exercises[0];
-    const { exerciseId: _orig, ...original } = template.days[0].exercises[0];
-    expect(rest).toEqual(original);
+    expect(plan.days[0].exercises[0]).toEqual({
+      ...template.days[0].exercises[0],
+      exerciseId: "Dumbbell_Squat",
+    });
   });
 
   it("reports a change aimed at a slot that does not exist", () => {

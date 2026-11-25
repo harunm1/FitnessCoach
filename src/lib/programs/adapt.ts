@@ -9,7 +9,8 @@ import type {
   LibraryExercise,
   VerifyProfile,
 } from "@/lib/coach/verify";
-import { applyChanges, parseCoachChanges, type Change } from "./changes";
+import { applyChanges, type Change } from "./changes";
+import { parseCoachChanges } from "./parseChanges";
 import { fitChanges } from "./fit";
 import { checkProgram, MAX_WEEKLY_SETS_PER_MUSCLE } from "./guardrails";
 import { MIN_EXERCISES_PER_DAY, type ProgramTemplate } from "./templateSchema";

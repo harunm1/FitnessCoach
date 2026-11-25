@@ -31,6 +31,7 @@ vi.mock("@/lib/coach/providers", async (original) => ({
 
 import { adaptProgram, saveProgram } from "@/app/programs/actions";
 import { FALLBACK_NOTE } from "@/lib/programs/adapt";
+import { loadProgramFolders } from "@/lib/programs/folders";
 import { prisma as db } from "@/lib/prisma";
 import { readFileSync } from "node:fs";
 
@@ -238,5 +239,46 @@ describe("saveProgram", () => {
     expect(
       await db.plan.count({ where: { userId: user.id, active: true } }),
     ).toBe(1);
+  });
+});
+
+describe("loadProgramFolders", () => {
+  it("lists only the user's own programs, newest first, with weekdays and exercise names", async () => {
+    const other = await athlete();
+    await saveProgram({
+      templateId: TEMPLATE_ID,
+      changes: [],
+      accepted: [],
+      weekdays: [["MON"], ["WED"], ["FRI"]],
+    });
+    const user = await athlete();
+    await saveProgram({
+      templateId: TEMPLATE_ID,
+      changes: [],
+      accepted: [],
+      weekdays: [["TUE"], ["THU"], ["SAT"]],
+    });
+
+    const folders = await loadProgramFolders(user.id);
+    expect(folders.length).toBeGreaterThanOrEqual(1);
+    expect(folders[0]).toMatchObject({ active: true, templateId: TEMPLATE_ID });
+    expect(folders[0].days[0]).toMatchObject({
+      name: "Full body A",
+      weekdays: ["TUE"],
+    });
+    expect(folders[0].days[0].exercises[0]).toEqual({
+      name: "Barbell Squat",
+      sets: 3,
+      reps: 8,
+    });
+    const otherIds = (
+      await db.plan.findMany({
+        where: { userId: other.id },
+        select: { id: true },
+      })
+    ).map((p) => p.id);
+    expect(folders.map((f) => f.id).some((id) => otherIds.includes(id))).toBe(
+      false,
+    );
   });
 });

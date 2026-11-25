@@ -14,6 +14,9 @@ export type DeloadVariant = {
   days: TemplateDay[];
 };
 
+// About half the sets, rounded up so no exercise drops to zero; everything else kept.
+export const halveSets = (sets: number): number => Math.ceil(sets / HALF);
+
 export const deloadVariant = (template: ProgramTemplate): DeloadVariant => ({
   name: `${template.name}: deload week`,
   loadPercent: DELOAD_LOAD_PERCENT,
@@ -23,7 +26,7 @@ export const deloadVariant = (template: ProgramTemplate): DeloadVariant => ({
     weekdays: [...day.weekdays],
     exercises: day.exercises.map((slot) => ({
       ...slot,
-      sets: Math.ceil(slot.sets / HALF),
+      sets: halveSets(slot.sets),
     })),
   })),
 });
