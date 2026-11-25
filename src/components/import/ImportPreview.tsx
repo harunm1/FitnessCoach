@@ -6,6 +6,9 @@ import type { ImportSummary } from "@/app/import/actions";
 import type { ImportReport } from "@/lib/import/report";
 import type { ImportResult } from "@/lib/import/save";
 import type { LibraryName } from "@/lib/import/match";
+import type { WeightUnit } from "@/lib/units/convert";
+
+const UNIT_NAMES = { KG: "kilograms (kg)", LB: "pounds (lb)" };
 
 const plural = (count: number, word: string) =>
   `${count.toLocaleString("en-CA")} ${word}${count === 1 ? "" : "s"}`;
@@ -15,11 +18,13 @@ export function ImportPreview({
   unmatched,
   moreUnmatched = 0,
   library,
+  weightUnit = "KG",
 }: {
   summary: ImportSummary;
   unmatched: string[];
   moreUnmatched?: number;
   library: LibraryName[];
+  weightUnit?: WeightUnit; // what the user chose (D30)
 }) {
   const alreadyImported = summary.workouts - summary.newWorkouts;
   return (
@@ -34,7 +39,8 @@ export function ImportPreview({
       <p className="text-xs text-foreground/70">
         {plural(summary.skippedWarmups, "warm-up set")} and{" "}
         {plural(summary.skippedRows, "timed set")} in the file are left out.
-        Weights are saved in kg.
+        Weights are shown in {UNIT_NAMES[weightUnit]}, as set on your account
+        page.
       </p>
 
       {unmatched.length > 0 && (

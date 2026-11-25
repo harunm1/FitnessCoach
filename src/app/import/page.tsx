@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth/session";
 import { signAvatar } from "@/lib/photos/gallery";
 import { prisma } from "@/lib/prisma";
 import { getPhotoStorage } from "@/lib/storage";
+import { unitsFromRow } from "@/lib/units/convert";
 
 // Signed links expire and the page depends on the user, so build it on every visit.
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ export default async function ImportPage() {
   const user = await requireUser();
   const profile = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { image: true },
+    select: { image: true, weightUnit: true },
   });
   let avatarUrl: string | null = null;
   try {
@@ -54,7 +55,7 @@ export default async function ImportPage() {
             and do not count toward your weekly streaks.
           </p>
         </section>
-        <ImportForm />
+        <ImportForm weightUnit={unitsFromRow(profile).weightUnit} />
       </div>
     </AccountTheme>
   );

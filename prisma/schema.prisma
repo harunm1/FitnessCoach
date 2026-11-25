@@ -36,16 +36,19 @@ enum Tier {
 // Prisma adapter expects, so the Accounts area can add its session and account tables
 // without touching the rest of the schema.
 model User {
-  id                       String    @id @default(cuid())
+  id                       String       @id @default(cuid())
   name                     String
-  email                    String    @unique
-  emailVerified            Boolean   @default(false)
+  email                    String       @unique
+  emailVerified            Boolean      @default(false)
   image                    String?
-  tier                     Tier      @default(FREE)
+  tier                     Tier         @default(FREE)
   trialEndsAt              DateTime?
   lastCoachPlanRequestedAt DateTime?
-  createdAt                DateTime  @default(now())
-  updatedAt                DateTime  @updatedAt
+  // Display units only (D30): every stored weight is kg and every distance km.
+  weightUnit               WeightUnit   @default(LB)
+  distanceUnit             DistanceUnit @default(KM)
+  createdAt                DateTime     @default(now())
+  updatedAt                DateTime     @updatedAt
 
   sessions Session[]
   accounts Account[]
@@ -63,6 +66,16 @@ model User {
 // ---------------------------------------------------------------------------
 // Quiz and exercise library
 // ---------------------------------------------------------------------------
+
+enum WeightUnit {
+  KG
+  LB
+}
+
+enum DistanceUnit {
+  KM
+  MI
+}
 
 enum Goal {
   STRENGTH

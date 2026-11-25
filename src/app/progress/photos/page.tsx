@@ -6,6 +6,7 @@ import PhotoViewer from "@/components/progress/PhotoViewer";
 import { PhotoUploadForm } from "@/components/photos/PhotoUploadForm";
 import { AppNav } from "@/components/nav/AppNav";
 import { requireUser } from "@/lib/auth/session";
+import { formatBodyWeight, unitsFromRow } from "@/lib/units/convert";
 import {
   signAvatar,
   signPhotos,
@@ -42,7 +43,7 @@ export default async function ProgressPhotosPage({
   const [profile, found] = await Promise.all([
     prisma.user.findUnique({
       where: { id: user.id },
-      select: { image: true },
+      select: { image: true, weightUnit: true },
     }),
     prisma.progressPhoto.findMany({
       where: { userId: user.id },
@@ -58,6 +59,7 @@ export default async function ProgressPhotosPage({
       },
     }),
   ]);
+  const units = unitsFromRow(profile);
   const rows = found.slice(0, shown);
   const hasMore = found.length > shown;
 
@@ -98,7 +100,7 @@ export default async function ProgressPhotosPage({
           </p>
         </section>
 
-        <PhotoUploadForm />
+        <PhotoUploadForm weightUnit={units.weightUnit} />
 
         <section className="mt-10">
           {photos === null ? (
@@ -114,11 +116,12 @@ export default async function ProgressPhotosPage({
             <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               {photos.map((photo) => (
                 <li key={photo.id} className="grid gap-2">
-                  <PhotoViewer photo={photo} />
+                  <PhotoViewer photo={photo} weightUnit={units.weightUnit} />
                   <div className="text-xs text-foreground/70">
                     <p className="font-medium text-foreground">
                       {dateFormat.format(photo.takenAt)}
-                      {photo.weightKg !== null && ` · ${photo.weightKg} kg`}
+                      {photo.weightKg !== null &&
+                        ` · ${formatBodyWeight(photo.weightKg, units.weightUnit)}`}
                     </p>
                     {photo.note && <p className="mt-1">{photo.note}</p>}
                   </div>

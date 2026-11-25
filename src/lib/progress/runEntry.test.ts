@@ -135,3 +135,24 @@ describe("parseRunEntry", () => {
     );
   });
 });
+
+describe("parseRunEntry in miles", () => {
+  it("names the distance limits in miles", () => {
+    const result = parseRunEntry({ ...valid, distanceKm: "0.01" }, TODAY, "MI");
+    expect(result).toEqual({
+      ok: false,
+      message: "Enter a distance between 0.07 and 186.41 mi.",
+    });
+  });
+
+  it("states the pace limits per mile", () => {
+    // 30 km in 10 minutes is 20 s per km, far faster than 1:30 per km.
+    const result = parseRunEntry(
+      { ...valid, distanceKm: "30", duration: "0:10:00" },
+      TODAY,
+      "MI",
+    );
+    expect(result).toMatchObject({ ok: false });
+    expect(JSON.stringify(result)).toContain("2:25 per mi");
+  });
+});

@@ -10,9 +10,17 @@ import {
   setLogSchema,
   type SetLogActionState,
 } from "@/lib/workout/setLogSchema";
+import { weightFieldToKg } from "@/lib/units/input";
+import {
+  fromKgForEdit,
+  weightLabel,
+  type WeightUnit,
+} from "@/lib/units/convert";
+import WeightUnitSwitch from "@/components/WeightUnitSwitch";
 import { weightPlaceholder } from "@/lib/workout/weightPlaceholder";
 
-// What the form hands to the offline set queue (D31). The server checks all of it again.
+// What the form hands to the offline set queue (D31). The weight is in kilograms, the
+// stored unit (D30); the server checks all of it again.
 export type LoggedSetInput = {
   clientId: string;
   setNumber: number;
@@ -35,6 +43,7 @@ type SetLogFormProps = {
     painDuringSession: number | null;
     painNextMorning: number | null;
   };
+  weightUnit?: WeightUnit; // what the user chose (D30); the form posts it back
   // Given by the session view: the set goes to the offline queue (D31) instead of the
   // logSet action, so a lost connection cannot lose it.
   onLog?: (set: LoggedSetInput) => Promise<void> | void;
@@ -50,6 +59,7 @@ export default function SetLogForm({
   equipment = null,
   blocked = false,
   correction,
+  weightUnit = "KG",
   onLog,
   busy = false,
 }: SetLogFormProps) {
@@ -77,13 +87,16 @@ export default function SetLogForm({
   }
 
   async function handleQueuedSubmit(event: FormEvent<HTMLFormElement>) {
+    if (!onLog) return;
+    // Synchronously, so React does not also run the logSet action (D31).
     event.preventDefault();
-    if (!onLog || isQueueing) return;
+    if (isQueueing) return;
     const fields = new FormData(event.currentTarget);
     const parsed = setLogSchema.safeParse({
       setNumber,
       reps: fields.get("reps"),
-      weightKg: fields.get("weightKg"),
+      // Typed in the unit the form showed; queued in kg, as logSet stores it (D30).
+      weightKg: weightFieldToKg(fields.get("weightKg"), weightUnit),
       painDuringSession: fields.get("painDuringSession"),
       painNextMorning: fields.get("painNextMorning"),
     });
@@ -96,12 +109,14 @@ export default function SetLogForm({
     setQueueError("");
     setIsQueueing(true);
     try {
-      const typedWeight = String(fields.get("weightKg") ?? "").trim();
       await onLog({
         clientId: clientIdFor(setNumber),
         setNumber,
         reps: parsed.data.reps,
-        weightKg: typedWeight === "" ? null : typedWeight,
+        weightKg:
+          parsed.data.weightKg === undefined
+            ? null
+            : String(parsed.data.weightKg),
         painDuringSession: parsed.data.painDuringSession ?? null,
         painNextMorning: parsed.data.painNextMorning ?? null,
       });
@@ -143,6 +158,7 @@ export default function SetLogForm({
       onSubmit={onLog ? handleQueuedSubmit : undefined}
     >
       <input name="setNumber" type="hidden" value={setNumber} />
+      <input name="weightUnit" type="hidden" value={weightUnit} />
       <label className="grid gap-1 text-sm font-semibold text-foreground/60">
         REPS
         <input
@@ -157,20 +173,25 @@ export default function SetLogForm({
         />
       </label>
       <label className="grid gap-1 text-sm font-semibold text-foreground/60">
-        KG
+        {weightLabel(weightUnit).toUpperCase()}
         <input
           className="h-10 w-24 border border-foreground/20 bg-white px-2 text-sm text-foreground outline-none placeholder:text-foreground/40 focus:border-foreground focus:ring-2 focus:ring-foreground/10"
           inputMode="decimal"
-          key={`weight-${setNumber}`}
-          defaultValue={correcting ? (correction?.weightKg ?? "") : ""}
+          key={`weight-${setNumber}-${weightUnit}`}
+          defaultValue={
+            correcting && correction?.weightKg
+              ? fromKgForEdit(Number(correction.weightKg), weightUnit)
+              : ""
+          }
           max={9999.99}
           min={0.01}
           name="weightKg"
-          placeholder={weightPlaceholder(equipment)}
+          placeholder={weightPlaceholder(equipment, weightUnit)}
           step="0.01"
           type="number"
         />
       </label>
+      <WeightUnitSwitch current={weightUnit} />
       <label className="grid gap-1 text-sm font-semibold text-foreground/60">
         Pain during
         <input

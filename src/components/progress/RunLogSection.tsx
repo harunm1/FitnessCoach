@@ -1,17 +1,23 @@
 import type { RecentRun } from "@/lib/progress/loadRuns";
 import { MAX_EFFORT } from "@/lib/progress/runLimits";
 import { dayLabel } from "@/lib/progress/weightChart";
+import {
+  formatDistance,
+  formatPace,
+  type DistanceUnit,
+} from "@/lib/units/convert";
 import RunForm from "./RunForm";
 
 type RunLogSectionProps = {
   runs: RecentRun[]; // newest first
   today: string; // the user's day, "2026-11-24"
+  distanceUnit?: DistanceUnit; // what the user chose (D30); distances are stored in km
 };
 
-function details(run: RecentRun) {
+function details(run: RecentRun, unit: DistanceUnit) {
   return [
     run.time,
-    run.pace,
+    formatPace(run.distanceKm, run.durationSec, unit),
     run.effort === null ? null : `effort ${run.effort}/${MAX_EFFORT}`,
   ]
     .filter(Boolean)
@@ -20,7 +26,11 @@ function details(run: RecentRun) {
 
 // Logging a run by hand on the Progress page (D27): the form and the latest
 // runs as text, each with its pace.
-export default function RunLogSection({ runs, today }: RunLogSectionProps) {
+export default function RunLogSection({
+  runs,
+  today,
+  distanceUnit = "KM",
+}: RunLogSectionProps) {
   return (
     <section
       aria-labelledby="run-log-title"
@@ -35,7 +45,7 @@ export default function RunLogSection({ runs, today }: RunLogSectionProps) {
           day is a run, this run completes it.
         </p>
       </div>
-      <RunForm today={today} />
+      <RunForm today={today} distanceUnit={distanceUnit} />
       {runs.length === 0 ? (
         <p className="m-0 text-sm text-foreground/70">No runs logged yet.</p>
       ) : (
@@ -44,13 +54,15 @@ export default function RunLogSection({ runs, today }: RunLogSectionProps) {
           <ol className="m-0 grid gap-2 p-0 text-sm">
             {runs.map((run) => (
               <li className="list-none" key={run.id}>
-                <span className="font-medium">{run.distanceKm} km</span>{" "}
+                <span className="font-medium">
+                  {formatDistance(run.distanceKm, distanceUnit)}
+                </span>{" "}
                 <span className="text-foreground/60">
                   {dayLabel(run.day)}
                   {run.planDayName && ` · ${run.planDayName}`}
                 </span>
                 <span className="block text-xs text-foreground/70">
-                  {details(run)}
+                  {details(run, distanceUnit)}
                 </span>
                 {run.note && (
                   <span className="block text-xs text-foreground/60">

@@ -1,5 +1,13 @@
 import Link from "next/link";
 import type { ExerciseGroup } from "@/lib/progress/view";
+import {
+  formatDistance,
+  formatPace,
+  formatWeight,
+  STORED_UNITS,
+  type DistanceUnit,
+  type UnitPrefs,
+} from "@/lib/units/convert";
 
 export type DayWorkout = {
   id: number;
@@ -7,18 +15,29 @@ export type DayWorkout = {
   startTime: string | null; // "6:00 PM"; null for a run logged by hand (D27)
   minutes: number;
   exercises: ExerciseGroup[];
-  run: { distanceKm: number; time: string; pace: string | null } | null;
+  run: { distanceKm: number; seconds: number; time: string } | null;
   imported?: boolean; // read from another app's export, not logged in the app (#131)
 };
+
+// " · 6:00 /km", or nothing when the run has no usable pace.
+function paceSuffix(run: NonNullable<DayWorkout["run"]>, unit: DistanceUnit) {
+  const pace = formatPace(run.distanceKm, run.seconds, unit);
+  return pace === null ? "" : ` · ${pace}`;
+}
 
 type DayDetailsProps = {
   dayLabel: string | null; // "Sunday, November 8"; null when no day is selected
   workouts: DayWorkout[];
+  units?: UnitPrefs; // what the user chose (D30); the numbers are stored in kg and km
 };
 
 // Everything logged on the selected day (#16): each workout's name and length, its
 // sets grouped by exercise, the run if one was logged, and a link to its full page (D29).
-export default function DayDetails({ dayLabel, workouts }: DayDetailsProps) {
+export default function DayDetails({
+  dayLabel,
+  workouts,
+  units = STORED_UNITS,
+}: DayDetailsProps) {
   if (!dayLabel) {
     return (
       <p className="m-0 text-sm text-foreground/60">
@@ -58,8 +77,10 @@ export default function DayDetails({ dayLabel, workouts }: DayDetailsProps) {
               </div>
               {workout.run && (
                 <p className="mt-2 mb-0 text-sm">
-                  Run: {workout.run.distanceKm} km in {workout.run.time}
-                  {workout.run.pace && ` · ${workout.run.pace}`}
+                  Run:{" "}
+                  {formatDistance(workout.run.distanceKm, units.distanceUnit)}{" "}
+                  in {workout.run.time}
+                  {paceSuffix(workout.run, units.distanceUnit)}
                 </p>
               )}
               {workout.exercises.length > 0 && (
@@ -71,7 +92,7 @@ export default function DayDetails({ dayLabel, workouts }: DayDetailsProps) {
                         {exercise.sets
                           .map(
                             (set) =>
-                              `${set.reps} reps${set.weightKg === null ? "" : ` × ${set.weightKg} kg`}`,
+                              `${set.reps} reps${set.weightKg === null ? "" : ` × ${formatWeight(set.weightKg, units.weightUnit)}`}`,
                           )
                           .join(" · ")}
                       </span>

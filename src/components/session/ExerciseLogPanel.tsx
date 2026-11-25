@@ -17,6 +17,7 @@ import {
   useSessionSetQueue,
 } from "@/lib/offline/sessionSetQueue";
 import { firstStoppedSet } from "@/lib/offline/stoppedSet";
+import { formatWeight, type WeightUnit } from "@/lib/units/convert";
 import { createTapGuard, DOUBLE_TAP_WINDOW_MS } from "@/lib/offline/tapGuard";
 
 type ExerciseLogPanelProps = {
@@ -30,15 +31,17 @@ type ExerciseLogPanelProps = {
   serverSets: ServerSet[];
   lastLoggedAtIso: string | null; // newest saved set, server clock
   serverNowIso: string;
+  weightUnit: WeightUnit; // display unit (D30); stored and queued weights are kg
 };
 
-function SetRowItem({ row }: { row: SetRow }) {
+function SetRowItem({ row, unit }: { row: SetRow; unit: WeightUnit }) {
   return (
     <li
       className={`list-none border px-2 py-1 text-sm ${row.queued ? "border-dashed border-amber-800/50 bg-amber-50 text-amber-950" : "border-foreground/15 bg-white text-foreground/70"}`}
     >
       Set {row.setNumber}: {row.reps} reps
-      {row.weightKg !== null && ` · ${row.weightKg} kg`}
+      {row.weightKg !== null &&
+        ` · ${formatWeight(Number(row.weightKg), unit)}`}
       {row.painDuringSession !== null &&
         ` · pain ${row.painDuringSession}/10 during`}
       {row.painNextMorning !== null &&
@@ -107,7 +110,7 @@ export default function ExerciseLogPanel(props: ExerciseLogPanelProps) {
             className="mt-2 flex flex-wrap gap-2 p-0"
           >
             {merged.rows.map((row) => (
-              <SetRowItem key={row.key} row={row} />
+              <SetRowItem key={row.key} row={row} unit={props.weightUnit} />
             ))}
           </ul>
           {timerLastIso && timerNowIso && (
@@ -141,6 +144,7 @@ export default function ExerciseLogPanel(props: ExerciseLogPanelProps) {
           exerciseId={props.exerciseId}
           nextSetNumber={merged.nextSetNumber}
           targetReps={props.targetReps}
+          weightUnit={props.weightUnit}
           onLog={logSet}
         />
       )}

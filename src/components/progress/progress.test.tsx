@@ -145,7 +145,7 @@ describe("DayDetails", () => {
                 ],
               },
             ],
-            run: { distanceKm: 5, time: "30:00", pace: "6:00 /km" },
+            run: { distanceKm: 5, seconds: 1800, time: "30:00" },
           },
         ]}
       />,

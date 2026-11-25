@@ -2,7 +2,7 @@
 
 # Demo evidence map
 
-For the Thu 26 Nov slides (#162) and the Fri 27 Nov / Fri 4 Dec presentation on https://fitness-coach-psi-olive.vercel.app. The rubric is the course's (20 points: technical progress 10, clarity 6, advanced features 4; `docs/COURSE_PRESENTATION_REQUIREMENTS.md`). Written 25 Nov 2026 from main `9f2c6d0`. The peek script and its tests (`scripts/demo-db-peek.ts`, `scripts/demo-peek/`, `tests/integration/demo-peek.test.ts`) are in pull request #178 (CI green on `0562fb5`) and are on main only once it is merged; until then run it from branch `nabeegh/162-demo-db-peek`. Every other file and model below was checked to exist on that commit. The talk script is `docs/demo/DEMO_SCRIPT.md`; the older step-by-step click path stays in `docs/DEMO_SCRIPT.md`.
+For the Thu 26 Nov slides (#162) and the Fri 27 Nov / Fri 4 Dec presentation on https://fitness-coach-psi-olive.vercel.app. The rubric is the course's (20 points: technical progress 10, clarity 6, advanced features 4; `docs/COURSE_PRESENTATION_REQUIREMENTS.md`). Written 25 Nov 2026 from main `9f2c6d0`. The peek script and its tests (`scripts/demo-db-peek.ts`, `scripts/demo-peek/`, `tests/integration/demo-peek.test.ts`) were merged from pull request #178 on 25 Nov (`46dc3fa`, CI green on the head `03c0968`). Every other file and model below was checked to exist on that commit. The talk script is `docs/demo/DEMO_SCRIPT.md`; the older step-by-step click path stays in `docs/DEMO_SCRIPT.md`.
 
 ## Technical progress (10 points)
 

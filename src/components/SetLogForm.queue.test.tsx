@@ -11,6 +11,7 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 // The queue mode never calls the logSet action; mocking it keeps Prisma out of the test.
 vi.mock("@/app/session/actions", () => ({ logSet: vi.fn() }));
+vi.mock("@/app/account/unit-actions", () => ({ setWeightUnit: vi.fn() }));
 
 import { logSet } from "@/app/session/actions";
 import SetLogForm, { type LoggedSetInput } from "./SetLogForm";
@@ -19,6 +20,9 @@ const TARGET_REPS = 10;
 const SET_ONE = 1;
 const SET_TWO = 2;
 const REPS = 8;
+// 135 lb is 61.23 kg (0.45359237 kg per lb, to hundredths).
+const POUNDS = "135";
+const POUNDS_IN_KG = "61.23";
 const UUID_LENGTH = 36;
 const UUID_VERSION_INDEX = 14;
 
@@ -73,6 +77,26 @@ describe("SetLogForm with the offline queue", () => {
     await submit("8", "12");
     expect(onLog).toHaveBeenCalledTimes(1);
     expect(logSet).not.toHaveBeenCalled();
+  });
+
+  it("queues a weight typed in pounds as kilograms, the stored unit (D30)", async () => {
+    const onLog = vi.fn();
+    render(
+      <SetLogForm
+        exerciseId="press"
+        nextSetNumber={SET_ONE}
+        targetReps={TARGET_REPS}
+        weightUnit="LB"
+        onLog={onLog}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("LB"), {
+      target: { value: POUNDS },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Log set 1" }));
+    });
+    expect(onLog.mock.calls[0][0].weightKg).toBe(POUNDS_IN_KG);
   });
 
   it("sends an empty weight as no weight", async () => {
