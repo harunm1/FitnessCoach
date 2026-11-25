@@ -35,7 +35,12 @@ export function createAuth(
     ...(config.google
       ? {
           socialProviders: {
-            google: { ...config.google, requireEmailVerification: true },
+            google: {
+              ...config.google,
+              requireEmailVerification: true,
+              // Only the redirect flow is used; no client-supplied ID-token sign-in.
+              disableIdTokenSignIn: true,
+            },
           },
         }
       : {}),

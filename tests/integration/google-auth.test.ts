@@ -218,6 +218,9 @@ describe("Sign in with Google", () => {
     fakeGoogle({ email_verified: false });
     const response = await googleCallback();
     expect(location(response).pathname).toBe("/sign-in");
+    expect(location(response).searchParams.get("error")).toBe(
+      "email_not_verified",
+    );
     expect(location(response).searchParams.get("provider")).toBe("google");
     expect(response.headers.getSetCookie().join(";")).not.toContain(
       "session_token=",

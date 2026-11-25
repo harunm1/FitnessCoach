@@ -51,6 +51,7 @@ describe("createAuth with Google", () => {
       clientId: "id",
       clientSecret: "s",
       requireEmailVerification: true,
+      disableIdTokenSignIn: true,
     });
   });
 
