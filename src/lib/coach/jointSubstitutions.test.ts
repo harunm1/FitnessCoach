@@ -68,11 +68,28 @@ describe("parseReportedJoints", () => {
     expect(parseReportedJoints("lower-back pain")).toEqual(["lower back"]);
   });
 
+  it("parses back alone as lower back", () => {
+    expect(parseReportedJoints("back pain")).toEqual(["lower back"]);
+  });
+
+  it("parses common plural joint names", () => {
+    expect(parseReportedJoints("my knees hurt and my sore shoulders")).toEqual([
+      "knee",
+      "shoulder",
+    ]);
+  });
+
   it("does not report a joint from unrelated text", () => {
     expect(parseReportedJoints("the shoulder is fine")).toEqual([]);
   });
 
   it("ignores explicitly negated pain", () => {
     expect(parseReportedJoints("no shoulder pain")).toEqual([]);
+  });
+
+  it("does not carry a negation across a but-clause", () => {
+    expect(parseReportedJoints("no knee pain but my shoulder hurts")).toEqual([
+      "shoulder",
+    ]);
   });
 });

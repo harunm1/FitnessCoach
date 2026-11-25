@@ -62,8 +62,20 @@ export function parseReportedJoints(text: string): Joint[] {
   return JOINTS.filter((joint) => {
     const jointPattern =
       joint === "lower back"
-        ? /\blower[\s-]+back\b/i
-        : new RegExp(`\\b${joint}\\b`, "i");
+        ? /\b(?:lower[\s-]+back|back)\b/i
+        : new RegExp(
+            `\\b${joint}${
+              {
+                knee: "s?",
+                hip: "s?",
+                shoulder: "s?",
+                elbow: "s?",
+                wrist: "s?",
+                ankle: "s?",
+              }[joint] ?? ""
+            }\\b`,
+            "i",
+          );
     const match = jointPattern.exec(normalized);
     if (!match) return false;
 
@@ -73,9 +85,13 @@ export function parseReportedJoints(text: string): Joint[] {
       match.index + match[0].length + 24,
     );
     const context = `${before} ${match[0]} ${after}`;
+    const beforeClause =
+      before.split(/\b(?:but|however|except)\b|[,;]/i).at(-1) ?? before;
+    const afterClause =
+      after.split(/\b(?:but|however|except)\b|[,;]/i)[0] ?? after;
     const negated =
-      /\b(?:no|not|without|denies?|none)\b[^,.;]*$/i.test(before) ||
-      /^\s*(?:no|not|without|denies?|none)\b/i.test(after);
+      /\b(?:no|not|without|denies?|none)\b[^,.;]*$/i.test(beforeClause) ||
+      /^\s*(?:no|not|without|denies?|none)\b/i.test(afterClause);
 
     return painPattern.test(context) && !negated;
   });
