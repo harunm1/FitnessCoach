@@ -37,3 +37,11 @@ For the live part of the 6-minute talk (about 90 seconds; the 24 Nov minutes aim
 | Why can the free tier not use the coach?                | The server checks the tier on every coach request, not the page.                                  | `requireTier(COACH_TIERS)` in `src/app/api/coach/route.ts`; `tests/e2e/access.spec.ts`.                          |
 | What if the model gives bad advice?                     | Every reply is checked before it is shown, and a plan is checked in code before it is saved.      | `src/lib/coach/verify.ts`, `src/lib/coach/guardrails.ts`; `docs/COACH_EVAL.md` (10 of 10 profiles).              |
 | What is not finished?                                   | Applying a coach swap to the session is not built; the session timer and other ideas are backlog. | `docs/meetings/2026-11-24.md`, decisions 3 and 5; the plan table in `docs/demo/DEMO_EVIDENCE.md`.                |
+
+## Download step (added 25 Nov, downloads task; optional insert after step 4)
+
+Cloud storage also covers downloading (D33). Use it only when there is time; the 90-second table above is unchanged.
+
+1. After the upload in step 4, open the photo (click the thumbnail), press **Download**. Say: "The file comes back through a route that first checks the photo is mine, then a 60-second signed link; the browser saves it as `progress-photo-<date>.webp`."
+2. For the data side, go straight to `/account/data` by its address (the rules above keep `/account` itself closed). Press **Export workout history (CSV)**, then **Download** on the new row. Say: "The server built this file, stored it in the same private bucket, and recorded it in the `DataExport` table; another user's id answers 404."
+3. If the download does not start within 3 seconds: say the link is a 60-second signed link, press the button again; fallback is the file listed in the table (the row proves it is stored).
