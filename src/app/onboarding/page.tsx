@@ -13,7 +13,7 @@ export default async function OnboardingPage() {
   const user = await requireUser();
   const avatarUrl = await loadAvatarUrl(user.id);
   // The saved answers, so the form shows them again instead of the defaults (#138), with
-  // experience and equipment raised to what the logged history shows (D34).
+  // experience and equipment raised to what the logged history shows (D36).
   const [profile, history] = await Promise.all([
     prisma.profile.findUnique({
       where: { userId: user.id },

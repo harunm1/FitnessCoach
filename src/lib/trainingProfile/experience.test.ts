@@ -7,7 +7,7 @@ const facts = (
   perWeekRecent: number,
 ) => ({ monthsSinceFirst, activeWeeksOf26, perWeekRecent });
 
-describe("experienceLevel (D34)", () => {
+describe("experienceLevel (D36)", () => {
   it("states the thresholds", () => {
     expect(INTERMEDIATE_MIN).toEqual({
       months: 6,

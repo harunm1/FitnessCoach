@@ -27,7 +27,7 @@ const setRow = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-describe("loadTrainingProfile (D34)", () => {
+describe("loadTrainingProfile (D36)", () => {
   it("reads only the user's finished workouts, start times only", async () => {
     const db = dbWith(weeklyStarts(40, [1, 3, 5], 18), [setRow()]);
     await loadTrainingProfile(db, "owner", NOW);
@@ -77,7 +77,7 @@ describe("loadTrainingProfile (D34)", () => {
   });
 });
 
-describe("loadWorkingWeightsFor (D34)", () => {
+describe("loadWorkingWeightsFor (D36)", () => {
   it("maps each asked exercise to its working weight in kilograms", async () => {
     const db = dbWith(
       [],

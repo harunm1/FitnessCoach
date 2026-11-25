@@ -1,6 +1,7 @@
 // Helpers that turn workouts into what the progress page shows (#16): the month grid,
 // workouts per day, durations and paces. Pure functions, so they are tested offline.
 import { DEFAULT_TIME_ZONE, dayKey } from "./dates";
+import { workoutMinutes } from "@/lib/workout/duration";
 import type { ProgressSet, ProgressWorkout } from "./types";
 
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -59,10 +60,14 @@ export function groupByDay(
   return days;
 }
 
-// Whole minutes from start to finish, at least 1.
-export function durationMinutes(workout: ProgressWorkout): number {
-  const ms = workout.finishedAt.getTime() - workout.startedAt.getTime();
-  return Math.max(1, Math.round(ms / 60000));
+// Whole minutes from start to finish, at least 1; null when the workout was left
+// open too long to be a workout time (B1).
+export function durationMinutes(workout: ProgressWorkout): number | null {
+  return workoutMinutes({
+    startedAt: workout.startedAt,
+    finishedAt: workout.finishedAt,
+    durationSeconds: workout.runSeconds,
+  });
 }
 
 const SECONDS_PER_HOUR = 3600;

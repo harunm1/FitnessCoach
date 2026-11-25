@@ -100,7 +100,7 @@ const { requirePermission, AccessDeniedError, revalidatePath, chatModel, db } =
       },
       profile: { findUnique: vi.fn(async () => db.profileRow) },
       plan: { findFirst: vi.fn(async () => null) },
-      // No finished workouts: the coach's training history (D34) is empty.
+      // No finished workouts: the coach's training history (D36) is empty.
       workout: { count: vi.fn(async () => 0), findMany: vi.fn(async () => []) },
       setLog: { findMany: vi.fn(async () => []) },
       user: {

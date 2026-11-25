@@ -36,7 +36,7 @@ const importedHistory = [
   workout("2026-11-23T23:00:00Z"),
 ];
 
-describe("streakInput (D34: imported history counts)", () => {
+describe("streakInput (D36: imported history counts)", () => {
   it("counts imported workouts toward the active streak", () => {
     const input = streakInput(importedHistory, 3);
     expect(activeWeekStreak(input, NOW)).toBe(3);

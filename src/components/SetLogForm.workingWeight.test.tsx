@@ -12,7 +12,7 @@ afterEach(cleanup);
 
 const weightBox = () => screen.getByLabelText(/^(KG|LB)$/) as HTMLInputElement;
 
-describe("SetLogForm starts at the working weight (D34)", () => {
+describe("SetLogForm starts at the working weight (D36)", () => {
   it("shows the working weight in kilograms", () => {
     render(
       <SetLogForm

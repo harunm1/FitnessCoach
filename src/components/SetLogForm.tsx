@@ -36,7 +36,7 @@ type SetLogFormProps = {
   targetReps: number;
   nextSetNumber: number;
   equipment?: string | null; // the exercise's equipment, for the weight field's hint
-  // The weight the user lifted lately on this exercise, in kilograms (D34): the weight box
+  // The weight the user lifted lately on this exercise, in kilograms (D36): the weight box
   // starts there instead of empty.
   suggestedWeightKg?: number | null;
   blocked?: boolean;
@@ -57,7 +57,7 @@ type SetLogFormProps = {
 };
 
 // What the weight box shows first: the set being corrected (to two places, so saving it again
-// stores the same kilograms), else the weight lifted lately (D34) to the unit's plate step, so
+// stores the same kilograms), else the weight lifted lately (D36) to the unit's plate step, so
 // 61.23 kg reads 135 lb and not 134.99, else nothing (the hint shows).
 function weightBoxStart(
   correction: { weightKg: string | null } | undefined,
@@ -205,7 +205,7 @@ export default function SetLogForm({
             weightUnit,
           )}
           max={9999.99}
-          min={0.01}
+          min={weightUnit === "LB" ? 0.55 : 0.25}
           name="weightKg"
           placeholder={weightPlaceholder(equipment, weightUnit)}
           step="0.01"

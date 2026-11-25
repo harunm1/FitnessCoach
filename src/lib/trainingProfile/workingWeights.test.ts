@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { NOW, daysAgo, historySet } from "./fixtures";
 import { estimatedOneRepMax, workingWeights } from "./workingWeights";
 
-describe("estimatedOneRepMax (Epley, D34)", () => {
+describe("estimatedOneRepMax (Epley, D36)", () => {
   it("is weight x (1 + reps / 30)", () => {
     expect(estimatedOneRepMax(100, 5)).toBeCloseTo(116.67, 2);
     expect(estimatedOneRepMax(85, 3)).toBeCloseTo(93.5, 2);
@@ -13,7 +13,7 @@ describe("estimatedOneRepMax (Epley, D34)", () => {
   });
 });
 
-describe("workingWeights (D34)", () => {
+describe("workingWeights (D36)", () => {
   it("picks, per exercise, the set with the highest estimated 1RM", () => {
     const result = workingWeights(
       [

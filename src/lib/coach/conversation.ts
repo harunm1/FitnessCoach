@@ -82,7 +82,7 @@ export async function coachContextFor(
   return { ...profile, avoidMuscles, sessionLines, historyLines };
 }
 
-// A short summary of the logged history, in the user's weight unit (D34); empty with none.
+// A short summary of the logged history, in the user's weight unit (D36); empty with none.
 async function trainingHistoryLines(
   db: Db,
   userId: string,

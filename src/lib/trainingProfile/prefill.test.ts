@@ -22,7 +22,7 @@ const saved = (overrides: Partial<QuizAnswers> = {}): QuizAnswers => ({
   ...overrides,
 });
 
-describe("prefillFromHistory (D34)", () => {
+describe("prefillFromHistory (D36)", () => {
   it("raises a saved beginner to the level the history shows", () => {
     const { answers, note } = prefillFromHistory(saved(), history());
     expect(answers.level).toBe("INTERMEDIATE");

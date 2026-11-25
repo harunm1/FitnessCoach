@@ -1,4 +1,4 @@
-// When and how often the user trains (D34), from workout start times.
+// When and how often the user trains (D36), from workout start times.
 import { DEFAULT_TIME_ZONE, dayKey, weekKey } from "@/lib/progress/dates";
 import { DAYS_PER_WEEK, DAY_MS, RECENT_WEEKS, weeksAgo } from "./windows";
 

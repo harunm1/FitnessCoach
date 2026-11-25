@@ -1,7 +1,7 @@
 type StreakCardsProps = {
   activeWeeks: number;
   goalMetWeeks: number;
-  // Imported sessions are in the counts (D34): say so on the cards.
+  // Imported sessions are in the counts (D36): say so on the cards.
   includesImported?: boolean;
 };
 

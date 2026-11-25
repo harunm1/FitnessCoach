@@ -50,7 +50,7 @@ beforeEach(() => {
   loadTrainingProfile.mockResolvedValue(history);
 });
 
-describe("onboarding page (D34)", () => {
+describe("onboarding page (D36)", () => {
   it("pre-fills experience and equipment from the history, and says so", async () => {
     const html = await render();
     expect(html).toContain("Pre-filled from your 186 logged workouts");

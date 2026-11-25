@@ -1,4 +1,4 @@
-// Synthetic training history for the profile tests (D34). Invented data only: never an export
+// Synthetic training history for the profile tests (D36). Invented data only: never an export
 // from a real account.
 import type { HistorySet } from "./types";
 

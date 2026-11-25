@@ -1,4 +1,4 @@
-// The only training-profile file that talks to the database (D34). It reads start times for
+// The only training-profile file that talks to the database (D36). It reads start times for
 // every finished workout, imported or live, and set rows only for the last 8 weeks, so a long
 // history costs one narrow column and a bounded set read.
 import type { PrismaClient } from "@/generated/prisma/client";

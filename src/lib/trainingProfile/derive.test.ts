@@ -5,7 +5,7 @@ import { NOW, daysAgo, historySet, weeklyStarts } from "./fixtures";
 // Monday, Wednesday, Friday at 18:00 UTC.
 const MWF = [1, 3, 5];
 
-describe("deriveTrainingProfile (D34, synthetic history)", () => {
+describe("deriveTrainingProfile (D36, synthetic history)", () => {
   it("reads a nine-month, three-a-week history as intermediate", () => {
     const starts = weeklyStarts(40, MWF, 18);
     const profile = deriveTrainingProfile(starts, [], NOW, "UTC");

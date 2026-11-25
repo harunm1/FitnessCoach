@@ -1,4 +1,4 @@
-// The quiz's starting answers, from the history (D34): experience and equipment. The user can
+// The quiz's starting answers, from the history (D36): experience and equipment. The user can
 // change both before saving, and a saved answer is never lowered.
 import type { QuizAnswers } from "@/lib/onboarding/answers";
 import { equipmentOptions } from "@/lib/onboarding/schema";

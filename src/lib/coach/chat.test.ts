@@ -614,6 +614,48 @@ describe("coachReply follow-ups that name a new detail of the same lift", () => 
   });
 });
 
+// Audit B4, 25 Nov 2026: the follow-up rule knew only "what about ..." and "explain". Any
+// short question about the lift just discussed must reach the coach, whatever its shape.
+describe("coachReply short questions about the lift just discussed", () => {
+  const rdlTurn: ChatMessage[] = [
+    { role: "user", content: "How do I do a Romanian deadlift?" },
+    {
+      role: "assistant",
+      content:
+        "Hinge at the hips, keep the bar close and your back flat, and lower until your hamstrings stretch.",
+    },
+  ];
+
+  it.each([
+    "Where should I look?",
+    "Should I tuck my chin?",
+    "What about the head and neck position then?",
+    "Is my neck position right?",
+  ])("goes to the coach: %s", async (text) => {
+    const model = vi.fn<CoachChatModel>().mockResolvedValue("Neutral neck.");
+    const turn = await coachReply(model, ctx, rdlTurn, text);
+    expect(turn.source).toBe("COACH");
+  });
+
+  it.each([
+    "Should I buy bitcoin?",
+    "Where should I invest my money?",
+    "Should I vote on Tuesday?",
+    "Is the weather nice in Paris?",
+    "Where should I look for a new job?",
+  ])("still redirects off-topic: %s", async (text) => {
+    const model = vi.fn<CoachChatModel>().mockResolvedValue("x");
+    const turn = await coachReply(model, ctx, rdlTurn, text);
+    expect(turn.source).toBe("GUARDRAIL");
+  });
+
+  it("does not relax the redirect without a training turn before it", async () => {
+    const model = vi.fn<CoachChatModel>().mockResolvedValue("x");
+    const turn = await coachReply(model, ctx, [], "Should I tuck my chin?");
+    expect(turn.source).toBe("GUARDRAIL");
+  });
+});
+
 // Live bugs, 23 Nov 2026: "tension in my lower back on RDLs" was answered with "stop
 // immediately and see a professional", and sets and reps advice contradicted the plan.
 describe("the coach prompt: tension is not pain, and the plan sets the numbers", () => {

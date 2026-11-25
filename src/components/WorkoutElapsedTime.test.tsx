@@ -44,4 +44,45 @@ describe("WorkoutElapsedTime", () => {
     render(<WorkoutElapsedTime startedAt={startedAt} />);
     expect(screen.getByRole("timer").textContent).toBe("00:00:00");
   });
+
+  it("shows a run's own recorded duration instead of the gap (B1)", () => {
+    vi.useFakeTimers();
+    render(
+      <WorkoutElapsedTime
+        durationSeconds={1800}
+        finishedAt="2026-11-25T14:20:00.000Z"
+        startedAt={startedAt}
+      />,
+    );
+    expect(screen.getByRole("timer").textContent).toBe("00:30:00");
+  });
+
+  it("says Not timed when finish equals start and nothing else was recorded (B1)", () => {
+    vi.useFakeTimers();
+    render(<WorkoutElapsedTime startedAt={startedAt} finishedAt={startedAt} />);
+    expect(screen.queryByRole("timer")).toBeNull();
+    expect(screen.getByText("Not timed")).toBeTruthy();
+  });
+
+  it("says Not timed for a workout finished long after it was started (B1)", () => {
+    vi.useFakeTimers();
+    render(
+      <WorkoutElapsedTime
+        startedAt={startedAt}
+        finishedAt="2026-11-26T06:40:22.000Z"
+      />,
+    );
+    expect(screen.queryByRole("timer")).toBeNull();
+    expect(screen.getByText("Workout duration")).toBeTruthy();
+    expect(screen.getByText("Not timed")).toBeTruthy();
+    expect(screen.queryByText(/18:40:22/)).toBeNull();
+  });
+
+  it("stops the live clock once the workout has been open longer than the cap (B1)", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(start + 20 * 3600 * 1000);
+    render(<WorkoutElapsedTime startedAt={startedAt} />);
+    expect(screen.queryByRole("timer")).toBeNull();
+    expect(screen.getByText("Not timed")).toBeTruthy();
+  });
 });

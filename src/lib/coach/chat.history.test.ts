@@ -1,4 +1,4 @@
-// The training-history block of the coach prompt (D34): a short summary, never raw rows.
+// The training-history block of the coach prompt (D36): a short summary, never raw rows.
 import { describe, expect, it } from "vitest";
 import { buildCoachSystemPrompt, type CoachContext } from "./chat";
 
@@ -11,7 +11,7 @@ const ctx: CoachContext = {
   sessionLines: ["Bench Press 3 x 5"],
 };
 
-describe("buildCoachSystemPrompt training history (D34)", () => {
+describe("buildCoachSystemPrompt training history (D36)", () => {
   it("adds the summary lines after the equipment", () => {
     const prompt = buildCoachSystemPrompt({
       ...ctx,

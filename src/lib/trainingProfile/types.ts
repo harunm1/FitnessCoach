@@ -1,4 +1,4 @@
-// Plain data for the training profile (D34). It is computed on read from finished workouts,
+// Plain data for the training profile (D36). It is computed on read from finished workouts,
 // imported or live, and never stored.
 export type ExperienceLevel = "BEGINNER" | "INTERMEDIATE" | "EXPERT";
 

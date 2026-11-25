@@ -23,7 +23,7 @@ const profile = (
   ...overrides,
 });
 
-describe("progressLine (D34)", () => {
+describe("progressLine (D36)", () => {
   it("names the month, the weekly rate and the usual time", () => {
     expect(progressLine(profile())).toBe(
       "Training since March 2025, 3 workouts a week, usually around 6 pm.",
@@ -58,7 +58,7 @@ describe("progressLine (D34)", () => {
   });
 });
 
-describe("coachSummaryLines (D34)", () => {
+describe("coachSummaryLines (D36)", () => {
   it("summarises the history and the working weights in the user's unit", () => {
     const lines = coachSummaryLines(profile(), "KG");
     expect(lines[0]).toBe(

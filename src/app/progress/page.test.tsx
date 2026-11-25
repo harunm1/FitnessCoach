@@ -79,7 +79,7 @@ beforeEach(() => {
     weightUnit: "KG",
     distanceUnit: "KM",
   });
-  // The weekly goal an imported week is judged against when no plan applies (D34).
+  // The weekly goal an imported week is judged against when no plan applies (D36).
   database.profile.findUnique.mockResolvedValue({ daysPerWeek: 2 });
   loadTrainingProfile.mockResolvedValue({
     workoutCount: 0,
@@ -146,7 +146,7 @@ describe("progress page", () => {
     expect(html).toContain("1 week<");
   });
 
-  it("labels imported workouts and counts them in the streaks (D34)", async () => {
+  it("labels imported workouts and counts them in the streaks (D36)", async () => {
     loadFinishedWorkouts.mockResolvedValue([
       workout("2026-11-03T17:00:00Z", {
         imported: true,
@@ -175,7 +175,7 @@ describe("progress page", () => {
     expect(html).toMatch(/Goal streak<\/p><p[^>]*>1 week</);
   });
 
-  it("shows the training profile line when there is a history (D34)", async () => {
+  it("shows the training profile line when there is a history (D36)", async () => {
     loadTrainingProfile.mockResolvedValue({
       workoutCount: 120,
       trainingSince: new Date("2025-03-12T15:00:00Z"),

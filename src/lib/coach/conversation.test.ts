@@ -18,7 +18,7 @@ const profile = {
 function dbWith(overrides: Record<string, unknown>) {
   const workout = {
     count: vi.fn(async () => 0),
-    // The training history (D34): no finished workouts unless a test gives some.
+    // The training history (D36): no finished workouts unless a test gives some.
     findMany: vi.fn(async () => []),
     ...(overrides.workout as object | undefined),
   };
@@ -34,7 +34,7 @@ function dbWith(overrides: Record<string, unknown>) {
   } as unknown as Parameters<typeof coachContextFor>[0];
 }
 
-describe("coachContextFor training history (D34)", () => {
+describe("coachContextFor training history (D36)", () => {
   const NOW = new Date("2026-11-25T17:00:00Z");
   const DAY_MS = 86_400_000;
   // Three workouts a week at 18:00 UTC for forty weeks: an intermediate history.

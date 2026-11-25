@@ -1,4 +1,4 @@
-// The experience level a history shows (D34). The 6 months of consistent training for
+// The experience level a history shows (D36). The 6 months of consistent training for
 // intermediate and "years" for advanced come from the ACSM position stand, Progression Models
 // in Resistance Training for Healthy Adults (Med Sci Sports Exerc 2009; 41(3):687-708). The
 // other numbers, and 24 months for "years", are our own choices.

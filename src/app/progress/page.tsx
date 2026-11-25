@@ -140,7 +140,7 @@ export default async function ProgressPage({
       where: { id: user.id },
       select: { image: true, weightUnit: true, distanceUnit: true },
     }),
-    // The weekly goal an imported week is judged against (D34).
+    // The weekly goal an imported week is judged against (D36).
     prisma.profile.findUnique({
       where: { userId: user.id },
       select: { daysPerWeek: true },
@@ -215,7 +215,7 @@ export default async function ProgressPage({
   }
 
   // Imported sessions are labelled, and they count toward the streaks like any other
-  // session (D34, reversing D22): an imported week is judged against the profile's days
+  // session (D36, reversing D22): an imported week is judged against the profile's days
   // a week.
   const importedCount = workouts.filter((workout) => workout.imported).length;
   const forStreaks = streakInput(

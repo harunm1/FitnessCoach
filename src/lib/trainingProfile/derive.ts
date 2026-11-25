@@ -1,4 +1,4 @@
-// The training profile (D34): everything the app knows about how the user trains, derived from
+// The training profile (D36): everything the app knows about how the user trains, derived from
 // finished workouts, imported or live. Pure; the loader reads the rows.
 import { DEFAULT_TIME_ZONE } from "@/lib/progress/dates";
 import { experienceLevel } from "./experience";

@@ -114,7 +114,7 @@ export default async function SessionPage() {
             finishedAt: { not: null },
           },
           orderBy: { finishedAt: "desc" },
-          select: { startedAt: true, finishedAt: true },
+          select: { startedAt: true, finishedAt: true, durationSeconds: true },
         })
       : null;
   const completedWorkoutCount =
@@ -135,7 +135,7 @@ export default async function SessionPage() {
     (nextDayIndex === null ? undefined : plan?.days[nextDayIndex]);
   const renderedAtIso = new Date().toISOString();
   // The weight lifted lately on each exercise of today's session, so the weight box starts
-  // there (D34). Only while a workout is open: that is when the form is shown.
+  // there (D36). Only while a workout is open: that is when the form is shown.
   const workingWeights = activeWorkout
     ? await loadWorkingWeightsFor(
         prisma,
@@ -216,6 +216,7 @@ export default async function SessionPage() {
                 <WorkoutElapsedTime
                   startedAt={finishedWorkout.startedAt.toISOString()}
                   finishedAt={finishedWorkout.finishedAt.toISOString()}
+                  durationSeconds={finishedWorkout.durationSeconds}
                 />
               </div>
             )}

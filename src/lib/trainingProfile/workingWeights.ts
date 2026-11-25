@@ -1,4 +1,4 @@
-// What the user can lift now (D34): per exercise, the set of the last 8 weeks with the highest
+// What the user can lift now (D36): per exercise, the set of the last 8 weeks with the highest
 // estimated one-rep max. A weight the user actually lifted, never one worked out for a rep count.
 import type { HistorySet, WorkingWeight } from "./types";
 import { RECENT_WEEKS, weeksAgo } from "./windows";

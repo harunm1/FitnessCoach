@@ -1,5 +1,5 @@
 // How the training profile reads to the user (a line on Progress) and to the coach (a few
-// short lines, never rows) (D34).
+// short lines, never rows) (D36).
 import { DEFAULT_TIME_ZONE } from "@/lib/progress/dates";
 import {
   KG_PER_LB,
