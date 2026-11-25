@@ -188,3 +188,29 @@ describe("logRun", () => {
     expect(database.workout.create).not.toHaveBeenCalled();
   });
 });
+
+describe("logRun units", () => {
+  it("converts miles typed under a mile label to kilometres and shows the pace per mile", async () => {
+    const result = await logRun(
+      idle,
+      form({
+        ...RUN,
+        distanceKm: "3.1",
+        distanceUnit: "MI",
+        duration: "0:30:00",
+      }),
+    );
+    expect(result).toMatchObject({
+      status: "saved",
+      distanceKm: 4.99,
+      pace: "9:41 /mi",
+    });
+    expect(database.workout.create.mock.calls[0][0].data.distanceKm).toBe(4.99);
+  });
+
+  it("refuses a unit that is not km or mi", async () => {
+    const result = await logRun(idle, form({ ...RUN, distanceUnit: "ly" }));
+    expect(result.status).toBe("error");
+    expect(database.workout.create).not.toHaveBeenCalled();
+  });
+});

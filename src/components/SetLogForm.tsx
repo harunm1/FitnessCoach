@@ -7,6 +7,7 @@ import {
   painTrafficLight,
 } from "@/lib/coach/painTrafficLight";
 import type { SetLogActionState } from "@/lib/workout/setLogSchema";
+import { weightLabel, type WeightUnit } from "@/lib/units/convert";
 import { weightPlaceholder } from "@/lib/workout/weightPlaceholder";
 
 type SetLogFormProps = {
@@ -22,6 +23,7 @@ type SetLogFormProps = {
     painDuringSession: number | null;
     painNextMorning: number | null;
   };
+  weightUnit?: WeightUnit; // what the user chose (D29); the form posts it back
 };
 
 export default function SetLogForm({
@@ -31,6 +33,7 @@ export default function SetLogForm({
   equipment = null,
   blocked = false,
   correction,
+  weightUnit = "KG",
 }: SetLogFormProps) {
   const initialState: SetLogActionState = { status: "idle", message: "" };
   const [state, formAction, isPending] = useActionState(
@@ -62,6 +65,7 @@ export default function SetLogForm({
   return (
     <form action={formAction} className="mt-4 flex flex-wrap items-end gap-2">
       <input name="setNumber" type="hidden" value={setNumber} />
+      <input name="weightUnit" type="hidden" value={weightUnit} />
       <label className="grid gap-1 text-sm font-semibold text-foreground/60">
         REPS
         <input
@@ -76,7 +80,7 @@ export default function SetLogForm({
         />
       </label>
       <label className="grid gap-1 text-sm font-semibold text-foreground/60">
-        KG
+        {weightLabel(weightUnit).toUpperCase()}
         <input
           className="h-10 w-24 border border-foreground/20 bg-white px-2 text-sm text-foreground outline-none placeholder:text-foreground/40 focus:border-foreground focus:ring-2 focus:ring-foreground/10"
           inputMode="decimal"
@@ -85,7 +89,7 @@ export default function SetLogForm({
           max={9999.99}
           min={0.01}
           name="weightKg"
-          placeholder={weightPlaceholder(equipment)}
+          placeholder={weightPlaceholder(equipment, weightUnit)}
           step="0.01"
           type="number"
         />

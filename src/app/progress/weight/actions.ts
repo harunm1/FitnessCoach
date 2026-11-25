@@ -5,6 +5,11 @@ import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { dayKey } from "@/lib/progress/dates";
 import { parseWeightEntry } from "@/lib/progress/weight";
+import {
+  WEIGHT_UNIT_MESSAGE,
+  readWeightUnit,
+  weightFieldToKg,
+} from "@/lib/units/input";
 
 export type WeightActionState =
   | { status: "idle" }
@@ -42,7 +47,16 @@ export async function logBodyWeight(
     weightKg: fields.weightKg ?? "",
     note: fields.note ?? "",
   };
-  const parsed = parseWeightEntry(fields, dayKey(new Date()));
+  const unit = readWeightUnit(formData);
+  if (!unit) {
+    return { status: "error", message: WEIGHT_UNIT_MESSAGE, values };
+  }
+  // Typed in the unit the form showed; checked and stored in kg (D29).
+  const parsed = parseWeightEntry(
+    { ...fields, weightKg: weightFieldToKg(fields.weightKg, unit) },
+    dayKey(new Date()),
+    unit,
+  );
   if (!parsed.ok) {
     return { status: "error", message: parsed.message, values };
   }

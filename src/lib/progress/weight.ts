@@ -1,13 +1,22 @@
 import { z } from "zod";
 
 import {
+  weightBounds,
+  weightLabel,
+  type WeightUnit,
+} from "@/lib/units/convert";
+import {
   EARLIEST_DAY,
   MAX_NOTE_LENGTH,
   MAX_WEIGHT_KG,
   MIN_WEIGHT_KG,
 } from "./weightLimits";
 
-const WEIGHT_MESSAGE = `Enter a weight between ${MIN_WEIGHT_KG} and ${MAX_WEIGHT_KG} kg.`;
+// The limits are kilograms; the message names them in the unit the user typed in (D29).
+function weightMessage(unit: WeightUnit) {
+  const [min, max] = weightBounds(MIN_WEIGHT_KG, MAX_WEIGHT_KG, unit);
+  return `Enter a weight between ${min} and ${max} ${weightLabel(unit)}.`;
+}
 const DATE_MESSAGE = "Choose the day you weighed yourself.";
 
 export type WeightEntry = {
@@ -36,19 +45,22 @@ export function isCalendarDay(text: string): boolean {
 // though Number() would read the first two as 80 and 100.
 const WEIGHT_TEXT = /^\d{1,3}([.,]\d+)?$/;
 
-const weightSchema = z
-  .string({ error: WEIGHT_MESSAGE })
-  .trim()
-  .transform((text) =>
-    WEIGHT_TEXT.test(text) ? Number(text.replace(",", ".")) : Number.NaN,
-  )
-  .pipe(
-    z
-      .number({ error: WEIGHT_MESSAGE })
-      .min(MIN_WEIGHT_KG, WEIGHT_MESSAGE)
-      .max(MAX_WEIGHT_KG, WEIGHT_MESSAGE),
-  )
-  .transform((kg) => Math.round(kg * STEPS_PER_KG) / STEPS_PER_KG);
+function weightSchema(unit: WeightUnit) {
+  const message = weightMessage(unit);
+  return z
+    .string({ error: message })
+    .trim()
+    .transform((text) =>
+      WEIGHT_TEXT.test(text) ? Number(text.replace(",", ".")) : Number.NaN,
+    )
+    .pipe(
+      z
+        .number({ error: message })
+        .min(MIN_WEIGHT_KG, message)
+        .max(MAX_WEIGHT_KG, message),
+    )
+    .transform((kg) => Math.round(kg * STEPS_PER_KG) / STEPS_PER_KG);
+}
 
 const noteSchema = z
   .string()
@@ -60,7 +72,7 @@ const noteSchema = z
     `Keep the note to ${MAX_NOTE_LENGTH} characters.`,
   );
 
-function entrySchema(today: string) {
+function entrySchema(today: string, unit: WeightUnit) {
   return z.object({
     date: z
       .string({ error: DATE_MESSAGE })
@@ -68,7 +80,7 @@ function entrySchema(today: string) {
       // YYYY-MM-DD strings sort the same way as the days they name.
       .refine((day) => day >= EARLIEST_DAY, "Choose a day from 2000 on.")
       .refine((day) => day <= today, "That day hasn't happened yet."),
-    weightKg: weightSchema,
+    weightKg: weightSchema(unit),
     note: noteSchema,
   });
 }
@@ -78,12 +90,13 @@ function entrySchema(today: string) {
 export function parseWeightEntry(
   fields: { date: unknown; weightKg: unknown; note: unknown },
   today: string,
+  unit: WeightUnit = "KG",
 ): WeightParse {
-  const result = entrySchema(today).safeParse(fields);
+  const result = entrySchema(today, unit).safeParse(fields);
   if (!result.success) {
     return {
       ok: false,
-      message: result.error.issues[0]?.message ?? WEIGHT_MESSAGE,
+      message: result.error.issues[0]?.message ?? weightMessage(unit),
     };
   }
   return { ok: true, value: result.data };

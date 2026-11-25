@@ -2,16 +2,19 @@
 
 import { useActionState } from "react";
 import { saveRunMetrics } from "@/app/session/actions";
+import { distanceLabel, fromKm, type DistanceUnit } from "@/lib/units/convert";
 import type { RunMetricsActionState } from "@/lib/workout/runMetricsSchema";
 
 type RunMetricsFormProps = {
   distanceKm: string | null;
   durationSeconds: number | null;
+  distanceUnit?: DistanceUnit; // what the user chose (D29); the form posts it back
 };
 
 export default function RunMetricsForm({
   distanceKm,
   durationSeconds,
+  distanceUnit = "KM",
 }: RunMetricsFormProps) {
   const initialState: RunMetricsActionState = { status: "idle", message: "" };
   const [state, formAction, isPending] = useActionState(
@@ -27,11 +30,14 @@ export default function RunMetricsForm({
       action={formAction}
       className="mt-4 grid gap-4 sm:grid-cols-[1fr_1.2fr_auto] sm:items-end"
     >
+      <input name="distanceUnit" type="hidden" value={distanceUnit} />
       <label className="grid gap-1.5 text-xs font-semibold">
-        Distance (km)
+        Distance ({distanceLabel(distanceUnit)})
         <input
           className="h-11 w-full border border-foreground/20 bg-white px-3 text-sm font-normal outline-none focus:border-foreground focus:ring-2 focus:ring-foreground/10"
-          defaultValue={distanceKm ?? ""}
+          defaultValue={
+            distanceKm === null ? "" : fromKm(Number(distanceKm), distanceUnit)
+          }
           max={9999.99}
           min={0.01}
           name="distanceKm"

@@ -10,10 +10,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { dayLabel } from "@/lib/progress/weightChart";
 import { EARLIEST_DAY, MAX_NOTE_LENGTH } from "@/lib/progress/weightLimits";
+import { weightLabel, type WeightUnit } from "@/lib/units/convert";
 
 // Logs one weigh-in (D24). The browser limits are only hints; the Server
 // Action checks every field again.
-export default function WeightForm({ today }: { today: string }) {
+export default function WeightForm({
+  today,
+  weightUnit = "KG",
+}: {
+  today: string;
+  weightUnit?: WeightUnit; // what the user chose (D29); the form posts it back
+}) {
   const [state, action, pending] = useActionState<WeightActionState, FormData>(
     logBodyWeight,
     { status: "idle" },
@@ -39,7 +46,8 @@ export default function WeightForm({ today }: { today: string }) {
         />
       </div>
       <div className="grid gap-1">
-        <Label htmlFor="weight-kg">Weight (kg)</Label>
+        <input name="weightUnit" type="hidden" value={weightUnit} />
+        <Label htmlFor="weight-kg">Weight ({weightLabel(weightUnit)})</Label>
         {/* Text, not number: some keyboards type "81,5", which the server accepts. */}
         <Input
           id="weight-kg"
@@ -47,7 +55,7 @@ export default function WeightForm({ today }: { today: string }) {
           type="text"
           inputMode="decimal"
           autoComplete="off"
-          placeholder="81.5"
+          placeholder={weightUnit === "LB" ? "180" : "81.5"}
           defaultValue={typed?.weightKg ?? ""}
           className="w-28"
           required

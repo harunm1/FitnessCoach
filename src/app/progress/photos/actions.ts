@@ -7,6 +7,16 @@ import { requireUser } from "@/lib/auth/session";
 import { MAX_PHOTOS_PER_USER } from "@/lib/photos/limits";
 import { PhotoError, processPhoto } from "@/lib/photos/process";
 import { getPhotoStorage } from "@/lib/storage";
+import {
+  weightBounds,
+  weightLabel,
+  type WeightUnit,
+} from "@/lib/units/convert";
+import {
+  WEIGHT_UNIT_MESSAGE,
+  readWeightUnit,
+  weightFieldToKg,
+} from "@/lib/units/input";
 
 export type PhotoActionState = {
   status: "idle" | "saved" | "deleted" | "error";
@@ -17,15 +27,19 @@ const PHOTOS_PATH = "/progress/photos";
 const UNAVAILABLE = "Photos can't be saved right now. Try again later.";
 const NOT_FOUND = "That photo couldn't be found.";
 
-const weightMessage = "Enter a weight between 20 and 400 kg.";
-const detailsSchema = z.object({
-  weightKg: z.coerce
-    .number({ error: weightMessage })
-    .min(20, weightMessage)
-    .max(400, weightMessage)
-    .optional(),
-  note: z.string().max(300, "Keep the note to 300 characters.").optional(),
-});
+// The limits are kilograms; the message names them in the unit the user typed in (D29).
+function detailsSchema(unit: WeightUnit) {
+  const [min, max] = weightBounds(20, 400, unit);
+  const weightMessage = `Enter a weight between ${min} and ${max} ${weightLabel(unit)}.`;
+  return z.object({
+    weightKg: z.coerce
+      .number({ error: weightMessage })
+      .min(20, weightMessage)
+      .max(400, weightMessage)
+      .optional(),
+    note: z.string().max(300, "Keep the note to 300 characters.").optional(),
+  });
+}
 
 const photoIdSchema = z.coerce.number().int().positive();
 
@@ -54,8 +68,11 @@ export async function uploadProgressPhoto(
     return { status: "error", message: "Choose a photo to upload." };
   }
 
-  const details = detailsSchema.safeParse({
-    weightKg: optionalText(formData.get("weightKg")),
+  const unit = readWeightUnit(formData);
+  if (!unit) return { status: "error", message: WEIGHT_UNIT_MESSAGE };
+  const details = detailsSchema(unit).safeParse({
+    // Typed in the unit the form showed; stored in kg (D29).
+    weightKg: weightFieldToKg(optionalText(formData.get("weightKg")), unit),
     note: optionalText(formData.get("note")),
   });
   if (!details.success) {

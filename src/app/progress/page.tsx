@@ -37,12 +37,12 @@ import {
   inMonth,
   monthGrid,
   monthOf,
-  pace,
   parseDay,
   parseMonth,
   shiftMonth,
 } from "@/lib/progress/view";
 import { getPhotoStorage } from "@/lib/storage";
+import { unitsFromRow } from "@/lib/units/convert";
 
 // Streaks and links depend on today's date and expire, so build it on every visit.
 export const dynamic = "force-dynamic";
@@ -74,8 +74,8 @@ function toDayWorkout(workout: ProgressWorkout): DayWorkout {
     workout.distanceKm !== null && workout.runSeconds !== null
       ? {
           distanceKm: workout.distanceKm,
+          seconds: workout.runSeconds,
           time: duration(workout.runSeconds),
-          pace: pace(workout.distanceKm, workout.runSeconds),
         }
       : null;
   return {
@@ -128,7 +128,7 @@ export default async function ProgressPage({
       ),
       prisma.user.findUnique({
         where: { id: user.id },
-        select: { image: true },
+        select: { image: true, weightUnit: true, distanceUnit: true },
       }),
       prisma.progressPhoto.findMany({
         where: { userId: user.id },
@@ -147,6 +147,7 @@ export default async function ProgressPage({
       loadRecentRuns(user.id),
     ]);
   const workouts = fillPlanGoals(loaded);
+  const units = unitsFromRow(profile);
 
   let photos: GalleryPhoto[] | null;
   let avatarUrl: string | null = null;
@@ -266,6 +267,7 @@ export default async function ProgressPage({
             <DayDetails
               dayLabel={selectedDay ? longDay(selectedDay) : null}
               workouts={dayWorkouts.map(toDayWorkout)}
+              units={units}
             />
           </div>
 
@@ -286,11 +288,19 @@ export default async function ProgressPage({
             <MuscleStats shares={shares} workouts={strengthWorkouts} />
           </section>
 
-          <RunLogSection runs={runs} today={today} />
+          <RunLogSection
+            runs={runs}
+            today={today}
+            distanceUnit={units.distanceUnit}
+          />
 
-          <BodyWeightSection entries={weights} today={today} />
+          <BodyWeightSection entries={weights} today={today} units={units} />
 
-          <PhotoStrip photos={photos} total={photoCount} />
+          <PhotoStrip
+            photos={photos}
+            total={photoCount}
+            weightUnit={units.weightUnit}
+          />
         </div>
       </div>
     </AccountTheme>

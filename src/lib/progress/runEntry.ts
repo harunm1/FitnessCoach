@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+import {
+  distanceBounds,
+  distanceLabel,
+  KM_PER_MI,
+  type DistanceUnit,
+} from "@/lib/units/convert";
 import { clock } from "./view";
 import { isCalendarDay } from "./weight";
 import {
@@ -14,7 +20,17 @@ import {
   SLOWEST_SEC_PER_KM,
 } from "./runLimits";
 
-const DISTANCE_MESSAGE = `Enter a distance between ${MIN_RUN_KM} and ${MAX_RUN_KM} km.`;
+// The limits are kilometres; the message names them in the unit the user typed in (D29).
+function distanceMessage(unit: DistanceUnit) {
+  const [min, max] = distanceBounds(MIN_RUN_KM, MAX_RUN_KM, unit);
+  return `Enter a distance between ${min} and ${max} ${distanceLabel(unit)}.`;
+}
+
+// A pace bound in seconds per kilometre, as the clock time per kilometre or per mile.
+function paceText(secPerKm: number, unit: DistanceUnit) {
+  const seconds = unit === "MI" ? secPerKm * KM_PER_MI : secPerKm;
+  return `${clock(seconds)} per ${distanceLabel(unit)}`;
+}
 const TIME_MESSAGE = "Enter the time as h:mm:ss, for example 0:32:15.";
 const DATE_MESSAGE = "Choose the day you ran.";
 const EFFORT_MESSAGE = `Effort is a whole number from ${MIN_EFFORT} to ${MAX_EFFORT}.`;
@@ -62,19 +78,22 @@ export function parseDuration(text: string): number | null {
 // "5,2" match; "1e2" and "0x10" do not, though Number() would read them.
 const DISTANCE_TEXT = /^\d{1,3}([.,]\d+)?$/;
 
-const distanceSchema = z
-  .string({ error: DISTANCE_MESSAGE })
-  .trim()
-  .transform((text) =>
-    DISTANCE_TEXT.test(text) ? Number(text.replace(",", ".")) : Number.NaN,
-  )
-  .pipe(
-    z
-      .number({ error: DISTANCE_MESSAGE })
-      .min(MIN_RUN_KM, DISTANCE_MESSAGE)
-      .max(MAX_RUN_KM, DISTANCE_MESSAGE),
-  )
-  .transform((km) => Math.round(km * STEPS_PER_KM) / STEPS_PER_KM);
+function distanceSchema(unit: DistanceUnit) {
+  const message = distanceMessage(unit);
+  return z
+    .string({ error: message })
+    .trim()
+    .transform((text) =>
+      DISTANCE_TEXT.test(text) ? Number(text.replace(",", ".")) : Number.NaN,
+    )
+    .pipe(
+      z
+        .number({ error: message })
+        .min(MIN_RUN_KM, message)
+        .max(MAX_RUN_KM, message),
+    )
+    .transform((km) => Math.round(km * STEPS_PER_KM) / STEPS_PER_KM);
+}
 
 const durationSchema = z
   .string({ error: TIME_MESSAGE })
@@ -117,7 +136,7 @@ const noteSchema = z
     `Keep the note to ${MAX_RUN_NOTE_LENGTH} characters.`,
   );
 
-function entrySchema(today: string) {
+function entrySchema(today: string, unit: DistanceUnit) {
   return z
     .object({
       date: z
@@ -126,7 +145,7 @@ function entrySchema(today: string) {
         // YYYY-MM-DD strings sort the same way as the days they name.
         .refine((day) => day >= EARLIEST_RUN_DAY, "Choose a day from 2000 on.")
         .refine((day) => day <= today, "That day hasn't happened yet."),
-      distanceKm: distanceSchema,
+      distanceKm: distanceSchema(unit),
       duration: durationSchema,
       effort: effortSchema,
       note: noteSchema,
@@ -137,13 +156,13 @@ function entrySchema(today: string) {
         context.addIssue({
           code: "custom",
           path: ["duration"],
-          message: `That pace is faster than ${clock(FASTEST_SEC_PER_KM)} per km. Check the distance and time.`,
+          message: `That pace is faster than ${paceText(FASTEST_SEC_PER_KM, unit)}. Check the distance and time.`,
         });
       } else if (secPerKm > SLOWEST_SEC_PER_KM) {
         context.addIssue({
           code: "custom",
           path: ["duration"],
-          message: `That pace is slower than ${clock(SLOWEST_SEC_PER_KM)} per km. Check the distance and time.`,
+          message: `That pace is slower than ${paceText(SLOWEST_SEC_PER_KM, unit)}. Check the distance and time.`,
         });
       }
     });
@@ -160,12 +179,13 @@ export function parseRunEntry(
     note: unknown;
   },
   today: string,
+  unit: DistanceUnit = "KM",
 ): RunParse {
-  const result = entrySchema(today).safeParse(fields);
+  const result = entrySchema(today, unit).safeParse(fields);
   if (!result.success) {
     return {
       ok: false,
-      message: result.error.issues[0]?.message ?? DISTANCE_MESSAGE,
+      message: result.error.issues[0]?.message ?? distanceMessage(unit),
     };
   }
   const { date, distanceKm, duration, effort, note } = result.data;

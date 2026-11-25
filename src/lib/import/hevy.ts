@@ -2,6 +2,7 @@
 // Column names and rules are in docs/IMPORT_FORMATS.md. Any bad row refuses the whole
 // file, so an import is never silently partial.
 import { parseCsv } from "./csv";
+import { KG_PER_LB } from "@/lib/units/convert";
 import { parseHevyDate } from "./hevyDate";
 
 export const MAX_IMPORT_BYTES = 2_000_000;
@@ -13,7 +14,6 @@ const MAX_TITLE_LENGTH = 200;
 const MAX_WEIGHT_KG = 1000;
 const MIN_RPE = 1;
 const MAX_RPE = 10;
-const KG_PER_LB = 0.45359237;
 const CENTS = 100;
 const ERRORS_SHOWN = 5;
 const FIRST_DATA_ROW = 2; // row 1 is the header

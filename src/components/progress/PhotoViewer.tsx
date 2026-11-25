@@ -5,13 +5,20 @@ import { useRef } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import type { GalleryPhoto } from "@/lib/photos/gallery";
 import { photoAlt, photoCaption } from "@/lib/photos/label";
+import type { WeightUnit } from "@/lib/units/convert";
 
 // A progress photo thumbnail that opens the photo full size in a modal
 // dialog (Base UI: focus moves in and is trapped, Esc and Close shut it,
 // focus returns to the thumbnail). Both images use the same signed link, so
 // opening it costs no extra request to storage.
-export default function PhotoViewer({ photo }: { photo: GalleryPhoto }) {
-  const alt = photoAlt(photo);
+export default function PhotoViewer({
+  photo,
+  weightUnit = "KG",
+}: {
+  photo: GalleryPhoto;
+  weightUnit?: WeightUnit; // what the user chose (D29)
+}) {
+  const alt = photoAlt(photo, weightUnit);
   // The app's theme tokens live on the page's <main data-theme>, not on <html>,
   // so the dialog is portalled into that element rather than into <body>.
   const themeRoot = useRef<HTMLElement | null>(null);
@@ -44,7 +51,7 @@ export default function PhotoViewer({ photo }: { photo: GalleryPhoto }) {
           <div className="flex items-center justify-between gap-4">
             <Dialog.Title className="m-0 text-base font-semibold">
               <span className="sr-only">Progress photo, </span>
-              {photoCaption(photo)}
+              {photoCaption(photo, weightUnit)}
             </Dialog.Title>
             <Dialog.Close className={buttonVariants({ variant: "outline" })}>
               Close

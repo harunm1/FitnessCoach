@@ -7,6 +7,11 @@ import {
 } from "@/app/progress/photos/actions";
 import { MAX_PICKED_BYTES, MAX_UPLOAD_BYTES } from "@/lib/photos/limits";
 import { shrinkPhoto } from "@/lib/photos/shrink";
+import {
+  weightBounds,
+  weightLabel,
+  type WeightUnit,
+} from "@/lib/units/convert";
 
 const TOO_LARGE = "That photo is too large to upload. Try a smaller one.";
 
@@ -34,7 +39,12 @@ export async function shrinkThenUpload(
   return upload(previous, formData);
 }
 
-export function PhotoUploadForm() {
+export function PhotoUploadForm({
+  weightUnit = "KG",
+}: {
+  weightUnit?: WeightUnit; // what the user chose (D29); the form posts it back
+}) {
+  const [minWeight, maxWeight] = weightBounds(20, 400, weightUnit);
   const [state, action, pending] = useActionState<PhotoActionState, FormData>(
     (previous, formData) => shrinkThenUpload(previous, formData),
     { status: "idle" },
@@ -63,13 +73,16 @@ export function PhotoUploadForm() {
       </label>
 
       <label className="grid gap-2 text-sm">
-        <span className="font-medium">Weight (kg, optional)</span>
+        <span className="font-medium">
+          Weight ({weightLabel(weightUnit)}, optional)
+        </span>
+        <input name="weightUnit" type="hidden" value={weightUnit} />
         <input
           type="number"
           name="weightKg"
           inputMode="decimal"
-          min={20}
-          max={400}
+          min={minWeight}
+          max={maxWeight}
           step={0.1}
           className="min-h-11 border border-foreground/30 bg-transparent px-3"
         />

@@ -7,23 +7,37 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { dayLabel } from "@/lib/progress/weightChart";
 import {
+  distanceLabel,
+  formatDistance,
+  type DistanceUnit,
+} from "@/lib/units/convert";
+import {
   EARLIEST_RUN_DAY,
   MAX_EFFORT,
   MAX_RUN_NOTE_LENGTH,
   MIN_EFFORT,
 } from "@/lib/progress/runLimits";
 
-function savedMessage(state: Extract<RunActionState, { status: "saved" }>) {
+function savedMessage(
+  state: Extract<RunActionState, { status: "saved" }>,
+  unit: DistanceUnit,
+) {
   const pace = state.pace ? ` at ${state.pace}` : "";
   const planDay = state.planDayName
     ? ` It counts as your plan's ${state.planDayName}.`
     : "";
-  return `Saved your ${state.distanceKm} km run for ${dayLabel(state.date)}${pace}.${planDay}`;
+  return `Saved your ${formatDistance(state.distanceKm, unit)} run for ${dayLabel(state.date)}${pace}.${planDay}`;
 }
 
 // Logs one run by hand (D27). The browser limits are only hints; the Server
 // Action checks every field again.
-export default function RunForm({ today }: { today: string }) {
+export default function RunForm({
+  today,
+  distanceUnit = "KM",
+}: {
+  today: string;
+  distanceUnit?: DistanceUnit; // what the user chose (D29); the form posts it back
+}) {
   const [state, action, pending] = useActionState<RunActionState, FormData>(
     logRun,
     { status: "idle" },
@@ -49,7 +63,8 @@ export default function RunForm({ today }: { today: string }) {
         />
       </div>
       <div className="grid gap-1">
-        <Label htmlFor="run-km">Distance (km)</Label>
+        <input name="distanceUnit" type="hidden" value={distanceUnit} />
+        <Label htmlFor="run-km">Distance ({distanceLabel(distanceUnit)})</Label>
         {/* Text, not number: some keyboards type "5,2", which the server accepts. */}
         <Input
           id="run-km"
@@ -57,7 +72,7 @@ export default function RunForm({ today }: { today: string }) {
           type="text"
           inputMode="decimal"
           autoComplete="off"
-          placeholder="5.2"
+          placeholder={distanceUnit === "MI" ? "3.2" : "5.2"}
           defaultValue={typed?.distanceKm ?? ""}
           className="w-24"
           required
@@ -107,7 +122,7 @@ export default function RunForm({ today }: { today: string }) {
       {/* Two regions, both in the page from the start, so each is announced
           when filled; a region whose role changes may not be read out. */}
       <p role="status" className="m-0 text-sm sm:col-span-4">
-        {state.status === "saved" && savedMessage(state)}
+        {state.status === "saved" && savedMessage(state, distanceUnit)}
       </p>
       <p role="alert" className="m-0 text-sm sm:col-span-4">
         {state.status === "error" && state.message}

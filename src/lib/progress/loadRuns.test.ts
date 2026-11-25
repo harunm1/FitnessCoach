@@ -66,7 +66,7 @@ describe("loadRecentRuns", () => {
         day: "2026-11-23",
         distanceKm: 5.2,
         time: "31:12",
-        pace: "6:00 /km",
+        durationSec: 1872,
         effort: 6,
         note: "Easy loop",
         planDayName: "Easy run",
@@ -76,7 +76,7 @@ describe("loadRecentRuns", () => {
         day: "2026-11-20",
         distanceKm: 3,
         time: "2:05:30",
-        pace: "41:50 /km",
+        durationSec: 7530,
         effort: null,
         // Only a run logged by hand keeps its note; an import's notes hold its title.
         note: null,

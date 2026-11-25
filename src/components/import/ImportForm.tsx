@@ -5,9 +5,14 @@
 import { startTransition, useActionState, useState } from "react";
 import { importWorkouts, type ImportState } from "@/app/import/actions";
 import { MAX_IMPORT_BYTES } from "@/lib/import/hevy";
+import type { WeightUnit } from "@/lib/units/convert";
 import { ImportPreview, ImportResultPanel } from "./ImportPreview";
 
-export function ImportForm() {
+export function ImportForm({
+  weightUnit = "KG",
+}: {
+  weightUnit?: WeightUnit; // what the user chose (D29)
+}) {
   const [state, dispatch, pending] = useActionState<ImportState, FormData>(
     importWorkouts,
     { status: "idle" },
@@ -77,6 +82,7 @@ export function ImportForm() {
             unmatched={state.unmatched}
             moreUnmatched={state.moreUnmatched}
             library={state.library}
+            weightUnit={weightUnit}
           />
         </fieldset>
       )}

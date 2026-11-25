@@ -2,7 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/prisma";
 import { dayKey } from "./dates";
 import { MANUAL_RUN_SOURCE } from "./runLimits";
-import { duration, pace } from "./view";
+import { duration } from "./view";
 
 export const RECENT_RUNS = 5;
 
@@ -12,7 +12,7 @@ export type RecentRun = {
   day: string; // the Toronto day, "2026-11-23"
   distanceKm: number;
   time: string; // "31:12"
-  pace: string | null; // "6:00 /km"
+  durationSec: number; // the pace is worked out at display, per km or per mile
   effort: number | null; // 1 to 10, from RunLog
   note: string | null;
   planDayName: string | null; // the plan day the run completed
@@ -49,7 +49,7 @@ export async function loadRecentRuns(userId: string): Promise<RecentRun[]> {
       day: dayKey(row.startedAt),
       distanceKm,
       time: duration(seconds),
-      pace: pace(distanceKm, seconds),
+      durationSec: seconds,
       effort: row.run?.rpe ?? null,
       // An imported workout's notes hold its title, not a note about the run.
       note: row.source === MANUAL_RUN_SOURCE ? row.notes : null,

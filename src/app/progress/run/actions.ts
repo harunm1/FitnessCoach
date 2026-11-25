@@ -6,7 +6,12 @@ import { dayKey } from "@/lib/progress/dates";
 import { parseRunEntry } from "@/lib/progress/runEntry";
 import { planDayForRun } from "@/lib/progress/runPlanDay";
 import { loadPlanForRun, saveRun } from "@/lib/progress/saveRun";
-import { pace } from "@/lib/progress/view";
+import { formatPace } from "@/lib/units/convert";
+import {
+  DISTANCE_UNIT_MESSAGE,
+  distanceFieldToKm,
+  readDistanceUnit,
+} from "@/lib/units/input";
 
 // What the user typed, sent back with an error so the form can show it again
 // (React resets a form after every action).
@@ -60,7 +65,16 @@ export async function logRun(
     effort: fields.effort ?? "",
     note: fields.note ?? "",
   };
-  const parsed = parseRunEntry(fields, dayKey(new Date()));
+  const unit = readDistanceUnit(formData);
+  if (!unit) {
+    return { status: "error", message: DISTANCE_UNIT_MESSAGE, values };
+  }
+  // Typed in the unit the form showed; checked and stored in km (D29).
+  const parsed = parseRunEntry(
+    { ...fields, distanceKm: distanceFieldToKm(fields.distanceKm, unit) },
+    dayKey(new Date()),
+    unit,
+  );
   if (!parsed.ok) {
     return { status: "error", message: parsed.message, values };
   }
@@ -90,7 +104,7 @@ export async function logRun(
     status: "saved",
     date: run.date,
     distanceKm: run.distanceKm,
-    pace: pace(run.distanceKm, run.durationSec),
+    pace: formatPace(run.distanceKm, run.durationSec, unit),
     planDayName,
   };
 }
