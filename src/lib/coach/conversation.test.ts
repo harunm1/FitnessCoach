@@ -16,13 +16,108 @@ const profile = {
 };
 
 function dbWith(overrides: Record<string, unknown>) {
+  const workout = {
+    count: vi.fn(async () => 0),
+    // The training history (D36): no finished workouts unless a test gives some.
+    findMany: vi.fn(async () => []),
+    ...(overrides.workout as object | undefined),
+  };
   return {
     profile: { findUnique: vi.fn(async () => profile) },
     plan: { findFirst: vi.fn(async () => null) },
-    workout: { count: vi.fn(async () => 0) },
+    user: {
+      findUnique: vi.fn(async () => ({ weightUnit: "KG", distanceUnit: "KM" })),
+    },
+    setLog: { findMany: vi.fn(async () => []) },
     ...overrides,
+    workout,
   } as unknown as Parameters<typeof coachContextFor>[0];
 }
+
+describe("coachContextFor training history (D36)", () => {
+  const NOW = new Date("2026-11-25T17:00:00Z");
+  const DAY_MS = 86_400_000;
+  // Three workouts a week at 18:00 UTC for forty weeks: an intermediate history.
+  const starts = Array.from({ length: 280 }, (_, index) => index)
+    .map((back) => new Date(NOW.getTime() - back * DAY_MS))
+    .filter((day) => [1, 3, 5].includes(day.getUTCDay()))
+    .map(
+      (day) =>
+        new Date(
+          Date.UTC(
+            day.getUTCFullYear(),
+            day.getUTCMonth(),
+            day.getUTCDate(),
+            18,
+          ),
+        ),
+    )
+    .filter((start) => start <= NOW)
+    .reverse();
+
+  it("includes a summary of the history and the working weights, not raw rows", async () => {
+    const db = dbWith({
+      workout: {
+        findMany: vi.fn(async () => starts.map((startedAt) => ({ startedAt }))),
+      },
+      setLog: {
+        findMany: vi.fn(async () => [
+          {
+            reps: 5,
+            weightKg: "80",
+            exerciseId: "bench",
+            exercise: { name: "Bench Press", equipment: "barbell" },
+            workout: { startedAt: new Date(NOW.getTime() - 3 * DAY_MS) },
+          },
+        ]),
+      },
+    });
+
+    const context = await coachContextFor(db, "owner", NOW);
+
+    expect(context?.historyLines?.[0]).toMatch(/^Training since /);
+    expect(context?.historyLines?.[0]).toContain("intermediate");
+    expect(context?.historyLines?.[1]).toContain("Bench Press 80 kg x 5");
+    expect(JSON.stringify(context?.historyLines)).not.toMatch(
+      /\d{4}-\d{2}-\d{2}/,
+    );
+  });
+
+  it("states the working weights in the user's unit", async () => {
+    const db = dbWith({
+      user: {
+        findUnique: vi.fn(async () => ({
+          weightUnit: "LB",
+          distanceUnit: "MI",
+        })),
+      },
+      workout: {
+        findMany: vi.fn(async () => starts.map((startedAt) => ({ startedAt }))),
+      },
+      setLog: {
+        findMany: vi.fn(async () => [
+          {
+            reps: 5,
+            weightKg: "61.23",
+            exerciseId: "bench",
+            exercise: { name: "Bench Press", equipment: "barbell" },
+            workout: { startedAt: new Date(NOW.getTime() - 3 * DAY_MS) },
+          },
+        ]),
+      },
+    });
+
+    const context = await coachContextFor(db, "owner", NOW);
+
+    expect(context?.historyLines?.[1]).toContain("Bench Press 135 lb x 5");
+  });
+
+  it("has no history lines for a user with no finished workouts", async () => {
+    const context = await coachContextFor(dbWith({}), "owner", NOW);
+
+    expect(context?.historyLines).toEqual([]);
+  });
+});
 
 describe("coachContextFor", () => {
   it("lists the exercises of the next plan day after the finished workouts", async () => {

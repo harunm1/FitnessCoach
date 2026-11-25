@@ -14,6 +14,7 @@ import { finishWorkout, startOrResumeWorkout } from "./actions";
 import { requireUser } from "@/lib/auth/session";
 import { formatDistance } from "@/lib/units/convert";
 import { loadUnitPrefs } from "@/lib/units/prefs";
+import { loadWorkingWeightsFor } from "@/lib/trainingProfile/load";
 import { AccountTheme } from "@/components/auth/account-theme";
 import { AppNav } from "@/components/nav/AppNav";
 import theme from "@/components/theme/app-theme.module.css";
@@ -133,6 +134,15 @@ export default async function SessionPage() {
     plan?.days.find((day) => day.id === activeWorkout?.planDayId) ??
     (nextDayIndex === null ? undefined : plan?.days[nextDayIndex]);
   const renderedAtIso = new Date().toISOString();
+  // The weight lifted lately on each exercise of today's session, so the weight box starts
+  // there (D36). Only while a workout is open: that is when the form is shown.
+  const workingWeights = activeWorkout
+    ? await loadWorkingWeightsFor(
+        prisma,
+        user.id,
+        sessionDay?.exercises.map((slot) => slot.exerciseId) ?? [],
+      )
+    : new Map<string, number>();
   const loggedByExercise = new Map<
     string,
     NonNullable<typeof activeWorkout>["sets"]
@@ -274,6 +284,9 @@ export default async function SessionPage() {
                               painDuringSession: set.painDuringSession,
                               painNextMorning: set.painNextMorning,
                             }))}
+                            suggestedWeightKg={
+                              workingWeights.get(slot.exerciseId) ?? null
+                            }
                             targetReps={slot.reps}
                             workoutId={activeWorkout.id}
                             weightUnit={units.weightUnit}
