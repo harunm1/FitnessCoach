@@ -7,6 +7,7 @@ import SessionSync from "@/components/session/SessionSync";
 import { latestLoggedAt } from "@/lib/workout/restRemaining";
 import RunMetricsForm from "@/components/RunMetricsForm";
 import LocalTime from "@/components/LocalTime";
+import WorkoutElapsedTime from "@/components/WorkoutElapsedTime";
 import { BODY_MAP_MUSCLE_NAMES } from "@/lib/body-map/muscles";
 import { getNextPlanDayIndex } from "@/lib/workout/progression";
 import { finishWorkout, startOrResumeWorkout } from "./actions";
@@ -100,6 +101,18 @@ export default async function SessionPage() {
         },
       })
     : null;
+  const finishedWorkout =
+    plan && !activeWorkout
+      ? await prisma.workout.findFirst({
+          where: {
+            userId: user.id,
+            planId: plan.id,
+            finishedAt: { not: null },
+          },
+          orderBy: { finishedAt: "desc" },
+          select: { startedAt: true, finishedAt: true },
+        })
+      : null;
   const completedWorkoutCount =
     plan && !activeWorkout
       ? await prisma.workout.count({
@@ -164,17 +177,35 @@ export default async function SessionPage() {
             </div>
 
             {activeWorkout ? (
-              <p
-                className="mb-6 border-l-2 border-foreground px-3 py-2 text-sm"
-                role="status"
-              >
-                Workout in progress since{" "}
-                <LocalTime
-                  iso={activeWorkout.startedAt.toISOString()}
-                  kind="time"
+              <div className="mb-6 border-l-2 border-foreground px-3 py-2 text-sm">
+                <p className="m-0" role="status">
+                  Workout in progress since{" "}
+                  <LocalTime
+                    iso={activeWorkout.startedAt.toISOString()}
+                    kind="time"
+                  />
+                </p>
+                <WorkoutElapsedTime
+                  startedAt={activeWorkout.startedAt.toISOString()}
                 />
-              </p>
+              </div>
             ) : null}
+
+            {finishedWorkout?.finishedAt && (
+              <div className="mb-6 border-l-2 border-foreground/30 px-3 py-2">
+                <p className="m-0 text-sm text-foreground/70">
+                  Last workout finished{" "}
+                  <LocalTime
+                    iso={finishedWorkout.finishedAt.toISOString()}
+                    kind="datetime"
+                  />
+                </p>
+                <WorkoutElapsedTime
+                  startedAt={finishedWorkout.startedAt.toISOString()}
+                  finishedAt={finishedWorkout.finishedAt.toISOString()}
+                />
+              </div>
+            )}
 
             {activeWorkout && <SessionSync userId={user.id} />}
 
