@@ -25,8 +25,9 @@ export const GROQ_MODEL = "openai/gpt-oss-120b";
 export const GEMINI_MODEL = "gemini-3.5-flash";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-// Test-only (D40): the browser tests point Groq calls at a loopback stub. Unset or empty, the address is Groq's.
-const groqUrl = () => process.env.COACH_GROQ_URL || GROQ_URL;
+// Test-only (D40): the browser tests point Groq calls at a loopback stub. Unset or empty, or on Vercel, the address is Groq's.
+const groqUrl = () =>
+  process.env.VERCEL ? GROQ_URL : process.env.COACH_GROQ_URL || GROQ_URL;
 const geminiUrl = (model: string) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 

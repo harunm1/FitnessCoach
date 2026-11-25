@@ -58,6 +58,16 @@ describe("groqModel address", () => {
     expect(sent(fetchMock).url).toBe("http://127.0.0.1:18028/chat/completions");
   });
 
+  it("ignores COACH_GROQ_URL on Vercel, so the key never goes to another address", async () => {
+    vi.stubEnv("VERCEL", "1");
+    vi.stubEnv("COACH_GROQ_URL", "http://127.0.0.1:18028/chat/completions");
+    const fetchMock = mockFetch(200, groqReply(JSON.stringify(plan)));
+    await groqModel(KEY)("Build a plan as JSON");
+    expect(sent(fetchMock).url).toBe(
+      "https://api.groq.com/openai/v1/chat/completions",
+    );
+  });
+
   it("calls Groq when COACH_GROQ_URL is empty", async () => {
     vi.stubEnv("COACH_GROQ_URL", "");
     const fetchMock = mockFetch(200, groqReply(JSON.stringify(plan)));
