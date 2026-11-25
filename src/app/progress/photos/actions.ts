@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/session";
+import { EXERCISE_MESSAGE, readPhotoKind } from "@/lib/photos/kind";
 import { MAX_PHOTOS_PER_USER } from "@/lib/photos/limits";
 import { PhotoError, processPhoto } from "@/lib/photos/process";
 import { getPhotoStorage } from "@/lib/storage";
@@ -82,6 +83,10 @@ export async function uploadProgressPhoto(
     };
   }
 
+  // Progress or form photo, and the exercise a form photo is for (D39).
+  const kind = readPhotoKind(formData);
+  if (!kind.ok) return { status: "error", message: kind.message };
+
   try {
     const { prisma } = await import("@/lib/prisma");
     // Counted before saving, so two uploads at the same moment can go a photo
@@ -94,6 +99,14 @@ export async function uploadProgressPhoto(
         status: "error",
         message: `You can keep up to ${MAX_PHOTOS_PER_USER.toLocaleString("en-CA")} photos. Delete some to add more.`,
       };
+    }
+    // Checked before the file is stored, so a made-up exercise leaves nothing behind.
+    if (kind.exerciseId) {
+      const exercise = await prisma.exercise.findUnique({
+        where: { id: kind.exerciseId },
+        select: { id: true },
+      });
+      if (!exercise) return { status: "error", message: EXERCISE_MESSAGE };
     }
   } catch (error) {
     logFailure("upload: couldn't count photos", { userId: user.id, error });
@@ -140,6 +153,8 @@ export async function uploadProgressPhoto(
         storageKey,
         weightKg: details.data.weightKg,
         note: details.data.note,
+        kind: kind.kind,
+        exerciseId: kind.exerciseId,
       },
     });
   } catch (error) {

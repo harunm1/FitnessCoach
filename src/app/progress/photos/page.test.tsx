@@ -2,16 +2,22 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryStorage } from "@/lib/storage/memory";
 
-const { requireUser, findMany, findUnique, storage } = vi.hoisted(() => ({
-  requireUser: vi.fn(),
-  findMany: vi.fn(),
-  findUnique: vi.fn(),
-  storage: { get: vi.fn() },
-}));
+const { requireUser, findMany, findUnique, exerciseFindMany, storage } =
+  vi.hoisted(() => ({
+    requireUser: vi.fn(),
+    findMany: vi.fn(),
+    findUnique: vi.fn(),
+    exerciseFindMany: vi.fn(),
+    storage: { get: vi.fn() },
+  }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth/session", () => ({ requireUser }));
 vi.mock("@/lib/prisma", () => ({
-  prisma: { progressPhoto: { findMany }, user: { findUnique } },
+  prisma: {
+    progressPhoto: { findMany },
+    user: { findUnique },
+    exercise: { findMany: exerciseFindMany },
+  },
 }));
 vi.mock("@/lib/storage", () => ({ getPhotoStorage: storage.get }));
 vi.mock("./actions", () => ({
@@ -49,6 +55,7 @@ beforeEach(() => {
   });
   storage.get.mockReturnValue(new MemoryStorage());
   findMany.mockResolvedValue([]);
+  exerciseFindMany.mockResolvedValue([]);
 });
 
 vi.mock("@/components/auth/sign-out-button", () => ({
@@ -56,6 +63,42 @@ vi.mock("@/components/auth/sign-out-button", () => ({
 }));
 
 describe("progress photos page", () => {
+  it("offers the exercises, by name, to link a form photo to (D39)", async () => {
+    exerciseFindMany.mockResolvedValue([
+      { id: "Barbell_Squat", name: "Barbell Squat" },
+    ]);
+    expect(exerciseFindMany).not.toHaveBeenCalled();
+    await render();
+    expect(exerciseFindMany).toHaveBeenCalledWith({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    });
+  });
+
+  it("names the exercise on a form photo and adds nothing to a progress photo", async () => {
+    findMany.mockResolvedValue([
+      {
+        ...photoRows(1)[0],
+        id: 1,
+        kind: "FORM",
+        exercise: { name: "Barbell Squat" },
+      },
+      { ...photoRows(1)[0], id: 2, kind: "PROGRESS", exercise: null },
+    ]);
+    const html = await render();
+    expect(html).toContain("Form photo · Barbell Squat");
+    // The form's own radio label also says "Form photo"; a caption has the dot.
+    expect(html.match(/Form photo ·/g)?.length).toBe(1);
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          kind: true,
+          exercise: { select: { name: true } },
+        }),
+      }),
+    );
+  });
+
   it("loads only the signed-in user's photos, newest first", async () => {
     await render();
     expect(findMany).toHaveBeenCalledWith(
