@@ -10,6 +10,8 @@ const { requireUser, loadFinishedWorkouts, database, storage } = vi.hoisted(
     database: {
       user: { findUnique: vi.fn() },
       progressPhoto: { findMany: vi.fn(), count: vi.fn() },
+      bodyWeight: { findMany: vi.fn() },
+      workout: { findMany: vi.fn() },
     },
     storage: { get: vi.fn() },
   }),
@@ -68,6 +70,8 @@ beforeEach(() => {
   database.user.findUnique.mockResolvedValue({ image: null });
   database.progressPhoto.findMany.mockResolvedValue([]);
   database.progressPhoto.count.mockResolvedValue(0);
+  database.bodyWeight.findMany.mockResolvedValue([]);
+  database.workout.findMany.mockResolvedValue([]);
   storage.get.mockReturnValue(new MemoryStorage());
 });
 
@@ -131,6 +135,21 @@ describe("progress page", () => {
     expect(html).toContain("Imported");
     // Only live sessions feed the streaks, so none of these count.
     expect(html).toMatch(/Active streak<\/p><p[^>]*>0 weeks/);
+  });
+
+  it("shows a run logged by hand without a made-up start time, in h:mm:ss (D27)", async () => {
+    loadFinishedWorkouts.mockResolvedValue([
+      workout("2026-11-10T17:00:00Z", {
+        manual: true,
+        dayName: null,
+        distanceKm: 21.1,
+        runSeconds: 7530,
+        sets: [],
+      }),
+    ]);
+    const html = await render({ month: "2026-11", day: "2026-11-10" });
+    expect(html).toContain("Run: 21.1 km in 2:05:30");
+    expect(html).not.toContain("12:00 PM");
   });
 
   it("shows no imported line when nothing was imported", async () => {
@@ -239,6 +258,54 @@ describe("progress page", () => {
       "[photos] progress: couldn't sign photo links",
       expect.objectContaining({ userId: "session-owner" }),
     );
+  });
+
+  it("shows the signed-in user's last year of body weight, with the form (D24)", async () => {
+    database.bodyWeight.findMany.mockResolvedValue([
+      {
+        date: new Date("2026-11-10T00:00:00Z"),
+        weightKg: { toString: () => "81.50" },
+        note: null,
+      },
+    ]);
+    const html = await render();
+    expect(database.bodyWeight.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          userId: "session-owner",
+          date: { gte: new Date("2025-11-12T00:00:00Z") },
+        },
+      }),
+    );
+    expect(html).toContain("Body weight");
+    expect(html).toContain("Latest: 81.5 kg on Nov 10, 2026");
+    expect(html).toContain('max="2026-11-12"');
+  });
+
+  it("offers the run form and lists the signed-in user's latest runs (D27)", async () => {
+    database.workout.findMany.mockResolvedValue([
+      {
+        id: 3,
+        startedAt: new Date("2026-11-11T17:00:00Z"),
+        distanceKm: { toString: () => "5.20" },
+        durationSeconds: 1872,
+        notes: "Easy loop",
+        source: "manual-run",
+        planDay: { name: "Easy run" },
+        run: { rpe: 6 },
+      },
+    ]);
+    const html = await render();
+    expect(database.workout.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ userId: "session-owner" }),
+      }),
+    );
+    expect(html).toContain("Log a run");
+    expect(html).toContain('name="duration"');
+    expect(html).toContain("5.2 km");
+    expect(html).toContain("6:00 /km");
+    expect(html).toContain("Easy loop");
   });
 
   it("does not render for a signed-out user", async () => {

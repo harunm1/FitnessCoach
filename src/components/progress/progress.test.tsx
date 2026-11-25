@@ -203,6 +203,10 @@ describe("PhotoStrip", () => {
     expect(html).toContain('src="memory://p3.webp?expires=300"');
     expect(html).toContain("See all (7)");
     expect(html).toContain('href="/progress/photos"');
+    // Each photo opens full size in place rather than leaving the page (#16).
+    expect(html.match(/aria-label="Enlarge progress photo from/g)).toHaveLength(
+      3,
+    );
   });
 
   it("invites a first photo when there are none", () => {
