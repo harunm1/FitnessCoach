@@ -335,6 +335,8 @@ describe("runSteps", () => {
     const { calls, run } = recorder();
     runSteps(steps, hosted, run);
     expect(calls[1].env.DEMO_PASSWORD).toBe("");
+    expect(calls[1].env.DATABASE_URL).toBe(DIRECT);
+    expect(calls[2].env.DATABASE_URL).toBe(POOLED);
     expect(calls[0].env.DEMO_PASSWORD).toBe("a-local-demo-password");
     expect(calls[2].env.DEMO_PASSWORD).toBe("a-local-demo-password");
   });
@@ -375,16 +377,29 @@ describe("stepEnv", () => {
     expect(stepEnv(SEED_STEP, withoutPassword).DEMO_PASSWORD).toBe("");
   });
 
-  it("keeps the database URLs for the seed step", () => {
-    const env = stepEnv(SEED_STEP, hosted);
-    expect(env.DATABASE_URL).toBe(POOLED);
-    expect(env.DATABASE_URL_UNPOOLED).toBe(DIRECT);
+  it.each(["production", "preview"])(
+    "uses the direct connection for the %s seed step",
+    (VERCEL_ENV) => {
+      const env = stepEnv(SEED_STEP, { ...hosted, VERCEL_ENV });
+      expect(env.DATABASE_URL).toBe(DIRECT);
+      expect(env.DATABASE_URL_UNPOOLED).toBe(DIRECT);
+    },
+  );
+
+  it("keeps local seed connections isolated from a hosted direct URL", () => {
+    expect(
+      stepEnv(SEED_STEP, {
+        DATABASE_URL: TEST_DB,
+        DATABASE_URL_UNPOOLED: DIRECT,
+      }).DATABASE_URL,
+    ).toBe(TEST_DB);
   });
 
   it("does not change the caller's environment", () => {
     const env = { ...hosted };
     stepEnv(SEED_STEP, env);
     expect(env.DEMO_PASSWORD).toBe("a-local-demo-password");
+    expect(env.DATABASE_URL).toBe(POOLED);
   });
 
   it("passes the environment through unchanged for the other steps", () => {

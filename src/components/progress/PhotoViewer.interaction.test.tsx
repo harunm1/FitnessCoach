@@ -136,3 +136,36 @@ describe("PhotoViewer", () => {
     expect(dialog.getAttribute("aria-describedby")).toBeNull();
   });
 });
+
+// Live feedback 24 Nov, item 5 (#159): the enlarged photo still read small.
+describe("PhotoViewer near full screen", () => {
+  it("sizes the dialog to the viewport and lets the photo fill it", async () => {
+    await openViewer();
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog.className).toContain("w-[96vw]");
+    expect(dialog.className).toContain("h-[96dvh]");
+    const image = dialog.querySelector("img");
+    expect(image?.className).toContain("object-contain");
+    expect(image?.className).toContain("h-full");
+    expect(image?.className).not.toContain("max-h-[70dvh]");
+  });
+
+  it("closes when the user clicks outside the photo, on the backdrop", async () => {
+    await openViewer();
+    await screen.findByRole("dialog");
+    const backdrop = document.querySelector('[class*="bg-black"]');
+    expect(backdrop).not.toBeNull();
+    await act(async () => {
+      fireEvent.click(backdrop as Element);
+    });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("keeps the alt text on the enlarged photo", async () => {
+    await openViewer();
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog.querySelector("img")?.getAttribute("alt")).toBe(
+      `Progress photo from ${DATE}, 81.5 kg`,
+    );
+  });
+});

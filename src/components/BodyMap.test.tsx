@@ -3,7 +3,9 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { BodyMapExercise } from "@/lib/body-map/muscles";
 
-vi.mock("@/components/ExerciseCoachChat", () => ({ default: () => null }));
+vi.mock("@/components/ExerciseCoachChat", () => ({
+  default: () => <div data-testid="coach-chat" />,
+}));
 import BodyMap from "./BodyMap";
 
 const exercises: BodyMapExercise[] = [
@@ -44,6 +46,19 @@ describe("BodyMap", () => {
     fireEvent.click(screen.getByRole("button", { name: "Chest" }));
     expect(fillOf(container, "chest")).toBe("#e9734d");
     expect(screen.getByText("Bench Press")).toBeTruthy();
+  });
+
+  // Live feedback 24 Nov, item 3: the question box was hidden behind a second tap.
+  it("shows the coach chat as soon as a muscle is picked, because the first exercise opens by itself", () => {
+    render(<BodyMap exercises={exercises} />);
+    expect(screen.queryByTestId("coach-chat")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Chest" }));
+    expect(screen.getByTestId("coach-chat")).toBeTruthy();
+  });
+
+  it("does not send the user away to the Coach page from the footer note", () => {
+    render(<BodyMap exercises={exercises} />);
+    expect(screen.queryByText(/Ask the coach on the Coach page/)).toBeNull();
   });
 
   it("picks a muscle when its region on the body is tapped", () => {

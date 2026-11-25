@@ -182,10 +182,13 @@ export function buildSteps(env: Env): string[] {
  * The environment one build step runs with. The seed step gets DEMO_PASSWORD blank:
  * a hosted database gets no demo logins, and prisma/demo-users.ts throws if the
  * variable is set off localhost. Blank, not deleted, so dotenv cannot fill it back
- * from a .env file. Every other step gets the environment unchanged. Returns a copy.
+ * from a .env file. Hosted seeding uses the direct database URL for its write
+ * transactions; the app build retains the pooled URL. Returns a copy.
  */
 export function stepEnv<E extends Env>(step: string, env: E): E {
-  return step === SEED_STEP ? { ...env, DEMO_PASSWORD: "" } : { ...env };
+  return step === SEED_STEP
+    ? { ...env, DEMO_PASSWORD: "", DATABASE_URL: cliDatabaseUrl(env) }
+    : { ...env };
 }
 
 /** Runs one command with the given environment and returns its exit status (0 = ok). */

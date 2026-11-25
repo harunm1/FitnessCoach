@@ -2,7 +2,10 @@
 
 import { useActionState, useState } from "react";
 import { logSet } from "@/app/session/actions";
-import { painTrafficLight } from "@/lib/coach/painTrafficLight";
+import {
+  PAIN_TRAFFIC_THRESHOLDS,
+  painTrafficLight,
+} from "@/lib/coach/painTrafficLight";
 import type { SetLogActionState } from "@/lib/workout/setLogSchema";
 import { weightPlaceholder } from "@/lib/workout/weightPlaceholder";
 
@@ -12,6 +15,13 @@ type SetLogFormProps = {
   nextSetNumber: number;
   equipment?: string | null; // the exercise's equipment, for the weight field's hint
   blocked?: boolean;
+  correction?: {
+    setNumber: number;
+    reps: number;
+    weightKg: string | null;
+    painDuringSession: number | null;
+    painNextMorning: number | null;
+  };
 };
 
 export default function SetLogForm({
@@ -20,6 +30,7 @@ export default function SetLogForm({
   nextSetNumber,
   equipment = null,
   blocked = false,
+  correction,
 }: SetLogFormProps) {
   const initialState: SetLogActionState = { status: "idle", message: "" };
   const [state, formAction, isPending] = useActionState(
@@ -28,6 +39,9 @@ export default function SetLogForm({
   );
   const [painDuringSession, setPainDuringSession] = useState("");
   const [painNextMorning, setPainNextMorning] = useState("");
+  const [correcting, setCorrecting] = useState(false);
+  const setNumber =
+    correcting && correction ? correction.setNumber : nextSetNumber;
 
   const duringScore =
     painDuringSession === "" ? null : Number(painDuringSession);
@@ -47,12 +61,13 @@ export default function SetLogForm({
 
   return (
     <form action={formAction} className="mt-4 flex flex-wrap items-end gap-2">
-      <input name="setNumber" type="hidden" value={nextSetNumber} />
+      <input name="setNumber" type="hidden" value={setNumber} />
       <label className="grid gap-1 text-sm font-semibold text-foreground/60">
         REPS
         <input
           className="h-10 w-20 border border-foreground/20 bg-white px-2 text-sm text-foreground outline-none focus:border-foreground focus:ring-2 focus:ring-foreground/10"
-          defaultValue={targetReps}
+          key={`reps-${setNumber}`}
+          defaultValue={correcting && correction ? correction.reps : targetReps}
           max={30}
           min={1}
           name="reps"
@@ -65,6 +80,8 @@ export default function SetLogForm({
         <input
           className="h-10 w-24 border border-foreground/20 bg-white px-2 text-sm text-foreground outline-none placeholder:text-foreground/40 focus:border-foreground focus:ring-2 focus:ring-foreground/10"
           inputMode="decimal"
+          key={`weight-${setNumber}`}
+          defaultValue={correcting ? (correction?.weightKg ?? "") : ""}
           max={9999.99}
           min={0.01}
           name="weightKg"
@@ -87,7 +104,7 @@ export default function SetLogForm({
         />
       </label>
       <label className="grid gap-1 text-sm font-semibold text-foreground/60">
-        Pain next morning
+        Pain this morning (before workout)
         <input
           className="h-10 w-20 border border-foreground/20 bg-white px-2 text-sm text-foreground outline-none focus:border-foreground focus:ring-2 focus:ring-foreground/10"
           max={10}
@@ -99,18 +116,29 @@ export default function SetLogForm({
           value={painNextMorning}
         />
       </label>
-      <p className="basis-full text-xs text-foreground/60">
-        Record next-morning pain at the start of the next session, then update
-        this set if it is still available.
-      </p>
       {blocked && (
         <p
           role="alert"
           className="basis-full border-l-2 border-red-700 px-3 py-2 text-sm text-red-800"
         >
-          This exercise is blocked because a logged pain score reached 6/10 or
-          higher.
+          This exercise is blocked because a logged pain score reached{" "}
+          {PAIN_TRAFFIC_THRESHOLDS.stopMin}/10 or higher.
         </p>
+      )}
+      {blocked && correction && !correcting && (
+        <button
+          className="min-h-10 border border-foreground/20 px-3 text-sm font-semibold"
+          type="button"
+          onClick={() => {
+            setCorrecting(true);
+            setPainDuringSession(
+              correction.painDuringSession?.toString() ?? "",
+            );
+            setPainNextMorning(correction.painNextMorning?.toString() ?? "");
+          }}
+        >
+          Correct logged set {correction.setNumber}
+        </button>
       )}
       {traffic && (
         <p
@@ -130,10 +158,14 @@ export default function SetLogForm({
       )}
       <button
         className="h-10 bg-foreground px-3 text-xs font-semibold text-background transition-opacity hover:opacity-80 disabled:cursor-wait disabled:opacity-60"
-        disabled={isPending || blocked}
+        disabled={isPending || (blocked && !correcting)}
         type="submit"
       >
-        {isPending ? "Saving..." : `Log set ${nextSetNumber}`}
+        {isPending
+          ? "Saving..."
+          : correcting
+            ? `Save correction for set ${setNumber}`
+            : `Log set ${nextSetNumber}`}
       </button>
       {state.message && (
         <p

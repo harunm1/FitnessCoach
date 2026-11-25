@@ -6,7 +6,13 @@ import { SignOutButton } from "@/components/auth/sign-out-button";
 import { UserBadge } from "@/components/photos/UserBadge";
 
 export type NavPage =
-  "session" | "coach" | "progress" | "photos" | "import" | "account";
+  | "session"
+  | "coach"
+  | "progress"
+  | "photos"
+  | "history"
+  | "import"
+  | "account";
 
 // The main pages a signed-in user can move between, in menu order.
 export const NAV_LINKS: {
@@ -18,6 +24,7 @@ export const NAV_LINKS: {
   { page: "coach", href: "/coach", label: "Coach" },
   { page: "progress", href: "/progress", label: "Progress" },
   { page: "photos", href: "/progress/photos", label: "Photos" },
+  { page: "history", href: "/history", label: "History" },
   { page: "import", href: "/import", label: "Import" },
 ];
 
