@@ -1,5 +1,6 @@
 // Turns a peek result into the text the presenter reads on screen (#162). Times are
-// Toronto time with seconds, so a row added a moment ago stands out on a re-run.
+// Toronto time with seconds and the zone, so a row added a moment ago stands out on a
+// re-run and the repeated hour in November stays unambiguous.
 import { NO_SUCH_USER, type PeekResult } from "./queries";
 
 const toronto = new Intl.DateTimeFormat("en-CA", {
@@ -11,39 +12,48 @@ const toronto = new Intl.DateTimeFormat("en-CA", {
   minute: "2-digit",
   second: "2-digit",
   hourCycle: "h23",
+  timeZoneName: "short",
 });
 
 function stamp(date: Date): string {
-  const part = (type: Intl.DateTimeFormatPartTypes) =>
-    toronto.formatToParts(date).find((p) => p.type === type)?.value ?? "";
-  return `${part("year")}-${part("month")}-${part("day")} ${part("hour")}:${part("minute")}:${part("second")}`;
+  const parts = Object.fromEntries(
+    toronto.formatToParts(date).map((part) => [part.type, part.value]),
+  );
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second} ${parts.timeZoneName}`;
 }
 
 function section(title: string, lines: string[]): string[] {
   return [title, ...(lines.length > 0 ? lines : ["  (none yet)"]), ""];
 }
 
-export function formatPeek(result: PeekResult | typeof NO_SUCH_USER): string {
+const plural = (count: number, word: string) =>
+  `${count} ${word}${count === 1 ? "" : "s"}`;
+
+export function formatPeek(
+  result: PeekResult | typeof NO_SUCH_USER,
+  databaseName = "(not given)",
+): string {
   if (result === NO_SUCH_USER) {
     return "No account has that email. Check the address and the DATABASE_URL.";
   }
   const { user, totals } = result;
   return [
     `${user.name} (${user.tier})  [read-only, SELECT only]`,
-    `${totals.workouts} workouts, ${totals.sets} sets, ${totals.photos} photos`,
+    `Database: ${databaseName}   Times: America/Toronto`,
+    `${plural(totals.workouts, "workout")}, ${plural(totals.sets, "set")}, ${plural(totals.photos, "photo")}`,
     "",
     ...section(
-      "Latest sets (SetLog, newest first)",
+      "Latest sets (SetLog, newest first; first logged: editing a set keeps its time)",
       result.sets.map(
         (set) =>
-          `  #${set.id}  ${stamp(set.loggedAt)}  ${set.exercise}  set ${set.setNumber}  ${set.reps} reps  ${set.weightKg ?? "bodyweight"}${set.weightKg === null ? "" : " kg"}`,
+          `  #${set.id}  ${stamp(set.loggedAt)}  ${set.exercise}  set ${set.setNumber}  ${set.reps} reps  ${set.weightKg === null ? "bodyweight" : `${set.weightKg} kg`}`,
       ),
     ),
     ...section(
       "Latest workouts (Workout)",
       result.workouts.map(
         (workout) =>
-          `  #${workout.id}  ${stamp(workout.startedAt)}  ${workout.finished ? "finished" : "open"}  ${workout.sets} sets  source ${workout.source}`,
+          `  #${workout.id}  ${stamp(workout.startedAt)}  ${workout.finished ? "finished" : "open"}  ${plural(workout.sets, "set")}  source ${workout.source}`,
       ),
     ),
     ...section(

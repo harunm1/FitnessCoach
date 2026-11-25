@@ -4,35 +4,39 @@
 // row shows up with its time and (for a photo) its R2 key. SELECT only: see queries.ts.
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { parseArgs } from "./demo-peek/args";
+import { describeFailure } from "./demo-peek/failure";
 import { formatPeek } from "./demo-peek/format";
-import { peekDemoUser } from "./demo-peek/queries";
+import { NO_SUCH_USER, peekDemoUser } from "./demo-peek/queries";
+
+// node and the script name come first in argv.
+const ARGV_START = 2;
 
 async function main(): Promise<void> {
-  const email = process.argv[2] ?? process.env.DEMO_PEEK_EMAIL;
-  const url = process.env.DATABASE_URL;
-  if (!email || !url) {
-    console.error(
-      "Usage: npx tsx --env-file=.env scripts/demo-db-peek.ts <email>\n" +
-        "Needs DATABASE_URL (from .env or the environment).",
-    );
+  const args = parseArgs(process.argv.slice(ARGV_START), process.env);
+  if ("usage" in args) {
+    console.error(args.usage);
     process.exitCode = 1;
     return;
   }
   const db = new PrismaClient({
-    adapter: new PrismaPg({ connectionString: url }),
+    adapter: new PrismaPg({ connectionString: args.url }),
   });
   try {
-    console.log(formatPeek(await peekDemoUser(db, email)));
+    const result = await peekDemoUser(db, args.email);
+    if (result === NO_SUCH_USER) {
+      console.error(formatPeek(result));
+      process.exitCode = 1;
+      return;
+    }
+    console.log(formatPeek(result, args.databaseName));
   } finally {
     await db.$disconnect();
   }
 }
 
 main().catch((error: unknown) => {
-  // The message only: a connection error can carry the connection string.
-  console.error(
-    "Peek failed:",
-    error instanceof Error ? error.message.split("\n")[0] : "unknown error",
-  );
+  // Name and code only: a connection error message can carry the host or the URL.
+  console.error(describeFailure(error));
   process.exitCode = 1;
 });
