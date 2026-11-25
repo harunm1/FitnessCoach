@@ -88,6 +88,12 @@ describe("GET /api/photos/[id]/download", () => {
     expect(database.progressPhoto.findFirst).not.toHaveBeenCalled();
   });
 
+  it("answers 404 for an id too big for the database, not 503", async () => {
+    const response = await call("99999999999");
+    expect(response.status).toBe(NOT_FOUND);
+    expect(database.progressPhoto.findFirst).not.toHaveBeenCalled();
+  });
+
   it("answers 401 when nobody is signed in", async () => {
     getVerifiedUser.mockResolvedValue(null);
     expect((await call(String(MY_PHOTO))).status).toBe(UNAUTHORIZED);

@@ -11,7 +11,9 @@ const UNAUTHORIZED = 401;
 const NOT_FOUND = 404;
 const UNAVAILABLE = 503;
 const NO_STORE = { "Cache-Control": "no-store" };
-const photoIdSchema = z.coerce.number().int().positive();
+// The id column is a 32-bit integer; a bigger number cannot be a photo.
+const MAX_INT4 = 2_147_483_647;
+const photoIdSchema = z.coerce.number().int().positive().max(MAX_INT4);
 
 const reply = (message: string, status: number) =>
   Response.json({ message }, { status, headers: NO_STORE });

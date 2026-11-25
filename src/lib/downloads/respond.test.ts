@@ -59,6 +59,7 @@ describe("downloadResponse", () => {
     );
     expect(response.headers.get("content-type")).toBe(CSV);
     expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(response.headers.get("x-content-type-options")).toBe("nosniff");
     expect(await response.text()).toBe("a,b\r\n");
   });
 
@@ -90,6 +91,19 @@ describe("linkCarriesAttachment", () => {
       link,
       expect.objectContaining({ headers: { Range: "bytes=0-0" } }),
     );
+  });
+
+  it("lets go of the probe's body", async () => {
+    const cancel = vi.fn(async () => undefined);
+    const body = { cancel } as unknown as ReadableStream;
+    await linkCarriesAttachment(link, async () => {
+      const response = new Response("a", {
+        headers: { "content-disposition": "attachment" },
+      });
+      Object.defineProperty(response, "body", { value: body });
+      return response;
+    });
+    expect(cancel).toHaveBeenCalled();
   });
 
   it("is true when the response says attachment", async () => {

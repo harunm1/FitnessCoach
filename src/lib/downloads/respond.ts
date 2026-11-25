@@ -8,6 +8,7 @@ const PROBE_TIMEOUT_MS = 3000;
 const NOT_FOUND = 404;
 const FOUND = 302;
 const NO_STORE = { "Cache-Control": "no-store" };
+const NO_SNIFF = { "X-Content-Type-Options": "nosniff" };
 
 type Fetcher = (
   url: string,
@@ -27,6 +28,7 @@ export async function linkCarriesAttachment(
       signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
     });
     const disposition = response.headers.get("content-disposition") ?? "";
+    await response.body?.cancel().catch(() => undefined);
     return disposition.toLowerCase().startsWith("attachment");
   } catch {
     return false;
@@ -68,6 +70,7 @@ export async function downloadResponse({
       "Content-Disposition": contentDisposition,
       "Content-Length": String(body.byteLength),
       ...NO_STORE,
+      ...NO_SNIFF,
     },
   });
 }

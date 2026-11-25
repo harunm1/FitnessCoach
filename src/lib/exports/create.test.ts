@@ -18,6 +18,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/lib/prisma", () => ({ prisma: database }));
 
 import { UTF8_BOM } from "./csv";
+import { MAX_ROWS } from "./limits";
 import {
   createExport,
   EXPORTS_PER_HOUR,
@@ -138,6 +139,17 @@ describe("createExport", () => {
       createExport("u1", "COACH_CSV", { storage, now: NOW }),
     ).rejects.toMatchObject({ code: "too-large" });
     expect(storage.files.size).toBe(0);
+  });
+
+  it("refuses to export when there are more rows than one file holds, instead of cutting the oldest", async () => {
+    database.setLog.findMany.mockResolvedValue(
+      Array.from({ length: MAX_ROWS + 1 }, () => setRow()),
+    );
+    await expect(
+      createExport("u1", "WORKOUT_CSV", { storage, now: NOW }),
+    ).rejects.toMatchObject({ code: "too-large" });
+    expect(storage.files.size).toBe(0);
+    expect(database.setLog.findMany.mock.calls[0][0].take).toBe(MAX_ROWS + 1);
   });
 
   it("removes the file again when the table row can't be saved", async () => {

@@ -21,7 +21,6 @@ const MESSAGES = {
   "rate-limited": "You've made a lot of exports this hour. Try again later.",
   "too-large": "That export is too large to make. Contact the team.",
   unsupported: UNAVAILABLE,
-  failed: UNAVAILABLE,
 } as const;
 
 export async function createDataExport(

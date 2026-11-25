@@ -51,8 +51,9 @@ export default async function YourDataPage() {
           </p>
           <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">Your data</h1>
           <p className="mt-3 text-sm text-foreground/70">
-            Download your own data as spreadsheets. Each file is made when you
-            ask, kept privately for you, and the newest {EXPORTS_KEPT} are kept.
+            Download your own data as spreadsheets (workout dates are Toronto
+            days; coach messages are UTC times). Each file is made when you ask,
+            kept privately for you, and the newest {EXPORTS_KEPT} are kept.
             Weights use your unit.{" "}
             <Link href="/account" className="underline underline-offset-4">
               Back to your account

@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { MAX_ROWS } from "./limits";
 import type { CoachMessageRow, WorkoutSetRow } from "./rows";
 
-// Every set the user logged, oldest first. Only this user's: the filter is on the workout's owner.
+// Every set the user logged, oldest first; one more than a file holds is read, so the caller can
+// refuse instead of silently cutting the oldest.  Only this user's: the filter is on the workout's owner.
 export async function loadWorkoutSets(
   userId: string,
 ): Promise<WorkoutSetRow[]> {
@@ -15,7 +16,7 @@ export async function loadWorkoutSets(
       { loggedAt: "desc" },
       { id: "desc" },
     ],
-    take: MAX_ROWS,
+    take: MAX_ROWS + 1,
     select: {
       setNumber: true,
       reps: true,
@@ -43,7 +44,7 @@ export async function loadCoachMessages(
   const found = await prisma.message.findMany({
     where: { conversation: { userId } },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-    take: MAX_ROWS,
+    take: MAX_ROWS + 1,
     select: { createdAt: true, role: true, content: true },
   });
   return found.reverse();

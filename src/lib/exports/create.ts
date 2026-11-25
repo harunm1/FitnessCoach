@@ -5,7 +5,12 @@ import { prisma } from "@/lib/prisma";
 import type { PhotoStorage } from "@/lib/storage/types";
 import { loadUnitPrefs } from "@/lib/units/prefs";
 import { toCsv, type Cell } from "./csv";
-import { EXPORTS_KEPT, EXPORTS_PER_HOUR, MAX_EXPORT_BYTES } from "./limits";
+import {
+  EXPORTS_KEPT,
+  EXPORTS_PER_HOUR,
+  MAX_EXPORT_BYTES,
+  MAX_ROWS,
+} from "./limits";
 import { loadCoachMessages, loadWorkoutSets } from "./load";
 import {
   exportContentType,
@@ -19,8 +24,7 @@ export { EXPORTS_KEPT, EXPORTS_PER_HOUR, MAX_EXPORT_BYTES };
 
 const ONE_HOUR_MS = 3_600_000;
 
-export type ExportErrorCode =
-  "rate-limited" | "too-large" | "unsupported" | "failed";
+export type ExportErrorCode = "rate-limited" | "too-large" | "unsupported";
 
 export class ExportError extends Error {
   constructor(readonly code: ExportErrorCode) {
@@ -79,7 +83,10 @@ export async function createExport(
   });
   if (recent >= EXPORTS_PER_HOUR) throw new ExportError("rate-limited");
 
-  const body = Buffer.from(toCsv(await csvRowsFor(userId, kind)), "utf8");
+  const rows = await csvRowsFor(userId, kind);
+  // The header is one row; more data rows than a file holds is refused, never cut.
+  if (rows.length - 1 > MAX_ROWS) throw new ExportError("too-large");
+  const body = Buffer.from(toCsv(rows), "utf8");
   if (body.byteLength > MAX_EXPORT_BYTES) throw new ExportError("too-large");
 
   const r2Key = exportKey(userId, kind, randomUUID());
