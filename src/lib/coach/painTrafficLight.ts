@@ -7,8 +7,12 @@ export type PainTrafficResult = {
 
 // CONSERVATIVE general-use thresholds, extrapolated from a single Achilles
 // tendinopathy trial; they are not validated for every joint or exercise.
-// Silbernagel KG, et al. Br J Sports Med. 2007.
-// https://doi.org/10.1136/bjsm.2006.030732
+// The 3-5 hold band is a stricter project choice: the source's model generally
+// permits activity at up to 5/10 and treats pain above 5 as high risk, with
+// morning symptoms used to guide continuation.
+// Silbernagel KG, Thomee R, Eriksson BI, Karlsson J. Am J Sports Med.
+// 2007;35(6):897-906. PMID: 17307888.
+// https://doi.org/10.1177/0363546506298279
 export const PAIN_TRAFFIC_THRESHOLDS = {
   repeatMax: 2,
   holdMin: 3,

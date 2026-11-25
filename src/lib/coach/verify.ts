@@ -15,6 +15,8 @@ export type LibraryExercise = {
   id: string;
   name?: string; // shown to the model; the plan is stored by id
   category?: string; // free-exercise-db category: strength, stretching, cardio...
+  cues?: string[]; // our curated form cues; the starter plan prefers an exercise that has them (#103)
+  level?: string; // BEGINNER, INTERMEDIATE or EXPERT; the starter plan prefers a fit at or below the user's
   equipment: string | null;
   primaryMuscles: string[];
   secondaryMuscles: string[];
@@ -32,6 +34,8 @@ export type VerifyProfile = {
   // Joint names parsed from an explicitly painful/injured report. Optional so
   // existing callers and cached plans remain compatible.
   reportedJoints?: Joint[];
+  // The user's experience (#139). The starter plan uses it; the verifier does not.
+  level?: "BEGINNER" | "INTERMEDIATE" | "EXPERT";
 };
 
 export type VerifyResult =

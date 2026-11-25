@@ -40,6 +40,8 @@ export async function saveQuizProfile(
       select: {
         id: true,
         category: true,
+        cues: true,
+        level: true,
         equipment: true,
         primaryMuscles: true,
         secondaryMuscles: true,
@@ -56,6 +58,7 @@ export async function saveQuizProfile(
     ];
     const planProfile = {
       daysPerWeek: parsed.data.daysPerWeek,
+      level: parsed.data.level,
       equipment: parsed.data.equipment,
       avoidMuscles: muscleNames.filter((muscle) =>
         injuryText.includes(muscle.toLowerCase()),

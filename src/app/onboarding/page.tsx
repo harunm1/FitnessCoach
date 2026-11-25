@@ -1,13 +1,27 @@
-import { AccountTheme, ThemeToggle } from "@/components/auth/account-theme";
+import { AccountTheme } from "@/components/auth/account-theme";
 import { AppNav } from "@/components/nav/AppNav";
 import theme from "@/components/theme/app-theme.module.css";
 import QuizForm from "@/components/QuizForm";
 import { requireUser } from "@/lib/auth/session";
+import { answersFromProfile } from "@/lib/onboarding/answers";
 import { loadAvatarUrl } from "@/lib/photos/avatar";
+import { prisma } from "@/lib/prisma";
 
 export default async function OnboardingPage() {
   const user = await requireUser();
   const avatarUrl = await loadAvatarUrl(user.id);
+  // The saved answers, so the form shows them again instead of the defaults (#138).
+  const profile = await prisma.profile.findUnique({
+    where: { userId: user.id },
+    select: {
+      goal: true,
+      level: true,
+      trainingMode: true,
+      daysPerWeek: true,
+      equipment: true,
+      injuries: true,
+    },
+  });
 
   return (
     <AccountTheme
@@ -17,12 +31,7 @@ export default async function OnboardingPage() {
         <AppNav
           name={user.name}
           avatarUrl={avatarUrl}
-          actions={
-            <>
-              <ThemeToggle />
-              <span className="text-xs text-foreground/60">01 / 01</span>
-            </>
-          }
+          actions={<span className="text-sm text-foreground/60">01 / 01</span>}
         />
 
         <div className="mb-8">
@@ -37,7 +46,7 @@ export default async function OnboardingPage() {
           </p>
         </div>
 
-        <QuizForm />
+        <QuizForm initial={answersFromProfile(profile)} />
       </div>
     </AccountTheme>
   );

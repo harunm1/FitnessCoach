@@ -3,6 +3,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import CoachMarkdown from "@/components/coach/CoachMarkdown";
 import QuickReplies from "@/components/coach/QuickReplies";
 import type { CoachActionState } from "./actions";
 import {
@@ -134,14 +135,14 @@ export default function CoachForm() {
             {draft}
           </p>
           {reply ? (
-            <p
-              className="m-0 mr-8 rounded-lg border border-foreground/15 px-4 py-3 text-sm whitespace-pre-line"
+            <div
+              className="m-0 mr-8 rounded-lg border border-foreground/15 px-4 py-3"
               role="log"
               aria-live="polite"
               aria-label="Coach reply"
             >
-              {reply}
-            </p>
+              <CoachMarkdown text={reply} />
+            </div>
           ) : null}
         </div>
       ) : null}

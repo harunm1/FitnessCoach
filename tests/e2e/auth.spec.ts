@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type APIRequestContext } from "@playwright/test";
+import { visibleTextBelowProjectorSize } from "./helpers/projector-readability";
 
 type Mail = { subject: string; text: string };
 async function emailLink(
@@ -66,6 +67,18 @@ test("signup is usable on a phone-sized screen", async ({ page }) => {
     path: test.info().outputPath("signup-mobile.png"),
     fullPage: true,
   });
+});
+test("sign-in and sign-up readable copy is at least 14px at projector size", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  for (const path of ["/sign-in", "/sign-up"]) {
+    await page.goto(path);
+    expect(
+      await visibleTextBelowProjectorSize(page),
+      `${path} has visible non-decorative text below 14px`,
+    ).toEqual([]);
+  }
 });
 test("signup, email verification, login, password recovery and logout", async ({
   page,

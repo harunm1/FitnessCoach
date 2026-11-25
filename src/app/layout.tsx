@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Form | Your fitness coach",
+  title: "FitnessCoach",
   description: "Build a practical training plan around your week.",
 };
 

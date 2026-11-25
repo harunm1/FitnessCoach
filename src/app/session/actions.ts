@@ -115,7 +115,11 @@ export async function logSet(
       },
       sets: {
         where: { exerciseId },
-        select: { setNumber: true },
+        select: {
+          setNumber: true,
+          painDuringSession: true,
+          painNextMorning: true,
+        },
       },
     },
   });
@@ -125,6 +129,21 @@ export async function logSet(
     return {
       status: "error",
       message: "Start a workout before logging sets for this exercise.",
+    };
+  }
+
+  const existingStop = workout.sets.find((set) => {
+    const traffic = painTrafficLight(
+      set.painDuringSession ?? 0,
+      set.painNextMorning ?? 0,
+    );
+    return traffic.state === "stop";
+  });
+  if (existingStop) {
+    return {
+      status: "error",
+      message:
+        "This exercise is blocked because a logged pain score reached 6/10 or higher.",
     };
   }
 
@@ -143,12 +162,6 @@ export async function logSet(
   const during = parsed.data.painDuringSession ?? 0;
   const nextMorning = parsed.data.painNextMorning ?? 0;
   const traffic = painTrafficLight(during, nextMorning);
-  if (traffic.state === "stop") {
-    return {
-      status: "error",
-      message: traffic.reason,
-    };
-  }
 
   try {
     const weightKg =
@@ -188,6 +201,12 @@ export async function logSet(
   }
 
   revalidatePath("/session");
+  if (traffic.state === "stop") {
+    return {
+      status: "error",
+      message: `${traffic.reason} This set was saved, and further sets for this exercise are blocked.`,
+    };
+  }
   redirect("/session");
 }
 

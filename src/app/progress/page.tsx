@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AccountTheme, ThemeToggle } from "@/components/auth/account-theme";
+import { AccountTheme } from "@/components/auth/account-theme";
 import theme from "@/components/theme/app-theme.module.css";
 import ActivityCalendar, {
   type CalendarDay,
@@ -7,6 +7,8 @@ import ActivityCalendar, {
 import DayDetails, { type DayWorkout } from "@/components/progress/DayDetails";
 import MuscleMap from "@/components/progress/MuscleMap";
 import MuscleStats from "@/components/progress/MuscleStats";
+import BodyWeightSection from "@/components/progress/BodyWeightSection";
+import RunLogSection from "@/components/progress/RunLogSection";
 import PhotoStrip from "@/components/progress/PhotoStrip";
 import StreakCards from "@/components/progress/StreakCards";
 import { AppNav } from "@/components/nav/AppNav";
@@ -19,12 +21,15 @@ import {
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_TIME_ZONE, dayKey } from "@/lib/progress/dates";
 import { loadFinishedWorkouts } from "@/lib/progress/load";
+import { loadRecentRuns } from "@/lib/progress/loadRuns";
+import { loadBodyWeights } from "@/lib/progress/loadWeights";
+import { yearBefore } from "@/lib/progress/weightChart";
 import { regionLabels, slugsFor } from "@/lib/progress/muscleSlugs";
 import { muscleShare, musclesWorked } from "@/lib/progress/muscles";
 import { activeStreakWeeks, goalMetStreak } from "@/lib/progress/streaks";
 import type { ProgressWorkout } from "@/lib/progress/types";
 import {
-  clock,
+  duration,
   durationMinutes,
   fillPlanGoals,
   groupByDay,
@@ -69,21 +74,25 @@ function toDayWorkout(workout: ProgressWorkout): DayWorkout {
     workout.distanceKm !== null && workout.runSeconds !== null
       ? {
           distanceKm: workout.distanceKm,
-          time: clock(workout.runSeconds),
+          time: duration(workout.runSeconds),
           pace: pace(workout.distanceKm, workout.runSeconds),
         }
       : null;
   return {
     id: workout.id,
     name: workout.dayName ?? (run ? "Run" : "Workout"),
-    startTime: new Intl.DateTimeFormat("en", {
-      hour: "numeric",
-      minute: "2-digit",
-      timeZone: DEFAULT_TIME_ZONE,
-    }).format(workout.startedAt),
+    // A run logged by hand has no clock time, only its day (D27).
+    startTime: workout.manual
+      ? null
+      : new Intl.DateTimeFormat("en", {
+          hour: "numeric",
+          minute: "2-digit",
+          timeZone: DEFAULT_TIME_ZONE,
+        }).format(workout.startedAt),
     minutes: durationMinutes(workout),
     exercises: groupByExercise(workout.sets),
     run,
+    imported: workout.imported,
   };
 }
 
@@ -111,26 +120,32 @@ export default async function ProgressPage({
   const monthStart = new Date(
     new Date(`${requestedMonth}-01T00:00:00Z`).getTime() - DAY_MS,
   );
-  const [loaded, profile, latestPhotos, photoCount] = await Promise.all([
-    loadFinishedWorkouts(user.id, monthStart < yearAgo ? monthStart : yearAgo),
-    prisma.user.findUnique({
-      where: { id: user.id },
-      select: { image: true },
-    }),
-    prisma.progressPhoto.findMany({
-      where: { userId: user.id },
-      orderBy: { takenAt: "desc" },
-      take: PHOTOS_SHOWN,
-      select: {
-        id: true,
-        storageKey: true,
-        takenAt: true,
-        weightKg: true,
-        note: true,
-      },
-    }),
-    prisma.progressPhoto.count({ where: { userId: user.id } }),
-  ]);
+  const [loaded, profile, latestPhotos, photoCount, weights, runs] =
+    await Promise.all([
+      loadFinishedWorkouts(
+        user.id,
+        monthStart < yearAgo ? monthStart : yearAgo,
+      ),
+      prisma.user.findUnique({
+        where: { id: user.id },
+        select: { image: true },
+      }),
+      prisma.progressPhoto.findMany({
+        where: { userId: user.id },
+        orderBy: { takenAt: "desc" },
+        take: PHOTOS_SHOWN,
+        select: {
+          id: true,
+          storageKey: true,
+          takenAt: true,
+          weightKg: true,
+          note: true,
+        },
+      }),
+      prisma.progressPhoto.count({ where: { userId: user.id } }),
+      loadBodyWeights(user.id, yearBefore(today)),
+      loadRecentRuns(user.id),
+    ]);
   const workouts = fillPlanGoals(loaded);
 
   let photos: GalleryPhoto[] | null;
@@ -182,10 +197,15 @@ export default async function ProgressPage({
     };
   }
 
-  const streakInput = workouts.map((workout) => ({
-    startedAt: workout.startedAt,
-    planDays: workout.planDays,
-  }));
+  // Imported sessions are history from another app; only sessions logged here count
+  // toward the streaks (#131).
+  const importedCount = workouts.filter((workout) => workout.imported).length;
+  const streakInput = workouts
+    .filter((workout) => !workout.imported)
+    .map((workout) => ({
+      startedAt: workout.startedAt,
+      planDays: workout.planDays,
+    }));
   const activeWeeks = activeStreakWeeks(streakInput, now).length;
   const goalMetWeeks = goalMetStreak(streakInput, now);
 
@@ -202,13 +222,8 @@ export default async function ProgressPage({
     <AccountTheme
       className={`${theme.appTheme} min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12`}
     >
-      <div className="mx-auto max-w-3xl">
-        <AppNav
-          current="progress"
-          name={user.name}
-          avatarUrl={avatarUrl}
-          actions={<ThemeToggle />}
-        />
+      <div className={`mx-auto max-w-7xl ${theme.readablePage}`}>
+        <AppNav current="progress" name={user.name} avatarUrl={avatarUrl} />
 
         <p className="text-xs font-semibold tracking-[0.14em] text-foreground/60 uppercase">
           Your progress
@@ -229,6 +244,13 @@ export default async function ProgressPage({
           )}
 
           <StreakCards activeWeeks={activeWeeks} goalMetWeeks={goalMetWeeks} />
+          {importedCount > 0 && (
+            <p className="m-0 text-xs text-foreground/70">
+              {importedCount} imported{" "}
+              {importedCount === 1 ? "session" : "sessions"} from another app,
+              labelled Imported and not counted in the streaks.
+            </p>
+          )}
 
           <div className="grid gap-8 sm:grid-cols-2">
             <ActivityCalendar
@@ -263,6 +285,10 @@ export default async function ProgressPage({
             />
             <MuscleStats shares={shares} workouts={strengthWorkouts} />
           </section>
+
+          <RunLogSection runs={runs} today={today} />
+
+          <BodyWeightSection entries={weights} today={today} />
 
           <PhotoStrip photos={photos} total={photoCount} />
         </div>

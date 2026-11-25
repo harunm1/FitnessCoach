@@ -196,7 +196,10 @@ export function AuthExperience({
       <aside className={styles.story} aria-label="Welcome to FitnessCoach">
         <AccountBrand light />
         <div className={styles.storyCopy}>
-          <span className={styles.storyEyebrow}>
+          <span
+            className={styles.storyEyebrow}
+            data-projector-decorative="true"
+          >
             <span className={styles.smallDot} /> BUILT AROUND YOU
           </span>
           <h2 className={styles.storyTitle}>
@@ -210,7 +213,9 @@ export function AuthExperience({
         </div>
         <div className={styles.storyArt}>
           <TrainingArtwork />
-          <span className={styles.artCaption}>YOUR TRAINING. YOUR PACE.</span>
+          <span className={styles.artCaption} data-projector-decorative="true">
+            YOUR TRAINING. YOUR PACE.
+          </span>
         </div>
         <div className={styles.storyBottom}>
           <span className={styles.storyBottomIcon}>

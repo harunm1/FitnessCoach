@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { AccountTheme, ThemeToggle } from "@/components/auth/account-theme";
+import { AccountTheme } from "@/components/auth/account-theme";
 import theme from "@/components/theme/app-theme.module.css";
 import { DeletePhotoButton } from "@/components/photos/DeletePhotoButton";
+import PhotoViewer from "@/components/progress/PhotoViewer";
 import { PhotoUploadForm } from "@/components/photos/PhotoUploadForm";
 import { AppNav } from "@/components/nav/AppNav";
 import { requireUser } from "@/lib/auth/session";
@@ -81,13 +82,8 @@ export default async function ProgressPhotosPage({
     <AccountTheme
       className={`${theme.appTheme} min-h-screen bg-background px-5 py-8 text-foreground sm:px-8 sm:py-12`}
     >
-      <div className="mx-auto max-w-3xl">
-        <AppNav
-          current="photos"
-          name={user.name}
-          avatarUrl={avatarUrl}
-          actions={<ThemeToggle />}
-        />
+      <div className={`mx-auto max-w-7xl ${theme.readablePage}`}>
+        <AppNav current="photos" name={user.name} avatarUrl={avatarUrl} />
 
         <section className="mb-8">
           <p className="text-xs font-semibold tracking-[0.14em] text-foreground/60 uppercase">
@@ -118,13 +114,7 @@ export default async function ProgressPhotosPage({
             <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               {photos.map((photo) => (
                 <li key={photo.id} className="grid gap-2">
-                  {/* Signed links expire, so the image optimizer can't cache them. */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={photo.url}
-                    alt={`Progress photo from ${dateFormat.format(photo.takenAt)}`}
-                    className="aspect-[3/4] w-full border border-foreground/15 object-cover"
-                  />
+                  <PhotoViewer photo={photo} />
                   <div className="text-xs text-foreground/70">
                     <p className="font-medium text-foreground">
                       {dateFormat.format(photo.takenAt)}

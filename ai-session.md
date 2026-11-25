@@ -216,6 +216,26 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 
 **Did with it:** checked that every earlier case still passes, wrote the decision as D15 in `docs/ARCHITECTURE.md` with the option it beat, and kept the check-in wording short with 9-8-8 and 911 in it. Nothing in the app calls the screen yet; the chat code (#53) does next. A second fresh review found more missed crisis and cardiac wordings, a distress reading from the model replacing the eating-support and pain-stop replies, and crisis messages softened to the check-in by any gym word. I kept the design and tightened it: a reply that already gives specific help now outranks a distress reading; exaggeration counts only when tied to the session and nothing states intent; any message with crisis words that would get the off-topic redirect gets the check-in; and every new wording became a test that failed first (64).
 
+### 8 November 2026, indexes from the session queries (issue #76)
+
+**Before asking:** the design review listed six indexes. I wanted each one tied to a query that runs on `main` today, not added in case it is needed, and a before-and-after query plan on realistic row counts, because on the seeded demo data every table is small enough that Postgres scans it whatever indexes exist.
+
+**Asked:** to list every Prisma read on `main` with its filter and sort, to capture the SQL Prisma actually sends for the session queries, and to check the current Prisma 7 and PostgreSQL docs on `@@index`, migrations and foreign-key indexing.
+
+**Got:** nine reads on `Plan` and `Workout` in `src/app/session/` (six in `actions.ts`, three in `page.tsx`), all sequential scans at 5,000 users and 100,000 workouts; no query on `main` touches `Conversation` or `ProgressPhoto`, and `SetLog.exerciseId` and `PlanExercise.exerciseId` are only reached through unique constraints that already lead with `workoutId` or `planDayId`; the PostgreSQL 16 docs confirm a foreign key gets no index of its own.
+
+**Did with it:** added the two composite indexes the queries justify in one migration, kept the other four out until a pull request adds a query that needs them, and recorded `EXPLAIN ANALYZE` before and after in the pull request. Every session query now reads through an index; the sorts left run on one to four rows.
+
+### 10 November 2026, one active plan, one open workout and range checks in the database (issue #76)
+
+**Before asking:** my schema audit found that two writers deactivate the old plan and insert a new one under different locks, that Start can open two workouts on one plan, and that Postgres accepted an RPE of 99 and a negative weight. I decided the rules belong in the database as constraints, not in more locks in the code, and that each fix needed a test that fails on the current schema first, run against a real PostgreSQL 16.
+
+**Asked:** for the current Prisma 7 syntax for partial unique indexes and whether Prisma can declare CHECK constraints, for a review of the migrations against migration-safety rules, for the query plans of the session queries after the new indexes, and for a test that reproduces each race deterministically instead of by luck. The targeted help came from these tools: Context7 and the Firecrawl connector for the Prisma pages on `partialIndexes` and the database-features matrix and the PostgreSQL page on deadlocks; the `opinionated-prisma` schema-design, indexing, migration-safety and transactions skills; the `coding-skills` isolation-anomalies and expand-contract skills; the `agentic-sdlc` testing-vitest skill; the `backend-design` review-migration and explain-this-query skills and its schema-reviewer agent; and the `pr-review-toolkit` review (code, tests, comments and silent failures) as the independent check.
+
+**Got:** `where` on `@@unique` behind the `partialIndexes` Preview, with a type-checked `{ finishedAt: null }` form; CHECK is "Not yet" in the Prisma schema and Migrate, so it needs a hand-written migration. The first race test passed on the current schema because the quiz's Profile insert locked the User row; with an existing Profile it failed in two different ways depending on which save ran first: two active plans when the coach save ran first, and a deadlock that aborted the coach save when the quiz save ran first.
+
+**Did with it:** added a data migration that keeps the newest active plan and open workout, the two partial unique indexes and two foreign-key indexes, and fifteen CHECK constraints on my tables, leaving the workout's running columns to their owner. I changed the plan for `saveWeek`: it can never see the unique violation, because it holds the User row every plan insert needs, so it retries once on the deadlock abort instead. The reviews then showed that PostgreSQL does not promise which side a deadlock aborts, so I pinned each outcome in its own test and reworded the comments; that a deleted row could pass my first dedupe check, which I fixed and showed failing on the earlier migration; and that a workout with only notes would have been deleted, which it no longer is. Of the seven session queries from #78, Q1 and Q7 now read through the active-plan index and Q2 and Q5 through the open-workout index; every query still reads through an index in under 0.3 ms on the #78 test data.
+
 ### 8 November 2026, shadcn/ui in the foundation (issue #75)
 
 **Before asking:** the course requires shadcn/ui or a similar library, and `main` had none. I decided to set it up once in the foundation with the same choices as my Assignment 4 (Base UI, Nova preset), so the project and the assignment follow one convention, and to move only the root page onto the components so no teammate's screen changes under them.
@@ -349,6 +369,16 @@ An independent review then confirmed the 9-8-8 details on the CRTC, Public Healt
 **Got:** for #48, missed crisis and eating wordings, training talk wrongly stopped, a screen that did not report when the model check failed, and regexes that slowed badly on long messages. Each later round of checks found that some fixes had moved other wordings the wrong way, so I set a limit of four rounds. For #61, a leftover direct database URL could redirect the test migrations, a hosted build could start with a missing URL or with two URLs on different Neon branches, CI never ran the migrate path, the README lacked the auth and email settings, and the preview reset could copy real users.
 
 **Did with it:** wrote a failing test for every finding before fixing it, and pushed #48 after the last round's blocking findings were fixed (844 unit and 46 integration tests). The remaining false positives and gaps are listed on the pull request as follow-ups. A plugin rule stopped me from staging the environment template, so the #61 fixes are verified but wait for me to commit and push them by hand. Tools for the targeted help: pr-review-toolkit:code-reviewer and silent-failure-hunter, backend-design:security-reviewer, vercel:deployments-cicd, sweetclaude:workflow-guardian, fresh general-purpose agents as second checks, and Firecrawl for the Vercel, Neon, Better Auth and Prisma pages.
+
+### 10 November 2026, token counts and guardrail verdict on the model-call record (issue #41)
+
+**Before asking:** #49 already writes one in-memory record per model call. Our engineering practices (item 6) ask the coach log for the tokens of each call, and I decided the record should also say what the guardrails decided about the user's message, so a stored refusal can be told from an answer; nothing written asks for that verdict yet. The CoachEvent table (#52) stays Shubham's, so this pull request adds the fields to the record only, with no migration and no table, and says "Refs #41" because the storage is #52. A plan call has no user message to screen, so the verdict is passed in and stays null until the chat path supplies it. Null means the provider sent no count; it never means zero.
+
+**Asked:** which usage fields Groq and Gemini put in their responses; a failing test first for each case (a count, no count, a count in the wrong form, a reply that was not JSON, a switch of provider, the rule-based record); and an independent review of the diff before the push.
+
+**Got:** the Groq response has `usage.prompt_tokens` and `completion_tokens`; the Gemini response has `usageMetadata.promptTokenCount` and `candidatesTokenCount`, with thinking tokens in a separate `thoughtsTokenCount` that Gemini bills as output (Context7 on the Gemini and Groq documentation; the review read the Gemini pages). The review confirmed the tests fail on the old code (10 of 15) and found that #48 had merged meanwhile, so the "not merged" wording was stale and the verdict can be typed from `guardrails.ts`. It also found that a Gemini response with thinking tokens but no answer count would have been logged with no output tokens even though they were billed. Groq's pages do not say whether `completion_tokens` includes the reasoning tokens of the gpt-oss models, so the record says "as the provider reports them".
+
+**Did with it:** wrote the tests first and saw 10 fail, then the one for the thinking-only response and saw it fail. The provider adapters now report the counts they find, before the reply is parsed, so a reply that was not valid JSON still has its tokens. The record carries `inputTokens`, `outputTokens` and `guardrailVerdict`; for Gemini the output count is the answer plus the thinking tokens, and either one alone still counts. The verdict is typed as the guardrail's action name. Tools: Context7, backend-design:observability-by-default, agentic-sdlc:testing-vitest, a fresh review agent (`pr-review-toolkit:code-reviewer`).
 
 ### 10 November 2026, demo mode with cached coach plans (issue #59, PR #99)
 
@@ -661,3 +691,101 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Got:** Implementation examples for a shared navigation component with the user's profile badge, a unified theme file (moved from `progress-theme.module.css` to `theme/app-theme.module.css` and renamed to `appTheme`), a home page that redirects signed-in users and uses Get started as its main action, and a session body map using `react-muscle-highlighter`. AI also generated tests for the changes.
 
 **Did with it:** Reviewed and adapted the suggested implementations to fit the existing project structure. Chose FitnessCoach as the single app name and kept the account page's own controls. Ran tests, lint, typecheck, and Prettier locally, then checked every page on localhost in both light and dark modes, including navigation and signed-in user flows. Discussed the session body map change with Mohammad, got his approval, and then implemented the fix.
+
+### 22 November 2026, coach stream fix (#123, #124), Why this plan follow-ups (#126), Personalize with the coach (#58)
+
+**Before asking:** Farnaz and Mohammad reported on 21 Nov that the coach on the live deploy showed the "can't answer" line above a reply, logged `coach: stream failed unknown`, and returned 429 after a few tries. I wanted the cause found before the freeze, not guessed: provider, keys, Vercel limits, or our own code.
+
+**Asked:** To reproduce the failure locally with the deploy's provider order, trace where an error without a code could be thrown after a successful save, and write a regression test before any fix. Then to apply Mohammad's two #88 review follow-ups, and to build the #58 action in the order Shubham asked for on #51.
+
+**Got:** Local probes showed Groq and Gemini answering normally. A throwaway route under `next dev` showed that `revalidatePath` throws `Invariant: static generation store missing` inside the response stream's `pull`, after the exchange is saved; the 429 was our own 5-a-minute chat limit. AI drafted the regression test (red on main), the one-line removal, the #88 changes with tests, and the #58 modules (a pure `personalizePlan` with injected steps, an input loader, the Server Action, a button) with tests written first.
+
+**Did with it:** Checked the Next source for the invariant, ran each new test against main's code to see it fail, ran lint, typecheck and the full unit suite locally, and had a separate review agent read each change blind before pushing; its findings (a leaking console spy, a test that passed on main too) were fixed. The fix is in #124 for Shubham's review, the #88 follow-ups in #126 for Mohammad's, and the Personalize button is left for Mohammad to place on his plan screen.
+
+## 22 November (evening): repeated set save test, demo risk check
+
+**Asked:** To check which demo flows are on main and on the live deploy, and to prove that saving the same set twice stores one row (#42).
+
+**Got:** A flow-by-flow risk table from code, the live pages and teammates' comments, and three integration tests in `tests/integration/quiz-session.test.ts` (PR #128). AI drafted the tests; they pin behaviour `logSet` already has, so they pass on main.
+
+**Did with it:** Read `logSet` and the schema to confirm each assertion, had a separate review agent read the diff blind (it found no error and suggested a weight assertion, which I added), ran Prettier, ESLint and the type check, and let CI run the integration suite. Two taps in flight at once are not covered; that is noted for Mohammad on #15.
+
+## 22 November (late afternoon): board audit and the first step of the fatigue deload
+
+**Asked:** To read every open issue and pull request against the board and main, close the issues whose boxes are all met, put the merge order in order, and start the enhancement with the most demo and grading value.
+
+**Got:** A table of 19 issues and 9 pull requests with their true column, supported boxes, owner and blocker; three issues closed with dated comments (#11, #72, #66); the merge order with a check per pull request; and, for #93, decision D21 (two signals must agree, thresholds marked unverified) with a pure `proposeDeload` function and nine unit tests written first. AI drafted the test file and the function.
+
+**Did with it:** Checked each issue's boxes against main with `git grep` and `gh` instead of the issue text, ran each new test against the missing module to see it fail, then ran lint, the type check, format check and the full unit suite (1,654 tests), and had a separate review agent read the change blind before the push. The deload screen where a user accepts or declines is a follow-up; this change is the rule only. The review agent found no error; its should-fix items (the wording of D21 and its source, four extra tests, the pull request saying Refs and not Closes) were applied.
+
+**Tools:** gh, git, Prettier, ESLint, tsc, Vitest, one general-purpose review agent. No skills or connectors.
+
+## 22 November (evening): importing workouts from a Hevy export
+
+**Asked:** To let a user bring their history from the app they already use (a Hevy CSV), with the sessions marked as imported and never counted as logged live in FitnessCoach (#131).
+
+**Got:** A column and date-format spec with sources (`docs/IMPORT_FORMATS.md`), decision D22, and the code: a small CSV reader, a date reader for Toronto time, a Hevy parser with unit conversion, name matching to the library with a user mapping step, a save that skips workouts already imported, an Import page, and an "Imported" label and count on Progress. AI drafted the parsers, the tests and the page.
+
+**Did with it:** Read the Hevy and Strong help pages myself and found they publish no column list, so the columns come from third-party importers and are marked unverified in the doc; refused ambiguous dates instead of guessing day-first or month-first. Wrote each test before its code and ran lint, the type check, the format check and the full unit suite (1,711 tests). Two separate review agents read the change blind: the first found three errors (a test that sorted numbers as text, two file names mapped to one exercise breaking a unique key, names like `constructor` breaking the mapping) and nine smaller points, all fixed; the second found no error. The integration test could not be run locally because there is no Docker, so CI runs it.
+
+**Tools:** gh, git, Firecrawl (search, scrape, developer search), Prettier, ESLint, tsc, Vitest, two general-purpose review agents. No skills.
+
+## 22 November (evening): bugs found on the live site
+
+**Asked:** To fix what I found using the live app with a trial account: a coach reply cut off mid-sentence and saved that way, replies that were too long and added safety and nutrition lines nobody asked for, a quiz that reset to its defaults after saving, a starter plan for an experienced full-gym user with no barbell lift, a coach panel saying the coach was not live, and times shown in UTC.
+
+**Got:** Nine issues with the live evidence (#137 to #145) and four pull requests: a note on replies that stop at the token limit and shorter prompts (#146), the quiz showing its saved answers and stating the strength and run split (#148), a starter plan that uses the user's level and equipment (#149), and the copy, local time and weight hint fixes (#150). AI drafted the tests and the changes.
+
+**Did with it:** Wrote each failing test before its change, ran lint, the type check, the format check and the full unit suite on each branch, and had a separate review agent read each branch blind before it was pushed. The reviews found real faults that I fixed: a quiz form that still reset after a second save with the same message, a note that could be saved as the whole reply, and extra accessory choices that put an overhead press on a pull day. Not done: eval cases for the reply length (#142 stays open), the starter plan's warm-up, supersets, cardio and deload week (#145 asked for them), and a separate strength-days and run-days question (#143).
+
+**Tools:** gh, git, Prettier, ESLint, tsc, Vitest, four general-purpose review agents. No skills.
+
+## 22 November (night): a study guide for the Q&A
+
+**Asked:** For one document I can use to answer any question from the instructor and TAs on 4 December, written for listening: the app in 60 seconds, one user journey, every component with why and how it fails, who built what, the course's Q&A topics with a short answer first, fifteen follow-ups, the plan to 6 December and a glossary.
+
+**Got:** `docs/STUDY_GUIDE.md`, read from the code on main rather than from the docs alone, with a table of the open pull requests that change an answer once merged. AI drafted the text from the files I pointed it at.
+
+**Did with it:** A separate review agent that had not seen the draft checked every claim against the code, the docs and `gh`. It found five errors, which I fixed: the coach does not read logged sets, the plan-request limit lives on the user row, the order of checks in the coach route, the test file count (109), and that retries and demo mode apply to plan calls, not to streamed chat. It also found overclaims that I corrected: model-written plans and the deload rule are not on main yet, and the double-tap save error is suspected, not reproduced. The changed lines were re-read by me only, with no second agent pass.
+
+**Tools:** gh, git, Prettier, one general-purpose review agent. No skills or connectors.
+
+## 23 November (evening): freeze night, reviews and the live fixes
+
+**Asked:** For a last pass before the feature freeze: update my open pull requests with main, have each read blind by a separate review agent, review Mohammad's #152 and re-check #121 and #122, and fix the bugs I hit at the gym on the live site on one branch.
+
+**Got:** Blind reviews of #146, #147, #148, #149, #98, #130 and #127, and a branch of fixes for the live bugs: the coach's Markdown shown as elements instead of asterisks and table pipes, a follow-up like "What about head and neck position?" kept in context, tension answered with form cues while sharp pain still stops and refers, advice told to follow the plan's sets and reps, and a test that the start time shows the viewer's hour when the server runs in UTC. AI drafted the tests and the changes.
+
+**Did with it:** Wrote the failing test first for each change, ran lint, the type check, the format check and the full unit suite, and had a review agent that had not seen the work read the branch before the push. The reviews of my open pull requests found real faults, which I fixed on their branches: a header with a million columns could keep the server busy for over a minute on the Hevy import (#147), a deadlift was ordered with the light work in the starter plan (#149), and a comment on #98 said the chat path supplies a value that nothing supplies. I took a change to Mohammad's body-map prompt out of #146 and left a note for him instead. #127 waits until after the freeze. Not done: the starter-plan fixes for equipment-poor main lifts, and the other should-fix items listed on each pull request.
+
+**Tools:** gh, git, Prettier, ESLint, tsc, Vitest, review agents (pr-review-toolkit code-reviewer, one per pull request and one for the fix branch). No skills.
+
+## 23 November (evening): rehearsal of the live demo
+
+**Asked:** For a written click path of the live demo with what the audience must see and a fallback per step, and a walk of every step on the live site, so the demo runs clean at the 24 November rehearsal and on 4 December.
+
+**Got:** `docs/DEMO_SCRIPT.md`, and two issues with a `demo-blocker` label from the part of the walk that needs no account: the top menu is cut off at 1280 x 720 (#153) and text under 14 px on sign-in, sign-up and the session screen (#154). AI drafted the script from the code and the slide plan.
+
+**Did with it:** A separate review agent that had not seen the draft checked it against the code and found three errors that I fixed: "Why this plan" is not on any screen on main, the quiz is reached from Edit profile and shows a saved message with a link rather than the plan, and the cached plans do not back the chat step. I also fixed the backup step numbers, the missing Start workout click and the 4:40 cut. The changed lines were re-read by me only. The signed-in walk, the timings and the seed account are not done: creating the demo account's mailbox was refused, so they wait on that.
+
+**Tools:** gh, git, Prettier, Playwright, one general-purpose review agent. No skills.
+
+## 24 November (evening): photo enlarge and the body weight log
+
+**Asked:** For two Progress page features under #16: clicking a progress photo opens it full size in an accessible dialog, and a body weight log (date, kg, optional note) with a line chart. Design first in `docs/ARCHITECTURE.md`, tests first, no new dependency.
+
+**Got:** `PhotoViewer` on the Base UI dialog already in the project, mounted in the Progress strip and the gallery. Decision D24 (a new `BodyWeight` table, one row per user per day, rather than reusing the photo's weight column), migration `20261124190000_add_body_weight` with CHECKs, the `logBodyWeight` Server Action, the form and a small SVG chart. AI wrote the code and tests from my brief.
+
+**Did with it:** Each change went through a review agent that had not seen the work. The photo review found three errors, which were fixed test-first: the dialog left the dark theme, a long note could not be reached on a phone, and the focus trap had no test. The weight review found the chart caption printing values like 63.099999999999994, and that a refused entry wiped the form. A second agent checked each fix. Lint, type check, format check and the targeted tests ran before each push, and CI was green on the exact commit before it reached main.
+
+**Tools:** gh, git, Prettier, ESLint, tsc, Vitest, Prisma (validate, migrate diff), review agents (pr-review-toolkit code-reviewer, a blind pass and a delta check per change). No skills.
+
+## 24 November (evening): logging a run by hand
+
+**Asked:** For a way to record a run without a watch link. My test that day showed that a plan with an easy run had nowhere to log the run unless a session was started first. The brief: a form on the Progress page (day, km, h:mm:ss, optional effort and note), the pace shown, the latest five runs listed, and the plan's run day marked done. Design first, tests first, and the session screen left to its owner.
+
+**Got:** Decision D27. A run is a finished `Workout` plus its `RunLog` row (the table already existed, with checks, but nothing wrote to it). This beat a new table and beat the workout row alone. Plan days are a rotation, not dates, so the run completes the plan's next day when that day is a run. Also: the `logRun` Server Action, the form and list, migration `20261124200000_run_log_upper_bounds` (300 km, 24 hours), and a Postgres integration test. AI wrote the code and tests from my brief.
+
+**Did with it:** Each new test failed before the code existed. A review agent that had not seen the work read the change and found no errors and three should-fix items. The day view showed a made-up noon start time, a two-hour run showed as 125:30, and a save racing Start on the session screen could take a plan day twice. The first two were fixed test-first; the race is written into D27 as a known cost, with a note for the session screen's owner. A second agent checked the fixes. Lint, type check, format check and the targeted tests ran before the push, and CI was green on the exact commit before it reached main.
+
+**Tools:** git, gh, Prettier, ESLint, tsc, Vitest, Prisma (validate), review agents (pr-review-toolkit code-reviewer, a blind pass and a delta check). No skills.

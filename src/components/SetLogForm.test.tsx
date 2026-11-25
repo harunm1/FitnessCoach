@@ -12,6 +12,12 @@ import SetLogForm from "./SetLogForm";
 afterEach(cleanup);
 
 describe("SetLogForm pain traffic light", () => {
+  it("does not show a status before either pain field has a value", () => {
+    render(<SetLogForm exerciseId="squat" targetReps={10} nextSetNumber={1} />);
+
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
   it("shows repeat and keeps set logging enabled", () => {
     render(<SetLogForm exerciseId="squat" targetReps={10} nextSetNumber={1} />);
 
@@ -43,7 +49,7 @@ describe("SetLogForm pain traffic light", () => {
     ).toBe(false);
   });
 
-  it("shows stop and disables set logging", () => {
+  it("shows stop and allows saving the stop-scored set", () => {
     render(<SetLogForm exerciseId="squat" targetReps={10} nextSetNumber={3} />);
 
     fireEvent.change(screen.getByLabelText("Pain during"), {
@@ -56,6 +62,23 @@ describe("SetLogForm pain traffic light", () => {
     );
     expect(
       (screen.getByRole("button", { name: "Log set 3" }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false);
+  });
+
+  it("disables set logging when this exercise is already blocked", () => {
+    render(
+      <SetLogForm
+        exerciseId="squat"
+        targetReps={10}
+        nextSetNumber={4}
+        blocked
+      />,
+    );
+
+    expect(screen.getByRole("alert").textContent).toContain("blocked");
+    expect(
+      (screen.getByRole("button", { name: "Log set 4" }) as HTMLButtonElement)
         .disabled,
     ).toBe(true);
   });

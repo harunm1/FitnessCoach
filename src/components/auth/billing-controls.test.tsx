@@ -25,6 +25,10 @@ describe("membership controls", () => {
     expect(html).toContain("Manage billing");
     expect(html).toContain("Refresh billing status");
     expect(html).toContain("Paid access through");
+    expect(html).toContain("Demo billing");
+    expect(html).toContain("Billing changes are disabled for this demo.");
+    expect(html).not.toContain("Test mode");
+    expect(html).not.toContain("New subscriptions aren’t available right now");
     expect(html).not.toContain("Upgrade to PRO (test)");
   });
   it("offers accessible monthly and yearly choices using server prices", () => {

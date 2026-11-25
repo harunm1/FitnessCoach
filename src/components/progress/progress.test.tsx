@@ -71,6 +71,45 @@ describe("DayDetails", () => {
     ).toContain("No workout this day.");
   });
 
+  it("labels an imported workout", () => {
+    const html = render(
+      <DayDetails
+        dayLabel="Sunday, November 8"
+        workouts={[
+          {
+            id: 1,
+            name: "Push Day",
+            startTime: "12:00 PM",
+            minutes: 50,
+            exercises: [],
+            run: null,
+            imported: true,
+          },
+        ]}
+      />,
+    );
+    expect(html).toContain("Imported");
+  });
+
+  it("does not label a workout logged in the app", () => {
+    const html = render(
+      <DayDetails
+        dayLabel="Sunday, November 8"
+        workouts={[
+          {
+            id: 1,
+            name: "Push",
+            startTime: "12:00 PM",
+            minutes: 50,
+            exercises: [],
+            run: null,
+          },
+        ]}
+      />,
+    );
+    expect(html).not.toContain("Imported");
+  });
+
   it("lists sets by exercise and the run with its pace", () => {
     const html = render(
       <DayDetails
@@ -164,6 +203,10 @@ describe("PhotoStrip", () => {
     expect(html).toContain('src="memory://p3.webp?expires=300"');
     expect(html).toContain("See all (7)");
     expect(html).toContain('href="/progress/photos"');
+    // Each photo opens full size in place rather than leaving the page (#16).
+    expect(html.match(/aria-label="Enlarge progress photo from/g)).toHaveLength(
+      3,
+    );
   });
 
   it("invites a first photo when there are none", () => {

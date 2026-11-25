@@ -303,7 +303,7 @@ export function AuthForm({
             <AccountIcon name="arrow" size={16} /> Back to sign in
           </Link>
         )}
-        <p className={styles.formEyebrow}>
+        <p className={styles.formEyebrow} data-projector-decorative="true">
           <AccountIcon
             name={
               mode === "verify-email"

@@ -1,9 +1,12 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { AccountBrand } from "@/components/auth/account-ui";
+import { AccountBrand, AccountIcon } from "@/components/auth/account-ui";
+import { ThemeToggle } from "@/components/auth/account-theme";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { UserBadge } from "@/components/photos/UserBadge";
 
-export type NavPage = "session" | "coach" | "progress" | "photos" | "account";
+export type NavPage =
+  "session" | "coach" | "progress" | "photos" | "import" | "account";
 
 // The main pages a signed-in user can move between, in menu order.
 export const NAV_LINKS: {
@@ -15,6 +18,7 @@ export const NAV_LINKS: {
   { page: "coach", href: "/coach", label: "Coach" },
   { page: "progress", href: "/progress", label: "Progress" },
   { page: "photos", href: "/progress/photos", label: "Photos" },
+  { page: "import", href: "/import", label: "Import" },
 ];
 
 // The bar at the top of every signed-in page: the logo, the main pages,
@@ -44,9 +48,9 @@ export function AppNav({
       <AccountBrand light />
       <nav
         aria-label="Main"
-        className="order-last w-full overflow-x-auto sm:order-none sm:w-auto sm:flex-1"
+        className="order-last w-full min-w-0 sm:order-none sm:w-auto sm:flex-1"
       >
-        <ul className="m-0 flex list-none gap-5 p-0">
+        <ul className="m-0 flex list-none flex-wrap items-center gap-x-4 gap-y-2 p-0">
           {NAV_LINKS.map(({ page, href, label }) => (
             <li key={page}>
               <Link
@@ -54,8 +58,8 @@ export function AppNav({
                 aria-current={current === page ? "page" : undefined}
                 className={
                   current === page
-                    ? "text-sm font-semibold underline decoration-2 underline-offset-4"
-                    : "text-sm opacity-70 hover:opacity-100"
+                    ? "text-sm font-semibold whitespace-nowrap underline decoration-2 underline-offset-4"
+                    : "text-sm whitespace-nowrap opacity-70 hover:opacity-100"
                 }
               >
                 {label}
@@ -70,6 +74,12 @@ export function AppNav({
           imageUrl={avatarUrl}
           current={current === "account"}
         />
+        <ThemeToggle />
+        <span className="flex shrink-0 items-center gap-1.5 text-sm text-foreground/70">
+          <AccountIcon name="shield" size={16} />
+          <span className="max-sm:hidden">Verified account</span>
+        </span>
+        <SignOutButton />
         {actions}
       </div>
     </header>

@@ -3,10 +3,11 @@ import type { ExerciseGroup } from "@/lib/progress/view";
 export type DayWorkout = {
   id: number;
   name: string;
-  startTime: string; // "6:00 PM"
+  startTime: string | null; // "6:00 PM"; null for a run logged by hand (D27)
   minutes: number;
   exercises: ExerciseGroup[];
   run: { distanceKm: number; time: string; pace: string | null } | null;
+  imported?: boolean; // read from another app's export, not logged in the app (#131)
 };
 
 type DayDetailsProps = {
@@ -41,9 +42,17 @@ export default function DayDetails({ dayLabel, workouts }: DayDetailsProps) {
               key={workout.id}
             >
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h3 className="m-0 text-base font-semibold">{workout.name}</h3>
+                <h3 className="m-0 text-base font-semibold">
+                  {workout.name}
+                  {workout.imported && (
+                    <span className="ml-2 border border-foreground/30 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
+                      Imported
+                    </span>
+                  )}
+                </h3>
                 <p className="m-0 text-xs text-foreground/60">
-                  {workout.startTime} · {workout.minutes} min
+                  {workout.startTime && `${workout.startTime} · `}
+                  {workout.minutes} min
                 </p>
               </div>
               {workout.run && (
