@@ -74,3 +74,16 @@ export function lastActivityMs(sources: {
     sources.lastInteractionMs ?? sources.activeSinceMs,
   );
 }
+
+// Active seconds when the workout is finished at `nowMs`. A workout left running with no set
+// for the idle limit ends at its last activity (the same rule as the idle pause), so finishing
+// the next morning does not count the night.
+export function finishedActiveSeconds(
+  clock: ActiveClock,
+  lastSetMs: number | null,
+  nowMs: number,
+): number {
+  if (clock.activeSinceMs === null) return clock.bankedSeconds;
+  const lastActivity = Math.max(clock.activeSinceMs, lastSetMs ?? 0);
+  return activeSeconds(clock, idlePauseAt(lastActivity, nowMs) ?? nowMs);
+}

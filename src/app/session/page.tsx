@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import BodyMap from "@/components/BodyMap";
 import ExerciseCueDetails from "@/components/ExerciseCueDetails";
 import ExerciseLogPanel from "@/components/session/ExerciseLogPanel";
+import ActiveWorkoutClock from "@/components/session/ActiveWorkoutClock";
 import SessionSync from "@/components/session/SessionSync";
 import { latestLoggedAt } from "@/lib/workout/restRemaining";
 import RunMetricsForm from "@/components/RunMetricsForm";
@@ -88,6 +89,8 @@ export default async function SessionPage() {
           planDayId: true,
           distanceKm: true,
           durationSeconds: true,
+          activeBankedSeconds: true,
+          activeSince: true,
           sets: {
             orderBy: [{ exerciseId: "asc" }, { setNumber: "asc" }],
             select: {
@@ -188,8 +191,20 @@ export default async function SessionPage() {
                     kind="time"
                   />
                 </p>
-                <WorkoutElapsedTime
-                  startedAt={activeWorkout.startedAt.toISOString()}
+                <ActiveWorkoutClock
+                  // A new key when the server's clock changes, so the client state restarts.
+                  key={`${activeWorkout.activeBankedSeconds}-${activeWorkout.activeSince?.getTime() ?? "paused"}`}
+                  activeSinceIso={
+                    activeWorkout.activeSince?.toISOString() ?? null
+                  }
+                  bankedSeconds={activeWorkout.activeBankedSeconds}
+                  lastSetAtIso={
+                    activeWorkout.sets.length > 0
+                      ? latestLoggedAt(activeWorkout.sets).toISOString()
+                      : null
+                  }
+                  serverNowIso={renderedAtIso}
+                  workoutId={activeWorkout.id}
                 />
               </div>
             ) : null}

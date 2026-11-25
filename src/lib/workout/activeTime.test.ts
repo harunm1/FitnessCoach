@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 import {
   activeSeconds,
+  finishedActiveSeconds,
   IDLE_PAUSE_MS,
   idlePauseAt,
   lastActivityMs,
@@ -175,5 +176,35 @@ describe("lastActivityMs", () => {
         lastInteractionMs: T0 + MIN_20,
       }),
     ).toBe(T0 + MIN_20);
+  });
+});
+
+describe("finishedActiveSeconds", () => {
+  const TEN_MIN_PLUS_FIVE = 900;
+
+  it("counts to now for a workout still in use", () => {
+    expect(
+      finishedActiveSeconds(running(T0), T0 + MIN_10, T0 + MIN_10 + MIN_5),
+    ).toBe(TEN_MIN_PLUS_FIVE);
+  });
+
+  it("stops at the last activity when the workout was left running for hours", () => {
+    expect(finishedActiveSeconds(running(T0), T0 + MIN_10, T0 + HOURS_3)).toBe(
+      TEN_MIN_SECONDS,
+    );
+  });
+
+  it("with no set logged, stops at the start of the running stretch", () => {
+    expect(finishedActiveSeconds(running(T0), null, T0 + HOURS_3)).toBe(0);
+  });
+
+  it("a paused clock keeps exactly its banked time", () => {
+    const paused: ActiveClock = {
+      bankedSeconds: TEN_MIN_SECONDS,
+      activeSinceMs: null,
+    };
+    expect(finishedActiveSeconds(paused, T0 + MIN_5, T0 + HOURS_3)).toBe(
+      TEN_MIN_SECONDS,
+    );
   });
 });
