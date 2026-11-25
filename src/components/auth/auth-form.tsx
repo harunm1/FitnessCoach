@@ -7,7 +7,7 @@ import { AccountIcon, AuthExperience } from "./account-ui";
 import styles from "./account.module.css";
 import { GoogleButton } from "./google-button";
 import { authClient } from "@/lib/auth/client";
-import { googleErrorMessage } from "@/lib/auth/google";
+import { googleErrorMessage } from "@/lib/auth/google-messages";
 import {
   emailSchema,
   passwordSchema,

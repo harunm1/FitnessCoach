@@ -62,7 +62,7 @@ describe("createAuth with Google", () => {
     );
     const linking = auth.options.account?.accountLinking;
     expect(linking?.requireLocalEmailVerified).toBe(true);
-    expect(linking?.trustedProviders ?? []).toEqual([]);
-    expect(linking?.allowDifferentEmails ?? false).toBe(false);
+    expect(linking?.trustedProviders).toEqual([]);
+    expect(linking?.allowDifferentEmails).toBe(false);
   });
 });

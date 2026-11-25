@@ -8,7 +8,7 @@ import {
   it,
   vi,
 } from "vitest";
-import { createAuth } from "@/lib/auth/core";
+import { createAuth, type AuthEmail } from "@/lib/auth/core";
 import { testDatabase } from "../helpers/database";
 
 const db = testDatabase();
@@ -26,6 +26,7 @@ let sequence = 0;
 let ip: string;
 let email: string;
 let sub: string;
+const sent: AuthEmail[] = [];
 
 function b64(value: object) {
   return Buffer.from(JSON.stringify(value)).toString("base64url");
@@ -102,6 +103,7 @@ function location(response: Response) {
 }
 
 beforeEach(() => {
+  sent.length = 0;
   sequence++;
   ip = `2001:db8:${sequence}:${prefix.slice(...IP_PART_A)}::${prefix.slice(...IP_PART_B)}`;
   email = `${prefix}-g${sequence}@example.test`;
@@ -113,7 +115,9 @@ beforeEach(() => {
       secret: "test-only-auth-secret-at-least-32-characters",
       google: { clientId: "test-client-id", clientSecret: "test-secret" },
     },
-    async () => {},
+    async (mail) => {
+      sent.push(mail);
+    },
   );
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -210,16 +214,19 @@ describe("Sign in with Google", () => {
     expect(await db.session.count({ where: { userId: existing.id } })).toBe(0);
   });
 
-  it("gives no session when Google reports the email as unverified", async () => {
+  it("creates nothing when Google reports the email as unverified", async () => {
     fakeGoogle({ email_verified: false });
     const response = await googleCallback();
-    expect(location(response).searchParams.get("error")).toBe(
-      "email_not_verified",
+    expect(location(response).pathname).toBe("/sign-in");
+    expect(location(response).searchParams.get("provider")).toBe("google");
+    expect(response.headers.getSetCookie().join(";")).not.toContain(
+      "session_token=",
     );
-    const user = await db.user.findUnique({ where: { email } });
-    expect(
-      user ? await db.session.count({ where: { userId: user.id } }) : 0,
-    ).toBe(0);
+    // No user row, no Google account and no verification email for an address
+    // the Google identity has not proven it owns.
+    expect(await db.user.count({ where: { email } })).toBe(0);
+    expect(await db.account.count({ where: { accountId: sub } })).toBe(0);
+    expect(sent.filter((mail) => mail.to === email)).toHaveLength(0);
   });
 
   it("does not link a verified user when Google says the email is unverified", async () => {

@@ -77,7 +77,14 @@ export function createAuth(
     databaseHooks: {
       user: {
         create: {
-          before: async (user) => {
+          before: async (user, context) => {
+            // D32: a social identity whose email is unverified creates no user at all, so
+            // it cannot plant an account (and a verification email) on someone else's address.
+            if (context?.path?.startsWith("/callback/") && !user.emailVerified)
+              throw new APIError("FORBIDDEN", {
+                code: "email_not_verified",
+                message: "The provider did not verify this email address.",
+              });
             const name = displayNameSchema.safeParse(user.name);
             if (!name.success)
               throw new APIError("BAD_REQUEST", {
