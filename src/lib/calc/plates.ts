@@ -27,13 +27,13 @@ export type PlateResult =
   | { kind: "below-bar"; barKg: number } // the target is under the bar
   | { kind: "no-plates" }
   | { kind: "too-heavy"; maxKg: number }
-  | { kind: "invalid" }; // a target or bar that is not a number, or not above zero
+  | { kind: "invalid" }; // a target not above zero, or a bar that is not a number or is below zero
 
 // The fewest plates for the heaviest load of at most `limit` that the sizes can make,
 // by a coin-change search over hundredths (sizes number about seven and the limit at
 // most 50,000 units). Greedy would be enough for the default set, but with a set the
 // user builds it can stop short of a load the plates reach exactly (15 and 10 kg for
-// 60 kg a side).
+// 60 kg on a 20 kg bar, 20 kg a side).
 function bestPerSide(sizes: number[], limit: number): number[] {
   const unreachable = Number.POSITIVE_INFINITY;
   const count: number[] = [0];
@@ -112,7 +112,11 @@ export function warmupSets(
 ): WarmupSet[] {
   const barKg = options.barKg ?? DEFAULT_BAR_KG;
   const work = platesPerSide(workingKg, options);
-  if (work.kind !== "loaded" || workingKg <= barKg) return [];
+  if (
+    work.kind !== "loaded" ||
+    toHundredths(work.loadedKg) <= toHundredths(barKg)
+  )
+    return [];
 
   const steps = RAMP.flatMap(({ percent, reps }): WarmupSet[] => {
     const target = fromHundredths(

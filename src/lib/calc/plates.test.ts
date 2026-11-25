@@ -112,7 +112,7 @@ describe("platesPerSide", () => {
     });
   });
 
-  it("refuses a bar or plate that is not a finite number instead of throwing", () => {
+  it("refuses a bar that is not a finite number and ignores a plate that is not, instead of throwing", () => {
     expect(platesPerSide(100, { barKg: Number.NaN }).kind).toBe("invalid");
     expect(platesPerSide(100, { barKg: -10 }).kind).toBe("invalid");
     expect(warmupSets(100, { barKg: Number.NaN })).toEqual([]);
@@ -163,12 +163,17 @@ describe("warmupSets", () => {
 
   it("has no warm-up when there are no plates, or a ramp step repeats", () => {
     expect(warmupSets(100, { plateKgs: [] })).toEqual([]);
-    // With only 10 kg plates a step moves in 20 kg jumps: 40, 60 and 80 are loadable, and
+    // With only 10 kg plates a load moves in 20 kg jumps: loads of 40, 60 and 80 kg work, and
     // 40% of 50 (20) is the bar, 60% (30) rounds to the bar, 80% (40) is loadable.
     expect(warmupSets(50, { plateKgs: [10] })).toEqual([
       { kg: 20, reps: 5 },
       { kg: 40, reps: 2 },
     ]);
+  });
+
+  it("has no warm-up when the loadable working weight is the bar", () => {
+    expect(warmupSets(20.004)).toEqual([]);
+    expect(warmupSets(21)).toEqual([]);
   });
 
   it("has no warm-up when the working weight is the bar or less", () => {
