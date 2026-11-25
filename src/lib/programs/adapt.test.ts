@@ -141,6 +141,13 @@ describe("adaptTemplate", () => {
     expect(prompt).toContain("barbell, dumbbell");
     expect(prompt).toContain('"changes"');
   });
+
+  it("tells the model a day at the minimum cannot lose an exercise", () => {
+    const prompt = buildAdaptPrompt(template, profile, library, about, []);
+    expect(prompt).toContain(
+      "Never remove an exercise from a day that has only",
+    );
+  });
 });
 
 describe("fitChanges", () => {

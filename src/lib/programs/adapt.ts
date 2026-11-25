@@ -74,7 +74,7 @@ export function buildAdaptPrompt(
     days,
     `The user: goal ${about.goal}, level ${profile.level ?? "unknown"}, wants ${profile.daysPerWeek} days a week, equipment ${profile.equipment.join(", ") || "none"}, injuries or pain: ${about.injuries || "none"}, weights in ${about.units}.`,
     `Changes: {"op": "swap", "day", "slot", "exercise": an exact name from the list below, "reason"}, {"op": "sets", "day", "slot", "sets", "reason"}, {"op": "reps", "day", "slot", "reps", "reason"}, {"op": "remove", "day", "slot", "reason"}. Day and slot are the numbers above. Every change needs a one-sentence reason the user will read.`,
-    `Limits: sets 1 to 6, reps ${template.repBand.min} to ${template.repBand.max}, at least ${MIN_EXERCISES_PER_DAY} exercises a day, at most ${MAX_WEEKLY_SETS_PER_MUSCLE} sets a week per muscle, only equipment the user has. If the template already fits, return {"changes": []}.`,
+    `Limits: sets 1 to 6, reps ${template.repBand.min} to ${template.repBand.max}, at least ${MIN_EXERCISES_PER_DAY} exercises a day, at most ${MAX_WEEKLY_SETS_PER_MUSCLE} sets a week per muscle, only equipment the user has. Never remove an exercise from a day that has only ${MIN_EXERCISES_PER_DAY} exercises. If the template already fits, return {"changes": []}.`,
     `Exercises you may swap in: ${options}`,
   ].join("\n\n");
 }
