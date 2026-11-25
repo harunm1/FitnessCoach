@@ -28,6 +28,7 @@ export const planExerciseSchema = z.object({
     .min(LIMITS.restSeconds.min)
     .max(LIMITS.restSeconds.max),
   rpe: z.number().int().min(LIMITS.rpe.min).max(LIMITS.rpe.max),
+  substitutionReason: z.string().trim().min(1).max(160).optional(),
 });
 
 export const planDaySchema = z.object({

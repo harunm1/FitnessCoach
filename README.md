@@ -197,8 +197,9 @@ Storage; why is decision D19 in `docs/ARCHITECTURE.md`, and the setup was agreed
 build command to `scripts/vercel-build.ts`. On production and preview deployments it
 first checks that `DATABASE_URL` and `DATABASE_URL_UNPOOLED` are both set and point at
 the same Neon branch, then runs `prisma migrate deploy` (over the direct URL), the
-exercise seed (`prisma db seed`, which upserts, with `DEMO_PASSWORD` blanked so no demo
-logins are created), and `next build`. With any other `VERCEL_ENV` it stops and names
+exercise seed (`prisma db seed`, which upserts over the direct URL, with
+`DEMO_PASSWORD` blanked so no demo logins are created), and `next build` (with the
+pooled application URL). With any other `VERCEL_ENV` it stops and names
 the setting to turn on; a local build is `npm run build`.
 
 The project belongs to Mohammad's Vercel Hobby account: Vercel lets only the owner of a
