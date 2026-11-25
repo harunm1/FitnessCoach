@@ -37,4 +37,74 @@ describe("setLogSchema", () => {
       ).toBe(false);
     },
   );
+
+  it("parses optional 0-to-10 pain scores", () => {
+    expect(
+      setLogSchema.parse({
+        setNumber: "1",
+        reps: "10",
+        weightKg: "",
+        painDuringSession: "6",
+        painNextMorning: "3",
+      }),
+    ).toMatchObject({ painDuringSession: 6, painNextMorning: 3 });
+  });
+
+  it.each(["", " ", "\t", null])(
+    "leaves blank pain scores unrecorded (%j)",
+    (value) => {
+      expect(
+        setLogSchema.parse({
+          setNumber: "1",
+          reps: "8",
+          painDuringSession: value,
+          painNextMorning: value,
+        }),
+      ).toMatchObject({
+        painDuringSession: undefined,
+        painNextMorning: undefined,
+      });
+    },
+  );
+
+  it("coerces scientific notation to a valid integer pain score", () => {
+    expect(
+      setLogSchema.parse({
+        setNumber: "1",
+        reps: "8",
+        painDuringSession: "1e1",
+        painNextMorning: "1e1",
+      }),
+    ).toMatchObject({ painDuringSession: 10, painNextMorning: 10 });
+  });
+
+  it.each(["-1", "11", "2.5", "not-a-number"])(
+    "rejects invalid pain score %s",
+    (painDuringSession) => {
+      expect(
+        setLogSchema.safeParse({
+          setNumber: "1",
+          reps: "10",
+          weightKg: "",
+          painDuringSession,
+          painNextMorning: "",
+        }).success,
+      ).toBe(false);
+    },
+  );
+
+  it.each(["-1", "11", "2.5", "not-a-number"])(
+    "rejects invalid next-morning pain score %s",
+    (painNextMorning) => {
+      expect(
+        setLogSchema.safeParse({
+          setNumber: "1",
+          reps: "10",
+          weightKg: "",
+          painDuringSession: "",
+          painNextMorning,
+        }).success,
+      ).toBe(false);
+    },
+  );
 });
