@@ -860,6 +860,16 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Tools:** git, gh, Vitest, Prettier, ESLint, tsc, Playwright (public pages only), Docker (scratch PostgreSQL), review agents (pr-review-toolkit code-reviewer). No skills.
 
+## 25 November: Sign in with Google
+
+**Asked:** Let people sign in with Google so they do not have to create an email and password account, working for the 26 November demo; email and password stays, and the four tiers keep working.
+
+**Got:** Decision D32 and Better Auth's Google provider, switched on only when both `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` exist (otherwise the app runs as before and the button is hidden). A Google email that matches an existing account is linked only when that account's email is already verified and Google reports it verified; a Google identity with an unverified email creates no user. New Google users get the FREE tier. A "Continue with Google" button above the email form on the sign-in and sign-up pages, using Google's own G file, and `docs/GOOGLE_OAUTH_SETUP.md` with the console steps. Creating the Google client and setting the two variables in Vercel are done by hand.
+
+**Did with it:** Read the Better Auth Google and account-linking docs (v1.7.15, the project pins 1.7.14) and the installed linking code, and Google's branding and console help pages, all on 25 November. Wrote the tests first and watched them fail: the callback test runs the real Better Auth handler against PostgreSQL with only Google's token endpoint faked; turning off the verified-email rule makes the linking test fail. A review agent that had not seen the work found no error but pointed out that an unverified Google email still created a user and sent a verification email; that is now refused, with a test written first. Not done: a click-through of the real Google consent screen (no client exists yet) and a test of the sign-in page's error handling on its own.
+
+**Tools:** git, gh, Vitest, Playwright spec (runs in CI), ESLint, tsc, Prettier, Context7, Firecrawl (Google help pages), review agents. No skills beyond reading Better Auth's docs.
+
 ## 25 November: units preference (kg or lb, km or mi)
 
 **Asked:** A setting for pounds or kilograms and miles or kilometres, with every logged value stored in one unit, shown and typed in the chosen one, and the Hevy preview following the setting.

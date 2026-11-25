@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { AccountIcon, AuthExperience } from "./account-ui";
 import styles from "./account.module.css";
+import { GoogleButton } from "./google-button";
 import { authClient } from "@/lib/auth/client";
+import { googleErrorMessage } from "@/lib/auth/google-messages";
 import {
   emailSchema,
   passwordSchema,
@@ -46,6 +48,13 @@ const copy: Record<
     submit: "Resend verification email",
   },
 };
+
+function initialError(googleError?: string, verificationError?: boolean) {
+  if (googleError !== undefined) return googleErrorMessage(googleError);
+  if (verificationError)
+    return "This verification link is invalid or expired. Request a new one below.";
+  return "";
+}
 
 function PasswordField({
   confirmation = false,
@@ -117,19 +126,21 @@ export function AuthForm({
   verified = false,
   verificationError = false,
   sessionExpired = false,
+  googleEnabled = false,
+  googleError,
 }: {
   mode: Mode;
   token?: string;
   verified?: boolean;
   verificationError?: boolean;
   sessionExpired?: boolean;
+  googleEnabled?: boolean;
+  googleError?: string;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(
-    verificationError
-      ? "This verification link is invalid or expired. Request a new one below."
-      : "",
+    initialError(googleError, verificationError),
   );
   const [message, setMessage] = useState("");
   const [invalidField, setInvalidField] = useState("");
@@ -351,126 +362,136 @@ export function AuthForm({
             expired. Request a new one below.
           </p>
         ) : (
-          <form
-            method="post"
-            onSubmit={submit}
-            className={styles.form}
-            aria-busy={pending}
-          >
-            {mode === "sign-up" && (
-              <div className={styles.field}>
-                <label htmlFor="auth-name" className={styles.label}>
-                  Name
-                </label>
-                <div className={styles.inputWrap}>
-                  <span className={styles.inputIcon}>
-                    <AccountIcon name="user" size={18} />
-                  </span>
-                  <input
-                    id="auth-name"
-                    className={styles.input}
-                    name="name"
-                    autoComplete="name"
-                    placeholder="Your name"
-                    maxLength={100}
-                    required
-                    disabled={pending}
-                    aria-invalid={invalidField === "name" || undefined}
-                    aria-describedby={
-                      invalidField === "name" ? "auth-error" : undefined
-                    }
-                  />
-                </div>
-              </div>
+          <>
+            {googleEnabled && (mode === "sign-in" || mode === "sign-up") && (
+              <>
+                <GoogleButton />
+                <p className={styles.socialDivider} aria-hidden="true">
+                  or use your email
+                </p>
+              </>
             )}
-            {mode !== "reset-password" && (
-              <div className={styles.field}>
-                <label htmlFor="auth-email" className={styles.label}>
-                  Email
-                </label>
-                <div className={styles.inputWrap}>
-                  <span className={styles.inputIcon}>
-                    <AccountIcon name="mail" size={18} />
-                  </span>
-                  <input
-                    ref={emailInput}
-                    id="auth-email"
-                    className={styles.input}
-                    type="email"
-                    name="email"
-                    autoComplete="email"
-                    autoCapitalize="none"
-                    spellCheck={false}
-                    placeholder="you@example.com"
-                    maxLength={254}
-                    required
-                    disabled={pending}
-                    aria-invalid={invalidField === "email" || undefined}
-                    aria-describedby={
-                      invalidField === "email" ? "auth-error" : undefined
-                    }
-                  />
-                </div>
-              </div>
-            )}
-            {hasPassword && (
-              <PasswordField
-                newPassword={mode !== "sign-in"}
-                disabled={pending}
-                invalid={invalidField === "password"}
-              />
-            )}
-            {confirmPassword && (
-              <PasswordField
-                confirmation
-                newPassword
-                disabled={pending}
-                invalid={invalidField === "confirmation"}
-              />
-            )}
-            {mode === "sign-in" && (
-              <div className={styles.forgotRow}>
-                <Link className={styles.textLink} href="/forgot-password">
-                  Forgot password?
-                </Link>
-              </div>
-            )}
-            {error && (
-              <p
-                id="auth-error"
-                role="alert"
-                className={[styles.notice, styles.errorNotice].join(" ")}
-              >
-                <AccountIcon name="shield" size={18} />
-                <span>{error}</span>
-              </p>
-            )}
-            {message && (
-              <p
-                role="status"
-                className={[styles.notice, styles.successNotice].join(" ")}
-              >
-                <AccountIcon name="check" size={18} />
-                <span>{message}</span>
-              </p>
-            )}
-            <button
-              className={styles.primaryButton}
-              type="submit"
-              disabled={
-                pending || Boolean(message && mode === "reset-password")
-              }
+            <form
+              method="post"
+              onSubmit={submit}
+              className={styles.form}
+              aria-busy={pending}
             >
-              {pending
-                ? mode === "sign-in"
-                  ? "Signing in…"
-                  : mode === "sign-up"
-                    ? "Creating your account…"
-                    : "Sending request…"
-                : config.submit}
-              {!pending && <AccountIcon name="arrow" size={17} />}
-            </button>
-          </form>
+              {mode === "sign-up" && (
+                <div className={styles.field}>
+                  <label htmlFor="auth-name" className={styles.label}>
+                    Name
+                  </label>
+                  <div className={styles.inputWrap}>
+                    <span className={styles.inputIcon}>
+                      <AccountIcon name="user" size={18} />
+                    </span>
+                    <input
+                      id="auth-name"
+                      className={styles.input}
+                      name="name"
+                      autoComplete="name"
+                      placeholder="Your name"
+                      maxLength={100}
+                      required
+                      disabled={pending}
+                      aria-invalid={invalidField === "name" || undefined}
+                      aria-describedby={
+                        invalidField === "name" ? "auth-error" : undefined
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+              {mode !== "reset-password" && (
+                <div className={styles.field}>
+                  <label htmlFor="auth-email" className={styles.label}>
+                    Email
+                  </label>
+                  <div className={styles.inputWrap}>
+                    <span className={styles.inputIcon}>
+                      <AccountIcon name="mail" size={18} />
+                    </span>
+                    <input
+                      ref={emailInput}
+                      id="auth-email"
+                      className={styles.input}
+                      type="email"
+                      name="email"
+                      autoComplete="email"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      placeholder="you@example.com"
+                      maxLength={254}
+                      required
+                      disabled={pending}
+                      aria-invalid={invalidField === "email" || undefined}
+                      aria-describedby={
+                        invalidField === "email" ? "auth-error" : undefined
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+              {hasPassword && (
+                <PasswordField
+                  newPassword={mode !== "sign-in"}
+                  disabled={pending}
+                  invalid={invalidField === "password"}
+                />
+              )}
+              {confirmPassword && (
+                <PasswordField
+                  confirmation
+                  newPassword
+                  disabled={pending}
+                  invalid={invalidField === "confirmation"}
+                />
+              )}
+              {mode === "sign-in" && (
+                <div className={styles.forgotRow}>
+                  <Link className={styles.textLink} href="/forgot-password">
+                    Forgot password?
+                  </Link>
+                </div>
+              )}
+              {error && (
+                <p
+                  id="auth-error"
+                  role="alert"
+                  className={[styles.notice, styles.errorNotice].join(" ")}
+                >
+                  <AccountIcon name="shield" size={18} />
+                  <span>{error}</span>
+                </p>
+              )}
+              {message && (
+                <p
+                  role="status"
+                  className={[styles.notice, styles.successNotice].join(" ")}
+                >
+                  <AccountIcon name="check" size={18} />
+                  <span>{message}</span>
+                </p>
+              )}
+              <button
+                className={styles.primaryButton}
+                type="submit"
+                disabled={
+                  pending || Boolean(message && mode === "reset-password")
+                }
+              >
+                {pending
+                  ? mode === "sign-in"
+                    ? "Signing in…"
+                    : mode === "sign-up"
+                      ? "Creating your account…"
+                      : "Sending request…"
+                  : config.submit}
+                {!pending && <AccountIcon name="arrow" size={17} />}
+              </button>
+            </form>
+          </>
         )}
         {(mode === "verify-email" || mode === "forgot-password") && (
           <div className={styles.mailTip}>
