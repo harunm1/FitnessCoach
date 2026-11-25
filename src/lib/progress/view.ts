@@ -67,10 +67,22 @@ export function durationMinutes(workout: ProgressWorkout): number {
 
 // "32:05" for a duration in seconds. Rounds the total first, so 359.6 seconds
 // is "6:00", never "5:60".
+const SECONDS_PER_HOUR = 3600;
+
 export function clock(seconds: number): string {
   const total = Math.round(seconds);
   const minutes = Math.floor(total / 60);
   return `${minutes}:${String(total % 60).padStart(2, "0")}`;
+}
+
+// A run's time: "31:12" under an hour, "2:05:30" from an hour on, the way
+// the run form asks for it (h:mm:ss).
+export function duration(seconds: number): string {
+  const total = Math.round(seconds);
+  if (total < SECONDS_PER_HOUR) return clock(total);
+  const hours = Math.floor(total / SECONDS_PER_HOUR);
+  const rest = clock(total % SECONDS_PER_HOUR).padStart("mm:ss".length, "0");
+  return `${hours}:${rest}`;
 }
 
 // "6:24 /km", or null when the run has no usable distance or time.

@@ -1,12 +1,9 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
 import { dayKey } from "./dates";
+import { MANUAL_RUN_SOURCE } from "./runLimits";
 import type { RunEntry } from "./runEntry";
 import type { PlanForRun, RunPlanDay } from "./runPlanDay";
-
-// `Workout.source` for a run logged by hand on the Progress page (D25). Not an
-// import, so it counts toward the streaks like a session logged here.
-export const MANUAL_RUN_SOURCE = "manual-run";
 
 // No clock time is asked for, so a run is stored at 17:00 UTC on its day:
 // noon in Toronto in winter, 1 p.m. in summer, the same day either way.

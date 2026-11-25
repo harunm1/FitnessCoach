@@ -105,7 +105,7 @@ describe("parseRunEntry", () => {
   });
 
   it("refuses an effort outside 1 to 10 or not a whole number", () => {
-    for (const effort of ["0", "11", "5.5", "x"]) {
+    for (const effort of ["0", "11", "5.5", "x", "0x5", "1e1", "+7"]) {
       expect(message({ effort })).toBe(
         "Effort is a whole number from 1 to 10.",
       );

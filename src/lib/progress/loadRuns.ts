@@ -1,8 +1,8 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
 import { dayKey } from "./dates";
-import { MANUAL_RUN_SOURCE } from "./saveRun";
-import { clock, pace } from "./view";
+import { MANUAL_RUN_SOURCE } from "./runLimits";
+import { duration, pace } from "./view";
 
 export const RECENT_RUNS = 5;
 
@@ -48,7 +48,7 @@ export async function loadRecentRuns(userId: string): Promise<RecentRun[]> {
       id: row.id,
       day: dayKey(row.startedAt),
       distanceKm,
-      time: clock(seconds),
+      time: duration(seconds),
       pace: pace(distanceKm, seconds),
       effort: row.run?.rpe ?? null,
       // An imported workout's notes hold its title, not a note about the run.

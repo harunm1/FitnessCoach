@@ -29,7 +29,7 @@ import { muscleShare, musclesWorked } from "@/lib/progress/muscles";
 import { activeStreakWeeks, goalMetStreak } from "@/lib/progress/streaks";
 import type { ProgressWorkout } from "@/lib/progress/types";
 import {
-  clock,
+  duration,
   durationMinutes,
   fillPlanGoals,
   groupByDay,
@@ -74,18 +74,21 @@ function toDayWorkout(workout: ProgressWorkout): DayWorkout {
     workout.distanceKm !== null && workout.runSeconds !== null
       ? {
           distanceKm: workout.distanceKm,
-          time: clock(workout.runSeconds),
+          time: duration(workout.runSeconds),
           pace: pace(workout.distanceKm, workout.runSeconds),
         }
       : null;
   return {
     id: workout.id,
     name: workout.dayName ?? (run ? "Run" : "Workout"),
-    startTime: new Intl.DateTimeFormat("en", {
-      hour: "numeric",
-      minute: "2-digit",
-      timeZone: DEFAULT_TIME_ZONE,
-    }).format(workout.startedAt),
+    // A run logged by hand has no clock time, only its day (D25).
+    startTime: workout.manual
+      ? null
+      : new Intl.DateTimeFormat("en", {
+          hour: "numeric",
+          minute: "2-digit",
+          timeZone: DEFAULT_TIME_ZONE,
+        }).format(workout.startedAt),
     minutes: durationMinutes(workout),
     exercises: groupByExercise(workout.sets),
     run,

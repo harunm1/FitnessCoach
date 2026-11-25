@@ -90,7 +90,14 @@ const durationSchema = z
 const effortSchema = z
   .string()
   .optional()
-  .transform((text) => (text?.trim() ? Number(text.trim()) : null))
+  // Digits only, so "7" and "10" are read; "+7", "1e1" and "0x5" are refused.
+  .transform((text) =>
+    !text?.trim()
+      ? null
+      : /^\d+$/.test(text.trim())
+        ? Number(text.trim())
+        : Number.NaN,
+  )
   .refine(
     (effort) =>
       effort === null ||

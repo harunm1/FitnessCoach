@@ -16,6 +16,8 @@ export type ProgressWorkout = {
   finishedAt: Date;
   dayName: string | null; // the plan day, e.g. "Push"; null if the plan was deleted
   imported: boolean; // read from another app's export (#131), not logged live in the app
+  // A run logged by hand on Progress (D25): its stored start time is a placeholder.
+  manual?: boolean;
   planDays: number; // training days (STRENGTH + RUN) in the workout's plan
   distanceKm: number | null; // set when a run was logged with the workout
   runSeconds: number | null;

@@ -137,6 +137,21 @@ describe("progress page", () => {
     expect(html).toMatch(/Active streak<\/p><p[^>]*>0 weeks/);
   });
 
+  it("shows a run logged by hand without a made-up start time, in h:mm:ss (D25)", async () => {
+    loadFinishedWorkouts.mockResolvedValue([
+      workout("2026-11-10T17:00:00Z", {
+        manual: true,
+        dayName: null,
+        distanceKm: 21.1,
+        runSeconds: 7530,
+        sets: [],
+      }),
+    ]);
+    const html = await render({ month: "2026-11", day: "2026-11-10" });
+    expect(html).toContain("Run: 21.1 km in 2:05:30");
+    expect(html).not.toContain("12:00 PM");
+  });
+
   it("shows no imported line when nothing was imported", async () => {
     loadFinishedWorkouts.mockResolvedValue([workout("2026-11-10T17:00:00Z")]);
     expect(await render()).not.toContain("imported session");

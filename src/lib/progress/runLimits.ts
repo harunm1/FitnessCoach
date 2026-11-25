@@ -14,3 +14,7 @@ export const MIN_EFFORT = 1;
 export const MAX_EFFORT = 10;
 export const MAX_RUN_NOTE_LENGTH = 300;
 export const EARLIEST_RUN_DAY = "2000-01-01";
+
+// `Workout.source` for a run logged by hand on the Progress page (D25). Not an
+// import, so it counts toward the streaks like a session logged here.
+export const MANUAL_RUN_SOURCE = "manual-run";

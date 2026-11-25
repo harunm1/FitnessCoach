@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ProgressSet, ProgressWorkout } from "./types";
 import {
   clock,
+  duration,
   durationMinutes,
   fillPlanGoals,
   groupByDay,
@@ -168,5 +169,14 @@ describe("inMonth", () => {
       inMonth(workouts, "2026-11").map((w) => w.startedAt.toISOString()),
     ).toEqual(["2026-11-15T17:00:00.000Z"]);
     expect(inMonth(workouts, "2026-10")).toHaveLength(1);
+  });
+});
+
+describe("duration", () => {
+  it("shows minutes and seconds under an hour, hours from an hour on", () => {
+    expect(duration(1872)).toBe("31:12");
+    expect(duration(3599)).toBe("59:59");
+    expect(duration(3600)).toBe("1:00:00");
+    expect(duration(7530)).toBe("2:05:30");
   });
 });
