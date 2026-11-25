@@ -10,8 +10,6 @@ export type UnitPrefsState =
   | { status: "saved" }
   | { status: "error"; message: string };
 
-// Saves the display units for the signed-in user (D30). The user comes from the session,
-// never the form. Stored values stay kg and km, so only what is shown changes.
 // The kg/lb switch on the session screen (D30): changes the weight unit alone, so the user does
 // not leave the workout. Called from the browser with the unit as a plain string.
 export async function setWeightUnit(unit: string): Promise<UnitPrefsState> {
@@ -36,6 +34,8 @@ export async function setWeightUnit(unit: string): Promise<UnitPrefsState> {
   return { status: "saved" };
 }
 
+// Saves the display units for the signed-in user (D30). The user comes from the session,
+// never the form. Stored values stay kg and km, so only what is shown changes.
 export async function saveUnitPrefs(
   _previousState: UnitPrefsState,
   formData: FormData,
