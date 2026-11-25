@@ -4,7 +4,7 @@
 // and the set form. Sets waiting in the offline queue (D31) are listed and counted, start
 // the rest timer and count for the pain stop rule (#92), so the page keeps working without
 // a connection.
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import RestTimer from "@/components/RestTimer";
 import SetLogForm, { type LoggedSetInput } from "@/components/SetLogForm";
 import {
@@ -17,7 +17,7 @@ import {
   useSessionSetQueue,
 } from "@/lib/offline/sessionSetQueue";
 import { firstStoppedSet } from "@/lib/offline/stoppedSet";
-import { createTapGuard } from "@/lib/offline/tapGuard";
+import { createTapGuard, DOUBLE_TAP_WINDOW_MS } from "@/lib/offline/tapGuard";
 
 type ExerciseLogPanelProps = {
   workoutId: number;
@@ -55,6 +55,11 @@ function SetRowItem({ row }: { row: SetRow }) {
 export default function ExerciseLogPanel(props: ExerciseLogPanelProps) {
   const queue = useSessionSetQueue();
   const [allowTap] = useState(() => createTapGuard());
+  // Log set stays disabled for a moment after a set is stored, so a second tap of a
+  // double tap lands on a disabled button instead of logging the next set.
+  const [coolingDown, setCoolingDown] = useState(false);
+  const cooldown = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(cooldown.current), []);
   const pending = queue.items.filter(
     (item) =>
       item.workoutId === props.workoutId &&
@@ -74,6 +79,12 @@ export default function ExerciseLogPanel(props: ExerciseLogPanelProps) {
 
   const logSet = async (set: LoggedSetInput) => {
     if (!allowTap()) return;
+    setCoolingDown(true);
+    window.clearTimeout(cooldown.current);
+    cooldown.current = window.setTimeout(
+      () => setCoolingDown(false),
+      DOUBLE_TAP_WINDOW_MS,
+    );
     await sessionSetQueue.enqueue({
       ...set,
       workoutId: props.workoutId,
@@ -114,6 +125,7 @@ export default function ExerciseLogPanel(props: ExerciseLogPanelProps) {
           // A new key after every logged set resets the pain fields (as on main, #92).
           key={`${props.exerciseId}-${merged.rows.map((row) => `${row.setNumber}:${row.painDuringSession}:${row.painNextMorning}`).join(",")}`}
           blocked={Boolean(stoppedSet)}
+          busy={coolingDown}
           correction={
             stoppedSet
               ? {

@@ -38,6 +38,9 @@ type SetLogFormProps = {
   // Given by the session view: the set goes to the offline queue (D31) instead of the
   // logSet action, so a lost connection cannot lose it.
   onLog?: (set: LoggedSetInput) => Promise<void> | void;
+  // Set by the session view for a moment after a set is logged, so a double tap cannot
+  // land on the next set (D31).
+  busy?: boolean;
 };
 
 export default function SetLogForm({
@@ -48,6 +51,7 @@ export default function SetLogForm({
   blocked = false,
   correction,
   onLog,
+  busy = false,
 }: SetLogFormProps) {
   const initialState: SetLogActionState = { status: "idle", message: "" };
   const [state, formAction, isPending] = useActionState(
@@ -108,7 +112,7 @@ export default function SetLogForm({
       setIsQueueing(false);
     }
   }
-  const isSaving = isPending || isQueueing;
+  const isSaving = isPending || isQueueing || busy;
   const message = onLog
     ? { status: "error" as const, message: queueError }
     : state;

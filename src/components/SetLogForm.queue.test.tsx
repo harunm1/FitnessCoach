@@ -70,6 +70,23 @@ describe("SetLogForm with the offline queue", () => {
     expect(onLog.mock.calls[0][0].weightKg).toBeNull();
   });
 
+  it("keeps Log set disabled while the session view says it is busy (double-tap cooldown)", () => {
+    render(
+      <SetLogForm
+        busy
+        exerciseId="press"
+        nextSetNumber={SET_TWO}
+        targetReps={TARGET_REPS}
+        onLog={vi.fn()}
+      />,
+    );
+    expect(
+      screen
+        .getByRole("button", { name: "Saving..." })
+        .hasAttribute("disabled"),
+    ).toBe(true);
+  });
+
   it("logs a double tap once: the button waits while the set is stored", async () => {
     const { onLog } = renderForm(
       SET_ONE,
