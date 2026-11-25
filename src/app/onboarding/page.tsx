@@ -77,15 +77,19 @@ export default async function OnboardingPage() {
             Want a structured program?
           </h2>
           <p className="mt-1 text-sm text-foreground/70">
-            After saving your answers, open{" "}
-            <Link href="/programs" className="underline">
-              Programs
-            </Link>{" "}
-            to <strong>Start from a template</strong> (full body, upper and
-            lower, push pull legs, or a muscle-building split) or{" "}
-            <strong>Build with the coach</strong>, which adapts the closest
-            template to you and shows every change with its reason.
+            After saving your answers, pick one of the four templates (full
+            body, upper and lower, push pull legs, or a muscle-building split),
+            or let the coach adapt the closest one to you. You see every change
+            with its reason.
           </p>
+          <div className="mt-3 flex flex-wrap gap-4 text-sm">
+            <Link href="/programs#start-program" className="underline">
+              Start from a template
+            </Link>
+            <Link href="/programs?start=coach" className="underline">
+              Build with the coach
+            </Link>
+          </div>
         </section>
       </div>
     </AccountTheme>

@@ -14,7 +14,12 @@ export const dynamic = "force-dynamic";
 
 // Programs (D38): the user's programs as folders, then a template to start from or
 // "Build with the coach", which starts from the template closest to the quiz answers.
-export default async function ProgramsPage() {
+export default async function ProgramsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ start?: string | string[] }>;
+}) {
+  const { start } = await searchParams;
   const user = await requireUser();
   const [folders, profile, avatarUrl] = await Promise.all([
     loadProgramFolders(user.id),
@@ -46,8 +51,8 @@ export default async function ProgramsPage() {
           <ProgramFolders plans={folders} />
         </section>
 
-        <section aria-labelledby="start-program">
-          <h2 id="start-program" className="mb-1 text-xl font-semibold">
+        <section id="start-program" aria-labelledby="start-program-heading">
+          <h2 id="start-program-heading" className="mb-1 text-xl font-semibold">
             Start a program
           </h2>
           <p className="mb-4 text-sm text-foreground/70">
@@ -59,6 +64,7 @@ export default async function ProgramsPage() {
           <ProgramBuilder
             closestId={closestId}
             quizDays={profile?.daysPerWeek}
+            startWithCoach={start === "coach"}
           />
         </section>
       </div>

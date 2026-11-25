@@ -101,4 +101,11 @@ describe("ProgramBuilder", () => {
       screen.getByText(/trains 4 days a week; your quiz says 5/),
     ).toBeTruthy();
   });
+
+  it("starts building with the coach at once when opened from onboarding's link", async () => {
+    await act(async () => {
+      render(<ProgramBuilder closestId="upper-lower-4" startWithCoach />);
+    });
+    expect(adapt).toHaveBeenCalledWith("upper-lower-4");
+  });
 });

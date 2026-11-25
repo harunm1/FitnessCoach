@@ -2,7 +2,7 @@
 // Start a program (D38): pick a template, or build with the coach, which starts from
 // the template closest to the user's quiz answers. The coach adapts it on the server
 // (adaptProgram); the review then shows each change for the user to keep or revert.
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { adaptProgram, type AdaptResult } from "@/app/programs/actions";
 import { Button } from "@/components/ui/button";
 import { PROGRAM_TEMPLATES, getTemplate } from "@/lib/programs/templates";
@@ -19,9 +19,11 @@ const LEVEL_LABEL = {
 export default function ProgramBuilder({
   closestId,
   quizDays,
+  startWithCoach = false,
 }: {
   closestId: string | null; // null until the quiz is done
   quizDays?: number;
+  startWithCoach?: boolean; // opened from onboarding's "Build with the coach" link
 }) {
   const [opened, setOpened] = useState<Opened | null>(null);
   const [pending, setPending] = useState<string | null>(null);
@@ -38,6 +40,15 @@ export default function ProgramBuilder({
       else setError(result.message);
     });
   };
+
+  // Once per page load, not again on a re-render.
+  const started = useRef(false);
+  useEffect(() => {
+    if (!startWithCoach || !closestId || started.current) return;
+    started.current = true;
+    start(closestId);
+    // start is recreated each render; the ref keeps this to one call.
+  }, [startWithCoach, closestId]);
 
   const template = opened && getTemplate(opened.adaptation.templateId);
   const pendingName = pending && getTemplate(pending)?.name;

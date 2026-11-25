@@ -91,6 +91,11 @@ describe("onboarding page (D38)", () => {
     const html = await render();
     expect(html).toContain("Start from a template");
     expect(html).toContain("Build with the coach");
-    expect(html).toMatch(/<a[^>]*href="\/programs"/);
+    expect(html).toMatch(
+      /<a[^>]*href="\/programs#start-program"[^>]*>Start from a template<\/a>/,
+    );
+    expect(html).toMatch(
+      /<a[^>]*href="\/programs\?start=coach"[^>]*>Build with the coach<\/a>/,
+    );
   });
 });
