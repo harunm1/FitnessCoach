@@ -136,6 +136,8 @@ export async function importWorkouts(
         importKey: { in: workouts.map((workout) => workout.key) },
       },
       select: { importKey: true },
+      // At most one row per key in the file, so the limit never cuts a real match (#76).
+      take: workouts.length,
     });
     const days = workouts.map((workout) => dayKey(workout.startedAt)).sort();
     return {

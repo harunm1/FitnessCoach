@@ -50,3 +50,25 @@ describe("UnsavedNotice", () => {
     expect(html).toContain("Send again");
   });
 });
+
+describe("UnsavedNotice for a saved example (D12, #59)", () => {
+  it("labels the reply as a saved example, never as live or merely unsaved", () => {
+    const html = renderToStaticMarkup(
+      <UnsavedNotice
+        action={() => {}}
+        example
+        message="The coach is offline."
+        reply="Try lunges."
+        text="Swap this exercise"
+      />,
+    );
+    expect(html).toContain("Saved example, not a live reply");
+    expect(html).not.toContain("Not saved<");
+    expect(html.indexOf("Saved example, not a live reply")).toBeLessThan(
+      html.indexOf("Try lunges."),
+    );
+    expect(buttonTag(html, "Send again")).toContain(
+      'value="Swap this exercise"',
+    );
+  });
+});

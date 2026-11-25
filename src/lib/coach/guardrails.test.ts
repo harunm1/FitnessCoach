@@ -4,6 +4,7 @@ import {
   buildChatMessages,
   checkCoachReply,
   checkUserMessage,
+  mentionsTraining,
   type ChatMessage,
 } from "./guardrails";
 
@@ -96,6 +97,45 @@ describe("checkUserMessage", () => {
     "what pace for my easy run?",
   ])("allows short replies and training questions: %s", (text) => {
     expect(checkUserMessage(text).action).toBe("ALLOW");
+  });
+
+  // Live report, 24 Nov 2026: the first message got the off-topic redirect because the
+  // training words held only the singular "workout"; plural and verb forms count too.
+  it.each([
+    "explain one of the workouts for me",
+    "can you explain these exercises to me",
+    "how should I do these exercises",
+    "should I add more weights to this",
+    "I'm exercising three times now",
+  ])("allows plural and verb forms of training words: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("ALLOW");
+  });
+
+  it.each([
+    "what are your plans for the holidays",
+    "explain the plot of the last movie you saw",
+    "can we work out a time to meet for dinner tonight",
+    "write me a poem about my routine at the bank",
+  ])("still redirects messages with no training word: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("OFF_TOPIC");
+  });
+
+  // Review of 24 Nov: the plural forms must not take a distress message out of the
+  // check-in (D15). Crisis words with no singular training word still get it.
+  it.each([
+    "I want to give up on my workouts",
+    "nothing is working out for me and I feel dead inside",
+    "I feel dead inside, I just want to give up on these exercises",
+  ])("keeps the check-in for crisis words beside plural forms: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("CHECK_IN");
+  });
+
+  // A coach reply about "your workouts" is training context for a follow-up (chat.ts).
+  it.each([
+    "Your workouts this week build on last week's.",
+    "You exercised well; keep the same effort.",
+  ])("counts plural and verb forms as training context: %s", (text) => {
+    expect(mentionsTraining(text)).toBe(true);
   });
 
   // Body image and eating, and negative mindsets: two harm categories for physical

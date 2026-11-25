@@ -770,6 +770,16 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Tools:** gh, git, Prettier, Playwright, one general-purpose review agent. No skills.
 
+## 24 November (evening): weight hint for more equipment (#144)
+
+**Asked:** To finish the part of #144 that was left: the KG field hint for foam roll, exercise ball, bands and "other" exercises.
+
+**Got:** A change to `src/lib/workout/weightPlaceholder.ts` and its test. Foam roll shows Bodyweight; bands, exercise ball and "other" show "Optional kg"; everything else except body only still shows "Load in kg". The equipment values were checked against the free-exercise-db file on 24 November. AI drafted the code and tests.
+
+**Did with it:** The two new tests failed before the change. A review agent that had not seen the draft found that two exercise-ball moves are weighted and that the first hint text would be cut off in the narrow field; both fixed.
+
+**Tools:** gh, git, Prettier, ESLint, tsc, Vitest, one review agent. No skills.
+
 ## 24 November (evening): photo enlarge and the body weight log
 
 **Asked:** For two Progress page features under #16: clicking a progress photo opens it full size in an accessible dialog, and a body weight log (date, kg, optional note) with a line chart. Design first in `docs/ARCHITECTURE.md`, tests first, no new dependency.
@@ -789,3 +799,33 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Did with it:** Each new test failed before the code existed. A review agent that had not seen the work read the change and found no errors and three should-fix items. The day view showed a made-up noon start time, a two-hour run showed as 125:30, and a save racing Start on the session screen could take a plan day twice. The first two were fixed test-first; the race is written into D27 as a known cost, with a note for the session screen's owner. A second agent checked the fixes. Lint, type check, format check and the targeted tests ran before the push, and CI was green on the exact commit before it reached main.
 
 **Tools:** git, gh, Prettier, ESLint, tsc, Vitest, Prisma (validate), review agents (pr-review-toolkit code-reviewer, a blind pass and a delta check). No skills.
+
+## 24 November (evening): saved coach replies for the live demo
+
+**Asked:** For the last code gap on #59 before the 4 December demo: when demo mode is on and both model providers fail or time out, the coach answers the scripted demo question with a stored reply, marked on screen as a saved example and never shown as live, still passing the reply check, and never used outside demo mode. Design first, tests first.
+
+**Got:** A design note under D12 in `docs/ARCHITECTURE.md` (where the replies live, how they are keyed, how they are kept honest, and the options it beat), `src/lib/coach/demoReplies.ts` with its JSON file, a recording script `scripts/demo-replies.ts`, a new `example` event on the chat stream, and the label "Saved example, not a live reply" in the chat screen's notice. The three stored replies are real coach replies to the three quick replies, recorded once through the normal chat pipeline (three Groq calls). AI wrote the code and tests from my brief.
+
+**Did with it:** Wrote the failing tests first for the stream, the route, the client protocol, the form and the notice, and checked one later test by reverting its line of code. Lint, the type check, the format check and the coach tests (1,186) passed before review. A review agent that had not seen the work found no error. It found one test that could not fail: it checked the live reply bubble after the bubble was already gone, so it now watches every change on the page and fails when the stored reply is made to show in the bubble. It also found that the stored reply to "Swap this exercise" is a question back, so the demo script now taps "Too easy". A second agent checked those fixes. Not done: the network-off rehearsal and the verified demo account (#59), and the "Too easy" reply's claim that a cable face pull uses the same equipment as a dumbbell raise, which passes the checks but is loose.
+
+**Tools:** gh, git, Prettier, ESLint, tsc, Vitest, tsx (one recording run), review agents (pr-review-toolkit code-reviewer, a blind pass and a delta check). No skills.
+
+## 24 November (evening): the coach turning away a workout question
+
+**Asked:** Why the coach sometimes answered "explain one of the workouts for me" and sometimes did not. The brief: find which path ended each failed turn before changing anything, then fix the top cause test-first.
+
+**Got:** A diagnosis run first. Production records could not be read from this machine, so the real chat pipeline was run six times on the same question with a sample profile. All six turns got the off-topic redirect before any model call, so they left no coach record. The training word list held "workout", "exercise" and "weight" only as whole words. "Explain today's workout" was answered and "explain one of the workouts" was turned away, so to a user the answer looked random. The fix adds a second list of plural and verb forms ("workouts", "exercises", "exercising", "weights") that only keeps a message out of the off-topic redirect, leaves out "plans", "work out" and "routine" as too loose, and records the rule in the architecture doc. AI wrote the diagnostic run, the test cases and the pattern change.
+
+**Did with it:** Five new allow cases failed before the change and pass after it; four redirect cases and three check-in cases guard the boundaries. The targeted coach tests, lint, type check and format check ran before review. A review agent that had not seen the work found two problems. The first version put the new words in the main training list, so a message such as "I want to give up on my workouts" lost the check-in that names 9-8-8 and went to the model. It also let "work out a time for dinner" through. Both were fixed test-first (five new cases failed before the fix), and a second agent checked the fix.
+
+**Tools:** git, gh, tsx, Vitest, ESLint, tsc, Prettier, review agent (pr-review-toolkit code-reviewer). No skills.
+
+## 24 November (evening): checking the advanced-features section
+
+**Asked:** Which advanced features the repo really has, with the demo path and the failure path of each, and anything that would look wrong to a marker.
+
+**Got:** An audit that read the proposal, the architecture doc, the plan and the code for sign-in with tiers, the coach, streamed replies and photo processing. The architecture doc still listed notifications, a then-vs-now photo image and Redux Toolkit as planned, and none of them exist. AI rewrote that section to say what is built and what is not claimed.
+
+**Did with it:** Checked each claim against the code (the tier check in the coach route, the sentence-by-sentence stream, the sharp resize that drops location data). The targeted tests for those areas (33 files, 375 tests) pass; no browser run was possible.
+
+**Tools:** git, Vitest, Prettier. No skills.

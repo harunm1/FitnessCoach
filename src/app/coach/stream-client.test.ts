@@ -61,3 +61,18 @@ describe("coach stream client", () => {
     expect(cancel).toHaveBeenCalledOnce();
   });
 });
+
+describe("coach stream client, saved example (D12, #59)", () => {
+  it("ends on a saved example with its reply and notice", async () => {
+    const events: unknown[] = [];
+    await readCoachStream(
+      response(
+        '{"type":"example","reply":"Try lunges.","message":"Offline"}\n',
+      ),
+      (event) => events.push(event),
+    );
+    expect(events).toEqual([
+      { type: "example", reply: "Try lunges.", message: "Offline" },
+    ]);
+  });
+});
