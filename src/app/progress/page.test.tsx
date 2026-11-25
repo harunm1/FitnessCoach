@@ -3,22 +3,29 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryStorage } from "@/lib/storage/memory";
 import type { ProgressWorkout } from "@/lib/progress/types";
 
-const { requireUser, loadFinishedWorkouts, database, storage } = vi.hoisted(
-  () => ({
-    requireUser: vi.fn(),
-    loadFinishedWorkouts: vi.fn(),
-    database: {
-      user: { findUnique: vi.fn() },
-      progressPhoto: { findMany: vi.fn(), count: vi.fn() },
-      bodyWeight: { findMany: vi.fn() },
-      workout: { findMany: vi.fn() },
-    },
-    storage: { get: vi.fn() },
-  }),
-);
+const {
+  requireUser,
+  loadFinishedWorkouts,
+  loadTrainingProfile,
+  database,
+  storage,
+} = vi.hoisted(() => ({
+  requireUser: vi.fn(),
+  loadFinishedWorkouts: vi.fn(),
+  loadTrainingProfile: vi.fn(),
+  database: {
+    user: { findUnique: vi.fn() },
+    profile: { findUnique: vi.fn() },
+    progressPhoto: { findMany: vi.fn(), count: vi.fn() },
+    bodyWeight: { findMany: vi.fn() },
+    workout: { findMany: vi.fn() },
+  },
+  storage: { get: vi.fn() },
+}));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth/session", () => ({ requireUser }));
 vi.mock("@/lib/progress/load", () => ({ loadFinishedWorkouts }));
+vi.mock("@/lib/trainingProfile/load", () => ({ loadTrainingProfile }));
 vi.mock("@/lib/prisma", () => ({ prisma: database }));
 vi.mock("@/lib/storage", () => ({ getPhotoStorage: storage.get }));
 vi.mock("@/components/auth/sign-out-button", () => ({
@@ -71,6 +78,17 @@ beforeEach(() => {
     image: null,
     weightUnit: "KG",
     distanceUnit: "KM",
+  });
+  // The weekly goal an imported week is judged against when no plan applies (D34).
+  database.profile.findUnique.mockResolvedValue({ daysPerWeek: 2 });
+  loadTrainingProfile.mockResolvedValue({
+    workoutCount: 0,
+    trainingSince: null,
+    workoutsPerWeek: 0,
+    usualHour: null,
+    level: "BEGINNER",
+    equipment: [],
+    workingWeights: [],
   });
   database.progressPhoto.findMany.mockResolvedValue([]);
   database.progressPhoto.count.mockResolvedValue(0);
@@ -128,17 +146,59 @@ describe("progress page", () => {
     expect(html).toContain("1 week<");
   });
 
-  it("labels imported workouts, counts them, and keeps them out of the streaks", async () => {
+  it("labels imported workouts and counts them in the streaks (D34)", async () => {
     loadFinishedWorkouts.mockResolvedValue([
-      workout("2026-11-03T17:00:00Z", { imported: true, dayName: "Push Day" }),
-      workout("2026-11-05T17:00:00Z", { imported: true, dayName: "Pull Day" }),
-      workout("2026-11-10T17:00:00Z", { imported: true, dayName: "Leg Day" }),
+      workout("2026-11-03T17:00:00Z", {
+        imported: true,
+        planDays: 0,
+        dayName: "Push Day",
+      }),
+      workout("2026-11-05T17:00:00Z", {
+        imported: true,
+        planDays: 0,
+        dayName: "Pull Day",
+      }),
+      workout("2026-11-10T17:00:00Z", {
+        imported: true,
+        planDays: 0,
+        dayName: "Leg Day",
+      }),
     ]);
     const html = await render();
     expect(html).toContain("3 imported sessions");
+    expect(html).toContain("includes imported history");
+    expect(html).not.toContain("not counted in the streaks");
     expect(html).toContain("Imported");
-    // Only live sessions feed the streaks, so none of these count.
-    expect(html).toMatch(/Active streak<\/p><p[^>]*>0 weeks/);
+    // Last week has 2 sessions, this week 1: two active weeks.
+    expect(html).toMatch(/Active streak<\/p><p[^>]*>2 weeks/);
+    // The goal is the profile's 2 a week: last week met it, this week is still open.
+    expect(html).toMatch(/Goal streak<\/p><p[^>]*>1 week</);
+  });
+
+  it("shows the training profile line when there is a history (D34)", async () => {
+    loadTrainingProfile.mockResolvedValue({
+      workoutCount: 120,
+      trainingSince: new Date("2025-03-12T15:00:00Z"),
+      workoutsPerWeek: 3,
+      usualHour: 18,
+      level: "INTERMEDIATE",
+      equipment: ["barbell"],
+      workingWeights: [],
+    });
+    loadFinishedWorkouts.mockResolvedValue([workout("2026-11-10T17:00:00Z")]);
+    const html = await render();
+    expect(html).toContain(
+      "Training since March 2025, 3 workouts a week, usually around 6 pm.",
+    );
+    expect(loadTrainingProfile).toHaveBeenCalledWith(
+      expect.anything(),
+      "session-owner",
+      expect.any(Date),
+    );
+  });
+
+  it("shows no training line without a history", async () => {
+    expect(await render()).not.toContain("Training since");
   });
 
   it("shows a run logged by hand without a made-up start time, in h:mm:ss (D27)", async () => {

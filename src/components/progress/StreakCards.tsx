@@ -1,6 +1,8 @@
 type StreakCardsProps = {
   activeWeeks: number;
   goalMetWeeks: number;
+  // Imported sessions are in the counts (D34): say so on the cards.
+  includesImported?: boolean;
 };
 
 function weeks(count: number) {
@@ -12,17 +14,19 @@ function weeks(count: number) {
 export default function StreakCards({
   activeWeeks,
   goalMetWeeks,
+  includesImported = false,
 }: StreakCardsProps) {
+  const imported = includesImported ? " (includes imported history)" : "";
   const cards = [
     {
       label: "Active streak",
       value: weeks(activeWeeks),
-      detail: "in a row with at least one workout",
+      detail: `in a row with at least one workout${imported}`,
     },
     {
       label: "Goal streak",
       value: weeks(goalMetWeeks),
-      detail: "in a row reaching your plan's weekly workouts",
+      detail: `in a row reaching your plan's weekly workouts${imported}`,
     },
   ];
   return (

@@ -26,8 +26,11 @@ import { loadBodyWeights } from "@/lib/progress/loadWeights";
 import { yearBefore } from "@/lib/progress/weightChart";
 import { regionLabels, slugsFor } from "@/lib/progress/muscleSlugs";
 import { muscleShare, musclesWorked } from "@/lib/progress/muscles";
+import { streakInput } from "@/lib/progress/streakInput";
 import { activeStreakWeeks, goalMetStreak } from "@/lib/progress/streaks";
 import type { ProgressWorkout } from "@/lib/progress/types";
+import { loadTrainingProfile } from "@/lib/trainingProfile/load";
+import { progressLine } from "@/lib/trainingProfile/summary";
 import {
   duration,
   durationMinutes,
@@ -49,6 +52,8 @@ export const dynamic = "force-dynamic";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PHOTOS_SHOWN = 3;
+// The weekly goal for imported weeks when the user has no saved profile.
+const DEFAULT_WEEKLY_GOAL = 3;
 
 type SearchParams = Promise<{ month?: string; day?: string }>;
 
@@ -120,32 +125,43 @@ export default async function ProgressPage({
   const monthStart = new Date(
     new Date(`${requestedMonth}-01T00:00:00Z`).getTime() - DAY_MS,
   );
-  const [loaded, profile, latestPhotos, photoCount, weights, runs] =
-    await Promise.all([
-      loadFinishedWorkouts(
-        user.id,
-        monthStart < yearAgo ? monthStart : yearAgo,
-      ),
-      prisma.user.findUnique({
-        where: { id: user.id },
-        select: { image: true, weightUnit: true, distanceUnit: true },
-      }),
-      prisma.progressPhoto.findMany({
-        where: { userId: user.id },
-        orderBy: { takenAt: "desc" },
-        take: PHOTOS_SHOWN,
-        select: {
-          id: true,
-          storageKey: true,
-          takenAt: true,
-          weightKg: true,
-          note: true,
-        },
-      }),
-      prisma.progressPhoto.count({ where: { userId: user.id } }),
-      loadBodyWeights(user.id, yearBefore(today)),
-      loadRecentRuns(user.id),
-    ]);
+  const [
+    loaded,
+    profile,
+    planProfile,
+    training,
+    latestPhotos,
+    photoCount,
+    weights,
+    runs,
+  ] = await Promise.all([
+    loadFinishedWorkouts(user.id, monthStart < yearAgo ? monthStart : yearAgo),
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: { image: true, weightUnit: true, distanceUnit: true },
+    }),
+    // The weekly goal an imported week is judged against (D34).
+    prisma.profile.findUnique({
+      where: { userId: user.id },
+      select: { daysPerWeek: true },
+    }),
+    loadTrainingProfile(prisma, user.id, now),
+    prisma.progressPhoto.findMany({
+      where: { userId: user.id },
+      orderBy: { takenAt: "desc" },
+      take: PHOTOS_SHOWN,
+      select: {
+        id: true,
+        storageKey: true,
+        takenAt: true,
+        weightKg: true,
+        note: true,
+      },
+    }),
+    prisma.progressPhoto.count({ where: { userId: user.id } }),
+    loadBodyWeights(user.id, yearBefore(today)),
+    loadRecentRuns(user.id),
+  ]);
   const workouts = fillPlanGoals(loaded);
   const units = unitsFromRow(profile);
 
@@ -198,17 +214,17 @@ export default async function ProgressPage({
     };
   }
 
-  // Imported sessions are history from another app; only sessions logged here count
-  // toward the streaks (#131).
+  // Imported sessions are labelled, and they count toward the streaks like any other
+  // session (D34, reversing D22): an imported week is judged against the profile's days
+  // a week.
   const importedCount = workouts.filter((workout) => workout.imported).length;
-  const streakInput = workouts
-    .filter((workout) => !workout.imported)
-    .map((workout) => ({
-      startedAt: workout.startedAt,
-      planDays: workout.planDays,
-    }));
-  const activeWeeks = activeStreakWeeks(streakInput, now).length;
-  const goalMetWeeks = goalMetStreak(streakInput, now);
+  const forStreaks = streakInput(
+    workouts,
+    planProfile?.daysPerWeek ?? DEFAULT_WEEKLY_GOAL,
+  );
+  const activeWeeks = activeStreakWeeks(forStreaks, now).length;
+  const goalMetWeeks = goalMetStreak(forStreaks, now);
+  const trainingLine = progressLine(training);
 
   const dayWorkouts = selectedDay ? (byDay.get(selectedDay) ?? []) : [];
   const monthWorkouts = inMonth(workouts, month);
@@ -244,12 +260,19 @@ export default async function ProgressPage({
             </p>
           )}
 
-          <StreakCards activeWeeks={activeWeeks} goalMetWeeks={goalMetWeeks} />
+          {trainingLine && (
+            <p className="m-0 text-sm text-foreground/80">{trainingLine}</p>
+          )}
+          <StreakCards
+            activeWeeks={activeWeeks}
+            goalMetWeeks={goalMetWeeks}
+            includesImported={importedCount > 0}
+          />
           {importedCount > 0 && (
             <p className="m-0 text-xs text-foreground/70">
               {importedCount} imported{" "}
               {importedCount === 1 ? "session" : "sessions"} from another app,
-              labelled Imported and not counted in the streaks.
+              labelled Imported.
             </p>
           )}
 
