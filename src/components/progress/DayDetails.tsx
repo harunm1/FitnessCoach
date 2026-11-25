@@ -3,7 +3,7 @@ import type { ExerciseGroup } from "@/lib/progress/view";
 export type DayWorkout = {
   id: number;
   name: string;
-  startTime: string; // "6:00 PM"
+  startTime: string | null; // "6:00 PM"; null for a run logged by hand (D27)
   minutes: number;
   exercises: ExerciseGroup[];
   run: { distanceKm: number; time: string; pace: string | null } | null;
@@ -51,7 +51,8 @@ export default function DayDetails({ dayLabel, workouts }: DayDetailsProps) {
                   )}
                 </h3>
                 <p className="m-0 text-xs text-foreground/60">
-                  {workout.startTime} · {workout.minutes} min
+                  {workout.startTime && `${workout.startTime} · `}
+                  {workout.minutes} min
                 </p>
               </div>
               {workout.run && (
