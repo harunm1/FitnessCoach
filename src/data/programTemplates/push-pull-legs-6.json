@@ -1,0 +1,268 @@
+{
+  "id": "push-pull-legs-6",
+  "version": 1,
+  "name": "Push, pull, legs, 6 days",
+  "summary": "Pushing, pulling and leg days, each twice a week, for someone who can train six days and recovers well.",
+  "level": "INTERMEDIATE",
+  "goals": ["MUSCLE", "STRENGTH"],
+  "daysPerWeek": 6,
+  "equipment": ["barbell", "dumbbell", "cable", "machine"],
+  "repBand": {
+    "min": 6,
+    "max": 12
+  },
+  "progression": {
+    "kind": "double",
+    "loadStepPercent": 5,
+    "rule": "Double progression: add reps each session until every set reaches the top of its range, then add about 5% load and start again at the bottom of the range."
+  },
+  "deloadEveryWeeks": 6,
+  "days": [
+    {
+      "name": "Push A",
+      "weekdays": ["MON"],
+      "exercises": [
+        {
+          "exerciseId": "Barbell_Bench_Press_-_Medium_Grip",
+          "sets": 4,
+          "reps": 6,
+          "restSeconds": 180,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Standing_Military_Press",
+          "sets": 3,
+          "reps": 8,
+          "restSeconds": 120,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Incline_Dumbbell_Press",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 90,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Side_Lateral_Raise",
+          "sets": 3,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Triceps_Pushdown",
+          "sets": 3,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        }
+      ]
+    },
+    {
+      "name": "Pull A",
+      "weekdays": ["TUE"],
+      "exercises": [
+        {
+          "exerciseId": "Barbell_Deadlift",
+          "sets": 3,
+          "reps": 6,
+          "restSeconds": 180,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Wide-Grip_Lat_Pulldown",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 90,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Seated_Cable_Rows",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 90,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Face_Pull",
+          "sets": 3,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Barbell_Curl",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 60,
+          "rpe": 8
+        }
+      ]
+    },
+    {
+      "name": "Legs A",
+      "weekdays": ["WED"],
+      "exercises": [
+        {
+          "exerciseId": "Barbell_Squat",
+          "sets": 4,
+          "reps": 6,
+          "restSeconds": 180,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Romanian_Deadlift",
+          "sets": 3,
+          "reps": 8,
+          "restSeconds": 150,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Leg_Press",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 120,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Lying_Leg_Curls",
+          "sets": 3,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Standing_Calf_Raises",
+          "sets": 3,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        }
+      ]
+    },
+    {
+      "name": "Push B",
+      "weekdays": ["THU"],
+      "exercises": [
+        {
+          "exerciseId": "Seated_Dumbbell_Press",
+          "sets": 4,
+          "reps": 8,
+          "restSeconds": 120,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Dumbbell_Bench_Press",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 120,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Cable_Crossover",
+          "sets": 3,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Side_Lateral_Raise",
+          "sets": 3,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Cable_Rope_Overhead_Triceps_Extension",
+          "sets": 3,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        }
+      ]
+    },
+    {
+      "name": "Pull B",
+      "weekdays": ["FRI"],
+      "exercises": [
+        {
+          "exerciseId": "Bent_Over_Barbell_Row",
+          "sets": 4,
+          "reps": 8,
+          "restSeconds": 150,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Chin-Up",
+          "sets": 3,
+          "reps": 8,
+          "restSeconds": 120,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "One-Arm_Dumbbell_Row",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 90,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Cable_Rear_Delt_Fly",
+          "sets": 3,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Hammer_Curls",
+          "sets": 3,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        }
+      ]
+    },
+    {
+      "name": "Legs B",
+      "weekdays": ["SAT"],
+      "exercises": [
+        {
+          "exerciseId": "Front_Barbell_Squat",
+          "sets": 4,
+          "reps": 8,
+          "restSeconds": 150,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Stiff-Legged_Dumbbell_Deadlift",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 120,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Split_Squat_with_Dumbbells",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 90,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Leg_Extensions",
+          "sets": 3,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Seated_Calf_Raise",
+          "sets": 3,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        }
+      ]
+    }
+  ]
+}

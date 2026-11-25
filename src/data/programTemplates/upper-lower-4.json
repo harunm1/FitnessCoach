@@ -1,0 +1,200 @@
+{
+  "id": "upper-lower-4",
+  "version": 1,
+  "name": "Upper and lower, 4 days",
+  "summary": "Two upper-body and two lower-body days a week: a heavier main lift first, then lighter work for size.",
+  "level": "INTERMEDIATE",
+  "goals": ["STRENGTH", "MUSCLE", "GENERAL_FITNESS"],
+  "daysPerWeek": 4,
+  "equipment": ["barbell", "dumbbell", "cable"],
+  "repBand": {
+    "min": 5,
+    "max": 12
+  },
+  "progression": {
+    "kind": "double",
+    "loadStepPercent": 5,
+    "rule": "Double progression: add reps each session until every set reaches the top of its range, then add about 5% load and start again at the bottom of the range."
+  },
+  "deloadEveryWeeks": 7,
+  "days": [
+    {
+      "name": "Upper A",
+      "weekdays": ["MON"],
+      "exercises": [
+        {
+          "exerciseId": "Barbell_Bench_Press_-_Medium_Grip",
+          "sets": 4,
+          "reps": 6,
+          "restSeconds": 180,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Bent_Over_Barbell_Row",
+          "sets": 4,
+          "reps": 6,
+          "restSeconds": 150,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Standing_Military_Press",
+          "sets": 3,
+          "reps": 8,
+          "restSeconds": 120,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Wide-Grip_Lat_Pulldown",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 90,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Barbell_Curl",
+          "sets": 2,
+          "reps": 10,
+          "restSeconds": 60,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Triceps_Pushdown",
+          "sets": 2,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        }
+      ]
+    },
+    {
+      "name": "Lower A",
+      "weekdays": ["TUE"],
+      "exercises": [
+        {
+          "exerciseId": "Barbell_Squat",
+          "sets": 4,
+          "reps": 6,
+          "restSeconds": 180,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Romanian_Deadlift",
+          "sets": 3,
+          "reps": 8,
+          "restSeconds": 150,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Dumbbell_Lunges",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 90,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Standing_Dumbbell_Calf_Raise",
+          "sets": 3,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Hanging_Leg_Raise",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 60,
+          "rpe": 8
+        }
+      ]
+    },
+    {
+      "name": "Upper B",
+      "weekdays": ["THU"],
+      "exercises": [
+        {
+          "exerciseId": "Incline_Dumbbell_Press",
+          "sets": 4,
+          "reps": 8,
+          "restSeconds": 150,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "One-Arm_Dumbbell_Row",
+          "sets": 4,
+          "reps": 8,
+          "restSeconds": 120,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Seated_Dumbbell_Press",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 90,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Chin-Up",
+          "sets": 3,
+          "reps": 8,
+          "restSeconds": 120,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Hammer_Curls",
+          "sets": 2,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Standing_Dumbbell_Triceps_Extension",
+          "sets": 2,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        }
+      ]
+    },
+    {
+      "name": "Lower B",
+      "weekdays": ["FRI"],
+      "exercises": [
+        {
+          "exerciseId": "Barbell_Deadlift",
+          "sets": 3,
+          "reps": 5,
+          "restSeconds": 180,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Front_Barbell_Squat",
+          "sets": 3,
+          "reps": 8,
+          "restSeconds": 150,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Split_Squat_with_Dumbbells",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 90,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Standing_Barbell_Calf_Raise",
+          "sets": 3,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Crunches",
+          "sets": 3,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        }
+      ]
+    }
+  ]
+}
