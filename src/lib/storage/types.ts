@@ -1,9 +1,27 @@
 // What the app needs from photo storage. R2 implements this for real use,
 // and an in-memory version implements it for tests, so the rest of the
 // app never depends on R2 directly.
+
+/** Extra headers stored with a file. */
+export type PutOptions = {
+  /** Saved on the file and sent back with every download of it. */
+  contentDisposition?: string;
+};
+
+/** Extra headers asked for in one link. */
+export type SignOptions = {
+  /** The Content-Disposition the response should carry, for a download. */
+  contentDisposition?: string;
+};
+
 export interface PhotoStorage {
   /** Saves the bytes under this key, replacing any file already there. */
-  put(key: string, body: Buffer, contentType: string): Promise<void>;
+  put(
+    key: string,
+    body: Buffer,
+    contentType: string,
+    options?: PutOptions,
+  ): Promise<void>;
 
   /** Reads the file, or returns null when there is no file under this key. */
   get(key: string): Promise<Buffer | null>;
@@ -12,5 +30,9 @@ export interface PhotoStorage {
   delete(key: string): Promise<void>;
 
   /** A link that shows the file until it expires. */
-  signedUrl(key: string, expiresInSeconds: number): Promise<string>;
+  signedUrl(
+    key: string,
+    expiresInSeconds: number,
+    options?: SignOptions,
+  ): Promise<string>;
 }
