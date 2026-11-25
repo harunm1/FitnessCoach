@@ -32,6 +32,7 @@ type ExerciseLogPanelProps = {
   lastLoggedAtIso: string | null; // newest saved set, server clock
   serverNowIso: string;
   weightUnit: WeightUnit; // display unit (D30); stored and queued weights are kg
+  suggestedWeightKg?: number | null; // the weight lifted in the last 8 weeks (D34)
 };
 
 function SetRowItem({ row, unit }: { row: SetRow; unit: WeightUnit }) {
@@ -143,6 +144,7 @@ export default function ExerciseLogPanel(props: ExerciseLogPanelProps) {
           equipment={props.equipment}
           exerciseId={props.exerciseId}
           nextSetNumber={merged.nextSetNumber}
+          suggestedWeightKg={props.suggestedWeightKg}
           targetReps={props.targetReps}
           weightUnit={props.weightUnit}
           onLog={logSet}
