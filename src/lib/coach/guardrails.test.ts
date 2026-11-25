@@ -4,6 +4,7 @@ import {
   buildChatMessages,
   checkCoachReply,
   checkUserMessage,
+  mentionsTraining,
   type ChatMessage,
 } from "./guardrails";
 
@@ -127,6 +128,14 @@ describe("checkUserMessage", () => {
     "I feel dead inside, I just want to give up on these exercises",
   ])("keeps the check-in for crisis words beside plural forms: %s", (text) => {
     expect(checkUserMessage(text).action).toBe("CHECK_IN");
+  });
+
+  // A coach reply about "your workouts" is training context for a follow-up (chat.ts).
+  it.each([
+    "Your workouts this week build on last week's.",
+    "You exercised well; keep the same effort.",
+  ])("counts plural and verb forms as training context: %s", (text) => {
+    expect(mentionsTraining(text)).toBe(true);
   });
 
   // Body image and eating, and negative mindsets: two harm categories for physical
