@@ -4,6 +4,8 @@
 // text as onboarding does (src/app/onboarding/actions.ts); the injury text itself never
 // reaches the model.
 import type { PrismaClient } from "@/generated/prisma/client";
+import { draftExerciseJointMappings } from "./exerciseJointMappings";
+import { parseReportedJoints, type Joint } from "./jointSubstitutions";
 import type { PersonalizeInputs } from "./personalize";
 
 type Database = {
@@ -48,6 +50,15 @@ export async function loadPersonalizeInputs(
       ]),
     ),
   ];
+  // The quiz passes the joints the user reported as painful (onboarding/actions.ts), and
+  // verifyPlan rejects a slot that loads one or has no joint mapping. Same input here.
+  const reportedJoints = parseReportedJoints(profile.injuries ?? "");
+  // generatePlan writes strength plans, and the verifier accepts any id in the library
+  // it is given, so the coach is offered strength exercises only (the rule the starter
+  // plan applies in defaultPlan.ts). Cardio and stretching would otherwise pass and be saved.
+  const strength = everyExercise.filter(
+    (exercise) => exercise.category.toLowerCase() === "strength",
+  );
   return {
     profile: {
       daysPerWeek: profile.daysPerWeek,
@@ -55,12 +66,24 @@ export async function loadPersonalizeInputs(
       avoidMuscles: muscleNames.filter((muscle) =>
         injuryText.includes(muscle.toLowerCase()),
       ),
+      reportedJoints,
     },
-    // generatePlan writes strength plans, and the verifier accepts any id in the library
-    // it is given, so the coach is offered strength exercises only (the rule the starter
-    // plan applies in defaultPlan.ts). Cardio and stretching would otherwise pass and be saved.
-    library: everyExercise.filter(
-      (exercise) => exercise.category.toLowerCase() === "strength",
-    ),
+    // With a reported joint, offer only what verifyPlan would accept, so the model is not
+    // asked for exercises that are then rejected (an unmapped exercise is rejected too).
+    library:
+      reportedJoints.length === 0
+        ? strength
+        : strength.filter((exercise) =>
+            safeForJoints(exercise.id, reportedJoints),
+          ),
   };
+}
+
+function safeForJoints(exerciseId: string, reported: Joint[]): boolean {
+  if (!Object.hasOwn(draftExerciseJointMappings, exerciseId)) return false;
+  const { joints } =
+    draftExerciseJointMappings[
+      exerciseId as keyof typeof draftExerciseJointMappings
+    ];
+  return !joints.some((joint) => reported.includes(joint));
 }

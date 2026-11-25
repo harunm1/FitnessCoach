@@ -44,6 +44,7 @@ describe("loadPersonalizeInputs", () => {
       daysPerWeek: DAYS_PER_WEEK,
       equipment: ["barbell"],
       avoidMuscles: ["quadriceps"],
+      reportedJoints: [],
     });
     expect(result?.library).toEqual(library);
   });
@@ -103,6 +104,60 @@ describe("loadPersonalizeInputs", () => {
     await loadPersonalizeInputs(db as never, "owner");
     expect(db.exercise.findMany).toHaveBeenCalledWith({
       select: expect.objectContaining({ id: true, name: true, category: true }),
+    });
+  });
+
+  // Main's quiz (src/app/onboarding/actions.ts) passes the joints the user reported as
+  // painful, and verifyPlan rejects a slot that loads one or has no joint mapping.
+  // Personalize must pass the same joints, or a coach plan could load an injured joint.
+  describe("reported joint pain (joint-aware verifier on main)", () => {
+    const mapped = [
+      { ...library[0], id: "Barbell_Squat" }, // loads the knee
+      { ...library[0], id: "Pullups" }, // shoulder, elbow, wrist
+      { ...library[0], id: "Mystery_Move" }, // no joint mapping
+    ];
+
+    it("passes the joints parsed from the injury text, as the quiz does", async () => {
+      const db = database({
+        trainingMode: "GYM",
+        daysPerWeek: DAYS_PER_WEEK,
+        equipment: ["barbell"],
+        injuries: "my knee hurts on stairs",
+      });
+      db.exercise.findMany.mockResolvedValue(mapped);
+      const result = await loadPersonalizeInputs(db as never, "owner");
+      expect(result?.profile.reportedJoints).toEqual(["knee"]);
+    });
+
+    it("offers only exercises the verifier would accept: mapped and not loading a reported joint", async () => {
+      const db = database({
+        trainingMode: "GYM",
+        daysPerWeek: DAYS_PER_WEEK,
+        equipment: ["barbell"],
+        injuries: "my knee hurts on stairs",
+      });
+      db.exercise.findMany.mockResolvedValue(mapped);
+      const result = await loadPersonalizeInputs(db as never, "owner");
+      expect(result?.library.map((exercise) => exercise.id)).toEqual([
+        "Pullups",
+      ]);
+    });
+
+    it("keeps the whole strength library, mapped or not, when no joint is reported", async () => {
+      const db = database({
+        trainingMode: "GYM",
+        daysPerWeek: DAYS_PER_WEEK,
+        equipment: ["barbell"],
+        injuries: "I am sore from last week",
+      });
+      db.exercise.findMany.mockResolvedValue(mapped);
+      const result = await loadPersonalizeInputs(db as never, "owner");
+      expect(result?.profile.reportedJoints).toEqual([]);
+      expect(result?.library.map((exercise) => exercise.id)).toEqual([
+        "Barbell_Squat",
+        "Pullups",
+        "Mystery_Move",
+      ]);
     });
   });
 
