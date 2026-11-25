@@ -6,6 +6,7 @@ const { requireUser, revalidatePath, database, storage } = vi.hoisted(() => ({
   requireUser: vi.fn(),
   revalidatePath: vi.fn(),
   database: {
+    exercise: { findUnique: vi.fn() },
     progressPhoto: {
       count: vi.fn(),
       create: vi.fn(),
@@ -56,6 +57,7 @@ beforeEach(() => {
   requireUser.mockResolvedValue({ id: "session-owner" });
   logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
   database.progressPhoto.count.mockResolvedValue(0);
+  database.exercise.findUnique.mockResolvedValue({ id: "Barbell_Squat" });
   database.progressPhoto.create.mockResolvedValue({ id: 1 });
   database.progressPhoto.findFirst.mockResolvedValue({
     id: 7,
@@ -84,9 +86,74 @@ describe("uploadProgressPhoto", () => {
         storageKey: key,
         weightKg: 72.5,
         note: "After week 4",
+        kind: "PROGRESS",
+        exerciseId: undefined,
       },
     });
     expect(revalidatePath).toHaveBeenCalledWith("/progress/photos");
+  });
+
+  describe("photo kind and exercise link", () => {
+    it("saves a form photo with the exercise it is for", async () => {
+      const result = await uploadProgressPhoto(
+        idle,
+        await photoForm({ kind: "FORM", exerciseId: "Barbell_Squat" }),
+      );
+      expect(result).toEqual({ status: "saved" });
+      expect(database.progressPhoto.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          kind: "FORM",
+          exerciseId: "Barbell_Squat",
+        }),
+      });
+    });
+
+    it("saves a form photo with no exercise", async () => {
+      await uploadProgressPhoto(idle, await photoForm({ kind: "FORM" }));
+      expect(database.progressPhoto.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ kind: "FORM", exerciseId: undefined }),
+      });
+      expect(database.exercise.findUnique).not.toHaveBeenCalled();
+    });
+
+    it("ignores an exercise sent with a progress photo", async () => {
+      await uploadProgressPhoto(
+        idle,
+        await photoForm({ kind: "PROGRESS", exerciseId: "Barbell_Squat" }),
+      );
+      expect(database.progressPhoto.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          kind: "PROGRESS",
+          exerciseId: undefined,
+        }),
+      });
+    });
+
+    it("stores nothing when the exercise doesn't exist", async () => {
+      database.exercise.findUnique.mockResolvedValue(null);
+      const result = await uploadProgressPhoto(
+        idle,
+        await photoForm({ kind: "FORM", exerciseId: "Nope" }),
+      );
+      expect(result).toEqual({
+        status: "error",
+        message: "That exercise couldn't be found.",
+      });
+      expect(files.files.size).toBe(0);
+      expect(database.progressPhoto.create).not.toHaveBeenCalled();
+    });
+
+    it("refuses an unknown kind before storing anything", async () => {
+      const result = await uploadProgressPhoto(
+        idle,
+        await photoForm({ kind: "SELFIE" }),
+      );
+      expect(result).toEqual({
+        status: "error",
+        message: "Choose progress photo or form photo.",
+      });
+      expect(files.files.size).toBe(0);
+    });
   });
 
   it("leaves weight and note out when they are blank", async () => {

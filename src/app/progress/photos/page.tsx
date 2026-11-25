@@ -7,6 +7,7 @@ import { PhotoUploadForm } from "@/components/photos/PhotoUploadForm";
 import { AppNav } from "@/components/nav/AppNav";
 import { requireUser } from "@/lib/auth/session";
 import { formatBodyWeight, unitsFromRow } from "@/lib/units/convert";
+import { kindLabel } from "@/lib/photos/kind";
 import {
   signAvatar,
   signPhotos,
@@ -40,7 +41,7 @@ export default async function ProgressPhotosPage({
 }) {
   const user = await requireUser();
   const shown = photosToShow((await searchParams).show);
-  const [profile, found] = await Promise.all([
+  const [profile, found, exercises] = await Promise.all([
     prisma.user.findUnique({
       where: { id: user.id },
       select: { image: true, weightUnit: true },
@@ -56,7 +57,14 @@ export default async function ProgressPhotosPage({
         takenAt: true,
         weightKg: true,
         note: true,
+        kind: true,
+        exercise: { select: { name: true } },
       },
+    }),
+    // What a form photo can be linked to (D37).
+    prisma.exercise.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
     }),
   ]);
   const units = unitsFromRow(profile);
@@ -100,7 +108,7 @@ export default async function ProgressPhotosPage({
           </p>
         </section>
 
-        <PhotoUploadForm weightUnit={units.weightUnit} />
+        <PhotoUploadForm weightUnit={units.weightUnit} exercises={exercises} />
 
         <section className="mt-10">
           {photos === null ? (
@@ -114,23 +122,30 @@ export default async function ProgressPhotosPage({
             </p>
           ) : (
             <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              {photos.map((photo) => (
-                <li key={photo.id} className="grid gap-2">
-                  <PhotoViewer photo={photo} weightUnit={units.weightUnit} />
-                  <div className="text-xs text-foreground/70">
-                    <p className="font-medium text-foreground">
-                      {dateFormat.format(photo.takenAt)}
-                      {photo.weightKg !== null &&
-                        ` · ${formatBodyWeight(photo.weightKg, units.weightUnit)}`}
-                    </p>
-                    {photo.note && <p className="mt-1">{photo.note}</p>}
-                  </div>
-                  <DeletePhotoButton
-                    photoId={photo.id}
-                    takenOn={dateFormat.format(photo.takenAt)}
-                  />
-                </li>
-              ))}
+              {photos.map((photo) => {
+                const row = rows.find((candidate) => candidate.id === photo.id);
+                const label = row
+                  ? kindLabel(row.kind, row.exercise?.name ?? null)
+                  : null;
+                return (
+                  <li key={photo.id} className="grid gap-2">
+                    <PhotoViewer photo={photo} weightUnit={units.weightUnit} />
+                    <div className="text-xs text-foreground/70">
+                      <p className="font-medium text-foreground">
+                        {dateFormat.format(photo.takenAt)}
+                        {photo.weightKg !== null &&
+                          ` · ${formatBodyWeight(photo.weightKg, units.weightUnit)}`}
+                      </p>
+                      {label && <p className="mt-1">{label}</p>}
+                      {photo.note && <p className="mt-1">{photo.note}</p>}
+                    </div>
+                    <DeletePhotoButton
+                      photoId={photo.id}
+                      takenOn={dateFormat.format(photo.takenAt)}
+                    />
+                  </li>
+                );
+              })}
             </ul>
           )}
           {photos !== null && hasMore && (

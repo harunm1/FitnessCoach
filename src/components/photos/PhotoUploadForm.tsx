@@ -1,11 +1,13 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import {
   uploadProgressPhoto,
   type PhotoActionState,
 } from "@/app/progress/photos/actions";
+import { facingFor, type PhotoKind } from "@/lib/photos/kind";
 import { MAX_PICKED_BYTES, MAX_UPLOAD_BYTES } from "@/lib/photos/limits";
+import { CameraCapture } from "./CameraCapture";
 import { shrinkPhoto } from "@/lib/photos/shrink";
 import {
   weightBounds,
@@ -39,14 +41,31 @@ export async function shrinkThenUpload(
   return upload(previous, formData);
 }
 
+export type ExerciseChoice = { id: string; name: string };
+
+const KIND_OPTIONS: { value: PhotoKind; label: string }[] = [
+  { value: "PROGRESS", label: "Progress photo" },
+  { value: "FORM", label: "Form photo" },
+];
+
 export function PhotoUploadForm({
   weightUnit = "KG",
+  exercises = [],
 }: {
   weightUnit?: WeightUnit; // what the user chose (D30); the form posts it back
+  exercises?: ExerciseChoice[]; // what a form photo can be linked to (D37)
 }) {
   const [minWeight, maxWeight] = weightBounds(20, 400, weightUnit);
+  const [kind, setKind] = useState<PhotoKind>("PROGRESS");
+  // A photo taken in the app. It is sent in place of the file input's photo.
+  const [taken, setTaken] = useState<File | null>(null);
   const [state, action, pending] = useActionState<PhotoActionState, FormData>(
-    (previous, formData) => shrinkThenUpload(previous, formData),
+    async (previous, formData) => {
+      if (taken) formData.set("photo", taken);
+      const result = await shrinkThenUpload(previous, formData);
+      if (result.status === "saved") setTaken(null);
+      return result;
+    },
     { status: "idle" },
   );
 
@@ -55,14 +74,72 @@ export function PhotoUploadForm({
       action={action}
       className="grid gap-4 border border-foreground/15 p-5"
     >
+      <fieldset className="grid gap-2 text-sm">
+        <legend className="font-medium">Type of photo</legend>
+        <div className="flex flex-wrap gap-x-6">
+          {KIND_OPTIONS.map((option) => (
+            <label
+              key={option.value}
+              className="flex min-h-11 items-center gap-2"
+            >
+              <input
+                type="radio"
+                name="kind"
+                value={option.value}
+                checked={kind === option.value}
+                onChange={() => setKind(option.value)}
+              />
+              {option.label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      {kind === "FORM" && exercises.length > 0 && (
+        <label className="grid gap-2 text-sm">
+          <span className="font-medium">Exercise (optional)</span>
+          <select
+            name="exerciseId"
+            defaultValue=""
+            className="min-h-11 border border-foreground/30 bg-transparent px-3"
+          >
+            <option value="">No specific exercise</option>
+            {exercises.map((exercise) => (
+              <option key={exercise.id} value={exercise.id}>
+                {exercise.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      <div className="grid gap-2 text-sm">
+        <CameraCapture facing={facingFor(kind)} onPhoto={setTaken} />
+        {taken && (
+          <p role="status" className="flex flex-wrap items-center gap-3">
+            <span>Photo ready: {taken.name}</span>
+            <button
+              type="button"
+              onClick={() => setTaken(null)}
+              className="min-h-11 underline"
+            >
+              Remove photo
+            </button>
+          </p>
+        )}
+      </div>
+
       <label className="grid gap-2 text-sm">
-        <span className="font-medium">Photo</span>
+        <span className="font-medium">
+          {taken ? "Or choose a different photo" : "Photo"}
+        </span>
         {/* Limiting the types makes iPhones convert HEIC photos to JPEG. */}
         <input
           type="file"
           name="photo"
           accept="image/jpeg,image/png,image/webp"
-          required
+          required={!taken}
+          onChange={() => setTaken(null)}
           className="text-sm file:mr-3 file:min-h-11 file:border file:border-foreground/30 file:bg-transparent file:px-4 file:text-sm"
         />
         <span className="text-xs text-foreground/60">
