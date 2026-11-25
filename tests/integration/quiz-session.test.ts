@@ -880,10 +880,16 @@ describe("quiz and session authorization with PostgreSQL", () => {
       first.id,
       await plan(first.id, "Timed plan"),
     );
+    // Started 1 h 2 min 3 s ago: an hour of active time banked before a pause, then 123 s
+    // running (D37: duration counts active time only).
     const startedAt = new Date(Date.now() - 3_723_000);
     await db.workout.update({
       where: { id: ownWorkout.id },
-      data: { startedAt },
+      data: {
+        startedAt,
+        activeBankedSeconds: 3600,
+        activeSince: new Date(Date.now() - 123_000),
+      },
     });
     await signIn(first);
 
@@ -896,9 +902,9 @@ describe("quiz and session authorization with PostgreSQL", () => {
     const saved = await db.workout.findUniqueOrThrow({
       where: { id: ownWorkout.id },
     });
-    const seconds = Math.floor(
-      (saved.finishedAt!.getTime() - startedAt.getTime()) / 1000,
-    );
+    const seconds = saved.durationSeconds!;
+    expect(seconds).toBeGreaterThanOrEqual(3723);
+    expect(seconds).toBeLessThan(3740);
     const finishedHtml = renderToStaticMarkup(await SessionPage());
     expect(finishedHtml).toContain("Workout duration");
     expect(finishedHtml).toContain(`dateTime="PT${seconds}S"`);
