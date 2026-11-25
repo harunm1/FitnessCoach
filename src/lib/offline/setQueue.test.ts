@@ -232,6 +232,30 @@ describe("createSetQueue", () => {
     expect(queue.getSnapshot()).toMatchObject({ items: [], failure: null });
   });
 
+  it("clears the no-answer note while the retry runs", async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const send = vi
+      .fn<(item: QueuedSet) => Promise<SyncOutcome>>()
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockImplementationOnce(async () => {
+        await gate;
+        return { status: "saved" };
+      });
+    const { queue } = setup({ online: true, send });
+    await queue.start(USER);
+    await queue.enqueue(newSet("a"));
+    await queue.idle();
+    expect(queue.getSnapshot().failure?.kind).toBe("network");
+
+    const retry = queue.sync();
+    expect(queue.getSnapshot()).toMatchObject({ syncing: true, failure: null });
+    release();
+    await retry;
+  });
+
   it("does not retry a set the server refused until the user asks", async () => {
     vi.useFakeTimers();
     const { queue, send } = setup({

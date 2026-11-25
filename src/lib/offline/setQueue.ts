@@ -96,7 +96,11 @@ export function createSetQueue(options: SetQueueOptions) {
       return running;
     }
     clearTimeout(retryTimer);
-    update({ syncing: true });
+    // A new try replaces the old no-answer note; a refusal stays until the user acts.
+    update({
+      syncing: true,
+      failure: snapshot.failure?.kind === "network" ? null : snapshot.failure,
+    });
     running = (async () => {
       try {
         await replayUntilSettled(owner);
@@ -106,6 +110,7 @@ export function createSetQueue(options: SetQueueOptions) {
         const message =
           error instanceof Error ? error.message : "Could not read saved sets.";
         update({ failure: { clientId: "", kind: "network", message } });
+        retryTimer = setTimeout(() => void sync(), retryDelayMs);
       } finally {
         running = null;
         update({ syncing: false });
