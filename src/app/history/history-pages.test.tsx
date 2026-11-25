@@ -254,10 +254,13 @@ describe("/history/exercise/[exerciseId]", () => {
     expect(html).toContain("5 reps × 55 kg");
     expect(html).toContain('href="/history/41"');
     expect(html).toContain("<polyline");
-    expect(html).toContain("Top weight per workout, 55 to 65 kg");
+    expect(html).toContain(
+      "Top weight and estimated 1RM over 2 workouts, 55 to 65 kg",
+    );
     expect(html).not.toContain("Older sets");
-    expect(html).toContain('<svg aria-hidden="true"');
-    expect(html).not.toContain('role="img"');
+    // The chart is a described image, with a tooltip per workout (live bug L6).
+    expect(html).toContain('role="img"');
+    expect(html).toContain("<title>");
     expect(html).toContain('<ol role="list"');
   });
 
@@ -266,7 +269,9 @@ describe("/history/exercise/[exerciseId]", () => {
     history.loadExerciseHistory.mockResolvedValue(exercise);
     const html = await render("Bench");
     expect(html).toContain("6 reps × 143.5 lb · RPE 8");
-    expect(html).toContain("Top weight per workout, 121.5 to 143.5 lb");
+    expect(html).toContain(
+      "Top weight and estimated 1RM over 2 workouts, 121.5 to 143.5 lb",
+    );
     expect(html).not.toContain(" kg");
   });
 
