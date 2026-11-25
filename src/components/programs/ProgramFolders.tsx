@@ -5,16 +5,7 @@
 import { DELOAD_LOAD_PERCENT, halveSets } from "@/lib/programs/deload";
 import { getTemplate } from "@/lib/programs/templates";
 import type { Weekday } from "@/lib/programs/templateSchema";
-
-const WEEKDAY_LABEL: Record<Weekday, string> = {
-  MON: "Monday",
-  TUE: "Tuesday",
-  WED: "Wednesday",
-  THU: "Thursday",
-  FRI: "Friday",
-  SAT: "Saturday",
-  SUN: "Sunday",
-};
+import { WEEKDAY_LABEL } from "@/lib/programs/weekdays";
 
 export type FolderDay = {
   name: string;
