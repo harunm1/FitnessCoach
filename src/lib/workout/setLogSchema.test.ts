@@ -50,6 +50,34 @@ describe("setLogSchema", () => {
     ).toMatchObject({ painDuringSession: 6, painNextMorning: 3 });
   });
 
+  it.each(["", " ", "\t", null])(
+    "leaves blank pain scores unrecorded (%j)",
+    (value) => {
+      expect(
+        setLogSchema.parse({
+          setNumber: "1",
+          reps: "8",
+          painDuringSession: value,
+          painNextMorning: value,
+        }),
+      ).toMatchObject({
+        painDuringSession: undefined,
+        painNextMorning: undefined,
+      });
+    },
+  );
+
+  it("coerces scientific notation to a valid integer pain score", () => {
+    expect(
+      setLogSchema.parse({
+        setNumber: "1",
+        reps: "8",
+        painDuringSession: "1e1",
+        painNextMorning: "1e1",
+      }),
+    ).toMatchObject({ painDuringSession: 10, painNextMorning: 10 });
+  });
+
   it.each(["-1", "11", "2.5", "not-a-number"])(
     "rejects invalid pain score %s",
     (painDuringSession) => {

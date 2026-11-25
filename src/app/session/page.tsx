@@ -14,6 +14,7 @@ import { AccountTheme } from "@/components/auth/account-theme";
 import { AppNav } from "@/components/nav/AppNav";
 import theme from "@/components/theme/app-theme.module.css";
 import { loadAvatarUrl } from "@/lib/photos/avatar";
+import { painTrafficLight } from "@/lib/coach/painTrafficLight";
 
 export const dynamic = "force-dynamic";
 
@@ -92,6 +93,7 @@ export default async function SessionPage() {
               weightKg: true,
               painDuringSession: true,
               painNextMorning: true,
+              loggedAt: true,
             },
           },
         },
@@ -183,6 +185,13 @@ export default async function SessionPage() {
                 {sessionDay.exercises.map((slot, index) => {
                   const sets = loggedByExercise.get(slot.exerciseId) ?? [];
                   const remaining = Math.max(slot.sets - sets.length, 0);
+                  const stoppedSet = sets.find(
+                    (set) =>
+                      painTrafficLight(
+                        set.painDuringSession ?? 0,
+                        set.painNextMorning ?? 0,
+                      ).state === "stop",
+                  );
                   return (
                     <li
                       className="grid gap-3 py-5 sm:grid-cols-[3rem_minmax(0,1fr)_auto] sm:items-center"
@@ -239,7 +248,7 @@ export default async function SessionPage() {
                                       {set.painDuringSession !== null &&
                                         ` · pain ${set.painDuringSession}/10 during`}
                                       {set.painNextMorning !== null &&
-                                        ` · pain ${set.painNextMorning}/10 next morning`}
+                                        ` · pain ${set.painNextMorning}/10 this morning before workout`}
                                     </li>
                                   ))}
                                 </ul>
@@ -249,17 +258,29 @@ export default async function SessionPage() {
                                 />
                               </>
                             )}
-                            {remaining > 0 && (
+                            {(remaining > 0 || stoppedSet) && (
                               <SetLogForm
+                                key={`${slot.exerciseId}-${sets.map((set) => `${set.setNumber}:${set.painDuringSession}:${set.painNextMorning}`).join(",")}`}
                                 exerciseId={slot.exerciseId}
                                 nextSetNumber={sets.length + 1}
                                 targetReps={slot.reps}
                                 equipment={slot.exercise.equipment}
-                                blocked={sets.some(
-                                  (set) =>
-                                    (set.painDuringSession ?? 0) >= 6 ||
-                                    (set.painNextMorning ?? 0) >= 6,
-                                )}
+                                blocked={Boolean(stoppedSet)}
+                                correction={
+                                  stoppedSet
+                                    ? {
+                                        setNumber: stoppedSet.setNumber,
+                                        reps: stoppedSet.reps,
+                                        weightKg:
+                                          stoppedSet.weightKg?.toString() ??
+                                          null,
+                                        painDuringSession:
+                                          stoppedSet.painDuringSession,
+                                        painNextMorning:
+                                          stoppedSet.painNextMorning,
+                                      }
+                                    : undefined
+                                }
                               />
                             )}
                           </>

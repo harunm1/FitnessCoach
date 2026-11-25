@@ -171,10 +171,8 @@ export function buildDefaultPlan(
     if (reportedJoints.length === 0) return exercise;
 
     const original = jointMapping(exercise.id);
-    if (
-      !original ||
-      !original.joints.some((joint) => reportedJoints.includes(joint))
-    ) {
+    if (!original) return undefined;
+    if (!original.joints.some((joint) => reportedJoints.includes(joint))) {
       return exercise;
     }
 
@@ -209,7 +207,8 @@ export function buildDefaultPlan(
         const match = ranked.find(
           (e) =>
             e.primaryMuscles.includes(muscle) &&
-            !picked.some((chosen) => chosen.id === e.id),
+            !picked.some((chosen) => chosen.id === e.id) &&
+            resolveJointAware(e) !== undefined,
         );
         if (!match) continue;
 
@@ -243,7 +242,21 @@ export function buildDefaultPlan(
         ? [...picked].sort((a, b) => compoundRank(a) - compoundRank(b))
         : picked;
       const warmup = heavy
-        ? pickWarmup(library, profile, ordered[0].primaryMuscles[0])
+        ? pickWarmup(
+            reportedJoints.length
+              ? library.filter((exercise) => {
+                  const mapping = jointMapping(exercise.id);
+                  return (
+                    mapping &&
+                    !mapping.joints.some((joint) =>
+                      reportedJoints.includes(joint),
+                    )
+                  );
+                })
+              : library,
+            profile,
+            ordered[0].primaryMuscles[0],
+          )
         : undefined;
       const lifts = ordered
         .slice(0, LIMITS.exercisesPerDay.max - (warmup ? 1 : 0))

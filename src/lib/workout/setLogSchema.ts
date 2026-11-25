@@ -14,7 +14,10 @@ const optionalWeightSchema = z.preprocess(
 );
 
 const optionalPainSchema = z.preprocess(
-  (value) => (value === "" || value === null ? undefined : value),
+  (value) =>
+    value === null || (typeof value === "string" && value.trim() === "")
+      ? undefined
+      : value,
   z.coerce.number().int().min(0).max(10).optional(),
 );
 
