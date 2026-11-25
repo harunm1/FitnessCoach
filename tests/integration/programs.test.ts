@@ -30,6 +30,7 @@ vi.mock("@/lib/coach/providers", async (original) => ({
 }));
 
 import { adaptProgram, saveProgram } from "@/app/programs/actions";
+import { saveQuizProfile } from "@/app/onboarding/actions";
 import { FALLBACK_NOTE } from "@/lib/programs/adapt";
 import { loadProgramFolders } from "@/lib/programs/folders";
 import { prisma as db } from "@/lib/prisma";
@@ -38,6 +39,9 @@ import { readFileSync } from "node:fs";
 const prefix = `programs-${randomUUID()}`;
 let sequence = 0;
 const TEMPLATE_ID = "full-body-3-beginner";
+// Exercises this file inserted, removed after it: the browser tests share this
+// database and their starter plans must only see the exercises they insert (ci.yml).
+let inserted: string[] = [];
 
 // The exercises the template and the tests name, from the free-exercise-db copy.
 beforeAll(async () => {
@@ -51,6 +55,10 @@ beforeAll(async () => {
     primaryMuscles: string[];
     secondaryMuscles: string[];
   }>;
+  const existing = new Set(
+    (await db.exercise.findMany({ select: { id: true } })).map((e) => e.id),
+  );
+  inserted = library.map((e) => e.id).filter((id) => !existing.has(id));
   await db.exercise.createMany({
     data: library.map((e) => ({
       id: e.id,
@@ -94,7 +102,9 @@ beforeEach(() => {
 });
 
 afterAll(async () => {
+  // Users first: their plans (and plan exercises) go with them by cascade.
   await db.user.deleteMany({ where: { email: { startsWith: prefix } } });
+  await db.exercise.deleteMany({ where: { id: { in: inserted } } });
   await db.$disconnect();
 });
 
@@ -280,5 +290,56 @@ describe("loadProgramFolders", () => {
     expect(folders.map((f) => f.id).some((id) => otherIds.includes(id))).toBe(
       false,
     );
+  });
+});
+
+describe("the quiz's first plan", () => {
+  function quiz(fields: Record<string, string | string[]>) {
+    const data = new FormData();
+    Object.entries(fields).forEach(([name, value]) =>
+      [value].flat().forEach((v) => data.append(name, v)),
+    );
+    return saveQuizProfile({ status: "idle", message: "" }, data);
+  }
+
+  it("saves the closest template, fitted to the user's kit, when its days match", async () => {
+    const user = await athlete();
+    const result = await quiz({
+      goal: "STRENGTH",
+      level: "BEGINNER",
+      trainingMode: "GYM",
+      daysPerWeek: "3",
+      equipment: ["barbell", "dumbbell"],
+      injuries: "",
+    });
+    expect(result).toMatchObject({ status: "success" });
+    expect(result.message).toContain("Full body, 3 days (beginner)");
+    const plan = await db.plan.findFirstOrThrow({
+      where: { userId: user.id, active: true },
+      include: { days: { orderBy: { dayIndex: "asc" } } },
+    });
+    expect(plan).toMatchObject({ source: "TEMPLATE", templateId: TEMPLATE_ID });
+    expect(plan.days.map((d) => d.weekdays)).toEqual([
+      ["MON"],
+      ["WED"],
+      ["FRI"],
+    ]);
+  });
+
+  it("keeps the starter plan when no template has the quiz's number of days", async () => {
+    const user = await athlete();
+    const result = await quiz({
+      goal: "STRENGTH",
+      level: "BEGINNER",
+      trainingMode: "GYM",
+      daysPerWeek: "5",
+      equipment: ["barbell", "dumbbell"],
+      injuries: "",
+    });
+    expect(result).toMatchObject({ status: "success" });
+    const plan = await db.plan.findFirstOrThrow({
+      where: { userId: user.id, active: true },
+    });
+    expect(plan).toMatchObject({ source: "DEFAULT", templateId: null });
   });
 });

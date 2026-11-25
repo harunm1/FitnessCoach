@@ -175,6 +175,36 @@ describe("fitChanges", () => {
   });
 });
 
+describe("fitChanges and level", () => {
+  // The fixture has no levels; give the handstand push-up the expert level it has in
+  // free-exercise-db and add a beginner shoulder exercise after it in library order.
+  const levelled = [
+    ...library.map((e) =>
+      e.id === "Handstand_Push-Ups" ? { ...e, level: "EXPERT" } : e,
+    ),
+    {
+      id: "Test_Pike_Press",
+      name: "Test Pike Press",
+      category: "strength",
+      equipment: "body only",
+      primaryMuscles: ["shoulders"],
+      secondaryMuscles: [],
+      level: "BEGINNER",
+    },
+  ];
+
+  it("never swaps in an exercise above the user's level", () => {
+    const changes = fitChanges(
+      template,
+      { ...profile, equipment: ["body only"], level: "BEGINNER" },
+      levelled,
+    );
+    const ids = changes.flatMap((c) => (c.op === "swap" ? [c.exerciseId] : []));
+    expect(ids).not.toContain("Handstand_Push-Ups");
+    expect(ids).toContain("Test_Pike_Press");
+  });
+});
+
 describe("closestTemplate", () => {
   it("matches days first, then level, then goal", () => {
     expect(

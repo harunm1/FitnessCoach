@@ -24,6 +24,17 @@ const jointSafe = (id: string, profile: VerifyProfile): boolean => {
 const usable = (e: CategorisedExercise, profile: VerifyProfile) =>
   fitsProfile(e, profile) && jointSafe(e.id, profile);
 
+// As the starter plan does (defaultPlan.ts, #103): with a level known, a swap is never
+// above it. A row with no level, or one we do not know, is never above the user's.
+const LEVEL_RANK: Record<string, number> = {
+  BEGINNER: 0,
+  INTERMEDIATE: 1,
+  EXPERT: 2,
+};
+const atOrBelow = (e: CategorisedExercise, profile: VerifyProfile) =>
+  !profile.level ||
+  (LEVEL_RANK[e.level ?? ""] ?? 0) <= LEVEL_RANK[profile.level];
+
 // Why an exercise was swapped: equipment first, then muscles, then joints.
 function whyNot(e: CategorisedExercise, profile: VerifyProfile): string {
   const name = e.name ?? e.id;
@@ -45,7 +56,10 @@ export function fitChanges(
 ): Change[] {
   const byId = new Map(library.map((e) => [e.id, e]));
   const strength = library.filter(
-    (e) => e.category?.toLowerCase() === "strength" && usable(e, profile),
+    (e) =>
+      e.category?.toLowerCase() === "strength" &&
+      usable(e, profile) &&
+      atOrBelow(e, profile),
   );
   return template.days.flatMap((day, d) => {
     const onDay = new Set(day.exercises.map((s) => s.exerciseId));

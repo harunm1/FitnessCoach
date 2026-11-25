@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AccountTheme } from "@/components/auth/account-theme";
 import { AppNav } from "@/components/nav/AppNav";
 import theme from "@/components/theme/app-theme.module.css";
@@ -66,6 +67,26 @@ export default async function OnboardingPage() {
         )}
 
         <QuizForm initial={answers} />
+
+        {/* D38: after the quiz, a program can come from a template or the coach. */}
+        <section
+          aria-labelledby="pick-program"
+          className="mt-10 rounded-lg border border-current/15 p-4"
+        >
+          <h2 id="pick-program" className="font-semibold">
+            Want a structured program?
+          </h2>
+          <p className="mt-1 text-sm text-foreground/70">
+            After saving your answers, open{" "}
+            <Link href="/programs" className="underline">
+              Programs
+            </Link>{" "}
+            to <strong>Start from a template</strong> (full body, upper and
+            lower, push pull legs, or a muscle-building split) or{" "}
+            <strong>Build with the coach</strong>, which adapts the closest
+            template to you and shows every change with its reason.
+          </p>
+        </section>
       </div>
     </AccountTheme>
   );
