@@ -57,6 +57,13 @@ describe("WorkoutElapsedTime", () => {
     expect(screen.getByRole("timer").textContent).toBe("00:30:00");
   });
 
+  it("says Not timed when finish equals start and nothing else was recorded (B1)", () => {
+    vi.useFakeTimers();
+    render(<WorkoutElapsedTime startedAt={startedAt} finishedAt={startedAt} />);
+    expect(screen.queryByRole("timer")).toBeNull();
+    expect(screen.getByText("Not timed")).toBeTruthy();
+  });
+
   it("says Not timed for a workout finished long after it was started (B1)", () => {
     vi.useFakeTimers();
     render(

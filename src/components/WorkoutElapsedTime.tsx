@@ -1,7 +1,11 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { MAX_WORKOUT_SECONDS, NOT_TIMED_LABEL } from "@/lib/workout/duration";
+import {
+  MAX_WORKOUT_SECONDS,
+  NOT_TIMED_LABEL,
+  workoutSeconds,
+} from "@/lib/workout/duration";
 
 const currentSecond = () => Math.floor(Date.now() / 1000) * 1000;
 const serverSecond = () => null;
@@ -27,24 +31,27 @@ export default function WorkoutElapsedTime({
     serverSecond,
   );
 
-  const seconds =
-    finishedAt && durationSeconds != null
-      ? durationSeconds
-      : Math.max(
-          0,
-          Math.floor(
-            ((finishedAt
-              ? Date.parse(finishedAt)
-              : (now ?? Date.parse(startedAt))) -
-              Date.parse(startedAt)) /
-              1000,
-          ),
-        );
-  // A workout left open (or finished) far past the cap has no workout time (B1).
+  // A finished workout is timed by the shared rule; a live one by the clock.
+  const finishedSeconds = finishedAt
+    ? workoutSeconds({
+        startedAt: new Date(startedAt),
+        finishedAt: new Date(finishedAt),
+        durationSeconds: durationSeconds ?? null,
+      })
+    : null;
+  const seconds = finishedAt
+    ? (finishedSeconds ?? 0)
+    : Math.max(
+        0,
+        Math.floor(
+          ((now ?? Date.parse(startedAt)) - Date.parse(startedAt)) / 1000,
+        ),
+      );
   const label = (
     <span>{finishedAt ? "Workout duration" : "Elapsed workout time"}</span>
   );
-  if (seconds > MAX_WORKOUT_SECONDS) {
+  // A workout left open, or with no usable time, has no workout time (B1).
+  if (finishedAt ? finishedSeconds === null : seconds > MAX_WORKOUT_SECONDS) {
     return (
       <span className="inline-flex items-baseline gap-2 text-sm">
         {label}

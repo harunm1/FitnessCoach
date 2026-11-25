@@ -120,6 +120,17 @@ describe("setLogSchema", () => {
     },
   );
 
+  it("names the minimum in kilograms and pounds (B2)", () => {
+    const result = setLogSchema.safeParse({
+      setNumber: "1",
+      reps: "10",
+      weightKg: "0.02",
+    });
+    expect(result.success ? "" : result.error.issues[0].message).toContain(
+      "0.25 kg (0.55 lb)",
+    );
+  });
+
   it("accepts the smallest plate step, 0.25 kg (B2)", () => {
     expect(
       setLogSchema.parse({ setNumber: "1", reps: "10", weightKg: "0.25" })
