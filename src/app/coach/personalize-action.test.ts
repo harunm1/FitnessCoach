@@ -24,7 +24,8 @@ vi.mock("@/lib/coach/generatePlan", () => ({
 }));
 vi.mock("@/lib/coach/providers", () => ({ coachModel: mocks.coachModel }));
 vi.mock("@/lib/coach/coachSink", () => ({ prismaCoachSink: () => vi.fn() }));
-vi.mock("@/lib/coach/demoPlans", () => ({ demoPlans: () => undefined }));
+const DEMO_PLANS = [{ tag: "cached plan" }];
+vi.mock("@/lib/coach/demoPlans", () => ({ demoPlans: () => DEMO_PLANS }));
 vi.mock("@/lib/coach/saveWeek", () => ({ saveWeek: mocks.saveWeek }));
 vi.mock("@/lib/coach/personalizeInputs", () => ({
   loadPersonalizeInputs: mocks.loadInputs,
@@ -114,6 +115,24 @@ describe("personalizeWithCoach", () => {
       "COACH",
     );
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/session");
+  });
+
+  // D12: deleting demoPlans or the log sink from the action must fail a test.
+  it("hands generatePlan the demo plans and the call-log sink (D12, #41)", async () => {
+    await personalizeWithCoach();
+    const [, , , options] = mocks.generatePlan.mock.calls[0] ?? [];
+    expect(options.demoPlans).toBe(DEMO_PLANS);
+    expect(options.log).toEqual(expect.any(Function));
+    expect(options.takeProviderEvents).toEqual(expect.any(Function));
+  });
+
+  it("logs a swallowed failure on the server with the step and the user id, never the profile", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const boom = new Error("db down");
+    mocks.saveWeek.mockRejectedValue(boom);
+    await personalizeWithCoach();
+    expect(spy).toHaveBeenCalledWith("personalize: save failed", "owner", boom);
+    spy.mockRestore();
   });
 
   it("returns the cooldown and does not refresh when the claim is refused", async () => {

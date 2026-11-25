@@ -1,6 +1,6 @@
 // What "Personalize with the coach" (#58) plans from: the user's gym profile and the
 // exercise library. generatePlan writes strength plans only, so running and hybrid
-// profiles get null and keep their week. Avoided muscles are matched from the injury
+// profiles get "not-gym" and keep their week. Avoided muscles are matched from the injury
 // text as onboarding does (src/app/onboarding/actions.ts); the injury text itself never
 // reaches the model.
 import type { PrismaClient } from "@/generated/prisma/client";
@@ -16,7 +16,7 @@ type Database = {
 export async function loadPersonalizeInputs(
   database: Database,
   userId: string,
-): Promise<PersonalizeInputs | null> {
+): Promise<PersonalizeInputs | "no-profile" | "not-gym"> {
   const profile = await database.profile.findUnique({
     where: { userId },
     select: {
@@ -26,7 +26,8 @@ export async function loadPersonalizeInputs(
       injuries: true,
     },
   });
-  if (!profile || profile.trainingMode !== "GYM") return null;
+  if (!profile) return "no-profile";
+  if (profile.trainingMode !== "GYM") return "not-gym";
 
   // The prompt lists names (buildPlanPrompt), so the name is selected with the id.
   const everyExercise = await database.exercise.findMany({

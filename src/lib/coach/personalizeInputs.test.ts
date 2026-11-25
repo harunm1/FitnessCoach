@@ -28,6 +28,13 @@ function database(profile: unknown) {
   };
 }
 
+// A gym profile gives inputs; the string answers have their own tests.
+async function inputsFor(db: ReturnType<typeof database>) {
+  const result = await loadPersonalizeInputs(db as never, "owner");
+  if (typeof result === "string") throw new Error(`no inputs: ${result}`);
+  return result;
+}
+
 describe("loadPersonalizeInputs", () => {
   it("builds the verifier profile from a gym profile", async () => {
     const db = database({
@@ -36,17 +43,17 @@ describe("loadPersonalizeInputs", () => {
       equipment: ["barbell"],
       injuries: "Sore Quadriceps after running",
     });
-    const result = await loadPersonalizeInputs(db as never, "owner");
+    const result = await inputsFor(db);
     expect(db.profile.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({ where: { userId: "owner" } }),
     );
-    expect(result?.profile).toEqual({
+    expect(result.profile).toEqual({
       daysPerWeek: DAYS_PER_WEEK,
       equipment: ["barbell"],
       avoidMuscles: ["quadriceps"],
       reportedJoints: [],
     });
-    expect(result?.library).toEqual(library);
+    expect(result.library).toEqual(library);
   });
 
   // Shubham's review of #127: generatePlan writes strength plans only, but the verifier
@@ -64,8 +71,8 @@ describe("loadPersonalizeInputs", () => {
       { ...library[0], id: "Hamstring_Stretch", category: "stretching" },
       { ...library[0], id: "Upper_Row", category: "Strength" },
     ]);
-    const result = await loadPersonalizeInputs(db as never, "owner");
-    expect(result?.library.map((exercise) => exercise.id)).toEqual([
+    const result = await inputsFor(db);
+    expect(result.library.map((exercise) => exercise.id)).toEqual([
       "Barbell_Squat",
       "Pushups",
       "Upper_Row",
@@ -88,8 +95,8 @@ describe("loadPersonalizeInputs", () => {
         primaryMuscles: ["neck"],
       },
     ]);
-    const result = await loadPersonalizeInputs(db as never, "owner");
-    expect(result?.profile.avoidMuscles).toEqual(["neck"]);
+    const result = await inputsFor(db);
+    expect(result.profile.avoidMuscles).toEqual(["neck"]);
   });
 
   // The live prompt lists names (buildPlanPrompt uses name ?? id), so the loader must
@@ -125,8 +132,8 @@ describe("loadPersonalizeInputs", () => {
         injuries: "my knee hurts on stairs",
       });
       db.exercise.findMany.mockResolvedValue(mapped);
-      const result = await loadPersonalizeInputs(db as never, "owner");
-      expect(result?.profile.reportedJoints).toEqual(["knee"]);
+      const result = await inputsFor(db);
+      expect(result.profile.reportedJoints).toEqual(["knee"]);
     });
 
     it("offers only exercises the verifier would accept: mapped and not loading a reported joint", async () => {
@@ -137,8 +144,8 @@ describe("loadPersonalizeInputs", () => {
         injuries: "my knee hurts on stairs",
       });
       db.exercise.findMany.mockResolvedValue(mapped);
-      const result = await loadPersonalizeInputs(db as never, "owner");
-      expect(result?.library.map((exercise) => exercise.id)).toEqual([
+      const result = await inputsFor(db);
+      expect(result.library.map((exercise) => exercise.id)).toEqual([
         "Pullups",
       ]);
     });
@@ -151,9 +158,9 @@ describe("loadPersonalizeInputs", () => {
         injuries: "I am sore from last week",
       });
       db.exercise.findMany.mockResolvedValue(mapped);
-      const result = await loadPersonalizeInputs(db as never, "owner");
-      expect(result?.profile.reportedJoints).toEqual([]);
-      expect(result?.library.map((exercise) => exercise.id)).toEqual([
+      const result = await inputsFor(db);
+      expect(result.profile.reportedJoints).toEqual([]);
+      expect(result.library.map((exercise) => exercise.id)).toEqual([
         "Barbell_Squat",
         "Pullups",
         "Mystery_Move",
@@ -161,19 +168,25 @@ describe("loadPersonalizeInputs", () => {
     });
   });
 
-  it("returns null without a profile", async () => {
+  it("says no-profile without a profile", async () => {
     const db = database(null);
-    expect(await loadPersonalizeInputs(db as never, "owner")).toBeNull();
+    expect(await loadPersonalizeInputs(db as never, "owner")).toBe(
+      "no-profile",
+    );
     expect(db.exercise.findMany).not.toHaveBeenCalled();
   });
 
-  it("returns null for a running or hybrid profile", async () => {
-    const db = database({
-      trainingMode: "BOTH",
-      daysPerWeek: DAYS_PER_WEEK,
-      equipment: [],
-      injuries: null,
-    });
-    expect(await loadPersonalizeInputs(db as never, "owner")).toBeNull();
-  });
+  it.each(["RUNNING", "BOTH"])(
+    "says not-gym for a %s profile, without reading the library",
+    async (trainingMode) => {
+      const db = database({
+        trainingMode,
+        daysPerWeek: DAYS_PER_WEEK,
+        equipment: [],
+        injuries: null,
+      });
+      expect(await loadPersonalizeInputs(db as never, "owner")).toBe("not-gym");
+      expect(db.exercise.findMany).not.toHaveBeenCalled();
+    },
+  );
 });

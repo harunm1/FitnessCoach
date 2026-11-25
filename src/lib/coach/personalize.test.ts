@@ -3,6 +3,7 @@ import { describe, expect, it, vi, type Mock } from "vitest";
 import {
   CACHED_MESSAGE,
   KEPT_MESSAGE,
+  NOT_GYM_MESSAGE,
   NO_GYM_PROFILE_MESSAGE,
   SAVE_FAILED_MESSAGE,
   SAVED_MESSAGE,
@@ -34,7 +35,8 @@ const coachPlan: GeneratedPlan = {
 };
 const rulePlan: GeneratedPlan = { ...coachPlan, source: "DEFAULT" };
 
-type StepMocks = { [K in keyof PersonalizeSteps]: Mock<PersonalizeSteps[K]> };
+type MockedStep = Exclude<keyof PersonalizeSteps, "onError">;
+type StepMocks = { [K in MockedStep]: Mock<PersonalizeSteps[K]> };
 
 function steps(overrides: Partial<StepMocks> = {}): StepMocks {
   return {
@@ -79,13 +81,46 @@ describe("personalizePlan", () => {
   });
 
   it("claims nothing and calls no model without a gym profile", async () => {
-    const s = steps({ loadInputs: vi.fn().mockResolvedValue(null) });
+    const s = steps({ loadInputs: vi.fn().mockResolvedValue("no-profile") });
     expect(await personalizePlan(s)).toEqual({
       status: "error",
       message: NO_GYM_PROFILE_MESSAGE,
     });
     expect(s.claim).not.toHaveBeenCalled();
     expect(s.generate).not.toHaveBeenCalled();
+  });
+
+  // A runner who finished the quiz must not be told to redo it: that would replace their
+  // running week (verifier finding on #127).
+  it("tells a running or hybrid user the coach writes gym plans and their week stays", async () => {
+    const s = steps({ loadInputs: vi.fn().mockResolvedValue("not-gym") });
+    const state = await personalizePlan(s);
+    expect(state).toEqual({ status: "error", message: NOT_GYM_MESSAGE });
+    expect(NOT_GYM_MESSAGE).not.toContain("Finish the quiz");
+    expect(s.claim).not.toHaveBeenCalled();
+    expect(s.generate).not.toHaveBeenCalled();
+  });
+
+  it("reports each swallowed failure to onError with its step, so it reaches the server log", async () => {
+    const boom = new Error("db down");
+    const onError = vi.fn();
+    await personalizePlan({
+      ...steps({ claim: vi.fn().mockRejectedValue(boom) }),
+      onError,
+    });
+    await personalizePlan({
+      ...steps({ generate: vi.fn().mockRejectedValue(boom) }),
+      onError,
+    });
+    await personalizePlan({
+      ...steps({ save: vi.fn().mockRejectedValue(boom) }),
+      onError,
+    });
+    expect(onError.mock.calls).toEqual([
+      ["claim", boom],
+      ["generate", boom],
+      ["save", boom],
+    ]);
   });
 
   it("keeps the current plan when the coach falls back to the rule-based plan (verifier rejection or provider down)", async () => {

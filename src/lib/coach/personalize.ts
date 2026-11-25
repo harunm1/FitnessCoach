@@ -22,6 +22,8 @@ export const UNAVAILABLE_MESSAGE =
   "Personalize with the coach is not available right now. Your current plan stays; try again in a minute.";
 export const NO_GYM_PROFILE_MESSAGE =
   "Personalize with the coach works for gym plans. Finish the quiz with the gym option first.";
+export const NOT_GYM_MESSAGE =
+  "Personalize with the coach writes gym plans only, so your current week stays as it is.";
 export const SAVE_FAILED_MESSAGE =
   "The new plan could not be saved, so your current plan stays. Try again in a minute.";
 
@@ -31,14 +33,16 @@ export type PersonalizeInputs = {
 };
 
 export type PersonalizeSteps = {
-  // Null when there is no gym profile to plan for (input validation).
-  loadInputs: () => Promise<PersonalizeInputs | null>;
+  // Input validation: why there is nothing to plan for, or the inputs.
+  loadInputs: () => Promise<PersonalizeInputs | "no-profile" | "not-gym">;
   claim: () => Promise<PlanRequestReservation>;
   generate: (
     profile: VerifyProfile,
     library: CategorisedExercise[],
   ) => Promise<GeneratedPlan>;
   save: (plan: PlanInput) => Promise<void>;
+  // Called with the step name for every failure the user is not shown (server log).
+  onError?: (step: string, error: unknown) => void;
 };
 
 export type PersonalizeState =
@@ -51,13 +55,19 @@ export async function personalizePlan(
   steps: PersonalizeSteps,
 ): Promise<PersonalizeState> {
   // A database failure before the model is an error state, not a crashed action.
-  let inputs: PersonalizeInputs | null;
+  let inputs: Awaited<ReturnType<PersonalizeSteps["loadInputs"]>>;
   let reservation: PlanRequestReservation;
   try {
     inputs = await steps.loadInputs();
-    if (!inputs) return { status: "error", message: NO_GYM_PROFILE_MESSAGE };
+    if (inputs === "no-profile") {
+      return { status: "error", message: NO_GYM_PROFILE_MESSAGE };
+    }
+    if (inputs === "not-gym") {
+      return { status: "error", message: NOT_GYM_MESSAGE };
+    }
     reservation = await steps.claim();
-  } catch {
+  } catch (error) {
+    steps.onError?.("claim", error);
     return { status: "error", message: UNAVAILABLE_MESSAGE };
   }
   if (!reservation.allowed) {
@@ -71,7 +81,8 @@ export async function personalizePlan(
   let generated: GeneratedPlan;
   try {
     generated = await steps.generate(inputs.profile, inputs.library);
-  } catch {
+  } catch (error) {
+    steps.onError?.("generate", error);
     return { status: "kept", message: KEPT_MESSAGE };
   }
   // generatePlan falls back to the rule-based plan when the model fails or the
@@ -82,7 +93,8 @@ export async function personalizePlan(
 
   try {
     await steps.save(generated.plan);
-  } catch {
+  } catch (error) {
+    steps.onError?.("save", error);
     return { status: "error", message: SAVE_FAILED_MESSAGE };
   }
   return {

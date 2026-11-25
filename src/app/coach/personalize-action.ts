@@ -28,7 +28,8 @@ export async function personalizeWithCoach(): Promise<PersonalizeState> {
   let account: Awaited<ReturnType<typeof requireTier>>;
   try {
     account = await requireTier(PLAN_TIERS);
-  } catch {
+  } catch (error) {
+    console.error("personalize: access lookup failed", error);
     return { status: "error", message: UNAVAILABLE_MESSAGE };
   }
   if (!account.ok) {
@@ -41,6 +42,8 @@ export async function personalizeWithCoach(): Promise<PersonalizeState> {
   const events = providerEventCollector();
 
   const state = await personalizePlan({
+    onError: (step, error) =>
+      console.error(`personalize: ${step} failed`, userId, error),
     loadInputs: () => loadPersonalizeInputs(prisma, userId),
     claim: () => claimCoachPlanRequest(prisma, userId),
     // coachModel throws when no provider key is set; personalizePlan keeps the plan.
