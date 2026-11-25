@@ -213,6 +213,12 @@ export default function SetLogForm({
         />
       </label>
       <WeightUnitSwitch current={weightUnit} />
+      {!correcting && suggestedWeightKg !== null && (
+        <p className="m-0 basis-full text-xs text-foreground/60">
+          Lifted lately: {fromKg(suggestedWeightKg, weightUnit)}{" "}
+          {weightLabel(weightUnit)}
+        </p>
+      )}
       <label className="grid gap-1 text-sm font-semibold text-foreground/60">
         Pain during
         <input

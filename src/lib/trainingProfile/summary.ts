@@ -28,7 +28,7 @@ const monthYear = (date: Date) =>
   }).format(date);
 
 function rate(perWeek: number): string {
-  if (perWeek === 0) return "none in the last 8 weeks";
+  if (perWeek === 0) return "no workouts in the last 8 weeks";
   const shown = Number.isInteger(perWeek)
     ? String(perWeek)
     : perWeek.toFixed(1);

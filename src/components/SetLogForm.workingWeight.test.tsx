@@ -44,16 +44,20 @@ describe("SetLogForm starts at the working weight (D34)", () => {
     expect(weightBox().placeholder).toBeTruthy();
   });
 
-  it("leaves a bodyweight exercise empty even with a weight on file", () => {
+  it("says where the number comes from, so it is not mistaken for a typed value", () => {
     render(
       <SetLogForm
-        equipment="body only"
-        exerciseId="pushup"
+        exerciseId="bench"
         nextSetNumber={1}
-        suggestedWeightKg={null}
-        targetReps={10}
+        suggestedWeightKg={85}
+        targetReps={12}
       />,
     );
-    expect(weightBox().value).toBe("");
+    expect(screen.getByText("Lifted lately: 85 kg")).toBeTruthy();
+  });
+
+  it("shows no such note without a working weight", () => {
+    render(<SetLogForm exerciseId="bench" nextSetNumber={1} targetReps={5} />);
+    expect(screen.queryByText(/Lifted lately/)).toBeNull();
   });
 });

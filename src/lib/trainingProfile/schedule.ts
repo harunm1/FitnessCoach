@@ -1,21 +1,30 @@
 // When and how often the user trains (D34), from workout start times.
 import { DEFAULT_TIME_ZONE, dayKey, weekKey } from "@/lib/progress/dates";
-import { RECENT_WEEKS, weeksAgo } from "./windows";
+import { DAYS_PER_WEEK, DAY_MS, RECENT_WEEKS, weeksAgo } from "./windows";
 
 // A usual hour from fewer workouts than this would be a guess.
 export const MIN_WORKOUTS_FOR_USUAL_HOUR = 3;
 const MINUTES_PER_HOUR = 60;
 const HOURS_PER_DAY = 24;
 const MONTHS_PER_YEAR = 12;
+const MINUTES_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR;
+const DAY_CUT_MINUTES = 4 * MINUTES_PER_HOUR;
 const TENTHS = 10;
 
 const inWindow = (starts: Date[], since: Date, now: Date) =>
   starts.filter((start) => start >= since && start <= now);
 
-// Workouts a week over the last 8 weeks, to one decimal.
+// Workouts a week over the last 8 weeks, to one decimal. A user who started less than 8 weeks
+// ago is measured over the weeks since the first workout (at least one), so a new user's
+// rate is not understated.
 export function workoutsPerWeek(starts: Date[], now: Date): number {
   const recent = inWindow(starts, weeksAgo(RECENT_WEEKS, now), now);
-  return Math.round((recent.length / RECENT_WEEKS) * TENTHS) / TENTHS;
+  const first = Math.min(...starts.map((start) => start.getTime()));
+  const weeksTraining = Math.ceil(
+    (now.getTime() - first) / (DAYS_PER_WEEK * DAY_MS),
+  );
+  const weeks = Math.min(RECENT_WEEKS, Math.max(1, weeksTraining));
+  return Math.round((recent.length / weeks) * TENTHS) / TENTHS;
 }
 
 function minutesOfDay(date: Date, timeZone: string): number {
@@ -39,15 +48,21 @@ export function usualHour(
 ): number | null {
   const recent = inWindow(starts, weeksAgo(RECENT_WEEKS, now), now);
   if (recent.length < MIN_WORKOUTS_FOR_USUAL_HOUR) return null;
+  // The day is cut at 04:00, not midnight, so a 23:30 and a 00:30 start sit side by side.
   const minutes = recent
-    .map((start) => minutesOfDay(start, timeZone))
+    .map(
+      (start) =>
+        (minutesOfDay(start, timeZone) - DAY_CUT_MINUTES + MINUTES_PER_DAY) %
+        MINUTES_PER_DAY,
+    )
     .sort((a, b) => a - b);
   const middle = Math.floor(minutes.length / 2);
   const median =
     minutes.length % 2 === 1
       ? minutes[middle]
       : (minutes[middle - 1] + minutes[middle]) / 2;
-  return Math.round(median / MINUTES_PER_HOUR) % HOURS_PER_DAY;
+  const shifted = (median + DAY_CUT_MINUTES) % MINUTES_PER_DAY;
+  return Math.round(shifted / MINUTES_PER_HOUR) % HOURS_PER_DAY;
 }
 
 // How many of the last `weeks` weeks have at least one workout (Monday to Sunday weeks).
@@ -62,11 +77,14 @@ export function activeWeeks(
 }
 
 // Whole months from the first workout to now; 0 when the first workout is not yet past.
-export function monthsBetween(first: Date, now: Date): number {
-  const months =
-    (now.getUTCFullYear() - first.getUTCFullYear()) * MONTHS_PER_YEAR +
-    (now.getUTCMonth() - first.getUTCMonth());
-  const wholeMonths =
-    now.getUTCDate() < first.getUTCDate() ? months - 1 : months;
-  return Math.max(0, wholeMonths);
+export function monthsBetween(
+  first: Date,
+  now: Date,
+  timeZone = DEFAULT_TIME_ZONE,
+): number {
+  // Dates as the user lives them (Toronto), like the weeks and the usual hour.
+  const [fy, fm, fd] = dayKey(first, timeZone).split("-").map(Number);
+  const [ny, nm, nd] = dayKey(now, timeZone).split("-").map(Number);
+  const months = (ny - fy) * MONTHS_PER_YEAR + (nm - fm);
+  return Math.max(0, nd < fd ? months - 1 : months);
 }

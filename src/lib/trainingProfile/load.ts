@@ -40,7 +40,7 @@ const recentSetsWhere = (userId: string, now: Date) => ({
   workout: {
     userId,
     finishedAt: { not: null },
-    startedAt: { gte: weeksAgo(RECENT_WEEKS, now) },
+    startedAt: { gte: weeksAgo(RECENT_WEEKS, now), lte: now },
   },
 });
 
@@ -57,6 +57,7 @@ export async function loadTrainingProfile(
     }),
     db.setLog.findMany({
       where: recentSetsWhere(userId, now),
+      orderBy: { id: "asc" },
       select: setSelect,
     }),
   ]);
@@ -78,6 +79,7 @@ export async function loadWorkingWeightsFor(
   if (exerciseIds.length === 0) return new Map();
   const sets = await db.setLog.findMany({
     where: { ...recentSetsWhere(userId, now), exerciseId: { in: exerciseIds } },
+    orderBy: { id: "asc" },
     select: setSelect,
   });
   return new Map(

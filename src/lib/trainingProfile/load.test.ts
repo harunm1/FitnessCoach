@@ -48,7 +48,7 @@ describe("loadTrainingProfile (D34)", () => {
       workout: {
         userId: "owner",
         finishedAt: { not: null },
-        startedAt: { gte: daysAgo(56) },
+        startedAt: { gte: daysAgo(56), lte: NOW },
       },
     });
     expect(args.select).toEqual({

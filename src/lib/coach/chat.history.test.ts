@@ -17,7 +17,7 @@ describe("buildCoachSystemPrompt training history (D34)", () => {
       ...ctx,
       historyLines: [
         "Training since March 2025, 3 workouts a week, usually around 6 pm. History suggests an intermediate level.",
-        "Working weights (best recent set): Bench Press 80 kg x 5 (estimated 1RM 93 kg).",
+        "Bench Press 80 kg x 5 (estimated 1RM 93 kg)",
       ],
     });
     expect(prompt).toContain("Training history:");
