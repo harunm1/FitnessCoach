@@ -1,12 +1,17 @@
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
+import type { GoogleConfig } from "./google";
 import { displayNameSchema } from "./validation";
 import { prismaAdapter } from "@better-auth/prisma-adapter";
 import type { PrismaClient } from "@/generated/prisma/client";
 
 export type AuthEmail = { to: string; subject: string; text: string };
 export type SendAuthEmail = (email: AuthEmail) => Promise<void>;
-export type AuthConfig = { baseURL: string; secret: string };
+export type AuthConfig = {
+  baseURL: string;
+  secret: string;
+  google?: GoogleConfig;
+};
 
 // The injectable database and email sender keep integration tests on an isolated DB.
 export function createAuth(
@@ -25,6 +30,28 @@ export function createAuth(
       provider: "postgresql",
       transaction: true,
     }),
+    // D32: Google only when configured. A same-email Google sign-in is linked to an
+    // existing user only if Google verified the email and the local email is verified.
+    ...(config.google
+      ? {
+          socialProviders: {
+            google: {
+              ...config.google,
+              requireEmailVerification: true,
+              // Only the redirect flow is used; no client-supplied ID-token sign-in.
+              disableIdTokenSignIn: true,
+            },
+          },
+        }
+      : {}),
+    account: {
+      accountLinking: {
+        enabled: true,
+        trustedProviders: [],
+        requireLocalEmailVerified: true,
+        allowDifferentEmails: false,
+      },
+    },
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: true,
@@ -55,7 +82,14 @@ export function createAuth(
     databaseHooks: {
       user: {
         create: {
-          before: async (user) => {
+          before: async (user, context) => {
+            // D32: a social identity whose email is unverified creates no user at all, so
+            // it cannot plant an account (and a verification email) on someone else's address.
+            if (context?.path?.startsWith("/callback/") && !user.emailVerified)
+              throw new APIError("FORBIDDEN", {
+                code: "email_not_verified",
+                message: "The provider did not verify this email address.",
+              });
             const name = displayNameSchema.safeParse(user.name);
             if (!name.success)
               throw new APIError("BAD_REQUEST", {
