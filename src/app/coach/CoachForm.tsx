@@ -67,6 +67,15 @@ export default function CoachForm() {
           setReply(received);
         } else if (event.type === "saved") {
           result = { status: "sent" };
+        } else if (event.type === "example") {
+          // Shown only in the notice, under its label, never as the live reply.
+          result = {
+            status: "unsaved",
+            text,
+            reply: event.reply,
+            message: event.message,
+            example: true,
+          };
         } else {
           result = {
             status: "unsaved",
@@ -149,6 +158,7 @@ export default function CoachForm() {
       {state.status === "unsaved" && !pending ? (
         <UnsavedNotice
           action={formAction}
+          example={state.example}
           message={state.message}
           reply={state.reply}
           text={state.text}

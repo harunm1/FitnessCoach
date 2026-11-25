@@ -39,6 +39,7 @@ export async function saveQuizProfile(
       select: {
         id: true,
         category: true,
+        cues: true,
         level: true,
         equipment: true,
         primaryMuscles: true,

@@ -16,8 +16,14 @@ export type CoachActionState =
   | { status: "sent" }
   | { status: "error"; message: string }
   // Nothing was stored: the text comes back for "Send again", with the reply if one
-  // was written but could not be saved (#42).
-  | { status: "unsaved"; text: string; message: string; reply?: string };
+  // was written but could not be saved (#42). example marks a stored demo reply (D12).
+  | {
+      status: "unsaved";
+      text: string;
+      message: string;
+      reply?: string;
+      example?: boolean;
+    };
 
 // No provider key means no chat model: the turn then gets the "coach can't answer"
 // reply from coachReply instead of an error page.

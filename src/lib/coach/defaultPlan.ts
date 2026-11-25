@@ -8,6 +8,7 @@ import {
   type VerifyProfile,
 } from "./verify";
 import { LIMITS, type PlanInput } from "./schema";
+import { pickWarmup } from "./warmup";
 
 // The fallback asks for a moderate effort: 7 is "about three reps left" (#65).
 const DEFAULT_RPE = 7;
@@ -57,9 +58,12 @@ const SPLITS: Record<number, Split[]> = {
 // How many accessory muscles a day adds: the more experienced the user, the longer the day.
 const EXTRAS_BY_LEVEL = { BEGINNER: 0, INTERMEDIATE: 1, EXPERT: 3 } as const;
 const LEVEL_RANK = { BEGINNER: 0, INTERMEDIATE: 1, EXPERT: 2 } as const;
-// An exercise above the user's level goes behind every fit at or below it.
+// Kept as a guard: `usable` already leaves out exercises above the user's level (#103).
 const ABOVE_LEVEL_PENALTY = 100;
 const UNLISTED_EQUIPMENT_RANK = 99;
+// Half a point: an exercise without cues goes behind one with cues of the same level and
+// equipment, but never behind a better level or equipment (#103, D26).
+const NO_CUES_PENALTY = 0.5;
 
 // Big lifts first, for experienced users: free weights, then machines, then the rest.
 const EQUIPMENT_ORDER = [
@@ -91,12 +95,23 @@ type Level = keyof typeof LEVEL_RANK;
 
 // Lower is better: a fit at or below the user's level, then (for intermediate and expert
 // users) free weights before machines before kettlebells and bodyweight. With no level
-// given, every exercise scores the same and the first fit wins, as before.
+// given, exercises score the same unless one has cues, and the first fit wins, as before.
 function score(exercise: LibraryExercise, level: Level | undefined): number {
+  return (
+    levelScore(exercise, level) + (exercise.cues?.length ? 0 : NO_CUES_PENALTY)
+  );
+}
+
+// A row with no level, or one we do not know, is never above the user's.
+const isAboveLevel = (exercise: LibraryExercise, level: Level) =>
+  LEVEL_RANK[(exercise.level ?? "") as Level] > LEVEL_RANK[level];
+
+function levelScore(
+  exercise: LibraryExercise,
+  level: Level | undefined,
+): number {
   if (!level) return 0;
-  // A row with no level, or one we do not know, gets no penalty.
-  const exerciseLevel = LEVEL_RANK[(exercise.level ?? "") as Level];
-  const above = exerciseLevel > LEVEL_RANK[level] ? ABOVE_LEVEL_PENALTY : 0;
+  const above = isAboveLevel(exercise, level) ? ABOVE_LEVEL_PENALTY : 0;
   if (level === "BEGINNER") return above;
   const equipment = EQUIPMENT_ORDER.indexOf(exercise.equipment ?? "body only");
   return above + (equipment < 0 ? UNLISTED_EQUIPMENT_RANK : equipment);
@@ -127,11 +142,16 @@ export function buildDefaultPlan(
   // Strength exercises only: free-exercise-db lists stretches under the same muscles,
   // and the dataset order puts some of them first (#71, found on #15). The `?.` skips,
   // rather than crashes on, an exercise an untyped caller passes without a category.
+  // With a level known, an exercise above it is left out, not just ranked last (#103): a
+  // slot with nothing at or below the level is skipped, as for any muscle with no fit.
+  const level = profile.level;
   const usable = library.filter(
-    (e) => e.category?.toLowerCase() === "strength" && fitsProfile(e, profile),
+    (e) =>
+      e.category?.toLowerCase() === "strength" &&
+      fitsProfile(e, profile) &&
+      !(level && isAboveLevel(e, level)),
   );
 
-  const level = profile.level;
   const extras = level ? EXTRAS_BY_LEVEL[level] : 0;
   const heavy = level === "INTERMEDIATE" || level === "EXPERT";
   // Best fit first; the sort is stable, so equal scores keep the library's order.
@@ -161,15 +181,22 @@ export function buildDefaultPlan(
       const ordered = level
         ? [...picked].sort((a, b) => compoundRank(a) - compoundRank(b))
         : picked;
+      // An experienced user's day opens with a warm-up chosen by its lead lift (D25); it
+      // takes one of the day's slots. No current split picks more than seven lifts, so the trim is a
+      // guard for a longer split: the last accessory would give way.
+      const warmup = heavy
+        ? pickWarmup(library, profile, ordered[0].primaryMuscles[0])
+        : undefined;
+      const lifts = ordered
+        .slice(0, LIMITS.exercisesPerDay.max - (warmup ? 1 : 0))
+        .map((exercise) => ({
+          exerciseId: exercise.id,
+          ...(heavy && isCompound(exercise) ? COMPOUND : ACCESSORY),
+          rpe: DEFAULT_RPE,
+        }));
       return {
         name: day.name,
-        exercises: ordered
-          .slice(0, LIMITS.exercisesPerDay.max)
-          .map((exercise) => ({
-            exerciseId: exercise.id,
-            ...(heavy && isCompound(exercise) ? COMPOUND : ACCESSORY),
-            rpe: DEFAULT_RPE,
-          })),
+        exercises: warmup ? [warmup, ...lifts] : lifts,
       };
     }),
   };

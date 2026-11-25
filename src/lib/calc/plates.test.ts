@@ -1,4 +1,4 @@
-// Tests for the plate and warm-up calculator (#95, D25): pure functions, kilograms.
+// Tests for the plate and warm-up calculator (#95, D28): pure functions, kilograms.
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_BAR_KG,

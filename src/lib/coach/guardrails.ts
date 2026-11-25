@@ -144,6 +144,13 @@ const NUTRITION = new RegExp(
 );
 const TRAINING =
   /\b(workout|exercise|train(ing)?|plan|set|sets|reps?|weight|lift\w*|squat\w*|plank\w*|bench|deadlift\w*|press|curl\w*|row\w*|run\w*|ran|jog\w*|pace|kms?|mile\w*|marathon|sprint\w*|interval\w*|tempo|cardio|stretch\w*|warm[- ]?up|cool[- ]?down|rest|recover\w*|sleep|protein|eat\w*|diet|calori\w*|muscle\w*|gym|form|knees?|back|shoulders?|hips?|ankles?|hill\w*|burpee\w*|winded|\d+k|bulk\w*|cut|cutting|creatine|prs?|bonk\w*|race\w*|suicides|dizz\w*|light-?headed|leg\w*|arm\w*|chest|core|abs|sore\w*|tired|fatigue|strength|endurance|body|goal\w*|weeks?|days?|daily|session\w*|fat|lose|loss|gain\w*|heavy|push-?ups?|pull-?ups?|chin-?ups?|dips?|yoga|pilates|swim\w*|bike|biking|cycl\w*|mobility|flexib\w*|glutes?|glute bridges?|hip bridges?|box jumps?|jump (squats?|rope|lunges?)|broad jumps?|grip|holds?|cable\w*|machines?|tricep\w*|bicep\w*|attachments?|program\w*|volume|split\w*)\b/i;
+// Plural and verb forms of the training words above. They keep a message out of the
+// off-topic redirect only, never out of the check-in: "explain one of the workouts for
+// me" got the redirect on 24 Nov 2026 when only "workout" was listed, while "I want to
+// give up on my workouts" must still get the check-in. Matches "these exercises",
+// "more weights", "I'm exercising"; not "work out a time for dinner" ("work out" and
+// "routine" were left out as too loose, review of 24 Nov) and not "plans".
+const TRAINING_FORMS = /\b(workouts|exercis(es|ed|ing)|weights)\b/i;
 
 // Narrow on purpose: a fat-loss goal ("lose fat", "cut calories", "lose weight") is
 // ordinary coaching, and "I'm starving after my run" is hunger. These match
@@ -270,9 +277,14 @@ export function checkUserMessage(text: string): Guard {
   // Short messages ("thanks", "ok") are conversation, not off-topic requests.
   const words = message.split(/\s+/).filter(Boolean).length;
   if (words >= 4 && !TRAINING.test(message)) {
-    return hasCrisisWords(message)
-      ? { action: "CHECK_IN", reply: REPLIES.CHECK_IN }
-      : { action: "OFF_TOPIC", reply: REPLIES.OFF_TOPIC };
+    // The plural forms only keep a training question out of the off-topic redirect;
+    // crisis words beside them still get the check-in (D15, review of 24 Nov).
+    if (hasCrisisWords(message)) {
+      return { action: "CHECK_IN", reply: REPLIES.CHECK_IN };
+    }
+    if (!TRAINING_FORMS.test(message)) {
+      return { action: "OFF_TOPIC", reply: REPLIES.OFF_TOPIC };
+    }
   }
   return { action: "ALLOW" };
 }
@@ -301,7 +313,7 @@ export function checkCoachReply(text: string): Guard {
 // list the off-topic rule uses. The chat turn uses it to tell whether an earlier turn
 // gives a short follow-up something to refer to (chat.ts).
 export function mentionsTraining(text: string): boolean {
-  return TRAINING.test(text);
+  return TRAINING.test(text) || TRAINING_FORMS.test(text);
 }
 
 export type ChatMessage = {

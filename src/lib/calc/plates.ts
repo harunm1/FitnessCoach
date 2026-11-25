@@ -1,4 +1,4 @@
-// Plate and warm-up calculator (#95, D25). Pure functions in kilograms, no model call.
+// Plate and warm-up calculator (#95, D28). Pure functions in kilograms, no model call.
 // All sums run in hundredths of a kilogram, so 1.25 kg plates add up without float
 // error.
 
