@@ -147,6 +147,7 @@ model Exercise {
   planExercises PlanExercise[]
   setLogs       SetLog[]
   messages      Message[]
+  formPhotos    ProgressPhoto[]
 }
 
 // ---------------------------------------------------------------------------
@@ -268,22 +269,27 @@ model PlanRun {
 // ---------------------------------------------------------------------------
 
 model Workout {
-  id              Int       @id @default(autoincrement())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  planId          Int?
-  plan            Plan?     @relation(fields: [planId], references: [id], onDelete: SetNull)
-  planDayId       Int?
-  planDay         PlanDay?  @relation(fields: [planDayId], references: [id], onDelete: SetNull)
-  startedAt       DateTime  @default(now())
-  finishedAt      DateTime?
-  distanceKm      Decimal?  @db.Decimal(6, 2)
-  durationSeconds Int?
-  notes           String?
+  id                  Int       @id @default(autoincrement())
+  userId              String
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId              Int?
+  plan                Plan?     @relation(fields: [planId], references: [id], onDelete: SetNull)
+  planDayId           Int?
+  planDay             PlanDay?  @relation(fields: [planDayId], references: [id], onDelete: SetNull)
+  startedAt           DateTime  @default(now())
+  finishedAt          DateTime?
+  distanceKm          Decimal?  @db.Decimal(6, 2)
+  durationSeconds     Int?
+  // The workout clock (D39): duration counts active time only. `activeBankedSeconds` is the
+  // active time before the current stretch, `activeSince` when the running stretch began
+  // (null while paused or once finished). Active time now = banked + (now - activeSince).
+  activeBankedSeconds Int       @default(0)
+  activeSince         DateTime? @default(now())
+  notes               String?
   // "live" for a workout logged in the app, "hevy-import" for one read from an export (#131).
-  source          String    @default("live")
+  source              String    @default("live")
   // The imported workout's start time and title, so uploading a file twice adds nothing.
-  importKey       String?
+  importKey           String?
 
   sets          SetLog[]
   queuedSetKeys QueuedSetKey[]
@@ -446,14 +452,28 @@ model Message {
 
 // Photos live in a private Spaces bucket; only the object key is stored here and the
 // app hands out short-lived signed URLs (decision D3).
+//
+// A photo is either a PROGRESS photo or a FORM photo (D39); only a form photo
+// may name the exercise it shows, which the migration enforces with a CHECK.
+// Deleting an exercise keeps the photo and only clears the link.
 model ProgressPhoto {
-  id         Int      @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  storageKey String   @unique
-  takenAt    DateTime @default(now())
-  weightKg   Decimal? @db.Decimal(5, 2)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storageKey String    @unique
+  takenAt    DateTime  @default(now())
+  weightKg   Decimal?  @db.Decimal(5, 2)
   note       String?
+  kind       PhotoKind @default(PROGRESS)
+  exerciseId String?
+  exercise   Exercise? @relation(fields: [exerciseId], references: [id], onDelete: SetNull)
+
+  @@index([exerciseId])
+}
+
+enum PhotoKind {
+  PROGRESS
+  FORM
 }
 
 // One weigh-in per user per day (D24, #16); logging the same day again
