@@ -7,6 +7,8 @@
 // 20 kg gym bar is the default here and can be changed (checked 24 Nov 2026).
 export const DEFAULT_BAR_KG = 20;
 export const DEFAULT_PLATES_KG = [25, 20, 15, 10, 5, 2.5, 1.25];
+// Above the 400 kg body-weight ceiling of D24 and any barbell lift; keeps the search small.
+export const MAX_TARGET_KG = 1000;
 
 const HUNDREDTHS = 100;
 const SIDES = 2;
@@ -22,47 +24,69 @@ export type PlateResult =
       loadedKg: number; // at most the target
       shortByKg: number; // target minus loadedKg
     }
-  | { kind: "below-bar"; barKg: number } // the target is not above the bar
-  | { kind: "no-plates" };
+  | { kind: "below-bar"; barKg: number } // the target is under the bar
+  | { kind: "no-plates" }
+  | { kind: "too-heavy"; maxKg: number }
+  | { kind: "invalid" }; // a target or bar that is not a number, or not above zero
 
-// Greedy, heaviest plate first. That uses the fewest plates for the default set (a test
-// checks every 2.5 kg step to 380 kg against a coin-change search); for a set the user
-// builds themselves it is a good load, not always the fewest plates.
+// The fewest plates for the heaviest load of at most `limit` that the sizes can make,
+// by a coin-change search over hundredths (sizes number about seven and the limit at
+// most 50,000 units). Greedy would be enough for the default set, but with a set the
+// user builds it can stop short of a load the plates reach exactly (15 and 10 kg for
+// 60 kg a side).
+function bestPerSide(sizes: number[], limit: number): number[] {
+  const unreachable = Number.POSITIVE_INFINITY;
+  const count: number[] = [0];
+  const last: number[] = [0];
+  Array.from({ length: limit }, (_, i) => i + 1).forEach((units) => {
+    const fits = sizes.filter(
+      (size) => size <= units && count[units - size] !== unreachable,
+    );
+    const best = fits.reduce(
+      (pick, size) =>
+        pick === 0 || count[units - size] + 1 < count[units - pick] + 1
+          ? size
+          : pick,
+      0,
+    );
+    count[units] = best === 0 ? unreachable : count[units - best] + 1;
+    last[units] = best;
+  });
+  const reach = count.reduce(
+    (top, plates, units) => (plates !== unreachable ? units : top),
+    0,
+  );
+  const plates: number[] = [];
+  for (let left = reach; left > 0; left -= last[left]) plates.push(last[left]);
+  return plates.sort((a, b) => b - a);
+}
+
 export function platesPerSide(
   targetKg: number,
   { barKg = DEFAULT_BAR_KG, plateKgs = DEFAULT_PLATES_KG }: PlateOptions = {},
 ): PlateResult {
-  if (!Number.isFinite(targetKg) || targetKg <= barKg) {
-    // The bar alone is a valid load; only a target under it is refused.
-    if (Number.isFinite(targetKg) && targetKg === barKg) {
-      return { kind: "loaded", perSide: [], loadedKg: barKg, shortByKg: 0 };
-    }
-    return { kind: "below-bar", barKg };
-  }
-  const sizes = [...new Set(plateKgs.filter((p) => p > 0).map(toHundredths))]
-    .filter((units) => units > 0)
-    .sort((a, b) => b - a);
+  if (!Number.isFinite(targetKg) || targetKg <= 0) return { kind: "invalid" };
+  if (!Number.isFinite(barKg) || barKg < 0) return { kind: "invalid" };
+  if (targetKg > MAX_TARGET_KG)
+    return { kind: "too-heavy", maxKg: MAX_TARGET_KG };
+
+  const target = toHundredths(targetKg);
+  const bar = toHundredths(barKg);
+  if (target < bar) return { kind: "below-bar", barKg };
+  const sizes = [
+    ...new Set(
+      plateKgs.filter((p) => Number.isFinite(p) && p > 0).map(toHundredths),
+    ),
+  ].filter((units) => units > 0);
   if (sizes.length === 0) return { kind: "no-plates" };
 
-  const toAdd = Math.floor(
-    (toHundredths(targetKg) - toHundredths(barKg)) / SIDES,
-  );
-  const { perSide, left } = sizes.reduce(
-    (state, size) => {
-      const count = Math.floor(state.left / size);
-      return {
-        perSide: [...state.perSide, ...Array<number>(count).fill(size)],
-        left: state.left - count * size,
-      };
-    },
-    { perSide: [] as number[], left: toAdd },
-  );
-  const loadedUnits = toHundredths(barKg) + (toAdd - left) * SIDES;
+  const perSide = bestPerSide(sizes, Math.floor((target - bar) / SIDES));
+  const loaded = bar + perSide.reduce((sum, size) => sum + size, 0) * SIDES;
   return {
     kind: "loaded",
     perSide: perSide.map(fromHundredths),
-    loadedKg: fromHundredths(loadedUnits),
-    shortByKg: fromHundredths(toHundredths(targetKg) - loadedUnits),
+    loadedKg: fromHundredths(loaded),
+    shortByKg: fromHundredths(target - loaded),
   };
 }
 
@@ -80,12 +104,15 @@ const RAMP = [
 const BAR_SET_REPS = 5;
 const PERCENT = 100;
 
+// Empty when there is nothing to ramp to: a working weight at or under the bar, or an
+// input platesPerSide refuses (no plates, a bad bar, too heavy).
 export function warmupSets(
   workingKg: number,
   options: PlateOptions = {},
 ): WarmupSet[] {
   const barKg = options.barKg ?? DEFAULT_BAR_KG;
-  if (!Number.isFinite(workingKg) || workingKg <= barKg) return [];
+  const work = platesPerSide(workingKg, options);
+  if (work.kind !== "loaded" || workingKg <= barKg) return [];
 
   const steps = RAMP.flatMap(({ percent, reps }): WarmupSet[] => {
     const target = fromHundredths(
@@ -94,7 +121,8 @@ export function warmupSets(
     const load = platesPerSide(target, options);
     return load.kind === "loaded" ? [{ kg: load.loadedKg, reps }] : [];
   });
-  // A step on or below the bar, or no heavier than the step before it, adds nothing.
+  // A step on or below the bar, or no heavier than the step before it, adds nothing; a
+  // light working weight gets fewer than four sets.
   return steps.reduce<WarmupSet[]>(
     (sets, step) =>
       step.kg > sets[sets.length - 1].kg && step.kg < workingKg

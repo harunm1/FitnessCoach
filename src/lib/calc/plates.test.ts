@@ -89,10 +89,47 @@ describe("platesPerSide", () => {
     expect(platesPerSide(15)).toEqual({ kind: "below-bar", barKg: 20 });
   });
 
-  it("refuses values that are not a positive finite number", () => {
+  it("refuses a target that is not a positive finite number", () => {
     [Number.NaN, Infinity, -5, 0].forEach((bad) =>
-      expect(platesPerSide(bad).kind).toBe("below-bar"),
+      expect(platesPerSide(bad).kind, String(bad)).toBe("invalid"),
     );
+  });
+
+  it("finds an exact load that greedy would miss with a custom set", () => {
+    expect(platesPerSide(60, { plateKgs: [15, 10] })).toEqual({
+      kind: "loaded",
+      perSide: [10, 10],
+      loadedKg: 60,
+      shortByKg: 0,
+    });
+    expect(platesPerSide(100, { plateKgs: [25, 10] })).toMatchObject({
+      loadedKg: 100,
+      shortByKg: 0,
+    });
+    expect(platesPerSide(28, { plateKgs: [2, 0.5] })).toMatchObject({
+      perSide: [2, 2],
+      loadedKg: 28,
+    });
+  });
+
+  it("refuses a bar or plate that is not a finite number instead of throwing", () => {
+    expect(platesPerSide(100, { barKg: Number.NaN }).kind).toBe("invalid");
+    expect(platesPerSide(100, { barKg: -10 }).kind).toBe("invalid");
+    expect(warmupSets(100, { barKg: Number.NaN })).toEqual([]);
+    expect(platesPerSide(100, { plateKgs: [Infinity, 10] })).toMatchObject({
+      perSide: [10, 10, 10, 10],
+      loadedKg: 100,
+    });
+  });
+
+  it("refuses a target above the largest it will load", () => {
+    expect(platesPerSide(1e12)).toEqual({ kind: "too-heavy", maxKg: 1000 });
+    expect(platesPerSide(1000).kind).toBe("loaded");
+  });
+
+  it("compares the target with the bar in hundredths", () => {
+    expect(platesPerSide(20.004)).toMatchObject({ perSide: [], loadedKg: 20 });
+    expect(platesPerSide(19.994).kind).toBe("below-bar");
   });
 
   it("refuses an empty or non-positive plate set instead of looping", () => {
@@ -121,6 +158,16 @@ describe("warmupSets", () => {
     expect(warmupSets(30)).toEqual([
       { kg: 20, reps: 5 },
       { kg: 22.5, reps: 2 },
+    ]);
+  });
+
+  it("has no warm-up when there are no plates, or a ramp step repeats", () => {
+    expect(warmupSets(100, { plateKgs: [] })).toEqual([]);
+    // With only 10 kg plates a step moves in 20 kg jumps: 40, 60 and 80 are loadable, and
+    // 40% of 50 (20) is the bar, 60% (30) rounds to the bar, 80% (40) is loadable.
+    expect(warmupSets(50, { plateKgs: [10] })).toEqual([
+      { kg: 20, reps: 5 },
+      { kg: 40, reps: 2 },
     ]);
   });
 
