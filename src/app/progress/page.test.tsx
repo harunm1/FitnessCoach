@@ -11,6 +11,7 @@ const { requireUser, loadFinishedWorkouts, database, storage } = vi.hoisted(
       user: { findUnique: vi.fn() },
       progressPhoto: { findMany: vi.fn(), count: vi.fn() },
       bodyWeight: { findMany: vi.fn() },
+      workout: { findMany: vi.fn() },
     },
     storage: { get: vi.fn() },
   }),
@@ -70,6 +71,7 @@ beforeEach(() => {
   database.progressPhoto.findMany.mockResolvedValue([]);
   database.progressPhoto.count.mockResolvedValue(0);
   database.bodyWeight.findMany.mockResolvedValue([]);
+  database.workout.findMany.mockResolvedValue([]);
   storage.get.mockReturnValue(new MemoryStorage());
 });
 
@@ -263,6 +265,32 @@ describe("progress page", () => {
     expect(html).toContain("Body weight");
     expect(html).toContain("Latest: 81.5 kg on Nov 10, 2026");
     expect(html).toContain('max="2026-11-12"');
+  });
+
+  it("offers the run form and lists the signed-in user's latest runs (D25)", async () => {
+    database.workout.findMany.mockResolvedValue([
+      {
+        id: 3,
+        startedAt: new Date("2026-11-11T17:00:00Z"),
+        distanceKm: { toString: () => "5.20" },
+        durationSeconds: 1872,
+        notes: "Easy loop",
+        source: "manual-run",
+        planDay: { name: "Easy run" },
+        run: { rpe: 6 },
+      },
+    ]);
+    const html = await render();
+    expect(database.workout.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ userId: "session-owner" }),
+      }),
+    );
+    expect(html).toContain("Log a run");
+    expect(html).toContain('name="duration"');
+    expect(html).toContain("5.2 km");
+    expect(html).toContain("6:00 /km");
+    expect(html).toContain("Easy loop");
   });
 
   it("does not render for a signed-out user", async () => {
