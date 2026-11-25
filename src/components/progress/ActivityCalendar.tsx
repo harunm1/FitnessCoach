@@ -17,7 +17,7 @@ type ActivityCalendarProps = {
 };
 
 // The heading of the day's details (DayDetails). Link keeps the scroll position, and
-// on a phone the details sit below the calendar, so a day link jumps to them (D28).
+// on a phone the details sit below the calendar, so a day link jumps to them (D29).
 const DAY_DETAILS_ID = "day-title";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];

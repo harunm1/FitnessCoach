@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 type Params = Promise<{ exerciseId: string }>;
 
-// Every set the signed-in user logged of one exercise (D28). An exercise they never
+// Every set the signed-in user logged of one exercise (D29). An exercise they never
 // logged in a finished workout is a 404, whoever else logged it.
 export default async function ExercisePage({ params }: { params: Params }) {
   const user = await requireUser();

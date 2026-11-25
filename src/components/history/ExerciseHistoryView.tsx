@@ -11,7 +11,7 @@ import {
 // Room around the line so the stroke at the top and bottom is not clipped.
 const PAD = 4;
 
-// Every logged set of one exercise (D28): the best set, a line of the top weight per
+// Every logged set of one exercise (D29): the best set, a line of the top weight per
 // workout (oldest on the left), and each workout's sets, newest first.
 export function ExerciseHistoryView({
   exercise,

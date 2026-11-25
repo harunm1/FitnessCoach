@@ -3,7 +3,7 @@ import type { WorkoutDetail } from "@/lib/history/types";
 import { dateLabel, setLabel } from "@/lib/history/view";
 import { duration, pace } from "@/lib/progress/view";
 
-// One finished workout in full (D28): when and how long, the run, every exercise
+// One finished workout in full (D29): when and how long, the run, every exercise
 // with each set (reps, kg, RPE), and the notes.
 export function WorkoutDetailView({ workout }: { workout: WorkoutDetail }) {
   const runPace = workout.run

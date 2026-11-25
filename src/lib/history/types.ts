@@ -1,4 +1,4 @@
-// Plain data for the history pages (D28). load.ts fills these from Prisma, so the
+// Plain data for the history pages (D29). load.ts fills these from Prisma, so the
 // pages, components and view helpers never touch the database.
 
 export type HistorySet = {

@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 type Params = Promise<{ workoutId: string }>;
 
-// One past workout in full (D28). Only its owner can open it: the lookup filters on
+// One past workout in full (D29). Only its owner can open it: the lookup filters on
 // the signed-in user, so another user's workout, an open one or a junk id is a 404.
 export default async function WorkoutPage({ params }: { params: Params }) {
   const user = await requireUser();

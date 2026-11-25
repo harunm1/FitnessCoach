@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 type SearchParams = Promise<{ page?: string | string[] }>;
 
-// Workout history (D28): the signed-in user's finished workouts, newest first.
+// Workout history (D29): the signed-in user's finished workouts, newest first.
 export default async function HistoryPage({
   searchParams,
 }: {

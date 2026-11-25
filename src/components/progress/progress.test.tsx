@@ -61,7 +61,7 @@ describe("ActivityCalendar", () => {
 
   it("scrolls a tapped day's details into view, not the month arrows", () => {
     // Below 640 px the details sit under the calendar and Link keeps the scroll
-    // position, so the day links jump to the details' heading (D28).
+    // position, so the day links jump to the details' heading (D29).
     expect(html).toContain('href="/progress?month=2026-10&amp;day="');
     expect(html).not.toContain("month=2026-10&amp;day=#day-title");
   });

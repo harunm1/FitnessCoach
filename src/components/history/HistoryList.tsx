@@ -5,7 +5,7 @@ import { dateLabel } from "@/lib/history/view";
 const pageHref = (page: number) =>
   page === 1 ? "/history" : `/history?page=${page}`;
 
-// The workout history list (D28): newest first, each row a link to the workout.
+// The workout history list (D29): newest first, each row a link to the workout.
 export function HistoryList({
   rows,
   page,

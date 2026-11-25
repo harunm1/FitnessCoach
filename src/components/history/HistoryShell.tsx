@@ -3,7 +3,7 @@ import { AccountTheme } from "@/components/auth/account-theme";
 import { AppNav } from "@/components/nav/AppNav";
 import theme from "@/components/theme/app-theme.module.css";
 
-// The frame of every history page (D28): the app theme, the nav bar, a small label
+// The frame of every history page (D29): the app theme, the nav bar, a small label
 // and the page title, with History marked as the current page.
 export function HistoryShell({
   name,

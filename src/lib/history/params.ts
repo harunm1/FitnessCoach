@@ -1,4 +1,4 @@
-// Reads the history pages' link values (D28). Anything unexpected becomes the first
+// Reads the history pages' link values (D29). Anything unexpected becomes the first
 // page or null, so a hand-edited link shows page 1 or a 404, never a server error.
 
 export const PAGE_SIZE = 20;

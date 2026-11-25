@@ -17,7 +17,7 @@ type DayDetailsProps = {
 };
 
 // Everything logged on the selected day (#16): each workout's name and length, its
-// sets grouped by exercise, the run if one was logged, and a link to its full page (D28).
+// sets grouped by exercise, the run if one was logged, and a link to its full page (D29).
 export default function DayDetails({ dayLabel, workouts }: DayDetailsProps) {
   if (!dayLabel) {
     return (

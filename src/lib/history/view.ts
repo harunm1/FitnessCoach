@@ -1,4 +1,4 @@
-// Pure helpers for the history pages (D28): names, lengths, set labels, the best set
+// Pure helpers for the history pages (D29): names, lengths, set labels, the best set
 // and the points of the top-weight line. No database, no React.
 
 import { DEFAULT_TIME_ZONE } from "@/lib/progress/dates";

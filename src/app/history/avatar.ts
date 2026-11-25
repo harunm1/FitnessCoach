@@ -1,4 +1,4 @@
-// The nav badge photo for the history pages (D28), as on the import page: a signed
+// The nav badge photo for the history pages (D29), as on the import page: a signed
 // link to the user's avatar, or null (the badge shows the initial) when storage is
 // not set up or fails.
 import "server-only";
