@@ -63,9 +63,11 @@ const WRITE_CALL = new RegExp(
 function fakeDb(user: typeof USER | null = USER) {
   const calls: string[] = [];
   const orders: unknown[] = [];
+  const wheres: unknown[] = [];
   const list =
     <T>(name: string, value: T) =>
-    async (args?: { orderBy?: unknown }) => {
+    async (args?: { orderBy?: unknown; where?: unknown }) => {
+      if (name === "user.findFirst") wheres.push(args?.where);
       calls.push(name);
       if (args?.orderBy !== undefined) orders.push(args.orderBy);
       return value;
@@ -93,7 +95,7 @@ function fakeDb(user: typeof USER | null = USER) {
     $transaction: async (run: (client: typeof tx) => Promise<unknown>) =>
       run(tx),
   } as unknown as PrismaClient;
-  return { db, calls, orders };
+  return { db, calls, orders, wheres };
 }
 
 describe("peekDemoUser", () => {
@@ -146,9 +148,11 @@ describe("peekDemoUser", () => {
   });
 
   it("looks the email up with any capitals or spaces", async () => {
-    const { db, calls } = fakeDb();
+    const { db, wheres } = fakeDb();
     await peekDemoUser(db, "  Demo@Example.COM ");
-    expect(calls).toContain("user.findFirst");
+    expect(wheres).toEqual([
+      { email: { equals: "Demo@Example.COM", mode: "insensitive" } },
+    ]);
   });
 });
 
@@ -251,6 +255,8 @@ describe("describeFailure", () => {
   it("keeps the error code, and handles a thrown string", () => {
     const error = Object.assign(new Error("x"), { code: "P1001" });
     expect(describeFailure(error)).toContain("P1001");
+    const init = Object.assign(new Error("x"), { errorCode: "P1000" });
+    expect(describeFailure(init)).toContain("P1000");
     expect(describeFailure("boom")).toContain("Peek failed");
   });
 });
