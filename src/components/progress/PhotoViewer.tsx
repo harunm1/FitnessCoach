@@ -37,8 +37,10 @@ export default function PhotoViewer({ photo }: { photo: GalleryPhoto }) {
       </Dialog.Trigger>
       <Dialog.Portal container={themeRoot}>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/80" />
-        {/* Scrolls inside itself, so a long note stays reachable on a phone. */}
-        <Dialog.Popup className="fixed inset-0 z-50 m-auto flex h-fit max-h-[95dvh] w-fit max-w-[95vw] flex-col gap-3 overflow-y-auto bg-background p-4 text-foreground outline-none">
+        {/* Near full screen (96% of the viewport), so the photo is as large as the screen
+            allows; the thin margin and the backdrop close it on a click. Scrolls inside
+            itself, so a long note stays reachable on a phone. */}
+        <Dialog.Popup className="fixed inset-0 z-50 m-auto flex h-[96dvh] w-[96vw] flex-col gap-3 overflow-y-auto bg-background p-4 text-foreground outline-none">
           <div className="flex items-center justify-between gap-4">
             <Dialog.Title className="m-0 text-base font-semibold">
               <span className="sr-only">Progress photo, </span>
@@ -52,7 +54,7 @@ export default function PhotoViewer({ photo }: { photo: GalleryPhoto }) {
           <img
             src={photo.url}
             alt={alt}
-            className="max-h-[70dvh] min-h-0 max-w-full shrink object-contain"
+            className="h-full min-h-[50dvh] w-full min-w-0 flex-1 object-contain"
           />
           {photo.note && (
             <Dialog.Description className="m-0 max-w-prose text-sm text-foreground/70">

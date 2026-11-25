@@ -1,6 +1,8 @@
-// Tests for the import preview and result panels (#131).
+// @vitest-environment jsdom
+// Tests for the import preview and result panels (#131, live feedback 24 Nov item 8).
+import { cleanup, render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { ImportPreview, ImportResultPanel } from "./ImportPreview";
 
 const summary = {
@@ -75,11 +77,82 @@ describe("ImportResultPanel", () => {
     const html = renderToStaticMarkup(
       <ImportResultPanel
         result={{ imported: 2, alreadyImported: 1, sets: 30, skippedSets: 3 }}
+        report={{
+          skippedWarmups: 0,
+          skippedTimedSets: 0,
+          skippedNames: [],
+          moreSkippedNames: 0,
+        }}
       />,
     );
     expect(html).toContain("Imported 2 workouts");
     expect(html).toContain("30 sets");
     expect(html).toContain("1 workout was already imported");
     expect(html).toContain('href="/progress"');
+  });
+});
+
+const report = {
+  skippedWarmups: 4,
+  skippedTimedSets: 868,
+  skippedNames: ["Zercher Carry", "Odd Lift"],
+  moreSkippedNames: 0,
+};
+const result = {
+  imported: 168,
+  alreadyImported: 0,
+  sets: 3200,
+  skippedSets: 21,
+};
+
+afterEach(cleanup);
+
+describe("ImportResultPanel report", () => {
+  it("opens with a success line and the counts", () => {
+    render(<ImportResultPanel result={result} report={report} />);
+    expect(screen.getByRole("status").textContent).toContain(
+      "Imported 168 workouts with 3,200 sets",
+    );
+  });
+
+  it("says how many sets were left out and why, per reason", () => {
+    render(<ImportResultPanel result={result} report={report} />);
+    const text = screen.getByRole("status").textContent ?? "";
+    expect(text).toContain("868 timed sets");
+    expect(text).toMatch(/no reps/i);
+    expect(text).toContain("4 warm-up sets");
+    expect(text).toContain("21 sets");
+    expect(text).toContain("Zercher Carry");
+    expect(text).toContain("Odd Lift");
+  });
+
+  it("says how many more names there were than the ones listed", () => {
+    render(
+      <ImportResultPanel
+        result={result}
+        report={{ ...report, moreSkippedNames: 7 }}
+      />,
+    );
+    expect(screen.getByRole("status").textContent).toContain("7 more");
+  });
+
+  it("leaves out the 'left out' list when nothing was left out", () => {
+    render(
+      <ImportResultPanel
+        result={{ ...result, skippedSets: 0 }}
+        report={{
+          skippedWarmups: 0,
+          skippedTimedSets: 0,
+          skippedNames: [],
+          moreSkippedNames: 0,
+        }}
+      />,
+    );
+    expect(screen.queryByText(/left out/i)).toBeNull();
+  });
+
+  it("takes focus when it appears, so the page cannot look as if it silently reset", () => {
+    render(<ImportResultPanel result={result} report={report} />);
+    expect(document.activeElement).toBe(screen.getByRole("status"));
   });
 });

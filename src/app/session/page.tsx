@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import BodyMap from "@/components/BodyMap";
 import ExerciseCueDetails from "@/components/ExerciseCueDetails";
 import RestTimer from "@/components/RestTimer";
+import { latestLoggedAt } from "@/lib/workout/restRemaining";
 import RunMetricsForm from "@/components/RunMetricsForm";
 import LocalTime from "@/components/LocalTime";
 import SetLogForm from "@/components/SetLogForm";
@@ -115,6 +116,7 @@ export default async function SessionPage() {
   const sessionDay =
     plan?.days.find((day) => day.id === activeWorkout?.planDayId) ??
     (nextDayIndex === null ? undefined : plan?.days[nextDayIndex]);
+  const renderedAtIso = new Date().toISOString();
   const loggedByExercise = new Map<
     string,
     NonNullable<typeof activeWorkout>["sets"]
@@ -254,7 +256,11 @@ export default async function SessionPage() {
                                 </ul>
                                 <RestTimer
                                   exerciseName={slot.exercise.name}
+                                  lastLoggedAtIso={latestLoggedAt(
+                                    sets,
+                                  ).toISOString()}
                                   restSeconds={slot.restSeconds}
+                                  serverNowIso={renderedAtIso}
                                 />
                               </>
                             )}
