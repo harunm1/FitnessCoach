@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import LocalTime from "@/components/LocalTime";
 import { BillingPanel } from "@/components/auth/billing-panel";
@@ -284,6 +285,11 @@ export default async function AccountPage({
                 <h3 className={styles.cardTitle}>Units</h3>
                 <p>Weights and distances are shown and typed in these units.</p>
                 <UnitsForm {...units} />
+              </div>
+              <div className={styles.securityBox}>
+                <h3 className={styles.cardTitle}>Your data</h3>
+                <p>Download your workouts and coach conversations.</p>
+                <Link href="/account/data">Open Your data</Link>
               </div>
               <div className={styles.securityBox}>
                 <h3 className={styles.cardTitle}>A secure foundation</h3>

@@ -168,4 +168,14 @@ describe("PhotoViewer near full screen", () => {
       `Progress photo from ${DATE}, 81.5 kg`,
     );
   });
+  it("offers a Download link to the photo's own download route", async () => {
+    await openViewer();
+    const dialog = await screen.findByRole("dialog");
+    const link = dialog.querySelector("a");
+    expect(link?.textContent).toBe("Download");
+    expect(link?.getAttribute("href")).toBe("/api/photos/7/download");
+    expect(link?.getAttribute("aria-label")).toBe(
+      `Download progress photo from ${DATE}, 81.5 kg`,
+    );
+  });
 });
