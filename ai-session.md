@@ -879,3 +879,15 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Did with it:** Wrote the failing tests first (the conversion helpers, each action, the display of each screen) and checked that they failed without the change. Looked up the pound and mile factors in NIST SP 811 Appendix B.8. A review agent that had not seen the work found one real fault: the saved-run form showed miles to two places, so saving it unchanged turned 10 km into 9.99 km. It was fixed test-first and a second agent checked the fix. Lint, type check, format check and the unit tests pass; the migration from empty runs in CI. No live browser check.
 
 **Tools:** git, gh, Prisma, Vitest, tsc, ESLint, Prettier, review agents. No skills beyond the migration-safety guide.
+
+## 25 November: live-site bugs from the audit (B1 to B6)
+
+**Asked:** Fix six faults found on the deployed site: absurd workout durations, a 0.02 kg set, coach replies cut off, a follow-up question refused as off-topic, a Sign out button invisible in light mode, and two theme toggles on the import page.
+
+**Got:** One commit per fault. Durations come from one helper: start to finish only, a run uses its own recorded time, and a workout left open longer than six hours reads "Not timed" (history, Progress and the session screen). A set weight under 0.25 kg is refused with a message that names the minimum. The streaming reader keeps a last server-sent event that has no newline after it. A short question made only of technique words and words of the coach's last reply is no longer refused. Sign out takes its colours from the account tokens with the app foreground as fallback (the global `--muted` is a near-white background). The import page no longer passes a second theme toggle to the nav.
+
+**Did with it:** Wrote each failing test first and watched it fail. A review agent that had not seen the work found no errors and five should-fix points; the session screen showing a different run time from history, a zero-length imported workout reading "1 min", and the weight message and input minimum were fixed test-first.
+
+**Limits, said plainly:** The cause of the 0.02 kg set was not found in the import or units code, so the change blocks new entries only; the existing row stays as it is. The cut-off replies are fixed for a body that ends without a newline; that this is what happened live is not confirmed. The off-topic fix widens a word-list rule and does not reproduce the live thread. The six-hour and 0.25 kg limits are my choices, not measured. No live browser check.
+
+**Tools:** git, gh, Vitest, tsc, ESLint, Prettier, review agent (pr-review-toolkit code-reviewer). Skill: systematic-debugging.

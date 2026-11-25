@@ -87,7 +87,9 @@ describe("minutesLabel and workoutMinutes", () => {
   it("rounds to whole minutes, at least 1, null when not timed", () => {
     const t = { startedAt: start, durationSeconds: null };
     expect(workoutMinutes({ ...t, finishedAt: at(50 * 60 + 20) })).toBe(50);
-    expect(workoutMinutes({ ...t, finishedAt: start })).toBe(1);
+    expect(workoutMinutes({ ...t, finishedAt: at(10) })).toBe(1);
+    // An imported workout with no end time has finish = start: no time, not "1 min".
+    expect(workoutMinutes({ ...t, finishedAt: start })).toBeNull();
     expect(workoutMinutes({ ...t, finishedAt: null })).toBeNull();
   });
 });

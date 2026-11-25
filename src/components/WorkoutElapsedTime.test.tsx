@@ -45,6 +45,18 @@ describe("WorkoutElapsedTime", () => {
     expect(screen.getByRole("timer").textContent).toBe("00:00:00");
   });
 
+  it("shows a run's own recorded duration instead of the gap (B1)", () => {
+    vi.useFakeTimers();
+    render(
+      <WorkoutElapsedTime
+        durationSeconds={1800}
+        finishedAt="2026-11-25T14:20:00.000Z"
+        startedAt={startedAt}
+      />,
+    );
+    expect(screen.getByRole("timer").textContent).toBe("00:30:00");
+  });
+
   it("says Not timed for a workout finished long after it was started (B1)", () => {
     vi.useFakeTimers();
     render(

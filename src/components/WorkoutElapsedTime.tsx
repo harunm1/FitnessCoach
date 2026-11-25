@@ -14,9 +14,12 @@ const noSubscription = () => () => undefined;
 export default function WorkoutElapsedTime({
   startedAt,
   finishedAt,
+  durationSeconds,
 }: {
   startedAt: string;
   finishedAt?: string;
+  // A run's own recorded time, which wins over the gap between Start and Finish.
+  durationSeconds?: number | null;
 }) {
   const now = useSyncExternalStore(
     finishedAt ? noSubscription : subscribe,
@@ -24,14 +27,19 @@ export default function WorkoutElapsedTime({
     serverSecond,
   );
 
-  const seconds = Math.max(
-    0,
-    Math.floor(
-      ((finishedAt ? Date.parse(finishedAt) : (now ?? Date.parse(startedAt))) -
-        Date.parse(startedAt)) /
-        1000,
-    ),
-  );
+  const seconds =
+    finishedAt && durationSeconds != null
+      ? durationSeconds
+      : Math.max(
+          0,
+          Math.floor(
+            ((finishedAt
+              ? Date.parse(finishedAt)
+              : (now ?? Date.parse(startedAt))) -
+              Date.parse(startedAt)) /
+              1000,
+          ),
+        );
   // A workout left open (or finished) far past the cap has no workout time (B1).
   const label = (
     <span>{finishedAt ? "Workout duration" : "Elapsed workout time"}</span>

@@ -113,7 +113,7 @@ export default async function SessionPage() {
             finishedAt: { not: null },
           },
           orderBy: { finishedAt: "desc" },
-          select: { startedAt: true, finishedAt: true },
+          select: { startedAt: true, finishedAt: true, durationSeconds: true },
         })
       : null;
   const completedWorkoutCount =
@@ -206,6 +206,7 @@ export default async function SessionPage() {
                 <WorkoutElapsedTime
                   startedAt={finishedWorkout.startedAt.toISOString()}
                   finishedAt={finishedWorkout.finishedAt.toISOString()}
+                  durationSeconds={finishedWorkout.durationSeconds}
                 />
               </div>
             )}

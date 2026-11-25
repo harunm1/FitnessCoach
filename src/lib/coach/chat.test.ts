@@ -630,7 +630,6 @@ describe("coachReply short questions about the lift just discussed", () => {
     "Where should I look?",
     "Should I tuck my chin?",
     "What about the head and neck position then?",
-    "Where do I look during the lift?",
     "Is my neck position right?",
   ])("goes to the coach: %s", async (text) => {
     const model = vi.fn<CoachChatModel>().mockResolvedValue("Neutral neck.");

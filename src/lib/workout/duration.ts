@@ -18,7 +18,7 @@ export function workoutSeconds(workout: WorkoutTimes): number | null {
   const seconds = Math.round(
     (workout.finishedAt.getTime() - workout.startedAt.getTime()) / 1000,
   );
-  if (seconds < 0 || seconds > MAX_WORKOUT_SECONDS) return null;
+  if (seconds <= 0 || seconds > MAX_WORKOUT_SECONDS) return null;
   return seconds;
 }
 
