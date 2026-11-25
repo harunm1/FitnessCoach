@@ -10,8 +10,9 @@ import { isDemoMode } from "./providers";
 
 const DAYS_PER_WEEK = 3;
 
-// The sample profile the stored replies were written for: the gym-3-days demo plan's
-// first day, in the "Name sets x reps" lines the chat prompt gets for a real user.
+// The sample profile the stored replies were written for: the first five exercises of
+// the gym-3-days demo plan's first day, in the "Name sets x reps" lines the chat
+// prompt gets for a real user.
 export const DEMO_CHAT_CONTEXT: CoachContext = {
   goal: "MUSCLE",
   level: "INTERMEDIATE",

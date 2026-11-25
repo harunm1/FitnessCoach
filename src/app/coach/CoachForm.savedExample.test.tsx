@@ -46,6 +46,18 @@ describe("coach form, saved example", () => {
       screen.getByRole("button", { name: "Send" }).closest("form")!,
     );
     await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    // Watches every DOM change, so even a brief live bubble with the stored text counts.
+    let shownLive = false;
+    const observer = new MutationObserver(() => {
+      const bubble = document.querySelector('[role="log"]');
+      if (bubble?.textContent?.includes("Try walking lunges."))
+        shownLive = true;
+    });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
     await act(async () => {
       controller.enqueue(
         encoder.encode(
@@ -59,8 +71,10 @@ describe("coach form, saved example", () => {
     expect(alert.textContent).toContain("Try walking lunges.");
     expect(alert.textContent).toContain("The coach is offline.");
     expect(screen.getByRole("button", { name: "Send again" })).toBeDefined();
-    // Never shown in the live reply bubble.
-    expect(screen.queryByRole("log", { name: "Coach reply" })).toBeNull();
+    observer.disconnect();
+    // Never shown in the live reply bubble, not even for a moment.
+    expect(shownLive).toBe(false);
+    expect(screen.getAllByText("Try walking lunges.")).toHaveLength(1);
     expect(refresh).not.toHaveBeenCalled();
   });
 });
