@@ -67,7 +67,7 @@ describe("session logging", () => {
       />,
     );
     expect(html).toContain("Distance (mi)");
-    expect(html).toContain('value="5"');
+    expect(html).toContain('value="5.002"');
     expect(html).toMatch(/name="distanceUnit"[^>]*value="MI"/);
   });
 

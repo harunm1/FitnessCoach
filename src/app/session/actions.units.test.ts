@@ -92,6 +92,23 @@ describe("saveRunMetrics units", () => {
     ).toBe("4.99");
   });
 
+  it("keeps a stored 10 km when the pre-filled miles are saved unchanged", async () => {
+    await expect(
+      saveRunMetrics(
+        idle,
+        form({
+          distanceKm: "6.2137",
+          distanceUnit: "MI",
+          durationMinutes: "50",
+          durationSeconds: "0",
+        }),
+      ),
+    ).rejects.toThrow("NEXT_REDIRECT");
+    expect(
+      database.workout.update.mock.calls[0][0].data.distanceKm.toString(),
+    ).toBe("10");
+  });
+
   it("refuses a unit that is not km or mi", async () => {
     const result = await saveRunMetrics(
       idle,

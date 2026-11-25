@@ -9,6 +9,7 @@ import {
   fromKg,
   fromKgBody,
   fromKm,
+  fromKmPrecise,
   parseDistanceUnit,
   parseWeightUnit,
   toKg,
@@ -124,5 +125,19 @@ describe("body weights", () => {
       const lb = tenths / 10;
       expect(fromKgBody(toKg(lb, "LB"), "LB")).toBe(lb);
     }
+  });
+});
+
+describe("prefilling a stored distance", () => {
+  it("round-trips every stored hundredth of a km to 300 km through miles", () => {
+    for (let hundredths = 1; hundredths <= 30000; hundredths += 1) {
+      const km = hundredths / 100;
+      expect(toKm(fromKmPrecise(km, "MI"), "MI")).toBe(km);
+    }
+  });
+
+  it("leaves kilometres as stored", () => {
+    expect(fromKmPrecise(10, "KM")).toBe(10);
+    expect(fromKmPrecise(10, "MI")).toBe(6.2137);
   });
 });

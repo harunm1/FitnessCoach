@@ -80,6 +80,16 @@ export function distanceBounds(
       ];
 }
 
+// A stored distance to put back in a form that will be saved again: miles to four places, so
+// converting it back gives the stored kilometres, where the two-place display would not
+// (10 km shown as 6.21 mi is 9.99 km again).
+const TEN_THOUSANDTHS = 10000;
+export function fromKmPrecise(km: number, unit: DistanceUnit): number {
+  return unit === "MI"
+    ? Math.round((km / KM_PER_MI) * TEN_THOUSANDTHS) / TEN_THOUSANDTHS
+    : km;
+}
+
 export const weightLabel = (unit: WeightUnit) => (unit === "LB" ? "lb" : "kg");
 export const distanceLabel = (unit: DistanceUnit) =>
   unit === "MI" ? "mi" : "km";

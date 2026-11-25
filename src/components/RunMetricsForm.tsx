@@ -2,7 +2,11 @@
 
 import { useActionState } from "react";
 import { saveRunMetrics } from "@/app/session/actions";
-import { distanceLabel, fromKm, type DistanceUnit } from "@/lib/units/convert";
+import {
+  distanceLabel,
+  fromKmPrecise,
+  type DistanceUnit,
+} from "@/lib/units/convert";
 import type { RunMetricsActionState } from "@/lib/workout/runMetricsSchema";
 
 type RunMetricsFormProps = {
@@ -36,14 +40,16 @@ export default function RunMetricsForm({
         <input
           className="h-11 w-full border border-foreground/20 bg-white px-3 text-sm font-normal outline-none focus:border-foreground focus:ring-2 focus:ring-foreground/10"
           defaultValue={
-            distanceKm === null ? "" : fromKm(Number(distanceKm), distanceUnit)
+            distanceKm === null
+              ? ""
+              : fromKmPrecise(Number(distanceKm), distanceUnit)
           }
           max={9999.99}
           min={0.01}
           name="distanceKm"
           placeholder="e.g. 5.25"
           required
-          step="0.01"
+          step={distanceUnit === "MI" ? "any" : "0.01"}
           type="number"
         />
       </label>
