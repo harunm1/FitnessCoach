@@ -107,4 +107,23 @@ describe("setLogSchema", () => {
       ).toBe(false);
     },
   );
+
+  it.each(["0.02", "0.1", "0.24"])(
+    "rejects a weight under one plate step, %s kg (B2)",
+    (weightKg) => {
+      const result = setLogSchema.safeParse({
+        setNumber: "1",
+        reps: "10",
+        weightKg,
+      });
+      expect(result.success).toBe(false);
+    },
+  );
+
+  it("accepts the smallest plate step, 0.25 kg (B2)", () => {
+    expect(
+      setLogSchema.parse({ setNumber: "1", reps: "10", weightKg: "0.25" })
+        .weightKg,
+    ).toBe(0.25);
+  });
 });
