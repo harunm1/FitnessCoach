@@ -14,6 +14,12 @@ import {
   type RunMetricsActionState,
 } from "@/lib/workout/runMetricsSchema";
 import { getNextPlanDayIndex } from "@/lib/workout/progression";
+import { finishedActiveSeconds } from "@/lib/workout/activeTime";
+import {
+  clockOf,
+  findOpenClockWorkout,
+  latestSetMs,
+} from "@/lib/workout/openClock";
 import { requireUser } from "@/lib/auth/session";
 import { painTrafficLight } from "@/lib/coach/painTrafficLight";
 import {
@@ -282,24 +288,42 @@ export async function startOrResumeWorkout() {
   redirect("/session");
 }
 
+const FINISH_TRIES = 2;
+
 export async function finishWorkout() {
   const user = await requireUser();
 
-  const workout = await prisma.workout.findFirst({
-    where: {
-      userId: user.id,
-      finishedAt: null,
-      plan: { userId: user.id, active: true },
-    },
-    orderBy: { startedAt: "desc" },
-    select: { id: true },
-  });
-
-  if (workout) {
-    await prisma.workout.updateMany({
-      where: { id: workout.id, userId: user.id, finishedAt: null },
-      data: { finishedAt: new Date() },
+  // Two tries: if another tab paused or resumed between the read and the write, the second
+  // read sees the new clock and Finish still lands.
+  for (let attempt = 0; attempt < FINISH_TRIES; attempt += 1) {
+    const workout = await findOpenClockWorkout(user.id);
+    if (!workout) break;
+    const finishedAt = new Date();
+    // Duration counts active time only (D37): paused time and an idle stretch are left out.
+    // A run keeps the duration it recorded itself.
+    const activeSeconds = finishedActiveSeconds(
+      clockOf(workout),
+      await latestSetMs(workout.id),
+      finishedAt.getTime(),
+    );
+    const { count } = await prisma.workout.updateMany({
+      where: {
+        id: workout.id,
+        userId: user.id,
+        finishedAt: null,
+        // The stretch that was read: a pause from another tab in between is not overwritten.
+        activeSince: workout.activeSince,
+      },
+      data: {
+        finishedAt,
+        activeSince: null,
+        activeBankedSeconds: activeSeconds,
+        ...(workout.durationSeconds === null
+          ? { durationSeconds: activeSeconds }
+          : {}),
+      },
     });
+    if (count > 0) break;
   }
 
   revalidatePath("/session");
