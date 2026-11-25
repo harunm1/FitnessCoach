@@ -1,6 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { alertRestEnded, unlockAudio } from "@/lib/alerts/browserAlert";
+import {
+  ADJUST_SECONDS,
+  adjustRestEnd,
+  restEndFromRemaining,
+  restSecondsLeft,
+} from "@/lib/workout/restClock";
 import { restSecondsRemaining } from "@/lib/workout/restRemaining";
 
 type RestTimerProps = {
@@ -13,6 +20,16 @@ type RestTimerProps = {
   // elapsed time does not depend on this device's clock being right.
   serverNowIso: string;
 };
+
+// The countdown is a deadline (D34): `running` holds the end time, so a sleeping screen or a
+// throttled background tab cannot slow it down, and the next look at the clock is right.
+type Phase =
+  | { kind: "idle" }
+  | { kind: "running"; endsAtMs: number }
+  | { kind: "paused"; secondsLeft: number }
+  | { kind: "done" };
+
+const CHECK_MS = 250;
 
 function formatTime(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
@@ -27,8 +44,8 @@ export default function RestTimer({
   serverNowIso,
 }: RestTimerProps) {
   const [isHydrated, setIsHydrated] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(restSeconds);
-  const [isRunning, setIsRunning] = useState(false);
+  const [phase, setPhase] = useState<Phase>({ kind: "idle" });
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   // The newest server time, read when a set is logged. Keeping it out of the effect's inputs
   // means a page refresh for another exercise does not restart a timer the user paused.
@@ -36,6 +53,9 @@ export default function RestTimer({
   useEffect(() => {
     serverNow.current = serverNowIso;
   }, [serverNowIso]);
+
+  // The end time that has already alerted, so a rest alerts once however many checks see it.
+  const alertedEnd = useRef<number | null>(null);
 
   // Runs after mount and whenever a new set is logged: starts the rest by itself.
   useEffect(() => {
@@ -47,36 +67,79 @@ export default function RestTimer({
         restSeconds,
       );
       if (remaining !== null) {
-        setSecondsLeft(remaining);
-        setIsRunning(true);
+        const now = Date.now();
+        setNowMs(now);
+        setPhase({
+          kind: "running",
+          endsAtMs: restEndFromRemaining(remaining, now),
+        });
       }
     }, 0);
     return () => window.clearTimeout(timeout);
   }, [lastLoggedAtIso, restSeconds]);
 
+  // While resting: look at the clock a few times a second, and again whenever the tab
+  // becomes visible (timers in a hidden tab are throttled, the deadline is not).
+  const endsAtMs = phase.kind === "running" ? phase.endsAtMs : null;
   useEffect(() => {
-    if (!isRunning || secondsLeft <= 0) return;
-
-    const timeout = window.setTimeout(() => {
-      if (secondsLeft === 1) {
-        setSecondsLeft(0);
-        setIsRunning(false);
-      } else {
-        setSecondsLeft(secondsLeft - 1);
+    if (endsAtMs === null) return;
+    const check = () => {
+      const now = Date.now();
+      setNowMs(now);
+      if (now < endsAtMs) return;
+      setPhase({ kind: "done" });
+      if (alertedEnd.current !== endsAtMs) {
+        alertedEnd.current = endsAtMs;
+        alertRestEnded();
       }
-    }, 1000);
+    };
+    const interval = window.setInterval(check, CHECK_MS);
+    document.addEventListener("visibilitychange", check);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", check);
+    };
+  }, [endsAtMs]);
 
-    return () => window.clearTimeout(timeout);
-  }, [isRunning, secondsLeft]);
+  const isRunning = phase.kind === "running";
+  const secondsLeft =
+    phase.kind === "running"
+      ? restSecondsLeft(phase.endsAtMs, nowMs)
+      : phase.kind === "paused"
+        ? phase.secondsLeft
+        : phase.kind === "done"
+          ? 0
+          : restSeconds;
 
-  function startOrResume() {
-    if (secondsLeft === 0) setSecondsLeft(restSeconds);
-    setIsRunning(true);
+  function startRest() {
+    unlockAudio();
+    const now = Date.now();
+    setNowMs(now);
+    const seconds = phase.kind === "paused" ? phase.secondsLeft : restSeconds;
+    setPhase({ kind: "running", endsAtMs: restEndFromRemaining(seconds, now) });
+  }
+
+  function pause() {
+    if (phase.kind !== "running") return;
+    setPhase({
+      kind: "paused",
+      secondsLeft: restSecondsLeft(phase.endsAtMs, Date.now()),
+    });
   }
 
   function reset() {
-    setIsRunning(false);
-    setSecondsLeft(restSeconds);
+    setPhase({ kind: "idle" });
+  }
+
+  // +15 / -15 move the end time; taking off more than is left ends the rest like Skip.
+  function adjust(deltaSeconds: number) {
+    if (phase.kind !== "running") return;
+    const now = Date.now();
+    const next = adjustRestEnd(phase.endsAtMs, deltaSeconds, now);
+    setNowMs(now);
+    setPhase(
+      next <= now ? { kind: "idle" } : { kind: "running", endsAtMs: next },
+    );
   }
 
   const buttonClassName =
@@ -110,7 +173,7 @@ export default function RestTimer({
       <button
         className={`${buttonClassName} ${isRunning ? "border-emerald-800 bg-emerald-800 text-white hover:bg-emerald-900" : ""}`}
         disabled={!isHydrated}
-        onClick={isRunning ? () => setIsRunning(false) : startOrResume}
+        onClick={isRunning ? pause : startRest}
         type="button"
       >
         {!isHydrated
@@ -124,9 +187,25 @@ export default function RestTimer({
                 : "Resume timer"}
       </button>
       {isRunning && (
-        <button className={buttonClassName} onClick={reset} type="button">
-          Skip rest
-        </button>
+        <>
+          <button
+            className={buttonClassName}
+            onClick={() => adjust(-ADJUST_SECONDS)}
+            type="button"
+          >
+            -{ADJUST_SECONDS} s
+          </button>
+          <button
+            className={buttonClassName}
+            onClick={() => adjust(ADJUST_SECONDS)}
+            type="button"
+          >
+            +{ADJUST_SECONDS} s
+          </button>
+          <button className={buttonClassName} onClick={reset} type="button">
+            Skip rest
+          </button>
+        </>
       )}
       {!isRunning && secondsLeft !== restSeconds && (
         <button className={buttonClassName} onClick={reset} type="button">

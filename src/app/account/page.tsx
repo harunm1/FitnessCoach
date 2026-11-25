@@ -10,6 +10,7 @@ import { ChangePasswordDialog } from "@/components/auth/change-password-dialog";
 import { ProfilePhotoForm } from "@/components/auth/profile-photo-form";
 import { AppNav } from "@/components/nav/AppNav";
 import { loadAvatar } from "@/lib/photos/avatar";
+import { RestAlertsForm } from "@/components/auth/rest-alerts-form";
 import { UnitsForm } from "@/components/auth/units-form";
 import { loadUnitPrefs } from "@/lib/units/prefs";
 
@@ -284,6 +285,14 @@ export default async function AccountPage({
                 <h3 className={styles.cardTitle}>Units</h3>
                 <p>Weights and distances are shown and typed in these units.</p>
                 <UnitsForm {...units} />
+              </div>
+              <div className={styles.securityBox}>
+                <h3 className={styles.cardTitle}>Alerts on this device</h3>
+                <p>
+                  When a rest ends, play a tone, vibrate or send a notification.
+                  All three are off until you turn them on.
+                </p>
+                <RestAlertsForm />
               </div>
               <div className={styles.securityBox}>
                 <h3 className={styles.cardTitle}>A secure foundation</h3>

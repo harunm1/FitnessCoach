@@ -6,6 +6,7 @@
 // a connection.
 import { useEffect, useRef, useState } from "react";
 import RestTimer from "@/components/RestTimer";
+import { unlockAudio } from "@/lib/alerts/browserAlert";
 import SetLogForm, { type LoggedSetInput } from "@/components/SetLogForm";
 import {
   mergeLoggedSets,
@@ -82,6 +83,8 @@ export default function ExerciseLogPanel(props: ExerciseLogPanelProps) {
 
   const logSet = async (set: LoggedSetInput) => {
     if (!allowTap()) return;
+    // A tap is the moment the browser lets the rest-end tone start later (D34).
+    unlockAudio();
     setCoolingDown(true);
     window.clearTimeout(cooldown.current);
     cooldown.current = window.setTimeout(
