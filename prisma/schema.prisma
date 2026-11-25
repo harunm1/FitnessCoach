@@ -56,6 +56,7 @@ model User {
   workouts      Workout[]
   conversations Conversation[]
   photos        ProgressPhoto[]
+  bodyWeights   BodyWeight[]
   coachEvents   CoachEvent[]
 }
 
@@ -297,6 +298,9 @@ model SetLog {
 }
 
 // One run per workout; the unique workoutId makes a repeated save idempotent (#42).
+// Written for runs logged by hand on the Progress page (D27), with the workout's
+// distance and time. Upper CHECKs (300 km, 24 hours) are in migration
+// 20261124200000_run_log_upper_bounds, the lower ones in the range checks below.
 model RunLog {
   id          Int      @id @default(autoincrement())
   workoutId   Int      @unique
@@ -399,6 +403,23 @@ model ProgressPhoto {
   takenAt    DateTime @default(now())
   weightKg   Decimal? @db.Decimal(5, 2)
   note       String?
+}
+
+// One weigh-in per user per day (D24, #16); logging the same day again
+// replaces it. The 20 to 400 kg and 300-character bounds are CHECKs in the
+// migration, since Prisma's schema has no CHECK.
+model BodyWeight {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  weightKg  Decimal  @db.Decimal(5, 2)
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Also serves the chart's query (this user's rows by date).
+  @@unique([userId, date])
 }
 
 // Better Auth persistence. Existing user IDs and fitness relations are preserved.
