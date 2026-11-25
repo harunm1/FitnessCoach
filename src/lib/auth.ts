@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { readAuthConfig } from "./auth/config";
 import { createAuth } from "./auth/core";
 import { createEmailSender } from "./auth/email";
+import { readGoogleConfig } from "./auth/google";
 
 let instance: Promise<ReturnType<typeof createAuth>> | undefined;
 
@@ -10,7 +11,7 @@ let instance: Promise<ReturnType<typeof createAuth>> | undefined;
 export function getAuth() {
   if (!instance) {
     instance = (async () => {
-      const config = readAuthConfig();
+      const config = { ...readAuthConfig(), google: readGoogleConfig() };
       const { prisma } = await import("./prisma");
       return createAuth(prisma, config, createEmailSender(), (task) =>
         after(() => task),

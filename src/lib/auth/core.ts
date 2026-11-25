@@ -1,12 +1,17 @@
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
+import type { GoogleConfig } from "./google";
 import { displayNameSchema } from "./validation";
 import { prismaAdapter } from "@better-auth/prisma-adapter";
 import type { PrismaClient } from "@/generated/prisma/client";
 
 export type AuthEmail = { to: string; subject: string; text: string };
 export type SendAuthEmail = (email: AuthEmail) => Promise<void>;
-export type AuthConfig = { baseURL: string; secret: string };
+export type AuthConfig = {
+  baseURL: string;
+  secret: string;
+  google?: GoogleConfig;
+};
 
 // The injectable database and email sender keep integration tests on an isolated DB.
 export function createAuth(
@@ -25,6 +30,23 @@ export function createAuth(
       provider: "postgresql",
       transaction: true,
     }),
+    // D32: Google only when configured. A same-email Google sign-in is linked to an
+    // existing user only if Google verified the email and the local email is verified.
+    ...(config.google
+      ? {
+          socialProviders: {
+            google: { ...config.google, requireEmailVerification: true },
+          },
+        }
+      : {}),
+    account: {
+      accountLinking: {
+        enabled: true,
+        trustedProviders: [],
+        requireLocalEmailVerified: true,
+        allowDifferentEmails: false,
+      },
+    },
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: true,
