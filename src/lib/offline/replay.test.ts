@@ -26,6 +26,8 @@ function queued(overrides: Partial<QueuedSet>): QueuedSet {
     setNumber: SET_ONE,
     reps: REPS,
     weightKg: "12",
+    painDuringSession: null,
+    painNextMorning: null,
     queuedAt: T1,
     error: null,
     ...overrides,

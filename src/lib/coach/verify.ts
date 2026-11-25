@@ -8,6 +8,8 @@
 // It returns every problem it finds, not just the first, so a regeneration prompt
 // can list them all (same idea as reporting all validation errors at once in A2).
 import { LIMITS, planSchema, type PlanInput } from "./schema";
+import { draftExerciseJointMappings } from "./exerciseJointMappings";
+import type { Joint } from "./jointSubstitutions";
 
 export type LibraryExercise = {
   id: string;
@@ -29,6 +31,9 @@ export type VerifyProfile = {
   equipment: string[];
   // Muscle names the user reported trouble with, taken from the quiz's injury text.
   avoidMuscles: string[];
+  // Joint names parsed from an explicitly painful/injured report. Optional so
+  // existing callers and cached plans remain compatible.
+  reportedJoints?: Joint[];
   // The user's experience (#139). The starter plan uses it; the verifier does not.
   level?: "BEGINNER" | "INTERMEDIATE" | "EXPERT";
 };
@@ -114,6 +119,32 @@ export function verifyPlan(
         problems.push(
           `${where}: works ${hits.join(", ")}, which the user reported trouble with`,
         );
+      }
+
+      const reportedJoints = profile.reportedJoints ?? [];
+      if (reportedJoints.length > 0) {
+        const mapping = Object.hasOwn(
+          draftExerciseJointMappings,
+          slot.exerciseId,
+        )
+          ? draftExerciseJointMappings[
+              slot.exerciseId as keyof typeof draftExerciseJointMappings
+            ]
+          : undefined;
+        if (!mapping) {
+          problems.push(
+            `${where}: joint load is unmapped, so it cannot be used safely with the reported joint pain`,
+          );
+        } else {
+          const jointHits = mapping.joints.filter((joint) =>
+            reportedJoints.includes(joint),
+          );
+          if (jointHits.length > 0) {
+            problems.push(
+              `${where}: loads ${jointHits.join(", ")}, which the user reported painful`,
+            );
+          }
+        }
       }
     });
   });

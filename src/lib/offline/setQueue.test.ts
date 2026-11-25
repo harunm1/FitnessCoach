@@ -22,6 +22,8 @@ function newSet(clientId: string, setNumber = SET_ONE): NewQueuedSet {
     setNumber,
     reps: REPS,
     weightKg: "12",
+    painDuringSession: null,
+    painNextMorning: null,
   };
 }
 

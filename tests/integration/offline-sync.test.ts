@@ -14,6 +14,7 @@ import {
   vi,
 } from "vitest";
 import { createAuth } from "@/lib/auth/core";
+import { PAIN_TRAFFIC_THRESHOLDS } from "@/lib/coach/painTrafficLight";
 
 const request = vi.hoisted(() => ({ headers: new Headers() }));
 vi.mock("server-only", () => ({}));
@@ -45,6 +46,8 @@ const EDITED_REPS = 9;
 const SET_ONE = 1;
 const SET_TWO = 2;
 const BOTH = 2;
+const LOW_PAIN = 1;
+const STOP_PAIN = PAIN_TRAFFIC_THRESHOLDS.stopMin;
 const IP_SUFFIX_LENGTH = 4;
 const HTTP_OK = 200;
 let auth: ReturnType<typeof createAuth>;
@@ -324,6 +327,50 @@ describe("syncQueuedSet", () => {
     await expect(syncQueuedSet(queued(workout.id))).rejects.toThrow(
       "redirect:",
     );
+  });
+
+  it("keeps the pain scores of a queued set (#92)", async () => {
+    const workout = await openWorkout(owner.id);
+    await signIn(owner);
+    await syncQueuedSet(
+      queued(workout.id, {
+        painDuringSession: LOW_PAIN,
+        painNextMorning: null,
+      }),
+    );
+    expect(
+      await db.setLog.findFirst({ where: { workoutId: workout.id } }),
+    ).toMatchObject({ painDuringSession: LOW_PAIN, painNextMorning: null });
+  });
+
+  it("saves a stop-range set but refuses a new set after it (#92 stop rule)", async () => {
+    const workout = await openWorkout(owner.id);
+    await signIn(owner);
+    expect(
+      await syncQueuedSet(queued(workout.id, { painDuringSession: STOP_PAIN })),
+    ).toEqual({ status: "saved" });
+
+    const next = await syncQueuedSet(
+      queued(workout.id, { setNumber: SET_TWO }),
+    );
+
+    expect(next.status).toBe("error");
+    expect(await db.setLog.count({ where: { workoutId: workout.id } })).toBe(1);
+  });
+
+  it("accepts a queued correction of the stop-range set", async () => {
+    const workout = await openWorkout(owner.id);
+    await signIn(owner);
+    await syncQueuedSet(queued(workout.id, { painDuringSession: STOP_PAIN }));
+
+    const correction = await syncQueuedSet(
+      queued(workout.id, { painDuringSession: LOW_PAIN }),
+    );
+
+    expect(correction).toEqual({ status: "saved" });
+    expect(
+      await db.setLog.findFirst({ where: { workoutId: workout.id } }),
+    ).toMatchObject({ setNumber: SET_ONE, painDuringSession: LOW_PAIN });
   });
 
   it("has a unique index on (workoutId, clientId)", async () => {

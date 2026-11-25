@@ -19,6 +19,8 @@ export const sessionSetQueue = createSetQueue({
       setNumber: item.setNumber,
       reps: item.reps,
       weightKg: item.weightKg,
+      painDuringSession: item.painDuringSession,
+      painNextMorning: item.painNextMorning,
     }),
   isOnline: () => typeof navigator === "undefined" || navigator.onLine,
   withLock: withQueueLock,

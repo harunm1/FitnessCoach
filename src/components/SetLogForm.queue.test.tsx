@@ -9,6 +9,9 @@ import {
   screen,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+// The queue mode never calls the logSet action; mocking it keeps Prisma out of the test.
+vi.mock("@/app/session/actions", () => ({ logSet: vi.fn() }));
+
 import SetLogForm, { type LoggedSetInput } from "./SetLogForm";
 
 const TARGET_REPS = 10;

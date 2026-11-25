@@ -92,6 +92,8 @@ export default async function SessionPage() {
               setNumber: true,
               reps: true,
               weightKg: true,
+              painDuringSession: true,
+              painNextMorning: true,
               loggedAt: true,
             },
           },
@@ -198,6 +200,15 @@ export default async function SessionPage() {
                         <h2 className="m-0 text-base font-semibold">
                           {slot.exercise.name}
                         </h2>
+                        {slot.substitutionReason ? (
+                          <p
+                            className="mt-1 mb-0 text-xs font-medium text-foreground/70"
+                            role="note"
+                          >
+                            Swapped for {slot.exercise.name}:{" "}
+                            {slot.substitutionReason}
+                          </p>
+                        ) : null}
                         <p className="mt-1 mb-0 text-xs text-foreground/60 capitalize">
                           {slot.exercise.primaryMuscles.join(" · ")}
                           {slot.exercise.equipment &&
@@ -226,6 +237,8 @@ export default async function SessionPage() {
                               setNumber: set.setNumber,
                               reps: set.reps,
                               weightKg: set.weightKg?.toString() ?? null,
+                              painDuringSession: set.painDuringSession,
+                              painNextMorning: set.painNextMorning,
                             }))}
                             targetReps={slot.reps}
                             workoutId={activeWorkout.id}

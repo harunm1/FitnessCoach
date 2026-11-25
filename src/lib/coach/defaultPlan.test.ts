@@ -71,6 +71,75 @@ describe("buildDefaultPlan", () => {
       expect(exercise.rpe).toBe(7);
     }
   });
+
+  it("fails closed when shoulder pain has no suitable mapped push alternative", () => {
+    const jointProfile: VerifyProfile = {
+      ...profile,
+      reportedJoints: ["shoulder"],
+    };
+    const jointLibrary: CategorisedExercise[] = [
+      {
+        id: "Barbell_Bench_Press_-_Medium_Grip",
+        category: "strength",
+        equipment: "barbell",
+        primaryMuscles: ["chest"],
+        secondaryMuscles: ["triceps"],
+      },
+      {
+        id: "Incline_Push-Up",
+        category: "strength",
+        equipment: "body only",
+        primaryMuscles: ["chest"],
+        secondaryMuscles: ["triceps"],
+      },
+    ];
+
+    expect(() => buildDefaultPlan(jointProfile, jointLibrary)).toThrow(
+      "Not enough compatible exercises",
+    );
+  });
+
+  it("records an exact reason for a real same-pattern hip substitution", () => {
+    const jointProfile: VerifyProfile = {
+      daysPerWeek: 1,
+      equipment: ["body only"],
+      avoidMuscles: [],
+      reportedJoints: ["hip"],
+    };
+    const jointLibrary: CategorisedExercise[] = [
+      {
+        id: "Reverse_Crunch",
+        category: "strength",
+        equipment: "body only",
+        primaryMuscles: ["abdominals"],
+        secondaryMuscles: [],
+      },
+      {
+        id: "Crunches",
+        category: "strength",
+        equipment: "body only",
+        primaryMuscles: ["abdominals"],
+        secondaryMuscles: [],
+      },
+      {
+        id: "Incline_Push-Up",
+        category: "strength",
+        equipment: "body only",
+        primaryMuscles: ["chest"],
+        secondaryMuscles: ["triceps"],
+      },
+    ];
+
+    const plan = buildDefaultPlan(jointProfile, jointLibrary);
+    expect(
+      plan.days[0]?.exercises.map((exercise) => exercise.exerciseId),
+    ).toContain("Crunches");
+    expect(
+      plan.days[0]?.exercises.find(
+        (exercise) => exercise.exerciseId === "Crunches",
+      )?.substitutionReason,
+    ).toBe("avoids hip loading");
+  });
 });
 
 // Records copied from the seeded free-exercise-db library (dist/exercises.json, 8 Nov),

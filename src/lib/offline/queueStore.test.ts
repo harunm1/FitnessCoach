@@ -20,6 +20,8 @@ const item: QueuedSet = {
   setNumber: SET_ONE,
   reps: REPS,
   weightKg: null,
+  painDuringSession: null,
+  painNextMorning: null,
   queuedAt: QUEUED_AT,
   error: null,
 };

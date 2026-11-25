@@ -47,6 +47,7 @@ export function weekToPlanData(
                   sets: slot.sets,
                   reps: slot.reps,
                   restSeconds: slot.restSeconds,
+                  substitutionReason: slot.substitutionReason,
                 })),
               },
             },

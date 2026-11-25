@@ -2,27 +2,24 @@
 // sets still waiting in the offline queue. A queued set with the number of a saved one is
 // an edit and is shown in its place.
 
-export type ServerSet = {
-  id: number;
+type SetValues = {
   setNumber: number;
   reps: number;
   weightKg: string | null;
+  painDuringSession: number | null; // pain scores (#92)
+  painNextMorning: number | null;
 };
 
-export type PendingSet = {
+export type ServerSet = SetValues & { id: number };
+
+export type PendingSet = SetValues & {
   clientId: string;
-  setNumber: number;
-  reps: number;
-  weightKg: string | null;
   queuedAt: number;
   error: string | null;
 };
 
-export type SetRow = {
+export type SetRow = SetValues & {
   key: string;
-  setNumber: number;
-  reps: number;
-  weightKg: string | null;
   queued: boolean;
   error: string | null;
 };
@@ -40,6 +37,8 @@ const serverRow = (set: ServerSet): SetRow => ({
   setNumber: set.setNumber,
   reps: set.reps,
   weightKg: set.weightKg,
+  painDuringSession: set.painDuringSession,
+  painNextMorning: set.painNextMorning,
   queued: false,
   error: null,
 });
@@ -49,6 +48,8 @@ const queuedRow = (set: PendingSet): SetRow => ({
   setNumber: set.setNumber,
   reps: set.reps,
   weightKg: set.weightKg,
+  painDuringSession: set.painDuringSession,
+  painNextMorning: set.painNextMorning,
   queued: true,
   error: set.error,
 });

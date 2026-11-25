@@ -9,6 +9,8 @@ export type QueuedSet = {
   setNumber: number;
   reps: number;
   weightKg: string | null; // as typed; null when left empty
+  painDuringSession: number | null; // 0 to 10 (#92), null when left empty
+  painNextMorning: number | null;
   queuedAt: number; // device time in ms, for oldest-first replay
   error: string | null; // the server's reason when it refused the set
 };

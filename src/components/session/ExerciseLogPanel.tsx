@@ -1,15 +1,23 @@
 "use client";
 
 // One exercise's logging area in the session view: progress line, logged sets, rest timer
-// and the set form. Sets waiting in the offline queue (D31) are listed and counted, and
-// start the rest timer, so the page keeps working without a connection.
+// and the set form. Sets waiting in the offline queue (D31) are listed and counted, start
+// the rest timer and count for the pain stop rule (#92), so the page keeps working without
+// a connection.
+import { useState } from "react";
 import RestTimer from "@/components/RestTimer";
 import SetLogForm, { type LoggedSetInput } from "@/components/SetLogForm";
-import { mergeLoggedSets, type ServerSet } from "@/lib/offline/mergeLoggedSets";
+import {
+  mergeLoggedSets,
+  type ServerSet,
+  type SetRow,
+} from "@/lib/offline/mergeLoggedSets";
 import {
   sessionSetQueue,
   useSessionSetQueue,
 } from "@/lib/offline/sessionSetQueue";
+import { firstStoppedSet } from "@/lib/offline/stoppedSet";
+import { createTapGuard } from "@/lib/offline/tapGuard";
 
 type ExerciseLogPanelProps = {
   workoutId: number;
@@ -24,14 +32,36 @@ type ExerciseLogPanelProps = {
   serverNowIso: string;
 };
 
+function SetRowItem({ row }: { row: SetRow }) {
+  return (
+    <li
+      className={`list-none border px-2 py-1 text-sm ${row.queued ? "border-dashed border-amber-800/50 bg-amber-50 text-amber-950" : "border-foreground/15 bg-white text-foreground/70"}`}
+    >
+      Set {row.setNumber}: {row.reps} reps
+      {row.weightKg !== null && ` · ${row.weightKg} kg`}
+      {row.painDuringSession !== null &&
+        ` · pain ${row.painDuringSession}/10 during`}
+      {row.painNextMorning !== null &&
+        ` · pain ${row.painNextMorning}/10 this morning before workout`}
+      {row.queued && (
+        <span className="text-xs font-semibold">
+          {row.error ? " · Not synced" : " · Waiting to sync"}
+        </span>
+      )}
+    </li>
+  );
+}
+
 export default function ExerciseLogPanel(props: ExerciseLogPanelProps) {
   const queue = useSessionSetQueue();
+  const [allowTap] = useState(() => createTapGuard());
   const pending = queue.items.filter(
     (item) =>
       item.workoutId === props.workoutId &&
       item.exerciseId === props.exerciseId,
   );
   const merged = mergeLoggedSets(props.serverSets, pending, props.plannedSets);
+  const stoppedSet = firstStoppedSet(merged.rows);
 
   // A queued set has only the device's clock, so it starts a full rest from when it was
   // logged; saved sets keep the server-clock rule of RestTimer.
@@ -42,12 +72,14 @@ export default function ExerciseLogPanel(props: ExerciseLogPanelProps) {
   const timerLastIso = queuedAtIso ?? props.lastLoggedAtIso;
   const timerNowIso = queuedAtIso ?? props.serverNowIso;
 
-  const logSet = (set: LoggedSetInput) =>
-    sessionSetQueue.enqueue({
+  const logSet = async (set: LoggedSetInput) => {
+    if (!allowTap()) return;
+    await sessionSetQueue.enqueue({
       ...set,
       workoutId: props.workoutId,
       exerciseId: props.exerciseId,
     });
+  };
 
   return (
     <>
@@ -64,18 +96,7 @@ export default function ExerciseLogPanel(props: ExerciseLogPanelProps) {
             className="mt-2 flex flex-wrap gap-2 p-0"
           >
             {merged.rows.map((row) => (
-              <li
-                className={`list-none border px-2 py-1 text-sm ${row.queued ? "border-dashed border-amber-800/50 bg-amber-50 text-amber-950" : "border-foreground/15 bg-white text-foreground/70"}`}
-                key={row.key}
-              >
-                Set {row.setNumber}: {row.reps} reps
-                {row.weightKg !== null && ` · ${row.weightKg} kg`}
-                {row.queued && (
-                  <span className="text-xs font-semibold">
-                    {row.error ? " · Not synced" : " · Waiting to sync"}
-                  </span>
-                )}
-              </li>
+              <SetRowItem key={row.key} row={row} />
             ))}
           </ul>
           {timerLastIso && timerNowIso && (
@@ -88,8 +109,22 @@ export default function ExerciseLogPanel(props: ExerciseLogPanelProps) {
           )}
         </>
       )}
-      {merged.remaining > 0 && (
+      {(merged.remaining > 0 || stoppedSet) && (
         <SetLogForm
+          // A new key after every logged set resets the pain fields (as on main, #92).
+          key={`${props.exerciseId}-${merged.rows.map((row) => `${row.setNumber}:${row.painDuringSession}:${row.painNextMorning}`).join(",")}`}
+          blocked={Boolean(stoppedSet)}
+          correction={
+            stoppedSet
+              ? {
+                  setNumber: stoppedSet.setNumber,
+                  reps: stoppedSet.reps,
+                  weightKg: stoppedSet.weightKg,
+                  painDuringSession: stoppedSet.painDuringSession,
+                  painNextMorning: stoppedSet.painNextMorning,
+                }
+              : undefined
+          }
           equipment={props.equipment}
           exerciseId={props.exerciseId}
           nextSetNumber={merged.nextSetNumber}

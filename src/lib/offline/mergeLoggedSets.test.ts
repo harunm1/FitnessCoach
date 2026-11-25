@@ -11,8 +11,18 @@ const REPS = 8;
 const EDITED_REPS = 9;
 const FIRST_QUEUED_AT = 5_000;
 const LATER_QUEUED_AT = 6_000;
+const PAIN = 3;
 
-const server = [{ id: 1, setNumber: SET_ONE, reps: REPS, weightKg: "12" }];
+const server = [
+  {
+    id: 1,
+    setNumber: SET_ONE,
+    reps: REPS,
+    weightKg: "12",
+    painDuringSession: null,
+    painNextMorning: null,
+  },
+];
 
 describe("mergeLoggedSets", () => {
   it("counts only server sets when nothing is queued", () => {
@@ -33,6 +43,8 @@ describe("mergeLoggedSets", () => {
           setNumber: SET_TWO,
           reps: REPS,
           weightKg: null,
+          painDuringSession: null,
+          painNextMorning: null,
           queuedAt: FIRST_QUEUED_AT,
           error: null,
         },
@@ -45,6 +57,8 @@ describe("mergeLoggedSets", () => {
         setNumber: SET_ONE,
         reps: REPS,
         weightKg: "12",
+        painDuringSession: null,
+        painNextMorning: null,
         queued: false,
         error: null,
       },
@@ -53,6 +67,8 @@ describe("mergeLoggedSets", () => {
         setNumber: SET_TWO,
         reps: REPS,
         weightKg: null,
+        painDuringSession: null,
+        painNextMorning: null,
         queued: true,
         error: null,
       },
@@ -74,6 +90,8 @@ describe("mergeLoggedSets", () => {
           setNumber: SET_ONE,
           reps: EDITED_REPS,
           weightKg: null,
+          painDuringSession: null,
+          painNextMorning: null,
           queuedAt: LATER_QUEUED_AT,
           error: null,
         },
@@ -91,6 +109,8 @@ describe("mergeLoggedSets", () => {
       setNumber,
       reps: REPS,
       weightKg: null,
+      painDuringSession: null,
+      painNextMorning: null,
       queuedAt: LATER_QUEUED_AT + setNumber,
       error: null,
     }));
@@ -99,5 +119,29 @@ describe("mergeLoggedSets", () => {
       remaining: 0,
       latestQueuedAt: LATER_QUEUED_AT + SET_THREE,
     });
+  });
+  it("carries pain scores of saved and queued sets (#92)", () => {
+    const merged = mergeLoggedSets(
+      [{ ...server[0], painDuringSession: PAIN }],
+      [
+        {
+          clientId: "p",
+          setNumber: SET_TWO,
+          reps: REPS,
+          weightKg: null,
+          painDuringSession: null,
+          painNextMorning: PAIN,
+          queuedAt: FIRST_QUEUED_AT,
+          error: null,
+        },
+      ],
+      PLANNED,
+    );
+    expect(
+      merged.rows.map((row) => [row.painDuringSession, row.painNextMorning]),
+    ).toEqual([
+      [PAIN, null],
+      [null, PAIN],
+    ]);
   });
 });
