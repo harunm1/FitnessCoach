@@ -91,7 +91,10 @@ function withTimeout<T>(work: Promise<T>, timeoutMs: number): Promise<T> {
   return Promise.race([work, timeout]).finally(() => clearTimeout(timer));
 }
 
-export type AdaptOptions = { timeoutMs?: number };
+export type AdaptOptions = {
+  timeoutMs?: number;
+  fallbackNote?: string; // the note shown when the template comes back as written
+};
 
 export async function adaptTemplate(
   model: PlanModel,
@@ -99,7 +102,10 @@ export async function adaptTemplate(
   profile: VerifyProfile,
   library: CategorisedExercise[],
   about: AdaptAbout,
-  { timeoutMs = ADAPT_TIMEOUT_MS }: AdaptOptions = {},
+  {
+    timeoutMs = ADAPT_TIMEOUT_MS,
+    fallbackNote = FALLBACK_NOTE,
+  }: AdaptOptions = {},
 ): Promise<Adaptation> {
   const byId = new Map<string, LibraryExercise>(library.map((e) => [e.id, e]));
   const ctx = { template, library: byId, profile };
@@ -115,7 +121,7 @@ export async function adaptTemplate(
     ...base,
     source: "TEMPLATE",
     changes: rule,
-    note: FALLBACK_NOTE,
+    note: fallbackNote,
     problems,
   };
   // A template that does not fit even by rule is not worth a model call.

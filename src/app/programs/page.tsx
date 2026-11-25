@@ -56,7 +56,10 @@ export default async function ProgramsPage() {
             keep.
             {closestId ? "" : " Take the quiz first so the coach knows you."}
           </p>
-          <ProgramBuilder closestId={closestId} />
+          <ProgramBuilder
+            closestId={closestId}
+            quizDays={profile?.daysPerWeek}
+          />
         </section>
       </div>
     </AccountTheme>

@@ -29,11 +29,17 @@ type Props = {
   template: ProgramTemplate;
   adaptation: Adaptation;
   names: Record<string, string>;
+  quizDays?: number; // the quiz's days a week, to flag a template with other days
 };
 
 type Outcome = { kind: "saved" | "refused"; message: string } | null;
 
-export default function ProgramReview({ template, adaptation, names }: Props) {
+export default function ProgramReview({
+  template,
+  adaptation,
+  names,
+  quizDays,
+}: Props) {
   const [changes, setChanges] = useState<Change[]>(adaptation.changes);
   const [accepted, setAccepted] = useState(
     () => new Set(adaptation.changes.map((c) => c.id)),
@@ -91,9 +97,20 @@ export default function ProgramReview({ template, adaptation, names }: Props) {
       );
     });
 
+  // The exercise in the slot before this change: a rule swap listed earlier on the
+  // same slot comes first, so the coach's change reads against what it changes.
+  const before = (c: Change): string | undefined => {
+    const earlier = changes
+      .slice(0, changes.indexOf(c))
+      .filter((e) => e.op === "swap" && e.day === c.day && e.slot === c.slot)
+      .at(-1);
+    if (earlier?.op === "swap") return earlier.exerciseId;
+    return template.days[c.day]?.exercises[c.slot]?.exerciseId;
+  };
+
   const describe = (c: Change): string => {
     const at = template.days[c.day]?.exercises[c.slot];
-    const was = at ? name(at.exerciseId) : `slot ${c.slot + 1}`;
+    const was = before(c) ? name(before(c)!) : `slot ${c.slot + 1}`;
     const where = `${template.days[c.day]?.name ?? `Day ${c.day + 1}`}: `;
     if (c.op === "swap") return `${where}${was} → ${name(c.exerciseId)}`;
     if (c.op === "sets") return `${where}${was}, ${at?.sets} → ${c.sets} sets`;
@@ -103,6 +120,29 @@ export default function ProgramReview({ template, adaptation, names }: Props) {
 
   return (
     <div className="space-y-8">
+      {adaptation.problems.length > 0 ? (
+        <div
+          role="alert"
+          className="rounded-lg border border-destructive p-3 text-sm"
+        >
+          <p className="font-medium">
+            This template does not fit your equipment or injuries, so it cannot
+            be saved. Try another template.
+          </p>
+          <ul className="mt-1 list-disc pl-5">
+            {adaptation.problems.map((p) => (
+              <li key={p}>{p}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {quizDays && quizDays !== template.daysPerWeek ? (
+        <p className="rounded-lg border border-current/15 p-3 text-sm">
+          This template trains {template.daysPerWeek} days a week; your quiz
+          says {quizDays}. The coach does not add or remove days, so pick
+          another template if that does not suit you.
+        </p>
+      ) : null}
       {adaptation.note ? (
         <p className="rounded-lg border border-current/15 p-3 text-sm">
           {adaptation.note}
@@ -119,7 +159,7 @@ export default function ProgramReview({ template, adaptation, names }: Props) {
           </p>
         ) : (
           <ol className="mt-3 space-y-3">
-            {changes.map((c, i) => (
+            {changes.map((c) => (
               <li
                 key={c.id}
                 className="rounded-lg border border-current/15 p-3"
@@ -135,6 +175,7 @@ export default function ProgramReview({ template, adaptation, names }: Props) {
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
+                      aria-label={`Keep this change: ${describe(c)}`}
                       checked={accepted.has(c.id)}
                       onChange={() => toggle(c.id)}
                     />
@@ -142,7 +183,8 @@ export default function ProgramReview({ template, adaptation, names }: Props) {
                   </label>
                   {c.op === "sets" || c.op === "reps" ? (
                     <label className="flex items-center gap-2">
-                      {c.op === "sets" ? "Sets" : "Reps"} for change {i + 1}
+                      {c.op === "sets" ? "Sets" : "Reps"} for{" "}
+                      {name(before(c) ?? "")} ({template.days[c.day]?.name})
                       <input
                         type="number"
                         className="w-16 rounded border border-current/30 bg-transparent px-1"
@@ -197,7 +239,10 @@ export default function ProgramReview({ template, adaptation, names }: Props) {
       ))}
 
       <div className="space-y-3">
-        <Button onClick={save} disabled={saving}>
+        <Button
+          onClick={save}
+          disabled={saving || adaptation.problems.length > 0}
+        >
           {saving ? "Saving..." : "Save program"}
         </Button>
         {outcome?.kind === "saved" ? (

@@ -113,7 +113,9 @@ describe("ProgramReview", () => {
       screen.getAllByRole("checkbox", { name: /keep this change/i })[0],
     );
     fireEvent.change(
-      screen.getByRole("spinbutton", { name: /reps for change 2/i }),
+      screen.getByRole("spinbutton", {
+        name: "Reps for Romanian Deadlift (Full body B)",
+      }),
       {
         target: { value: "12" },
       },
@@ -173,5 +175,86 @@ describe("ProgramReview", () => {
     expect(screen.getByRole("alert").textContent).toMatch(
       /cannot be saved yet/,
     );
+  });
+
+  it("names each change on its own checkbox, so they can be told apart", () => {
+    render(
+      <ProgramReview
+        template={template}
+        adaptation={adaptation}
+        names={names}
+      />,
+    );
+    expect(
+      screen.getByRole("checkbox", {
+        name: "Keep this change: Full body A: Barbell Squat → Dumbbell Squat",
+      }),
+    ).toBeTruthy();
+  });
+
+  it("shows the coach's change against the exercise a rule already swapped in", () => {
+    const ruleThenCoach: Adaptation = {
+      ...adaptation,
+      changes: [
+        { ...adaptation.changes[0], id: "rule-1-1", source: "rule" },
+        {
+          id: "coach-9",
+          source: "coach",
+          op: "sets",
+          day: 0,
+          slot: 0,
+          sets: 2,
+          reason: "Fewer sets",
+        },
+      ],
+    };
+    render(
+      <ProgramReview
+        template={template}
+        adaptation={ruleThenCoach}
+        names={names}
+      />,
+    );
+    expect(
+      screen.getByText("Full body A: Dumbbell Squat, 3 → 2 sets"),
+    ).toBeTruthy();
+  });
+
+  it("says why a template does not fit and does not offer to save it", () => {
+    render(
+      <ProgramReview
+        template={template}
+        adaptation={{
+          ...adaptation,
+          changes: [],
+          problems: ["day 1 (Full body A), Barbell Squat: needs barbell"],
+        }}
+        names={names}
+      />,
+    );
+    const alert = screen.getByRole("alert");
+    expect(alert.textContent).toMatch(/does not fit/);
+    expect(alert.textContent).toMatch(/needs barbell/);
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Save program",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+  });
+
+  it("says when the template trains a different number of days than the quiz", () => {
+    render(
+      <ProgramReview
+        template={template}
+        adaptation={adaptation}
+        names={names}
+        quizDays={5}
+      />,
+    );
+    expect(
+      screen.getByText(/trains 3 days a week; your quiz says 5/),
+    ).toBeTruthy();
   });
 });

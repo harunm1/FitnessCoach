@@ -89,4 +89,16 @@ describe("ProgramBuilder", () => {
       screen.queryByRole("button", { name: "Build with the coach" }),
     ).toBeNull();
   });
+
+  it("passes the quiz's days to the review, which flags a template with other days", async () => {
+    render(<ProgramBuilder closestId="upper-lower-4" quizDays={5} />);
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: "Build with the coach" }),
+      );
+    });
+    expect(
+      screen.getByText(/trains 4 days a week; your quiz says 5/),
+    ).toBeTruthy();
+  });
 });

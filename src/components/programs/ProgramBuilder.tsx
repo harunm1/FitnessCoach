@@ -18,8 +18,10 @@ const LEVEL_LABEL = {
 
 export default function ProgramBuilder({
   closestId,
+  quizDays,
 }: {
   closestId: string | null; // null until the quiz is done
+  quizDays?: number;
 }) {
   const [opened, setOpened] = useState<Opened | null>(null);
   const [pending, setPending] = useState<string | null>(null);
@@ -95,6 +97,7 @@ export default function ProgramBuilder({
           template={template}
           adaptation={opened.adaptation}
           names={opened.names}
+          quizDays={quizDays}
         />
       ) : null}
     </div>

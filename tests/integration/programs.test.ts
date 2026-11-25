@@ -30,6 +30,7 @@ vi.mock("@/lib/coach/providers", async (original) => ({
 }));
 
 import { adaptProgram, saveProgram } from "@/app/programs/actions";
+import { ADAPT_LIMITS, LIMIT_NOTE } from "@/lib/programs/model";
 import { saveQuizProfile } from "@/app/onboarding/actions";
 import { FALLBACK_NOTE } from "@/lib/programs/adapt";
 import { loadProgramFolders } from "@/lib/programs/folders";
@@ -145,6 +146,20 @@ describe("adaptProgram", () => {
     });
   });
 
+  it("stops calling the model after the per-minute limit and still answers", async () => {
+    await athlete();
+    model.mockResolvedValue(coachReply);
+    const results = [];
+    for (let i = 0; i < ADAPT_LIMITS.perMinute + 1; i++) {
+      results.push(await adaptProgram(TEMPLATE_ID));
+    }
+    expect(model).toHaveBeenCalledTimes(ADAPT_LIMITS.perMinute);
+    expect(results.at(-1)).toMatchObject({
+      status: "ok",
+      adaptation: { source: "TEMPLATE", note: LIMIT_NOTE },
+    });
+  });
+
   it("refuses an unknown template", async () => {
     await athlete();
     expect(await adaptProgram("no-such-template")).toMatchObject({
@@ -224,6 +239,20 @@ describe("saveProgram", () => {
       changes: [],
       accepted: [],
       weekdays: [["MON"], ["MON"], ["FRI"]],
+    });
+    expect(saved).toMatchObject({ status: "error" });
+    expect(await db.plan.count({ where: { userId: user.id } })).toBe(0);
+  });
+
+  it("refuses more weekdays on a day than the template gives it", async () => {
+    // Four weekdays on day A would count its sets four times a week; the ceiling is
+    // checked against the template's weekdays, so the server must refuse the extras.
+    const user = await athlete();
+    const saved = await saveProgram({
+      templateId: TEMPLATE_ID,
+      changes: [],
+      accepted: [],
+      weekdays: [["MON", "TUE", "THU", "SAT"], ["WED"], ["FRI"]],
     });
     expect(saved).toMatchObject({ status: "error" });
     expect(await db.plan.count({ where: { userId: user.id } })).toBe(0);

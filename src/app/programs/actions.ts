@@ -7,14 +7,14 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
-import { coachModel } from "@/lib/coach/providers";
-import type { PlanModel } from "@/lib/coach/generatePlan";
 import { savePlanData } from "@/lib/coach/saveWeek";
+import { adaptTemplate, type Adaptation } from "@/lib/programs/adapt";
 import {
-  ADAPT_TIMEOUT_MS,
-  adaptTemplate,
-  type Adaptation,
-} from "@/lib/programs/adapt";
+  LIMIT_NOTE,
+  programModel,
+  takeAdaptAttempt,
+  unavailableModel,
+} from "@/lib/programs/model";
 import { applyChanges, changeListSchema } from "@/lib/programs/changes";
 import { loadProgramContext } from "@/lib/programs/context";
 import { checkProgram } from "@/lib/programs/guardrails";
@@ -33,29 +33,21 @@ export type AdaptResult =
 export type SaveResult =
   { status: "ok"; planId: number } | { status: "error"; message: string };
 
-// No key, or a bad COACH_PROVIDER, is one more reason to serve the template.
-function programModel(): PlanModel {
-  try {
-    return coachModel(process.env, { retries: 0, timeoutMs: ADAPT_TIMEOUT_MS });
-  } catch (error) {
-    return async () => {
-      throw error;
-    };
-  }
-}
-
 export async function adaptProgram(templateId: string): Promise<AdaptResult> {
   const user = await requireUser();
   const template = getTemplate(templateId);
   if (!template) return { status: "error", message: NO_TEMPLATE };
   const ctx = await loadProgramContext(user.id);
   if (!ctx) return { status: "error", message: NO_QUIZ };
+  // Over the limit: no model call, the template as written with its own note.
+  const allowed = takeAdaptAttempt(user.id);
   const adaptation = await adaptTemplate(
-    programModel(),
+    allowed ? programModel() : unavailableModel(new Error("adapt limit")),
     template,
     ctx.profile,
     ctx.library,
     ctx.about,
+    allowed ? {} : { fallbackNote: LIMIT_NOTE },
   );
   // Names for every exercise the review shows: the template's and any swapped in.
   const shown = new Set([
@@ -102,6 +94,9 @@ export async function saveProgram(
   const allDays = weekdays.flat();
   if (
     weekdays.length !== template.days.length ||
+    // A day may move to other weekdays but not gain any: the weekly-set ceiling
+    // counts each day as often as the template trains it (guardrails.ts).
+    weekdays.some((w, d) => w.length !== template.days[d].weekdays.length) ||
     new Set(allDays).size !== allDays.length
   ) {
     return {

@@ -116,8 +116,12 @@ test("an athlete picks a template, sees the fitted changes, reverts one and save
     await page
       .getByRole("button", { name: "Save program", exact: true })
       .click();
-    await expect(page.getByRole("alert")).toContainText("cannot be saved yet");
-    await expect(page.getByRole("alert")).toContainText("needs barbell");
+    // Next.js adds its own empty role="alert" route announcer, so pick ours by text.
+    const refusal = page
+      .getByRole("alert")
+      .filter({ hasText: "cannot be saved yet" });
+    await expect(refusal).toBeVisible();
+    await expect(refusal).toContainText("needs barbell");
 
     // Keep it again and move day A to Tuesday: the program saves.
     await keep.first().check();
