@@ -1,12 +1,14 @@
 // The two panels of the import page (#131): what a file would add, with a select for each
 // exercise name we could not match, and what was saved. Plain markup, no state.
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import type { ImportSummary } from "@/app/import/actions";
+import type { ImportReport } from "@/lib/import/report";
 import type { ImportResult } from "@/lib/import/save";
 import type { LibraryName } from "@/lib/import/match";
 
 const plural = (count: number, word: string) =>
-  `${count} ${word}${count === 1 ? "" : "s"}`;
+  `${count.toLocaleString("en-CA")} ${word}${count === 1 ? "" : "s"}`;
 
 export function ImportPreview({
   summary,
@@ -85,12 +87,37 @@ export function ImportPreview({
   );
 }
 
-export function ImportResultPanel({ result }: { result: ImportResult }) {
+// After Import the page used to look as if it had reset, because the long preview collapsed
+// and a short note appeared below the fold. The panel now takes focus and scrolls into view,
+// and says what was left out and why (live feedback 24 Nov, item 8).
+export function ImportResultPanel({
+  result,
+  report,
+}: {
+  result: ImportResult;
+  report: ImportReport;
+}) {
+  const panel = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const element = panel.current;
+    if (!element) return;
+    element.focus();
+    if (typeof element.scrollIntoView === "function") {
+      element.scrollIntoView({ block: "start" });
+    }
+  }, []);
+
+  const hasLeftOut =
+    report.skippedTimedSets > 0 ||
+    report.skippedWarmups > 0 ||
+    result.skippedSets > 0;
   return (
     <section
       aria-label="Import result"
+      className="mt-8 grid scroll-mt-6 gap-2 border-l-2 border-emerald-700 pl-4 outline-none"
+      ref={panel}
       role="status"
-      className="mt-8 grid gap-2"
+      tabIndex={-1}
     >
       <p className="text-sm font-semibold">
         Imported {plural(result.imported, "workout")} with{" "}
@@ -102,11 +129,37 @@ export function ImportResultPanel({ result }: { result: ImportResult }) {
           {result.alreadyImported === 1 ? "was" : "were"} already imported.
         </p>
       )}
-      {result.skippedSets > 0 && (
-        <p className="text-sm text-foreground/70">
-          {plural(result.skippedSets, "set")} left out because you skipped the
-          exercise.
-        </p>
+      {hasLeftOut && (
+        <div className="grid gap-1 text-sm text-foreground/70">
+          <p className="m-0 font-medium text-foreground">
+            Left out of the import
+          </p>
+          <ul className="m-0 grid gap-1 pl-5">
+            {report.skippedTimedSets > 0 && (
+              <li>
+                {plural(report.skippedTimedSets, "timed set")}: they have a time
+                and no reps, and FitnessCoach stores reps.
+              </li>
+            )}
+            {report.skippedWarmups > 0 && (
+              <li>
+                {plural(report.skippedWarmups, "warm-up set")}: warm-ups are not
+                imported.
+              </li>
+            )}
+            {result.skippedSets > 0 && (
+              <li>
+                {plural(result.skippedSets, "set")} from exercises with no
+                library match
+                {report.skippedNames.length > 0 &&
+                  `: ${report.skippedNames.join(", ")}`}
+                {report.moreSkippedNames > 0 &&
+                  ` and ${report.moreSkippedNames} more`}
+                .
+              </li>
+            )}
+          </ul>
+        </div>
       )}
       <Link href="/progress" className="w-fit text-sm underline">
         See them on Progress

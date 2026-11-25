@@ -23,6 +23,8 @@ import { importWorkouts } from "./actions";
 
 const fixture = readFileSync("tests/fixtures/hevy-export.csv", "utf8");
 const idle = { status: "idle" as const };
+const LINE_FEED = 10;
+const NEWLINE = String.fromCharCode(LINE_FEED);
 const library = [
   { id: "bench", name: "Barbell Bench Press - Medium Grip" },
   { id: "facepull", name: "Face Pull" },
@@ -149,6 +151,29 @@ describe("importWorkouts", () => {
       saved.every((row: { source: string }) => row.source === "hevy-import"),
     ).toBe(true);
     expect(revalidatePath).toHaveBeenCalledWith("/progress");
+  });
+
+  it("reports what the save left out: warm-ups, timed sets and the names it could not match", async () => {
+    const csv = [
+      "title,start_time,end_time,exercise_title,set_type,weight_kg,reps,duration_seconds",
+      '"A","20 Jun 2024, 18:30","20 Jun 2024, 19:00","Face Pull (Cable)","warmup","10","15",""',
+      '"A","20 Jun 2024, 18:30","20 Jun 2024, 19:00","Face Pull (Cable)","normal","25","15",""',
+      '"A","20 Jun 2024, 18:30","20 Jun 2024, 19:00","Zercher Carry","normal","60","12",""',
+      '"A","20 Jun 2024, 18:30","20 Jun 2024, 19:00","Plank","normal","","","60"',
+    ].join(NEWLINE);
+    const state = await importWorkouts(
+      idle,
+      form({ intent: "save", file: csvFile(csv + NEWLINE) }),
+    );
+    expect(state).toMatchObject({
+      status: "saved",
+      report: {
+        skippedWarmups: 1,
+        skippedTimedSets: 1,
+        skippedNames: ["Zercher Carry"],
+        moreSkippedNames: 0,
+      },
+    });
   });
 
   it("skips a name left unmapped, and ignores an id that is not in the library", async () => {

@@ -839,3 +839,13 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Did with it:** Wrote the failing tests first (loader queries, the pages' 404s, the new links), then the code. Ran lint, the type check, the format check and the affected tests. A review agent that had not seen the work read the branch before the pull request was marked ready. The integration test for owner-only access runs in CI. There was no live browser check, because the local database was down.
 
 **Tools:** gh, git, Prettier, ESLint, tsc, Vitest, Next.js bundled docs, review agents (pr-review-toolkit code-reviewer). No skills.
+
+## 25 November: live-site polish from the 24 November feedback (items 2, 3, 5, 8, 9)
+
+**Asked:** Five fixes from the feedback on the live site, one commit each and tests first: the rest timer starts when a set is logged, the coach panel under Explore by Muscle shows its chat box on open, the progress photo opens near full screen (#159), the Hevy import says what it did after Import, and more Hevy exercise names match the library.
+
+**Got:** A small helper that works out the rest time left after a set (`src/lib/workout/restRemaining.ts`), so a reload an hour later does not restart the timer; a Skip rest button. The body-map panel opens the first exercise of a picked muscle, so the question box is there at once. A photo dialog of 96% of the viewport. A result panel after Import that takes focus and lists what was left out and why (`src/lib/import/report.ts`). A spelling-tolerant name key and a 36-name alias table (`src/lib/import/matchKey.ts`, `aliases.ts`); on one real 260-workout export the names with no library match fell from 51 of 80 to 6.
+
+**Did with it:** Wrote the failing test for each item first and watched it fail for the right reason. Checked every alias target against the exact names in the free-exercise-db file fetched that day (876 exercises), and checked that no name that matched before moved to another exercise. The export itself was used only as a local input and none of its rows are in the repository; the fixtures are made up. Unmatched names are still listed for the user to map, because a wrong automatic match would put sets under the wrong exercise. The cause of the page "silently resetting" after Import could not be reproduced here; the panel now takes focus so the result cannot be missed.
+
+**Tools:** git, gh, Vitest, ESLint, tsc, Prettier. No skills.
