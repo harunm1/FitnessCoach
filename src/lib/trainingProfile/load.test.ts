@@ -51,6 +51,7 @@ describe("loadTrainingProfile (D34)", () => {
         startedAt: { gte: daysAgo(56), lte: NOW },
       },
     });
+    expect(args.orderBy).toEqual({ id: "asc" });
     expect(args.select).toEqual({
       reps: true,
       weightKg: true,
@@ -100,6 +101,7 @@ describe("loadWorkingWeightsFor (D34)", () => {
     const args = db.setLog.findMany.mock.calls[0][0];
     expect(args.where.exerciseId).toEqual({ in: ["bench", "squat"] });
     expect(args.where.workout.userId).toBe("owner");
+    expect(args.orderBy).toEqual({ id: "asc" });
   });
 
   it("asks nothing for no exercises", async () => {

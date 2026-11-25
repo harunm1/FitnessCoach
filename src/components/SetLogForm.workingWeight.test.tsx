@@ -59,5 +59,6 @@ describe("SetLogForm starts at the working weight (D34)", () => {
   it("shows no such note without a working weight", () => {
     render(<SetLogForm exerciseId="bench" nextSetNumber={1} targetReps={5} />);
     expect(screen.queryByText(/Lifted lately/)).toBeNull();
+    expect(weightBox().value).toBe("");
   });
 });

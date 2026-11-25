@@ -19,7 +19,10 @@ const inWindow = (starts: Date[], since: Date, now: Date) =>
 // rate is not understated.
 export function workoutsPerWeek(starts: Date[], now: Date): number {
   const recent = inWindow(starts, weeksAgo(RECENT_WEEKS, now), now);
-  const first = Math.min(...starts.map((start) => start.getTime()));
+  const first = starts.reduce(
+    (min, start) => Math.min(min, start.getTime()),
+    now.getTime(),
+  );
   const weeksTraining = Math.ceil(
     (now.getTime() - first) / (DAYS_PER_WEEK * DAY_MS),
   );
