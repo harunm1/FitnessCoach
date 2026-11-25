@@ -23,7 +23,7 @@ export type WeightParse =
 const STEPS_PER_KG = 100;
 
 // True for a real calendar day written as YYYY-MM-DD (so not 30 February).
-function isCalendarDay(text: string): boolean {
+export function isCalendarDay(text: string): boolean {
   // Four, two and two digits joined by hyphens: "2026-11-24" passes the shape,
   // "24/11/2026" and "2026-1-5" do not; the date check below rejects "2026-02-30".
   if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return false;
