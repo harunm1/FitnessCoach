@@ -799,3 +799,13 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Did with it:** Five new allow cases failed before the change and pass after it; four redirect cases and three check-in cases guard the boundaries. The targeted coach tests, lint, type check and format check ran before review. A review agent that had not seen the work found two problems. The first version put the new words in the main training list, so a message such as "I want to give up on my workouts" lost the check-in that names 9-8-8 and went to the model. It also let "work out a time for dinner" through. Both were fixed test-first (five new cases failed before the fix), and a second agent checked the fix.
 
 **Tools:** git, gh, tsx, Vitest, ESLint, tsc, Prettier, review agent (pr-review-toolkit code-reviewer). No skills.
+
+## 24 November (evening): checking the advanced-features section
+
+**Asked:** Which advanced features the repo really has, with the demo path and the failure path of each, and anything that would look wrong to a marker.
+
+**Got:** An audit that read the proposal, the architecture doc, the plan and the code for sign-in with tiers, the coach, streamed replies and photo processing. The architecture doc still listed notifications, a then-vs-now photo image and Redux Toolkit as planned, and none of them exist. AI rewrote that section to say what is built and what is not claimed.
+
+**Did with it:** Checked each claim against the code (the tier check in the coach route, the sentence-by-sentence stream, the sharp resize that drops location data). The targeted tests for those areas (33 files, 375 tests) pass; no browser run was possible.
+
+**Tools:** git, Vitest, Prettier. No skills.
