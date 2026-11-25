@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { minutesLabel } from "@/lib/workout/duration";
 import type { WorkoutDetail } from "@/lib/history/types";
 import { dateLabel, setLabel } from "@/lib/history/view";
 import { duration } from "@/lib/progress/view";
@@ -28,7 +29,7 @@ export function WorkoutDetailView({
   return (
     <div className="grid gap-8">
       <p className="m-0 text-sm text-foreground/70">
-        {dateLabel(workout.startedAt)} · {workout.minutes} min
+        {dateLabel(workout.startedAt)} · {minutesLabel(workout.minutes)}
         {workout.imported && (
           <span className="ml-2 border border-foreground/30 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
             Imported

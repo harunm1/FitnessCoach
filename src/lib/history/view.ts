@@ -4,7 +4,6 @@ import { formatWeight, type WeightUnit } from "@/lib/units/convert";
 
 import { DEFAULT_TIME_ZONE } from "@/lib/progress/dates";
 
-const MINUTE_MS = 60_000;
 const DATE_FORMAT = new Intl.DateTimeFormat("en", {
   weekday: "long",
   month: "long",
@@ -42,13 +41,6 @@ export function groupInOrder<T, K>(
 // "Sunday, November 8, 2026", on the app's calendar (Toronto), like the Progress page.
 export function dateLabel(date: Date): string {
   return DATE_FORMAT.format(date);
-}
-
-export function minutesBetween(startedAt: Date, finishedAt: Date): number {
-  return Math.max(
-    1,
-    Math.round((finishedAt.getTime() - startedAt.getTime()) / MINUTE_MS),
-  );
 }
 
 export function setLabel(set: SetValues, unit: WeightUnit = "KG"): string {

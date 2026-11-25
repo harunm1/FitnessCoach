@@ -43,6 +43,12 @@ describe("ImportPage", () => {
     expect(html).toContain('aria-current="page"');
   });
 
+  it("shows one theme toggle: the nav already has it (audit B6)", async () => {
+    const html = renderToStaticMarkup(await ImportPage());
+    // Each toggle names itself twice (aria-label and title), so one toggle splits into 3.
+    expect(html.split("Switch to dark mode")).toHaveLength(3);
+  });
+
   it("still renders when the photo storage is not set up", async () => {
     database.user.findUnique.mockResolvedValue({ image: "avatar-key" });
     const html = renderToStaticMarkup(await ImportPage());

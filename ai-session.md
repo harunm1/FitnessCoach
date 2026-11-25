@@ -880,6 +880,18 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Tools:** git, gh, Prisma, Vitest, tsc, ESLint, Prettier, review agents. No skills beyond the migration-safety guide.
 
+## 25 November: live-site bugs from the audit (B1 to B6)
+
+**Asked:** Fix six faults found on the deployed site: absurd workout durations, a 0.02 kg set, coach replies cut off, a follow-up question refused as off-topic, a Sign out button invisible in light mode, and two theme toggles on the import page.
+
+**Got:** One commit per fault. Durations come from one helper: start to finish only, a run uses its own recorded time, and a workout left open longer than six hours reads "Not timed" (history, Progress and the session screen). A set weight under 0.25 kg is refused with a message that names the minimum. The streaming reader keeps a last server-sent event that has no newline after it. A short question made only of technique words and words of the coach's last reply is no longer refused. Sign out takes its colours from the account tokens with the app foreground as fallback (the global `--muted` is a near-white background). The import page no longer passes a second theme toggle to the nav.
+
+**Did with it:** Wrote each failing test first and watched it fail. A review agent that had not seen the work found no errors and five should-fix points; the session screen showing a different run time from history, a zero-length imported workout reading "1 min", and the weight message and input minimum were fixed test-first.
+
+**Limits, said plainly:** The cause of the 0.02 kg set was not found in the import or units code, so the change blocks new entries only; the existing row stays as it is. The cut-off replies are fixed for a body that ends without a newline; that this is what happened live is not confirmed. The off-topic fix widens a word-list rule and does not reproduce the live thread. The six-hour and 0.25 kg limits are my choices, not measured. No live browser check.
+
+**Tools:** git, gh, Vitest, tsc, ESLint, Prettier, review agent (pr-review-toolkit code-reviewer). Skill: systematic-debugging.
+
 ## 25 November: logging sets without a connection (D31)
 
 **Asked:** A user who loses the connection in the middle of a workout must not lose sets, and it has to be shown in the demo: sets logged offline wait on the device, sync when the connection returns, and a replay or double tap never stores a set twice.

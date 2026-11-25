@@ -11,7 +11,8 @@ import type {
   HistorySet,
   WorkoutDetail,
 } from "./types";
-import { groupInOrder, minutesBetween, workoutName } from "./view";
+import { workoutMinutes } from "@/lib/workout/duration";
+import { groupInOrder, workoutName } from "./view";
 
 // The newest sets of one exercise read for its page; years of three sessions a week.
 // Past it, the last (possibly cut) workout is dropped, unless it is the only one, and
@@ -60,6 +61,7 @@ export async function loadHistoryPage(
       source: true,
       notes: true,
       distanceKm: true,
+      durationSeconds: true,
       planDay: { select: { name: true } },
       _count: { select: { sets: true } },
     },
@@ -78,7 +80,7 @@ export async function loadHistoryPage(
         }),
         startedAt: row.startedAt,
         // The query only returns finished workouts.
-        minutes: minutesBetween(row.startedAt, row.finishedAt as Date),
+        minutes: workoutMinutes(row),
         sets: row._count.sets,
         imported,
       };
@@ -134,7 +136,7 @@ export async function loadWorkoutDetail(
       isRun: distanceKm !== null,
     }),
     startedAt: row.startedAt,
-    minutes: minutesBetween(row.startedAt, row.finishedAt as Date),
+    minutes: workoutMinutes(row),
     imported,
     notes: imported ? null : row.notes,
     run:

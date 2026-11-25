@@ -1,10 +1,17 @@
 import { z } from "zod";
 
+export const MIN_SET_WEIGHT_KG = 0.25;
+
 const optionalWeightSchema = z.preprocess(
   (value) => (value === "" || value === null ? undefined : value),
   z.coerce
     .number()
-    .positive()
+    // Under a quarter kilogram is not a load (the smallest plate step shown): a typed
+    // 0.02 reached the Progress page as "0.02 kg" (B2).
+    .min(
+      MIN_SET_WEIGHT_KG,
+      "That weight is too small to be a load: the smallest is 0.25 kg (0.55 lb).",
+    )
     .max(9999.99)
     // value * 100 is not exact in floating point (5.1 * 100 = 509.99...), so compare with a tolerance
     .refine((value) => Math.abs(value * 100 - Math.round(value * 100)) < 1e-6, {
