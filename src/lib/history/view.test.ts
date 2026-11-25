@@ -4,8 +4,47 @@ import {
   groupInOrder,
   setLabel,
   topWeightLine,
+  totalVolumeKg,
+  weightRecords,
   workoutName,
 } from "./view";
+
+// Live bug L5, 25 Nov 2026: the workout page gets a header with volume and records.
+describe("totalVolumeKg", () => {
+  it("adds reps times weight over every set, skipping bodyweight sets", () => {
+    expect(
+      totalVolumeKg([
+        {
+          sets: [
+            { reps: 10, weightKg: 60 },
+            { reps: 8, weightKg: 62.5 },
+          ],
+        },
+        { sets: [{ reps: 12, weightKg: null }] },
+      ]),
+    ).toBe(1100);
+  });
+
+  it("is zero with no sets", () => {
+    expect(totalVolumeKg([])).toBe(0);
+  });
+});
+
+describe("weightRecords", () => {
+  const bench = { id: "bench", sets: [{ weightKg: 60 }, { weightKg: 65 }] };
+  const row = { id: "row", sets: [{ weightKg: 50 }] };
+  const pushups = { id: "pushups", sets: [{ weightKg: null }] };
+
+  it("lists exercises whose top weight beats everything lifted before", () => {
+    expect(weightRecords([bench, row], { bench: 62.5, row: 50 })).toEqual([
+      "bench",
+    ]);
+  });
+
+  it("does not call a first time a record, or a bodyweight exercise", () => {
+    expect(weightRecords([bench, pushups], { pushups: 0 })).toEqual([]);
+  });
+});
 
 describe("workoutName", () => {
   it("uses the plan day's name", () => {

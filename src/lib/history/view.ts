@@ -87,3 +87,28 @@ export function topWeightLine(
 function round(value: number) {
   return Math.round(value * 10) / 10;
 }
+
+// Total weight lifted: reps times weight over every weighted set. A bodyweight set has no
+// weight to multiply, so it adds nothing (live bug L5, 25 Nov 2026).
+export function totalVolumeKg(
+  exercises: { sets: { reps: number; weightKg: number | null }[] }[],
+): number {
+  return exercises
+    .flatMap((exercise) => exercise.sets)
+    .reduce((sum, set) => sum + set.reps * (set.weightKg ?? 0), 0);
+}
+
+// The exercises whose top weight here beats the heaviest weight lifted before this workout.
+// A first time (no earlier weight) and a bodyweight exercise are not records.
+export function weightRecords(
+  exercises: { id: string; sets: { weightKg: number | null }[] }[],
+  earlierBestKg: Record<string, number>,
+): string[] {
+  return exercises
+    .filter(({ id, sets }) => {
+      const top = Math.max(0, ...sets.map((set) => set.weightKg ?? 0));
+      const before = Object.hasOwn(earlierBestKg, id) ? earlierBestKg[id] : 0;
+      return before > 0 && top > before;
+    })
+    .map(({ id }) => id);
+}
