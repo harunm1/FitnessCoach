@@ -34,7 +34,7 @@ const ATTEMPTS = [
   { side: 1600, quality: 0.75 },
 ];
 
-function jpegName(name: string) {
+export function jpegName(name: string) {
   return `${name.replace(/\.[^.]*$/, "") || "photo"}.jpg`;
 }
 
