@@ -291,10 +291,16 @@ model SetLog {
   weightKg   Decimal? @db.Decimal(6, 2)
   rpe        Int? // rate of perceived exertion, 1 to 10
   loggedAt   DateTime @default(now())
+  // The offline queue's idempotency key (D31): crypto.randomUUID() from the device, one per
+  // set attempt. Null on every set logged before the queue existed.
+  clientId   String?
 
   // One row per set, so saving the same set again after a dropped connection updates
   // it instead of logging it twice (#42).
   @@unique([workoutId, exerciseId, setNumber])
+  // A replayed queued set finds its row instead of writing again (D31). NULLs never
+  // collide in PostgreSQL, so older rows are unaffected.
+  @@unique([workoutId, clientId])
 }
 
 // One run per workout; the unique workoutId makes a repeated save idempotent (#42).
