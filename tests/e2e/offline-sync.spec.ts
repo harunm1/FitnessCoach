@@ -14,6 +14,7 @@ const IP_SUFFIX_LENGTH = 4;
 const SYNC_TIMEOUT_MS = 15_000;
 const SET_ONE = 1;
 const SET_TWO = 2;
+const TWENTY_LB_IN_KG = "9.07";
 
 type Fixture = { workoutId: number; exerciseName: string };
 
@@ -83,15 +84,20 @@ async function logSet(page: Page, exerciseName: string, setNumber: number) {
     has: page.getByRole("heading", { name: exerciseName, exact: true }),
   });
   await exercise.getByLabel("REPS", { exact: true }).fill("8");
-  await exercise.getByLabel("KG", { exact: true }).fill("20");
+  // New accounts show pounds (D30); the queue stores kilograms.
+  await exercise.getByLabel("LB", { exact: true }).fill("20");
   await exercise
     .getByRole("button", { name: `Log set ${setNumber}`, exact: true })
     .click();
 }
 
 async function savedSets(db: Client, workoutId: number) {
-  const { rows } = await db.query<{ setNumber: number; keyed: boolean }>(
-    `SELECT s."setNumber", EXISTS (
+  const { rows } = await db.query<{
+    setNumber: number;
+    weightKg: string;
+    keyed: boolean;
+  }>(
+    `SELECT s."setNumber", s."weightKg"::text AS "weightKg", EXISTS (
        SELECT 1 FROM "QueuedSetKey" k
        WHERE k."workoutId" = s."workoutId" AND k."exerciseId" = s."exerciseId" AND k."setNumber" = s."setNumber"
      ) AS keyed
@@ -132,7 +138,7 @@ test.describe("offline set logging", () => {
     await logSet(page, exerciseName, SET_TWO);
 
     await expect(page.getByText("Saved offline, 2 to sync")).toBeVisible();
-    await expect(page.getByText("Set 2: 8 reps · 20 kg")).toBeVisible();
+    await expect(page.getByText("Set 2: 8 reps · 20 lb")).toBeVisible();
     await expect(page.getByText("Waiting to sync")).toHaveCount(SET_TWO);
     expect(await savedSets(db, workoutId)).toEqual([]);
 
@@ -142,11 +148,16 @@ test.describe("offline set logging", () => {
       timeout: SYNC_TIMEOUT_MS,
     });
     await expect(page.getByText("Waiting to sync")).toHaveCount(0);
-    await expect(page.getByText("Set 2: 8 reps · 20 kg")).toBeVisible();
+    await expect(page.getByText("Set 2: 8 reps · 20 lb")).toBeVisible();
     const rows = await savedSets(db, workoutId);
     expect(rows.map((row) => row.setNumber)).toEqual([SET_ONE, SET_TWO]);
     // Each set came through the queue, so each has its applied clientId.
     expect(rows.every((row) => row.keyed)).toBe(true);
+    // 20 lb, converted on the device: 20 x 0.45359237 = 9.07 kg.
+    expect(rows.map((row) => row.weightKg)).toEqual([
+      TWENTY_LB_IN_KG,
+      TWENTY_LB_IN_KG,
+    ]);
   });
 
   test("a set the server could not receive survives a reload and syncs after it", async ({
