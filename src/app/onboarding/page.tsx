@@ -6,22 +6,32 @@ import { requireUser } from "@/lib/auth/session";
 import { answersFromProfile } from "@/lib/onboarding/answers";
 import { loadAvatarUrl } from "@/lib/photos/avatar";
 import { prisma } from "@/lib/prisma";
+import { prefillFromHistory } from "@/lib/trainingProfile/prefill";
+import { loadTrainingProfile } from "@/lib/trainingProfile/load";
 
 export default async function OnboardingPage() {
   const user = await requireUser();
   const avatarUrl = await loadAvatarUrl(user.id);
-  // The saved answers, so the form shows them again instead of the defaults (#138).
-  const profile = await prisma.profile.findUnique({
-    where: { userId: user.id },
-    select: {
-      goal: true,
-      level: true,
-      trainingMode: true,
-      daysPerWeek: true,
-      equipment: true,
-      injuries: true,
-    },
-  });
+  // The saved answers, so the form shows them again instead of the defaults (#138), with
+  // experience and equipment raised to what the logged history shows (D34).
+  const [profile, history] = await Promise.all([
+    prisma.profile.findUnique({
+      where: { userId: user.id },
+      select: {
+        goal: true,
+        level: true,
+        trainingMode: true,
+        daysPerWeek: true,
+        equipment: true,
+        injuries: true,
+      },
+    }),
+    loadTrainingProfile(prisma, user.id, new Date()),
+  ]);
+  const { answers, note } = prefillFromHistory(
+    answersFromProfile(profile),
+    history,
+  );
 
   return (
     <AccountTheme
@@ -46,7 +56,16 @@ export default async function OnboardingPage() {
           </p>
         </div>
 
-        <QuizForm initial={answersFromProfile(profile)} />
+        {note && (
+          <p
+            className="mb-6 border-l-2 border-foreground px-3 py-2 text-sm"
+            role="note"
+          >
+            {note}
+          </p>
+        )}
+
+        <QuizForm initial={answers} />
       </div>
     </AccountTheme>
   );
