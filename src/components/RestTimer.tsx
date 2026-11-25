@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { restSecondsRemaining } from "@/lib/workout/restRemaining";
 
 type RestTimerProps = {
   restSeconds: number;
   exerciseName: string;
+  // When the newest set of this exercise was logged. A set logged within the rest time
+  // starts the countdown by itself; an older one (a page reload) does not.
+  lastLoggedAtIso: string;
 };
 
 function formatTime(seconds: number): string {
@@ -16,15 +20,28 @@ function formatTime(seconds: number): string {
 export default function RestTimer({
   restSeconds,
   exerciseName,
+  lastLoggedAtIso,
 }: RestTimerProps) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(restSeconds);
   const [isRunning, setIsRunning] = useState(false);
 
+  // Runs after mount and whenever a new set is logged: starts the rest by itself.
   useEffect(() => {
-    const timeout = window.setTimeout(() => setIsHydrated(true), 0);
+    const timeout = window.setTimeout(() => {
+      setIsHydrated(true);
+      const remaining = restSecondsRemaining(
+        Date.parse(lastLoggedAtIso),
+        Date.now(),
+        restSeconds,
+      );
+      if (remaining !== null) {
+        setSecondsLeft(remaining);
+        setIsRunning(true);
+      }
+    }, 0);
     return () => window.clearTimeout(timeout);
-  }, []);
+  }, [lastLoggedAtIso, restSeconds]);
 
   useEffect(() => {
     if (!isRunning || secondsLeft <= 0) return;
@@ -95,7 +112,12 @@ export default function RestTimer({
                 ? "Restart rest"
                 : "Resume timer"}
       </button>
-      {secondsLeft !== restSeconds && (
+      {isRunning && (
+        <button className={buttonClassName} onClick={reset} type="button">
+          Skip rest
+        </button>
+      )}
+      {!isRunning && secondsLeft !== restSeconds && (
         <button className={buttonClassName} onClick={reset} type="button">
           Reset
         </button>

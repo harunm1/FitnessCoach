@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import BodyMap from "@/components/BodyMap";
 import ExerciseCueDetails from "@/components/ExerciseCueDetails";
 import RestTimer from "@/components/RestTimer";
+import { latestLoggedAt } from "@/lib/workout/restRemaining";
 import RunMetricsForm from "@/components/RunMetricsForm";
 import LocalTime from "@/components/LocalTime";
 import SetLogForm from "@/components/SetLogForm";
@@ -90,6 +91,7 @@ export default async function SessionPage() {
               setNumber: true,
               reps: true,
               weightKg: true,
+              loggedAt: true,
             },
           },
         },
@@ -230,6 +232,9 @@ export default async function SessionPage() {
                                 </ul>
                                 <RestTimer
                                   exerciseName={slot.exercise.name}
+                                  lastLoggedAtIso={latestLoggedAt(
+                                    sets,
+                                  ).toISOString()}
                                   restSeconds={slot.restSeconds}
                                 />
                               </>
