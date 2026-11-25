@@ -64,6 +64,7 @@ describe("loadFinishedWorkouts", () => {
         finishedAt: new Date("2026-11-08T17:50:00Z"),
         dayName: "Push",
         imported: false,
+        manual: false,
         planDays: 2,
         distanceKm: null,
         runSeconds: null,
@@ -113,6 +114,13 @@ describe("loadFinishedWorkouts", () => {
     ]);
     const [workout] = await loadFinishedWorkouts("user-1", since);
     expect(workout).toMatchObject({ imported: true, dayName: "Push Day" });
+  });
+
+  it("marks a run logged by hand on Progress, which has no real start time (D27)", async () => {
+    findMany.mockResolvedValue([row({ source: "manual-run" }), row()]);
+    const [manual, live] = await loadFinishedWorkouts("user-1", since);
+    expect(manual).toMatchObject({ manual: true, imported: false });
+    expect(live.manual).toBe(false);
   });
 
   it("asks for the source and notes columns", async () => {

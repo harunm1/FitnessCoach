@@ -19,6 +19,28 @@ import { checkCoachReply, type ChatMessage } from "./guardrails";
 import type { ChatStream } from "./providers";
 import type { SafetyClassifier } from "./safetyScreen";
 
+// The demo fallback (D12, #59): a stored reply for the user's text, and where to hand
+// it. Used only when the providers failed before any sentence was shown; the reply is
+// handed over, never yielded, so it cannot be shown as the live reply.
+export type SavedExample = {
+  replyFor: (userText: string) => string | undefined;
+  show: (reply: string) => void;
+};
+
+export type StreamOptions = ChatOptions & { savedExample?: SavedExample };
+
+// The stored reply to show instead of the unavailable line, if there is one and it
+// still passes the reply check.
+function savedReply(
+  savedExample: SavedExample | undefined,
+  userText: string,
+): string | undefined {
+  const reply = savedExample?.replyFor(userText);
+  return reply !== undefined && checkCoachReply(reply).action === "ALLOW"
+    ? reply
+    : undefined;
+}
+
 // The reply check tripped on the text so far; carries the fixed reply to show instead.
 class GuardrailStop extends Error {
   constructor(
@@ -49,7 +71,7 @@ export async function* coachReplyStream(
   userText: string,
   // The model safety check (D15); without it the word list decides alone.
   classify?: SafetyClassifier,
-  options: ChatOptions = {},
+  options: StreamOptions = {},
 ): AsyncGenerator<string> {
   const turn = await prepareTurn(ctx, history, userText, classify);
   if ("fixed" in turn) {
@@ -63,6 +85,14 @@ export async function* coachReplyStream(
   const record = async (result: ChatCallResult) => {
     recorded = true;
     await recordChatCall(options, now() - started, result);
+  };
+
+  // Nothing was shown and the providers failed: hand over the stored reply, if any.
+  const showSaved = (): boolean => {
+    const saved = savedReply(options.savedExample, userText);
+    if (saved === undefined) return false;
+    options.savedExample?.show(saved);
+    return true;
   };
 
   let sent = "";
@@ -98,14 +128,18 @@ export async function* coachReplyStream(
         return;
       }
       await record({ error: errorLabel(e) });
-      yield sent ? "\n\n" + UNAVAILABLE_REPLY : UNAVAILABLE_REPLY;
+      if (sent) {
+        yield "\n\n" + UNAVAILABLE_REPLY;
+      } else if (!showSaved()) {
+        yield UNAVAILABLE_REPLY;
+      }
       return;
     }
     // A stream that ends without any text (#56 review, point 4) is a failure the user
     // should see, not a silent empty reply.
     if (!sent.trim()) {
       await record({ error: "stream had no text" });
-      yield UNAVAILABLE_REPLY;
+      if (!showSaved()) yield UNAVAILABLE_REPLY;
       return;
     }
     await record({ ok: true });

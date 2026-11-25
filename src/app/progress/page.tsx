@@ -8,6 +8,7 @@ import DayDetails, { type DayWorkout } from "@/components/progress/DayDetails";
 import MuscleMap from "@/components/progress/MuscleMap";
 import MuscleStats from "@/components/progress/MuscleStats";
 import BodyWeightSection from "@/components/progress/BodyWeightSection";
+import RunLogSection from "@/components/progress/RunLogSection";
 import PhotoStrip from "@/components/progress/PhotoStrip";
 import StreakCards from "@/components/progress/StreakCards";
 import { AppNav } from "@/components/nav/AppNav";
@@ -20,6 +21,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_TIME_ZONE, dayKey } from "@/lib/progress/dates";
 import { loadFinishedWorkouts } from "@/lib/progress/load";
+import { loadRecentRuns } from "@/lib/progress/loadRuns";
 import { loadBodyWeights } from "@/lib/progress/loadWeights";
 import { yearBefore } from "@/lib/progress/weightChart";
 import { regionLabels, slugsFor } from "@/lib/progress/muscleSlugs";
@@ -27,7 +29,7 @@ import { muscleShare, musclesWorked } from "@/lib/progress/muscles";
 import { activeStreakWeeks, goalMetStreak } from "@/lib/progress/streaks";
 import type { ProgressWorkout } from "@/lib/progress/types";
 import {
-  clock,
+  duration,
   durationMinutes,
   fillPlanGoals,
   groupByDay,
@@ -72,18 +74,21 @@ function toDayWorkout(workout: ProgressWorkout): DayWorkout {
     workout.distanceKm !== null && workout.runSeconds !== null
       ? {
           distanceKm: workout.distanceKm,
-          time: clock(workout.runSeconds),
+          time: duration(workout.runSeconds),
           pace: pace(workout.distanceKm, workout.runSeconds),
         }
       : null;
   return {
     id: workout.id,
     name: workout.dayName ?? (run ? "Run" : "Workout"),
-    startTime: new Intl.DateTimeFormat("en", {
-      hour: "numeric",
-      minute: "2-digit",
-      timeZone: DEFAULT_TIME_ZONE,
-    }).format(workout.startedAt),
+    // A run logged by hand has no clock time, only its day (D27).
+    startTime: workout.manual
+      ? null
+      : new Intl.DateTimeFormat("en", {
+          hour: "numeric",
+          minute: "2-digit",
+          timeZone: DEFAULT_TIME_ZONE,
+        }).format(workout.startedAt),
     minutes: durationMinutes(workout),
     exercises: groupByExercise(workout.sets),
     run,
@@ -115,7 +120,7 @@ export default async function ProgressPage({
   const monthStart = new Date(
     new Date(`${requestedMonth}-01T00:00:00Z`).getTime() - DAY_MS,
   );
-  const [loaded, profile, latestPhotos, photoCount, weights] =
+  const [loaded, profile, latestPhotos, photoCount, weights, runs] =
     await Promise.all([
       loadFinishedWorkouts(
         user.id,
@@ -139,6 +144,7 @@ export default async function ProgressPage({
       }),
       prisma.progressPhoto.count({ where: { userId: user.id } }),
       loadBodyWeights(user.id, yearBefore(today)),
+      loadRecentRuns(user.id),
     ]);
   const workouts = fillPlanGoals(loaded);
 
@@ -279,6 +285,8 @@ export default async function ProgressPage({
             />
             <MuscleStats shares={shares} workouts={strengthWorkouts} />
           </section>
+
+          <RunLogSection runs={runs} today={today} />
 
           <BodyWeightSection entries={weights} today={today} />
 

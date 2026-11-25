@@ -7,6 +7,8 @@ type UnsavedNoticeProps = {
   message: string;
   text: string;
   reply?: string;
+  // The reply is a stored demo reply (D12, #59), not one written for this message.
+  example?: boolean;
 };
 
 // Its own form, outside the message box's form, so the resent text is the only
@@ -16,6 +18,7 @@ export default function UnsavedNotice({
   message,
   text,
   reply,
+  example = false,
 }: UnsavedNoticeProps) {
   return (
     <div
@@ -26,7 +29,7 @@ export default function UnsavedNotice({
       {reply ? (
         <div className="mt-3">
           <p className="m-0 text-[10px] font-semibold tracking-[0.12em] text-foreground/70 uppercase">
-            Not saved
+            {example ? "Saved example, not a live reply" : "Not saved"}
           </p>
           <div className="mt-1">
             <CoachMarkdown text={reply} />

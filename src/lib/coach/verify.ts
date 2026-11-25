@@ -13,6 +13,7 @@ export type LibraryExercise = {
   id: string;
   name?: string; // shown to the model; the plan is stored by id
   category?: string; // free-exercise-db category: strength, stretching, cardio...
+  cues?: string[]; // our curated form cues; the starter plan prefers an exercise that has them (#103)
   level?: string; // BEGINNER, INTERMEDIATE or EXPERT; the starter plan prefers a fit at or below the user's
   equipment: string | null;
   primaryMuscles: string[];
