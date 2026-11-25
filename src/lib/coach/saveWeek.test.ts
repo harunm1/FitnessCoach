@@ -78,10 +78,22 @@ describe("weekToPlanData", () => {
     expect(days.at(-2)?.run?.create.type).toBe("LONG");
   });
 
-  it("includes substitutionReason when a strength exercise has one", () => {
-    const strength = days.find((day) => day.kind === "STRENGTH");
-    const exerciseCreate = strength?.exercises?.create;
-    expect(exerciseCreate?.[0]).toHaveProperty("substitutionReason");
+  it("includes the exact substitutionReason when a strength exercise has one", () => {
+    const reason = "avoids shoulder loading";
+    const reasonWeek = structuredClone(week);
+    const strength = reasonWeek.days.find((day) => day.kind === "STRENGTH");
+    if (!strength || !strength.exercises?.[0]) {
+      throw new Error("Expected a strength exercise fixture");
+    }
+    strength.exercises[0].substitutionReason = reason;
+
+    const reasonData = weekToPlanData("user-1", reasonWeek, "DEFAULT");
+    const reasonDays = (reasonData.days as { create: DayInput[] }).create;
+    const reasonStrength = reasonDays.find((day) => day.kind === "STRENGTH");
+
+    expect(reasonStrength?.exercises?.create[0]).toMatchObject({
+      substitutionReason: reason,
+    });
   });
 });
 
