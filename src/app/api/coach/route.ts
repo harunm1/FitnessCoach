@@ -6,10 +6,15 @@ import { UNAVAILABLE_REPLY } from "@/lib/coach/chat";
 import { providerEventCollector } from "@/lib/coach/coachLog";
 import { prismaCoachSink } from "@/lib/coach/coachSink";
 import { saveExchange } from "@/lib/coach/conversation";
+import { demoReplyFor } from "@/lib/coach/demoReplies";
 import { coachChatStream, type ChatStream } from "@/lib/coach/providers";
 import { groqSafetyClassifier } from "@/lib/coach/safetyModel";
 import { prisma } from "@/lib/prisma";
-import { SAVE_FAILED_MESSAGE, TIER_MESSAGE } from "@/app/coach/copy";
+import {
+  SAVED_EXAMPLE_MESSAGE,
+  SAVE_FAILED_MESSAGE,
+  TIER_MESSAGE,
+} from "@/app/coach/copy";
 import { errorCode, prepareCoachRequest } from "@/app/coach/request";
 import type { CoachStreamEvent } from "@/app/coach/stream-client";
 
@@ -100,6 +105,8 @@ export async function POST(request: Request) {
     const events = providerEventCollector();
     const sink = prismaCoachSink(userId);
     let unavailable = false;
+    // Demo mode only (D12, #59): the stored reply handed over when both providers failed.
+    let example: string | undefined;
     // Lazy factory: fixed guardrail replies still work without provider settings.
     const model: ChatStream = async function* (messages) {
       yield* coachChatStream(process.env, events.onEvent)(messages);
@@ -116,6 +123,12 @@ export async function POST(request: Request) {
         log: async (record) => {
           if (record.outcome === "error") unavailable = true;
           await sink(record);
+        },
+        savedExample: {
+          replyFor: (userText) => demoReplyFor(userText, process.env),
+          show: (stored) => {
+            example = stored;
+          },
         },
       },
     );
@@ -145,7 +158,14 @@ export async function POST(request: Request) {
               send({ type: "delta", text: next.value });
               return;
             }
-            if (unavailable) {
+            if (example !== undefined) {
+              // Never saved: it was not written for this message.
+              send({
+                type: "example",
+                reply: example,
+                message: SAVED_EXAMPLE_MESSAGE,
+              });
+            } else if (unavailable) {
               send({ type: "unsaved", message: UNAVAILABLE_REPLY });
             } else {
               try {

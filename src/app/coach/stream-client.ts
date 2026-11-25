@@ -5,6 +5,12 @@ export const streamEventSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("delta"), text: z.string() }),
   z.object({ type: z.literal("saved") }),
   z.object({ type: z.literal("unsaved"), message: z.string() }),
+  // Demo mode only (D12, #59): a stored reply, shown as a saved example, never saved.
+  z.object({
+    type: z.literal("example"),
+    reply: z.string(),
+    message: z.string(),
+  }),
 ]);
 export type CoachStreamEvent = z.infer<typeof streamEventSchema>;
 
