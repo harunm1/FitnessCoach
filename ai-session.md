@@ -789,3 +789,13 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Did with it:** Each new test failed before the code existed. A review agent that had not seen the work read the change and found no errors and three should-fix items. The day view showed a made-up noon start time, a two-hour run showed as 125:30, and a save racing Start on the session screen could take a plan day twice. The first two were fixed test-first; the race is written into D27 as a known cost, with a note for the session screen's owner. A second agent checked the fixes. Lint, type check, format check and the targeted tests ran before the push, and CI was green on the exact commit before it reached main.
 
 **Tools:** git, gh, Prettier, ESLint, tsc, Vitest, Prisma (validate), review agents (pr-review-toolkit code-reviewer, a blind pass and a delta check). No skills.
+
+## 24 November (evening): the coach turning away a workout question
+
+**Asked:** Why the coach sometimes answered "explain one of the workouts for me" and sometimes did not. The brief: find which path ended each failed turn before changing anything, then fix the top cause test-first.
+
+**Got:** A diagnosis run first. Production records could not be read from this machine, so the real chat pipeline was run six times on the same question with a sample profile. All six turns got the off-topic redirect before any model call, so they left no coach record. The training word list held "workout", "exercise" and "weight" only as whole words. "Explain today's workout" was answered and "explain one of the workouts" was turned away, so to a user the answer looked random. The fix adds plural and verb forms ("workouts", "exercises", "weights", "working out", "routine"), leaves out "plans" on purpose, and records the rule in the architecture doc. AI wrote the diagnostic run, the test cases and the pattern change.
+
+**Did with it:** Eight new test cases failed before the change and pass after it; two off-topic guards stay redirected. The targeted coach tests, lint, type check and format check ran before review. A review agent that had not seen the work checked the change.
+
+**Tools:** git, gh, tsx, Vitest, ESLint, tsc, Prettier, review agent (pr-review-toolkit code-reviewer). No skills.
