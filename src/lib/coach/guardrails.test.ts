@@ -106,9 +106,6 @@ describe("checkUserMessage", () => {
     "how should I do these exercises",
     "should I add more weights to this",
     "I'm exercising three times now",
-    "is working out at night okay for me",
-    "I worked out twice already today",
-    "explain the moves in my routine",
   ])("allows plural and verb forms of training words: %s", (text) => {
     expect(checkUserMessage(text).action).toBe("ALLOW");
   });
@@ -116,8 +113,20 @@ describe("checkUserMessage", () => {
   it.each([
     "what are your plans for the holidays",
     "explain the plot of the last movie you saw",
+    "can we work out a time to meet for dinner tonight",
+    "write me a poem about my routine at the bank",
   ])("still redirects messages with no training word: %s", (text) => {
     expect(checkUserMessage(text).action).toBe("OFF_TOPIC");
+  });
+
+  // Review of 24 Nov: the plural forms must not take a distress message out of the
+  // check-in (D15). Crisis words with no singular training word still get it.
+  it.each([
+    "I want to give up on my workouts",
+    "nothing is working out for me and I feel dead inside",
+    "I feel dead inside, I just want to give up on these exercises",
+  ])("keeps the check-in for crisis words beside plural forms: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("CHECK_IN");
   });
 
   // Body image and eating, and negative mindsets: two harm categories for physical
