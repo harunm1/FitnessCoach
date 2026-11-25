@@ -16,6 +16,10 @@ type ActivityCalendarProps = {
   nextMonth: string;
 };
 
+// The heading of the day's details (DayDetails). Link keeps the scroll position, and
+// on a phone the details sit below the calendar, so a day link jumps to them (D28).
+const DAY_DETAILS_ID = "day-title";
+
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 function monthLabel(month: string) {
@@ -112,7 +116,7 @@ export default function ActivityCalendar({
                           ? "border border-foreground/40"
                           : "",
                       ].join(" ")}
-                      href={hrefFor({ month, day })}
+                      href={`${hrefFor({ month, day })}#${DAY_DETAILS_ID}`}
                     >
                       {Number(day.slice(8))}
                       {dayActivity?.hasRun && (
