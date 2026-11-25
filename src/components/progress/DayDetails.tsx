@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { minutesLabel } from "@/lib/workout/duration";
 import type { ExerciseGroup } from "@/lib/progress/view";
 import {
   formatDistance,
@@ -13,7 +14,7 @@ export type DayWorkout = {
   id: number;
   name: string;
   startTime: string | null; // "6:00 PM"; null for a run logged by hand (D27)
-  minutes: number;
+  minutes: number | null; // null: left open, not timed (B1)
   exercises: ExerciseGroup[];
   run: { distanceKm: number; seconds: number; time: string } | null;
   imported?: boolean; // read from another app's export, not logged in the app (#131)
@@ -72,7 +73,7 @@ export default function DayDetails({
                 </h3>
                 <p className="m-0 text-xs text-foreground/60">
                   {workout.startTime && `${workout.startTime} · `}
-                  {workout.minutes} min
+                  {minutesLabel(workout.minutes)}
                 </p>
               </div>
               {workout.run && (

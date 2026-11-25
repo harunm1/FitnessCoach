@@ -12,7 +12,7 @@ export type HistoryRow = {
   id: number;
   name: string;
   startedAt: Date;
-  minutes: number;
+  minutes: number | null; // null: left open, not timed (B1)
   sets: number;
   imported: boolean; // read from another app's export (#131)
 };
@@ -23,7 +23,7 @@ export type WorkoutDetail = {
   id: number;
   name: string;
   startedAt: Date;
-  minutes: number;
+  minutes: number | null; // null: left open, not timed (B1)
   imported: boolean;
   notes: string | null; // an imported workout's notes are its title, so null here
   run: { distanceKm: number; seconds: number; rpe: number | null } | null;

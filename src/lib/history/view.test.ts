@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   bestSet,
   groupInOrder,
-  minutesBetween,
   setLabel,
   topWeightLine,
   workoutName,
@@ -48,14 +47,6 @@ describe("workoutName", () => {
         isRun: true,
       }),
     ).toBe("Run");
-  });
-});
-
-describe("minutesBetween", () => {
-  it("rounds to whole minutes and never shows zero", () => {
-    const start = new Date("2026-11-08T17:00:00Z");
-    expect(minutesBetween(start, new Date("2026-11-08T17:50:20Z"))).toBe(50);
-    expect(minutesBetween(start, start)).toBe(1);
   });
 });
 

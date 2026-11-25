@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { MAX_WORKOUT_SECONDS, NOT_TIMED_LABEL } from "@/lib/workout/duration";
 
 const currentSecond = () => Math.floor(Date.now() / 1000) * 1000;
 const serverSecond = () => null;
@@ -31,6 +32,18 @@ export default function WorkoutElapsedTime({
         1000,
     ),
   );
+  // A workout left open (or finished) far past the cap has no workout time (B1).
+  const label = (
+    <span>{finishedAt ? "Workout duration" : "Elapsed workout time"}</span>
+  );
+  if (seconds > MAX_WORKOUT_SECONDS) {
+    return (
+      <span className="inline-flex items-baseline gap-2 text-sm">
+        {label}
+        <span className="text-lg font-semibold">{NOT_TIMED_LABEL}</span>
+      </span>
+    );
+  }
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const remainder = seconds % 60;
@@ -40,7 +53,7 @@ export default function WorkoutElapsedTime({
 
   return (
     <span className="inline-flex items-baseline gap-2 text-sm">
-      <span>{finishedAt ? "Workout duration" : "Elapsed workout time"}</span>
+      {label}
       <time
         aria-label={
           !finishedAt && now === null
