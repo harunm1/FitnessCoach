@@ -243,6 +243,18 @@ describe("monthly report on PostgreSQL", () => {
     await lift(other.user.id, "2026-11-12T17:00:00Z", NOVEMBER_BEST * 2);
     // Another user's older history must never become this user's "was".
     await lift(other.user.id, "2026-10-01T17:00:00Z", HEAVIEST_EVER);
+    // An unfinished workout from before the window must not become the earlier best either.
+    await db.workout.create({
+      data: {
+        userId: user.id,
+        startedAt: new Date("2026-09-20T17:00:00Z"),
+        sets: {
+          create: [
+            { exerciseId, setNumber: 1, reps: REPS, weightKg: HEAVIEST_EVER },
+          ],
+        },
+      },
+    });
     // An unfinished workout is not logged work: its set must not count or set a best.
     await db.workout.create({
       data: {
