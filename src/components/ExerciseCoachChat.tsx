@@ -59,7 +59,7 @@ export default function ExerciseCoachChat({
           id={`coach-question-${exerciseId}`}
           maxLength={500}
           name="question"
-          placeholder="Ask about technique, cues, or alternatives…"
+          placeholder="Ask the coach about technique, cues, or alternatives…"
           required
         />
         <button
