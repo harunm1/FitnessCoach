@@ -1,4 +1,4 @@
-// The coach screen (#63): the signed-in user's saved conversation and the message box, or the tier or quiz message.
+// The coach screen (#63): Personalize with the coach (#58, the demo entry) above the saved conversation and the message box, or the tier or quiz message.
 import Link from "next/link";
 import { AccountTheme } from "@/components/auth/account-theme";
 import { AppNav } from "@/components/nav/AppNav";
@@ -13,7 +13,8 @@ import { loadAvatarUrl } from "@/lib/photos/avatar";
 import { prisma } from "@/lib/prisma";
 import CoachForm from "./CoachForm";
 import MessageList from "./MessageList";
-import { NO_PROFILE_MESSAGE, TIER_MESSAGE } from "./copy";
+import { NO_PROFILE_MESSAGE, PERSONALIZE_INTRO, TIER_MESSAGE } from "./copy";
+import PersonalizeButton from "./PersonalizeButton";
 
 // Always the current conversation, never a build-time copy (FE-26).
 export const dynamic = "force-dynamic";
@@ -93,6 +94,12 @@ function Chat({ messages }: { messages: StoredMessage[] }) {
         Ask about today&apos;s session, a swap, or how hard to push. The coach
         knows your plan and your equipment.
       </p>
+      <section aria-label="Personalize" className="mb-6 grid gap-2">
+        <p className="m-0 text-sm leading-6 text-foreground/70">
+          {PERSONALIZE_INTRO}
+        </p>
+        <PersonalizeButton />
+      </section>
       <MessageList messages={messages} />
       <CoachForm />
     </>

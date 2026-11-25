@@ -25,6 +25,8 @@ export const GROQ_MODEL = "openai/gpt-oss-120b";
 export const GEMINI_MODEL = "gemini-3.5-flash";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+// Test-only (D40): the browser tests point Groq calls at a loopback stub. Unset or empty, the address is Groq's.
+const groqUrl = () => process.env.COACH_GROQ_URL || GROQ_URL;
 const geminiUrl = (model: string) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
@@ -186,7 +188,7 @@ export function groqModel(
   return async (prompt) => {
     const data = (await postJson(
       "Groq",
-      GROQ_URL,
+      groqUrl(),
       { Authorization: `Bearer ${apiKey}` },
       {
         model,
@@ -317,7 +319,7 @@ export function groqChatModel(
   return async (messages) => {
     const data = (await postJson(
       "Groq",
-      GROQ_URL,
+      groqUrl(),
       { Authorization: `Bearer ${apiKey}` },
       groqChatBody(model, messages),
       timeoutMs,
@@ -760,7 +762,7 @@ async function* groqPieces(
 ): AsyncIterable<string> {
   const res = await openStream(
     "Groq",
-    GROQ_URL,
+    groqUrl(),
     { Authorization: `Bearer ${apiKey}` },
     { ...groqChatBody(model, messages), stream: true },
     timeoutMs,
