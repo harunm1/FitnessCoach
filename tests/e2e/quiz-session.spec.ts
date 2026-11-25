@@ -162,6 +162,15 @@ test("an athlete completes the quiz and logs a session without touching another 
     ).toBeVisible();
     expect(await visibleTextBelowProjectorSize(page)).toEqual([]);
 
+    await expect(
+      page.getByText("Elapsed workout time", { exact: true }),
+    ).toBeVisible();
+    const elapsed = page.getByRole("timer");
+    const firstElapsed = await elapsed.textContent();
+    await expect(elapsed).not.toHaveText(firstElapsed!);
+    await page.reload();
+    await expect(page.getByRole("timer")).toBeVisible();
+
     const exercise = page.locator("li").filter({
       has: page.getByRole("heading", { name: pressName, exact: true }),
     });
@@ -212,6 +221,12 @@ test("an athlete completes the quiz and logs a session without touching another 
     await expect(
       page.getByRole("button", { name: "Start next workout", exact: true }),
     ).toBeVisible();
+    await expect(
+      page.getByText("Workout duration", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Elapsed workout time", { exact: true }),
+    ).toHaveCount(0);
 
     const {
       rows: [saved],

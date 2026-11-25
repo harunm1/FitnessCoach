@@ -58,6 +58,31 @@ describe("buildDefaultPlan", () => {
     ).toEqual(["barbell-squat", "bench-press"]);
   });
 
+  it("preserves library order when filling missing slots without a reported joint", () => {
+    const accessories: CategorisedExercise[] = [
+      {
+        id: "first",
+        category: "strength",
+        equipment: "body only",
+        primaryMuscles: ["biceps"],
+        secondaryMuscles: [],
+      },
+      {
+        id: "second",
+        category: "strength",
+        equipment: "body only",
+        primaryMuscles: ["triceps"],
+        secondaryMuscles: [],
+        cues: ["Keep control"],
+      },
+    ];
+    expect(
+      buildDefaultPlan(profile, accessories).days[0].exercises.map(
+        (exercise) => exercise.exerciseId,
+      ),
+    ).toEqual(["first", "second"]);
+  });
+
   it("rejects a library that cannot provide two safe exercises for every day", () => {
     expect(() => buildDefaultPlan(profile, library.slice(0, 1))).toThrow(
       "Not enough compatible exercises for Full body",
