@@ -850,6 +850,16 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Tools:** git, gh, Vitest, ESLint, tsc, Prettier. No skills.
 
+## 25 November: evidence map and live database check for the presentation
+
+**Asked:** A table that ties each line of the presentation rubric to what we show live, the file and database table behind it, and a fallback; a read-only script that shows the newest set and photo rows so the presenter can prove a save in the database; a 90-second demo script.
+
+**Got:** `docs/demo/DEMO_EVIDENCE.md` and `docs/demo/DEMO_SCRIPT.md`, and a script (`scripts/demo-db-peek.ts`) that runs its queries inside a read-only transaction. A first version printed the first line of a database error, which can hold a host or user name; a review agent that had not seen the work caught that and a missing test of the read-only guarantee.
+
+**Did with it:** Checked every file and model named in the table exists on main. Wrote the script's tests first and watched them fail; added a test on a real PostgreSQL that sends only read statements and fails when the read-only line is removed. Ran the script against a scratch database to confirm a write is refused. The signed-in steps on the live site were not rehearsed because no demo account exists, and the script has not been run on the production database.
+
+**Tools:** git, gh, Vitest, Prettier, ESLint, tsc, Playwright (public pages only), Docker (scratch PostgreSQL), review agents (pr-review-toolkit code-reviewer). No skills.
+
 ## 25 November: logging sets without a connection (D31)
 
 **Asked:** A user who loses the connection in the middle of a workout must not lose sets, and it has to be shown in the demo: sets logged offline wait on the device, sync when the connection returns, and a replay or double tap never stores a set twice.

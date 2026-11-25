@@ -34,6 +34,14 @@ Architecture and decisions: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Plan a
 
 **Scope:** lifting, strength training and running. The coach gives no nutrition advice (diet, calories, supplements or meals); a nutrition question gets a short out-of-scope reply that points to a registered dietitian (8 November [design review](docs/design-reviews/2026-11-08-review.md), decision 5; the reply is in code on `main`, #48).
 
+## Joint-aware Plan Limits
+
+Joint-aware starter plans currently use only the 30 curated exercise joint mappings
+when joint pain is reported. This conservative restriction can produce repeated
+days or no suitable plan when compatible movements are scarce. Unmapped lifts and
+warm-ups are omitted; substitution reasons describe actual same-pattern replacements,
+not every omitted movement. These mappings are not a medical assessment.
+
 ## Team
 
 | Name              | Student number | Email                              | GitHub                                                 |

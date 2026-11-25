@@ -155,6 +155,7 @@ export function buildDefaultPlan(
   );
   const extras = level ? EXTRAS_BY_LEVEL[level] : 0;
   const heavy = level === "INTERMEDIATE" || level === "EXPERT";
+  // Best fit first; stable sorting preserves library order for equal scores.
   const ranked = [...usable].sort((a, b) => score(a, level) - score(b, level));
   const reportedJoints = profile.reportedJoints ?? [];
 
@@ -222,7 +223,7 @@ export function buildDefaultPlan(
         }
       }
 
-      for (const exercise of ranked) {
+      for (const exercise of usable) {
         if (picked.length >= 2) break;
         const resolved = resolveJointAware(exercise);
         if (resolved && !picked.some((chosen) => chosen.id === resolved.id)) {
@@ -241,6 +242,8 @@ export function buildDefaultPlan(
       const ordered = level
         ? [...picked].sort((a, b) => compoundRank(a) - compoundRank(b))
         : picked;
+      // D25: the lead lift chooses the warm-up, which takes one of the day's slots.
+      // Reported joint pain excludes unmapped warm-ups instead of assuming safety.
       const warmup = heavy
         ? pickWarmup(
             reportedJoints.length
