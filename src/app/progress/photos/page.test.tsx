@@ -63,7 +63,7 @@ vi.mock("@/components/auth/sign-out-button", () => ({
 }));
 
 describe("progress photos page", () => {
-  it("offers the exercises, by name, to link a form photo to (D37)", async () => {
+  it("offers the exercises, by name, to link a form photo to (D39)", async () => {
     exerciseFindMany.mockResolvedValue([
       { id: "Barbell_Squat", name: "Barbell Squat" },
     ]);

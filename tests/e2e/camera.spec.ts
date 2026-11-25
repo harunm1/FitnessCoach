@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { Client } from "pg";
 import { testDatabaseURL } from "../helpers/database-url";
 
-// The webcam path (D37) with Chromium's fake camera: the browser answers
+// The webcam path (D39) with Chromium's fake camera: the browser answers
 // getUserMedia with a generated test pattern and no permission prompt, so the
 // real preview, snapshot and stop code run, with no hardware.
 test.use({

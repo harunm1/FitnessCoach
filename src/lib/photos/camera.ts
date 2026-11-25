@@ -1,4 +1,4 @@
-// Taking a photo with the camera (D37). The browser parts (the camera, the
+// Taking a photo with the camera (D39). The browser parts (the camera, the
 // canvas) are behind small interfaces so they can be tested; the real ones are
 // at the bottom. Everything here runs in the browser only.
 import { fitInside, jpegName, type DecodedImage } from "./shrink";

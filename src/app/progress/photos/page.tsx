@@ -61,7 +61,7 @@ export default async function ProgressPhotosPage({
         exercise: { select: { name: true } },
       },
     }),
-    // What a form photo can be linked to (D37).
+    // What a form photo can be linked to (D39).
     prisma.exercise.findMany({
       select: { id: true, name: true },
       orderBy: { name: "asc" },

@@ -1,4 +1,4 @@
--- Photo kind and exercise link (D37): a photo is a PROGRESS photo (the default, so
+-- Photo kind and exercise link (D39): a photo is a PROGRESS photo (the default, so
 -- every existing row keeps its meaning) or a FORM photo, and a form photo may name
 -- the exercise it shows. Additive only: one enum, two columns, one index, one
 -- foreign key and one CHECK. Adding a NOT NULL column with a constant default is a

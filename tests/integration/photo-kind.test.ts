@@ -1,4 +1,4 @@
-// Integration test for photo kind and the exercise link (D37) against a real
+// Integration test for photo kind and the exercise link (D39) against a real
 // PostgreSQL: the upload action stores both, a progress photo can't carry an
 // exercise (the migration's CHECK), and deleting an exercise keeps the photo.
 import { randomUUID } from "node:crypto";

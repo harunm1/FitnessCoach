@@ -53,7 +53,7 @@ export function PhotoUploadForm({
   exercises = [],
 }: {
   weightUnit?: WeightUnit; // what the user chose (D30); the form posts it back
-  exercises?: ExerciseChoice[]; // what a form photo can be linked to (D37)
+  exercises?: ExerciseChoice[]; // what a form photo can be linked to (D39)
 }) {
   const [minWeight, maxWeight] = weightBounds(20, 400, weightUnit);
   const [kind, setKind] = useState<PhotoKind>("PROGRESS");

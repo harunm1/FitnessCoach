@@ -1,4 +1,4 @@
-// Which kind of photo a form sent, and which exercise a form photo is for (D37).
+// Which kind of photo a form sent, and which exercise a form photo is for (D39).
 // Shared by the upload action and the upload form, so both use one set of
 // names and one rule.
 
@@ -37,7 +37,7 @@ function isPhotoKind(value: string): value is PhotoKind {
   return (PHOTO_KINDS as readonly string[]).includes(value);
 }
 
-// A missing or blank kind is a progress photo, so forms that predate D37 keep
+// A missing or blank kind is a progress photo, so forms that predate D39 keep
 // working. An exercise only counts on a form photo; with a progress photo it
 // is dropped rather than refused, since the form hides the field there.
 export function readPhotoKind(formData: FormData): KindResult {

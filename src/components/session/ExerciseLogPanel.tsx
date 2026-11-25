@@ -6,6 +6,7 @@
 // a connection.
 import { useEffect, useRef, useState } from "react";
 import RestTimer from "@/components/RestTimer";
+import { unlockAudio } from "@/lib/alerts/browserAlert";
 import SetLogForm, { type LoggedSetInput } from "@/components/SetLogForm";
 import {
   mergeLoggedSets,
@@ -32,7 +33,7 @@ type ExerciseLogPanelProps = {
   lastLoggedAtIso: string | null; // newest saved set, server clock
   serverNowIso: string;
   weightUnit: WeightUnit; // display unit (D30); stored and queued weights are kg
-  suggestedWeightKg?: number | null; // the weight lifted in the last 8 weeks (D36)
+  suggestedWeightKg?: number | null; // the weight lifted in the last 8 weeks (D37)
 };
 
 function SetRowItem({ row, unit }: { row: SetRow; unit: WeightUnit }) {
@@ -83,6 +84,8 @@ export default function ExerciseLogPanel(props: ExerciseLogPanelProps) {
 
   const logSet = async (set: LoggedSetInput) => {
     if (!allowTap()) return;
+    // A tap is the moment the browser lets the rest-end tone start later (D37).
+    unlockAudio();
     setCoolingDown(true);
     window.clearTimeout(cooldown.current);
     cooldown.current = window.setTimeout(

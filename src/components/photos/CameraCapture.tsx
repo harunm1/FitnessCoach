@@ -20,7 +20,7 @@ const SNAPSHOT_FAILED =
 const buttonClass =
   "min-h-11 border border-foreground/30 bg-transparent px-4 text-sm disabled:opacity-50";
 
-// Take a photo with the camera (D37). A phone opens its own camera app through
+// Take a photo with the camera (D39). A phone opens its own camera app through
 // a file input with `capture`; a computer shows a live webcam preview and
 // takes a snapshot. Either way the photo reaches onPhoto as one small JPEG
 // file. The camera is asked for only after the person taps Take photo, and its

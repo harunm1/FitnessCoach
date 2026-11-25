@@ -83,7 +83,7 @@ export async function uploadProgressPhoto(
     };
   }
 
-  // Progress or form photo, and the exercise a form photo is for (D37).
+  // Progress or form photo, and the exercise a form photo is for (D39).
   const kind = readPhotoKind(formData);
   if (!kind.ok) return { status: "error", message: kind.message };
 
