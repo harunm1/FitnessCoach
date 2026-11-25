@@ -98,6 +98,28 @@ describe("checkUserMessage", () => {
     expect(checkUserMessage(text).action).toBe("ALLOW");
   });
 
+  // Live report, 24 Nov 2026: the first message got the off-topic redirect because the
+  // training words held only the singular "workout"; plural and verb forms count too.
+  it.each([
+    "explain one of the workouts for me",
+    "can you explain these exercises to me",
+    "how should I do these exercises",
+    "should I add more weights to this",
+    "I'm exercising three times now",
+    "is working out at night okay for me",
+    "I worked out twice already today",
+    "explain the moves in my routine",
+  ])("allows plural and verb forms of training words: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("ALLOW");
+  });
+
+  it.each([
+    "what are your plans for the holidays",
+    "explain the plot of the last movie you saw",
+  ])("still redirects messages with no training word: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("OFF_TOPIC");
+  });
+
   // Body image and eating, and negative mindsets: two harm categories for physical
   // activity coaching in Jörke et al., CHI 2026 (arXiv 2510.05449, Table 2).
   it.each([

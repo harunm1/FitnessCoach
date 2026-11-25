@@ -142,8 +142,12 @@ const NUTRITION = new RegExp(
   ].join("|"),
   "i",
 );
+// Any one of these words makes a message training talk (the off-topic rule and
+// mentionsTraining). Plural and verb forms count: "explain one of the workouts" got the
+// off-topic redirect on 24 Nov 2026 when only "workout" was listed. "plans" is left out
+// on purpose: "what are your plans for the holidays" is not training.
 const TRAINING =
-  /\b(workout|exercise|train(ing)?|plan|set|sets|reps?|weight|lift\w*|squat\w*|plank\w*|bench|deadlift\w*|press|curl\w*|row\w*|run\w*|ran|jog\w*|pace|kms?|mile\w*|marathon|sprint\w*|interval\w*|tempo|cardio|stretch\w*|warm[- ]?up|cool[- ]?down|rest|recover\w*|sleep|protein|eat\w*|diet|calori\w*|muscle\w*|gym|form|knees?|back|shoulders?|hips?|ankles?|hill\w*|burpee\w*|winded|\d+k|bulk\w*|cut|cutting|creatine|prs?|bonk\w*|race\w*|suicides|dizz\w*|light-?headed|leg\w*|arm\w*|chest|core|abs|sore\w*|tired|fatigue|strength|endurance|body|goal\w*|weeks?|days?|daily|session\w*|fat|lose|loss|gain\w*|heavy|push-?ups?|pull-?ups?|chin-?ups?|dips?|yoga|pilates|swim\w*|bike|biking|cycl\w*|mobility|flexib\w*|glutes?|glute bridges?|hip bridges?|box jumps?|jump (squats?|rope|lunges?)|broad jumps?|grip|holds?|cable\w*|machines?|tricep\w*|bicep\w*|attachments?|program\w*|volume|split\w*)\b/i;
+  /\b(workouts?|exercis(e|es|ed|ing)|(work|works|worked|working) out|routines?|train(ing)?|plan|set|sets|reps?|weights?|lift\w*|squat\w*|plank\w*|bench|deadlift\w*|press|curl\w*|row\w*|run\w*|ran|jog\w*|pace|kms?|mile\w*|marathon|sprint\w*|interval\w*|tempo|cardio|stretch\w*|warm[- ]?up|cool[- ]?down|rest|recover\w*|sleep|protein|eat\w*|diet|calori\w*|muscle\w*|gym|form|knees?|back|shoulders?|hips?|ankles?|hill\w*|burpee\w*|winded|\d+k|bulk\w*|cut|cutting|creatine|prs?|bonk\w*|race\w*|suicides|dizz\w*|light-?headed|leg\w*|arm\w*|chest|core|abs|sore\w*|tired|fatigue|strength|endurance|body|goal\w*|weeks?|days?|daily|session\w*|fat|lose|loss|gain\w*|heavy|push-?ups?|pull-?ups?|chin-?ups?|dips?|yoga|pilates|swim\w*|bike|biking|cycl\w*|mobility|flexib\w*|glutes?|glute bridges?|hip bridges?|box jumps?|jump (squats?|rope|lunges?)|broad jumps?|grip|holds?|cable\w*|machines?|tricep\w*|bicep\w*|attachments?|program\w*|volume|split\w*)\b/i;
 
 // Narrow on purpose: a fat-loss goal ("lose fat", "cut calories", "lose weight") is
 // ordinary coaching, and "I'm starving after my run" is hunger. These match
