@@ -126,7 +126,7 @@ describe("personalizeWithCoach", () => {
     expect(options.takeProviderEvents).toEqual(expect.any(Function));
   });
 
-  it("logs a swallowed failure on the server with the step and the user id, never the profile", async () => {
+  it("logs a swallowed failure on the server with the step and the user id", async () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     const boom = new Error("db down");
     mocks.saveWeek.mockRejectedValue(boom);

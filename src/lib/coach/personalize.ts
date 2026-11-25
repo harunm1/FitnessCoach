@@ -57,7 +57,9 @@ export async function personalizePlan(
   // A database failure before the model is an error state, not a crashed action.
   let inputs: Awaited<ReturnType<PersonalizeSteps["loadInputs"]>>;
   let reservation: PlanRequestReservation;
+  let step = "load";
   try {
+    step = "load";
     inputs = await steps.loadInputs();
     if (inputs === "no-profile") {
       return { status: "error", message: NO_GYM_PROFILE_MESSAGE };
@@ -65,9 +67,10 @@ export async function personalizePlan(
     if (inputs === "not-gym") {
       return { status: "error", message: NOT_GYM_MESSAGE };
     }
+    step = "claim";
     reservation = await steps.claim();
   } catch (error) {
-    steps.onError?.("claim", error);
+    steps.onError?.(step, error);
     return { status: "error", message: UNAVAILABLE_MESSAGE };
   }
   if (!reservation.allowed) {

@@ -116,10 +116,15 @@ describe("personalizePlan", () => {
       ...steps({ save: vi.fn().mockRejectedValue(boom) }),
       onError,
     });
+    await personalizePlan({
+      ...steps({ loadInputs: vi.fn().mockRejectedValue(boom) }),
+      onError,
+    });
     expect(onError.mock.calls).toEqual([
       ["claim", boom],
       ["generate", boom],
       ["save", boom],
+      ["load", boom],
     ]);
   });
 
