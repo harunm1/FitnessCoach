@@ -2,6 +2,7 @@
 // (types.ts), so the rest of the progress code and the components stay testable.
 import { prisma } from "@/lib/prisma";
 import { IMPORT_SOURCE } from "@/lib/import/save";
+import { MANUAL_RUN_SOURCE } from "./runLimits";
 import type { ProgressWorkout } from "./types";
 
 // The user's finished workouts since a date, oldest first. One query loads the
@@ -55,6 +56,7 @@ export async function loadFinishedWorkouts(
     dayName:
       row.planDay?.name ?? (row.source === IMPORT_SOURCE ? row.notes : null),
     imported: row.source === IMPORT_SOURCE,
+    manual: row.source === MANUAL_RUN_SOURCE,
     planDays: row.plan?.days.filter((day) => day.kind !== "REST").length ?? 0,
     distanceKm: row.distanceKm === null ? null : Number(row.distanceKm),
     runSeconds: row.durationSeconds,
