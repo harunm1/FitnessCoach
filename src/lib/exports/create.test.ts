@@ -152,6 +152,21 @@ describe("createExport", () => {
     expect(database.setLog.findMany.mock.calls[0][0].take).toBe(MAX_ROWS + 1);
   });
 
+  it("refuses a coach history with more messages than one file holds", async () => {
+    database.message.findMany.mockResolvedValue(
+      Array.from({ length: MAX_ROWS + 1 }, () => ({
+        createdAt: NOW,
+        role: "USER",
+        content: "hi",
+      })),
+    );
+    await expect(
+      createExport("u1", "COACH_CSV", { storage, now: NOW }),
+    ).rejects.toMatchObject({ code: "too-large" });
+    expect(database.message.findMany.mock.calls[0][0].take).toBe(MAX_ROWS + 1);
+    expect(storage.files.size).toBe(0);
+  });
+
   it("removes the file again when the table row can't be saved", async () => {
     database.dataExport.create.mockRejectedValue(new Error("db down"));
     await expect(
