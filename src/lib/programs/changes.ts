@@ -53,6 +53,34 @@ export const coachReplySchema = z.object({
   changes: z.array(coachChangeSchema).max(MAX_CHANGES),
 });
 
+// A change list coming back from the browser on save. It is the user's own plan, but
+// still untrusted input: the shape is checked here and every number and exercise by the
+// guardrails before anything is written.
+const target = {
+  id: z.string().min(1).max(40),
+  source: z.enum(["rule", "coach"]),
+  day: z.number().int().min(0),
+  slot: z.number().int().min(0),
+  reason: z
+    .string()
+    .min(1)
+    .max(MAX_REASON * 2),
+};
+export const changeListSchema = z
+  .array(
+    z.discriminatedUnion("op", [
+      z.object({
+        op: z.literal("swap"),
+        exerciseId: z.string().min(1).max(120),
+        ...target,
+      }),
+      z.object({ op: z.literal("sets"), sets: z.number().int(), ...target }),
+      z.object({ op: z.literal("reps"), reps: z.number().int(), ...target }),
+      z.object({ op: z.literal("remove"), ...target }),
+    ]),
+  )
+  .max(MAX_CHANGES * 3);
+
 export type ParsedChanges =
   { ok: true; changes: Change[] } | { ok: false; problems: string[] };
 
