@@ -859,3 +859,13 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 **Did with it:** Checked every file and model named in the table exists on main. Wrote the script's tests first and watched them fail; added a test on a real PostgreSQL that sends only read statements and fails when the read-only line is removed. Ran the script against a scratch database to confirm a write is refused. The signed-in steps on the live site were not rehearsed because no demo account exists, and the script has not been run on the production database.
 
 **Tools:** git, gh, Vitest, Prettier, ESLint, tsc, Playwright (public pages only), Docker (scratch PostgreSQL), review agents (pr-review-toolkit code-reviewer). No skills.
+
+## 25 November: units preference (kg or lb, km or mi)
+
+**Asked:** A setting for pounds or kilograms and miles or kilometres, with every logged value stored in one unit, shown and typed in the chosen one, and the Hevy preview following the setting.
+
+**Got:** Decision D30: weights stay in kilograms and distances in kilometres in the database; two new `User` columns (default pounds and miles) say how they are shown. Pure conversion helpers, a settings action and a toggle on the account page, and the session, Progress, photos, history and import screens changed to follow the setting. Forms send the unit they displayed, and the server converts typed pounds and miles back before the existing checks.
+
+**Did with it:** Wrote the failing tests first (the conversion helpers, each action, the display of each screen) and checked that they failed without the change. Looked up the pound and mile factors in NIST SP 811 Appendix B.8. A review agent that had not seen the work found one real fault: the saved-run form showed miles to two places, so saving it unchanged turned 10 km into 9.99 km. It was fixed test-first and a second agent checked the fix. Lint, type check, format check and the unit tests pass; the migration from empty runs in CI. No live browser check.
+
+**Tools:** git, gh, Prisma, Vitest, tsc, ESLint, Prettier, review agents. No skills beyond the migration-safety guide.
