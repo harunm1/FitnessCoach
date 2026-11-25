@@ -1,4 +1,4 @@
-// Bounds for a run logged by hand (D25), kept apart from the zod schema in
+// Bounds for a run logged by hand (D27), kept apart from the zod schema in
 // runEntry.ts so the form can read them without bringing zod into the browser.
 // The 300 km and 24 hour CHECKs in 20261124200000_run_log_upper_bounds use the
 // same numbers; the lower CHECKs (above 0, effort 1 to 10) are in
@@ -15,6 +15,6 @@ export const MAX_EFFORT = 10;
 export const MAX_RUN_NOTE_LENGTH = 300;
 export const EARLIEST_RUN_DAY = "2000-01-01";
 
-// `Workout.source` for a run logged by hand on the Progress page (D25). Not an
+// `Workout.source` for a run logged by hand on the Progress page (D27). Not an
 // import, so it counts toward the streaks like a session logged here.
 export const MANUAL_RUN_SOURCE = "manual-run";

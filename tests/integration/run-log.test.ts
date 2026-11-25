@@ -1,4 +1,4 @@
-// Integration test for runs logged by hand (D25) against a real PostgreSQL: the
+// Integration test for runs logged by hand (D27) against a real PostgreSQL: the
 // Server Action writes a finished Workout and its RunLog together, completes the
 // plan's next run day, keeps rows with their owner, and the migration's CHECKs
 // refuse what the form refuses.

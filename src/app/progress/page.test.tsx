@@ -137,7 +137,7 @@ describe("progress page", () => {
     expect(html).toMatch(/Active streak<\/p><p[^>]*>0 weeks/);
   });
 
-  it("shows a run logged by hand without a made-up start time, in h:mm:ss (D25)", async () => {
+  it("shows a run logged by hand without a made-up start time, in h:mm:ss (D27)", async () => {
     loadFinishedWorkouts.mockResolvedValue([
       workout("2026-11-10T17:00:00Z", {
         manual: true,
@@ -282,7 +282,7 @@ describe("progress page", () => {
     expect(html).toContain('max="2026-11-12"');
   });
 
-  it("offers the run form and lists the signed-in user's latest runs (D25)", async () => {
+  it("offers the run form and lists the signed-in user's latest runs (D27)", async () => {
     database.workout.findMany.mockResolvedValue([
       {
         id: 3,

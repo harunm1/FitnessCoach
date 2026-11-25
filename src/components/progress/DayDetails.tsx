@@ -3,7 +3,7 @@ import type { ExerciseGroup } from "@/lib/progress/view";
 export type DayWorkout = {
   id: number;
   name: string;
-  startTime: string | null; // "6:00 PM"; null for a run logged by hand (D25)
+  startTime: string | null; // "6:00 PM"; null for a run logged by hand (D27)
   minutes: number;
   exercises: ExerciseGroup[];
   run: { distanceKm: number; time: string; pace: string | null } | null;

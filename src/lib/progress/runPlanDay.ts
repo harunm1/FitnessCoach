@@ -18,7 +18,7 @@ export type RunPlanDay = {
   runType: RunType | null;
 };
 
-// The plan day a run logged by hand completes, or null (D25). Plan days are a
+// The plan day a run logged by hand completes, or null (D27). Plan days are a
 // rotation, not dates: the next day is finished workouts modulo days, as on the
 // session screen. A run takes that day only when it is a run day, no session is
 // open on the plan (the session screen holds that day), and the run is not from

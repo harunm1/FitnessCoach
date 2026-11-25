@@ -6,7 +6,7 @@ import { duration, pace } from "./view";
 
 export const RECENT_RUNS = 5;
 
-// One run in the Progress page's list (D25): plain values, ready to show.
+// One run in the Progress page's list (D27): plain values, ready to show.
 export type RecentRun = {
   id: number;
   day: string; // the Toronto day, "2026-11-23"

@@ -36,7 +36,7 @@ function text(value: FormDataEntryValue | null) {
   return typeof value === "string" ? value : undefined;
 }
 
-// Logs one run for the signed-in user (D25). The user comes from the session,
+// Logs one run for the signed-in user (D27). The user comes from the session,
 // never the form. When the active plan's next day is a run day, the run
 // completes it, as a finished session would.
 export async function logRun(

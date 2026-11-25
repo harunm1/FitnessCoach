@@ -81,7 +81,7 @@ function toDayWorkout(workout: ProgressWorkout): DayWorkout {
   return {
     id: workout.id,
     name: workout.dayName ?? (run ? "Run" : "Workout"),
-    // A run logged by hand has no clock time, only its day (D25).
+    // A run logged by hand has no clock time, only its day (D27).
     startTime: workout.manual
       ? null
       : new Intl.DateTimeFormat("en", {

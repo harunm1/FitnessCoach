@@ -18,7 +18,7 @@ function details(run: RecentRun) {
     .join(" · ");
 }
 
-// Logging a run by hand on the Progress page (D25): the form and the latest
+// Logging a run by hand on the Progress page (D27): the form and the latest
 // runs as text, each with its pace.
 export default function RunLogSection({ runs, today }: RunLogSectionProps) {
   return (

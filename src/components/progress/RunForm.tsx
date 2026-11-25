@@ -21,7 +21,7 @@ function savedMessage(state: Extract<RunActionState, { status: "saved" }>) {
   return `Saved your ${state.distanceKm} km run for ${dayLabel(state.date)}${pace}.${planDay}`;
 }
 
-// Logs one run by hand (D25). The browser limits are only hints; the Server
+// Logs one run by hand (D27). The browser limits are only hints; the Server
 // Action checks every field again.
 export default function RunForm({ today }: { today: string }) {
   const [state, action, pending] = useActionState<RunActionState, FormData>(

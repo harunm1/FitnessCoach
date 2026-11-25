@@ -116,7 +116,7 @@ describe("loadFinishedWorkouts", () => {
     expect(workout).toMatchObject({ imported: true, dayName: "Push Day" });
   });
 
-  it("marks a run logged by hand on Progress, which has no real start time (D25)", async () => {
+  it("marks a run logged by hand on Progress, which has no real start time (D27)", async () => {
     findMany.mockResolvedValue([row({ source: "manual-run" }), row()]);
     const [manual, live] = await loadFinishedWorkouts("user-1", since);
     expect(manual).toMatchObject({ manual: true, imported: false });
