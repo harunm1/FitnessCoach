@@ -134,4 +134,12 @@ describe("PhotoUploadForm with the camera", () => {
     expect(screen.queryByRole("button", { name: "Remove photo" })).toBeNull();
     expect(fileInput(container).required).toBe(true);
   });
+
+  it("empties the file input when a camera photo is taken, so no old name shows", () => {
+    const { container } = render(<PhotoUploadForm />);
+    const input = fileInput(container);
+    const clear = vi.spyOn(input, "value", "set");
+    fireEvent.click(screen.getByText(/stand-in camera/));
+    expect(clear).toHaveBeenCalledWith("");
+  });
 });

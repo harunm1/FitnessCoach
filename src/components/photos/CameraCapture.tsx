@@ -47,6 +47,8 @@ export function CameraCapture({
   const [message, setMessage] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const takeRef = useRef<HTMLButtonElement>(null);
+  const capturing = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   // What is open right now, kept in one place so that every way out
   // (Capture, Cancel, Escape, leaving the page) stops the same things.
@@ -80,6 +82,28 @@ export function CameraCapture({
     if (videoRef.current && stream) videoRef.current.srcObject = stream;
   }, [stream]);
 
+  // The button that opened the preview is enabled again once it closes; focus
+  // goes back to it instead of dropping to the page.
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    if (phase === "idle" && wasOpen.current) takeRef.current?.focus();
+    wasOpen.current = phase !== "idle";
+  }, [phase]);
+
+  // Submitting the form (Enter in the note field, say) ends the preview, so
+  // the camera is not left on during and after the upload.
+  useEffect(() => {
+    const form = inputRef.current?.form;
+    if (!form) return;
+    const stopOnSubmit = () => {
+      if (open.current.request || open.current.stream) close();
+    };
+    form.addEventListener("submit", stopOnSubmit);
+    return () => form.removeEventListener("submit", stopOnSubmit);
+    // close only uses refs and state setters, which do not change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function start() {
     setMessage(null);
     if (native ?? prefersNativeCamera()) {
@@ -104,8 +128,13 @@ export function CameraCapture({
   }
 
   async function capture() {
-    if (!videoRef.current) return;
+    if (!videoRef.current || capturing.current) return;
+    capturing.current = true;
+    const live = open.current.stream;
     const file = await snapshot(videoRef.current);
+    capturing.current = false;
+    // Cancelled while the snapshot was being drawn: the photo is dropped.
+    if (open.current.stream !== live) return;
     if (!file) {
       setMessage(SNAPSHOT_FAILED);
       return;
@@ -125,6 +154,7 @@ export function CameraCapture({
     <div className="grid gap-2">
       <button
         type="button"
+        ref={takeRef}
         onClick={() => void start()}
         disabled={phase !== "idle"}
         className={buttonClass}

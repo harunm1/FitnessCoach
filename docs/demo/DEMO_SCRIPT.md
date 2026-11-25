@@ -46,3 +46,10 @@ Cloud storage also covers downloading (D33). Use it only when there is time; the
 2. For the data side, go straight to `/account/data` by its address (the rules above keep `/account` itself closed). Press **Export workout history (CSV)**, then **Download** on the new row. Say: "The server built this file, stored it in the same private bucket, and recorded it in the `DataExport` table; another user's id answers 404."
 3. If the download does not start within 3 seconds: say the link is a 60-second signed link, press the button again; fallback is the file listed in the table (the row proves it is stored).
 4. Optional: on the same page press **Make the monthly report (PDF)** and **Download**. Say: "A PDF made on the server with the month's sessions, volume per muscle group and personal bests, stored in the same bucket."
+
+## Camera step (added 26 Nov, camera task; optional insert after the photo download step)
+
+1. On `/progress/photos` choose **Form photo**, pick an exercise, and press **Take photo**. On a laptop the browser asks once for the camera and a live preview opens; on a phone the phone's own camera app opens. Say: "The camera is asked for only now, after I pressed the button, and nothing is recorded until I press Capture."
+2. Press **Capture**, then **Upload photo**. Say: "The picture is scaled down to 1600 pixels in the browser and goes through the same private upload as a chosen file; the camera light is already off."
+3. If the camera is blocked or missing: the form says so in one sentence and the file picker below it still works. Do not retry on stage; choose a file instead.
+4. The gallery shows the new photo with "Form photo · <exercise>" under it.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import {
   uploadProgressPhoto,
   type PhotoActionState,
@@ -59,6 +59,13 @@ export function PhotoUploadForm({
   const [kind, setKind] = useState<PhotoKind>("PROGRESS");
   // A photo taken in the app. It is sent in place of the file input's photo.
   const [taken, setTaken] = useState<File | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  // A camera photo replaces any file picked before, so the input is emptied
+  // and its old name doesn't stay on screen.
+  function takePhoto(file: File) {
+    if (fileRef.current) fileRef.current.value = "";
+    setTaken(file);
+  }
   const [state, action, pending] = useActionState<PhotoActionState, FormData>(
     async (previous, formData) => {
       if (taken) formData.set("photo", taken);
@@ -114,7 +121,7 @@ export function PhotoUploadForm({
       )}
 
       <div className="grid gap-2 text-sm">
-        <CameraCapture facing={facingFor(kind)} onPhoto={setTaken} />
+        <CameraCapture facing={facingFor(kind)} onPhoto={takePhoto} />
         {taken && (
           <p role="status" className="flex flex-wrap items-center gap-3">
             <span>Photo ready: {taken.name}</span>
@@ -138,6 +145,7 @@ export function PhotoUploadForm({
           type="file"
           name="photo"
           accept="image/jpeg,image/png,image/webp"
+          ref={fileRef}
           required={!taken}
           onChange={() => setTaken(null)}
           className="text-sm file:mr-3 file:min-h-11 file:border file:border-foreground/30 file:bg-transparent file:px-4 file:text-sm"
