@@ -695,6 +695,11 @@ async function* sseData(
         if (line.startsWith("data:")) yield line.slice(5).trim();
       }
     }
+    // The last event may arrive without a newline after it (Gemini has no [DONE] to mark
+    // the end): reading only complete lines dropped its text and its finishReason, so a
+    // reply stopped mid-sentence with no note (B3).
+    const rest = (buffer + decoder.decode()).trim();
+    if (rest.startsWith("data:")) yield rest.slice("data:".length).trim();
   } finally {
     await reader.cancel().catch(() => undefined);
     reader.releaseLock();

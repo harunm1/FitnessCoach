@@ -184,7 +184,7 @@ export default function SetLogForm({
               : ""
           }
           max={9999.99}
-          min={0.01}
+          min={weightUnit === "LB" ? 0.55 : 0.25}
           name="weightKg"
           placeholder={weightPlaceholder(equipment, weightUnit)}
           step="0.01"
