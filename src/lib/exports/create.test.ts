@@ -250,4 +250,27 @@ describe("createExport", () => {
     });
     expect(database.setLog.groupBy.mock.calls.length).toBe(0);
   });
+
+  it("asks for earlier bests from this user's finished workouts only", async () => {
+    database.setLog.findMany.mockResolvedValue([
+      {
+        reps: 5,
+        weightKg: { toString: () => "100" },
+        exercise: { id: "squat", name: "Squat", primaryMuscles: ["quads"] },
+        workout: { startedAt: NOW },
+      },
+    ]);
+    await createExport("u1", "MONTHLY_REPORT", { storage, now: NOW });
+    expect(
+      database.setLog.groupBy.mock.calls[0][0].where.workout,
+    ).toMatchObject({
+      userId: "u1",
+      finishedAt: { not: null },
+    });
+    expect(
+      database.setLog.findMany.mock.calls[0][0].where.workout,
+    ).toMatchObject({
+      finishedAt: { not: null },
+    });
+  });
 });

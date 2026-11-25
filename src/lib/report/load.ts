@@ -22,7 +22,11 @@ async function priorBests(
           where: {
             exerciseId: { in: exerciseIds },
             weightKg: { not: null },
-            workout: { userId, startedAt: { lt: windowStart } },
+            workout: {
+              userId,
+              finishedAt: { not: null },
+              startedAt: { lt: windowStart },
+            },
           },
           _max: { weightKg: true },
         });
@@ -58,7 +62,14 @@ export async function loadMonthlyReportInput(
       select: { startedAt: true },
     }),
     prisma.setLog.findMany({
-      where: { workout: { userId, startedAt: { gte: from, lt: to } } },
+      // Finished workouts only, like the sessions count and the Progress page.
+      where: {
+        workout: {
+          userId,
+          finishedAt: { not: null },
+          startedAt: { gte: from, lt: to },
+        },
+      },
       select: {
         reps: true,
         weightKg: true,

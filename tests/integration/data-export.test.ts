@@ -215,8 +215,9 @@ describe("monthly report on PostgreSQL", () => {
   const NOVEMBER_BEST = 130;
   const LAST_EVENING = 60;
   const SESSIONS = 3;
-  // The helper also logs one set in an unfinished workout on 8 November.
-  const SETS = SESSIONS + 1;
+  // The helper also logs a set in an unfinished workout on 8 November: it is not counted.
+  const SETS = SESSIONS;
+  const HEAVIEST_EVER = 500;
 
   function lift(userId: string, startedAt: string, weightKg: number) {
     return db.workout.create({
@@ -240,6 +241,20 @@ describe("monthly report on PostgreSQL", () => {
     // 22:00 on 30 Nov in Toronto is already 1 Dec in UTC: still November.
     await lift(user.id, "2026-12-01T03:00:00Z", LAST_EVENING);
     await lift(other.user.id, "2026-11-12T17:00:00Z", NOVEMBER_BEST * 2);
+    // Another user's older history must never become this user's "was".
+    await lift(other.user.id, "2026-10-01T17:00:00Z", HEAVIEST_EVER);
+    // An unfinished workout is not logged work: its set must not count or set a best.
+    await db.workout.create({
+      data: {
+        userId: user.id,
+        startedAt: new Date("2026-11-25T17:00:00Z"),
+        sets: {
+          create: [
+            { exerciseId, setNumber: 1, reps: REPS, weightKg: HEAVIEST_EVER },
+          ],
+        },
+      },
+    });
 
     const input = await loadMonthlyReportInput(user.id, MONTH);
     expect(input.sessions).toBe(SESSIONS);
