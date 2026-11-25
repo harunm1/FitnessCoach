@@ -33,7 +33,7 @@ function getContext(): AudioContext | null {
 
 // Resuming without a tap can be refused; that must not surface as an unhandled rejection.
 function resumeQuietly(audio: AudioContext): void {
-  audio.resume().catch(() => undefined);
+  Promise.resolve(audio.resume()).catch(() => undefined);
 }
 
 // Creates or resumes the context. Call from inside a tap or click.

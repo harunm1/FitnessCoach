@@ -288,12 +288,16 @@ export async function startOrResumeWorkout() {
   redirect("/session");
 }
 
+const FINISH_TRIES = 2;
+
 export async function finishWorkout() {
   const user = await requireUser();
 
-  const workout = await findOpenClockWorkout(user.id);
-
-  if (workout) {
+  // Two tries: if another tab paused or resumed between the read and the write, the second
+  // read sees the new clock and Finish still lands.
+  for (let attempt = 0; attempt < FINISH_TRIES; attempt += 1) {
+    const workout = await findOpenClockWorkout(user.id);
+    if (!workout) break;
     const finishedAt = new Date();
     // Duration counts active time only (D36): paused time and an idle stretch are left out.
     // A run keeps the duration it recorded itself.
@@ -302,7 +306,7 @@ export async function finishWorkout() {
       await latestSetMs(workout.id),
       finishedAt.getTime(),
     );
-    await prisma.workout.updateMany({
+    const { count } = await prisma.workout.updateMany({
       where: {
         id: workout.id,
         userId: user.id,
@@ -319,6 +323,7 @@ export async function finishWorkout() {
           : {}),
       },
     });
+    if (count > 0) break;
   }
 
   revalidatePath("/session");

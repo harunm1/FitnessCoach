@@ -149,8 +149,8 @@ export function RestAlertsForm() {
         Push, which this app does not use, so the sound plays only while the
         page is open. Chrome on Android also refuses notifications made by a
         page without a service worker, which this app does not have, so on
-        Android the vibration and sound are the reliable alerts. The rest
-        countdown itself stays correct while the screen is off.
+        Android, while the page is open, vibration and sound are the reliable
+        alerts. The rest countdown itself stays correct while the screen is off.
       </p>
     </div>
   );

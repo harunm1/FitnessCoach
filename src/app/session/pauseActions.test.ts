@@ -243,6 +243,22 @@ describe("finishWorkout stores the active time", () => {
     });
   });
 
+  it("tries once more when another tab changed the clock between the read and the write", async () => {
+    database.workout.updateMany
+      .mockResolvedValueOnce({ count: 0 })
+      .mockResolvedValueOnce({ count: 1 });
+    database.workout.findFirst
+      .mockResolvedValueOnce(open())
+      .mockResolvedValueOnce(
+        open({ activeBankedSeconds: FORTY_MINUTE_SECONDS, activeSince: null }),
+      );
+    await expect(finishWorkout()).rejects.toThrow("NEXT_REDIRECT");
+    expect(database.workout.updateMany).toHaveBeenCalledTimes(2);
+    expect(
+      database.workout.updateMany.mock.calls[1][0].data.durationSeconds,
+    ).toBe(FORTY_MINUTE_SECONDS);
+  });
+
   it("keeps a run's own recorded time", async () => {
     database.workout.findFirst.mockResolvedValue(
       open({ durationSeconds: TEN_MINUTE_SECONDS }),

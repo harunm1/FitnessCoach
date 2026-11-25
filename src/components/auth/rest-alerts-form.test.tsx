@@ -200,6 +200,32 @@ describe("RestAlertsForm", () => {
     ).toBe(true);
   });
 
+  it("keeps a volume chosen while the permission prompt is open", async () => {
+    let answer: (value: string) => void = () => undefined;
+    const request = vi.fn(
+      () => new Promise<string>((resolve) => (answer = resolve)),
+    );
+    vi.stubGlobal("Notification", {
+      permission: "default",
+      requestPermission: request,
+    });
+    await renderForm();
+    await act(async () => {
+      screen
+        .getByLabelText("Notification when the page is in the background")
+        .click();
+    });
+    fireEvent.change(screen.getByLabelText("Volume"), {
+      target: { value: String(LOUD) },
+    });
+    await act(async () => {
+      answer("granted");
+    });
+    await flush();
+    expect(stored()?.volume).toBe(LOUD_VOLUME);
+    expect(stored()?.notify).toBe(true);
+  });
+
   it("states the Android Chrome limit too", async () => {
     stubNotification("default");
     await renderForm();
