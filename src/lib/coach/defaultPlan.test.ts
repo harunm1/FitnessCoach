@@ -352,7 +352,9 @@ describe("buildDefaultPlan sizes and verification (#139)", () => {
     ).days.map((day) => day.exercises.length);
 
   it("adds 0, 1 and 3 accessory muscles for beginner, intermediate and expert", () => {
-    expect(sizes("BEGINNER")).toEqual([3, 3, 3]);
+    // The fixture's lifts are INTERMEDIATE, above a beginner, so only the two
+    // BEGINNER kettlebell and bodyweight moves per muscle group are left (#103).
+    expect(sizes("BEGINNER")).toEqual([2, 2, 2]);
     expect(sizes("INTERMEDIATE")).toEqual([4, 4, 4]);
     expect(sizes("EXPERT")).toEqual([6, 6, 5]);
     expect(sizes("EXPERT", 1)).toEqual([7]);

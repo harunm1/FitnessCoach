@@ -102,14 +102,16 @@ function score(exercise: LibraryExercise, level: Level | undefined): number {
   );
 }
 
+// A row with no level, or one we do not know, is never above the user's.
+const isAboveLevel = (exercise: LibraryExercise, level: Level) =>
+  LEVEL_RANK[(exercise.level ?? "") as Level] > LEVEL_RANK[level];
+
 function levelScore(
   exercise: LibraryExercise,
   level: Level | undefined,
 ): number {
   if (!level) return 0;
-  // A row with no level, or one we do not know, gets no penalty.
-  const exerciseLevel = LEVEL_RANK[(exercise.level ?? "") as Level];
-  const above = exerciseLevel > LEVEL_RANK[level] ? ABOVE_LEVEL_PENALTY : 0;
+  const above = isAboveLevel(exercise, level) ? ABOVE_LEVEL_PENALTY : 0;
   if (level === "BEGINNER") return above;
   const equipment = EQUIPMENT_ORDER.indexOf(exercise.equipment ?? "body only");
   return above + (equipment < 0 ? UNLISTED_EQUIPMENT_RANK : equipment);
@@ -140,11 +142,16 @@ export function buildDefaultPlan(
   // Strength exercises only: free-exercise-db lists stretches under the same muscles,
   // and the dataset order puts some of them first (#71, found on #15). The `?.` skips,
   // rather than crashes on, an exercise an untyped caller passes without a category.
+  // With a level known, an exercise above it is left out, not just ranked last (#103): a
+  // slot with nothing at or below the level is skipped, as for any muscle with no fit.
+  const level = profile.level;
   const usable = library.filter(
-    (e) => e.category?.toLowerCase() === "strength" && fitsProfile(e, profile),
+    (e) =>
+      e.category?.toLowerCase() === "strength" &&
+      fitsProfile(e, profile) &&
+      !(level && isAboveLevel(e, level)),
   );
 
-  const level = profile.level;
   const extras = level ? EXTRAS_BY_LEVEL[level] : 0;
   const heavy = level === "INTERMEDIATE" || level === "EXPERT";
   // Best fit first; the sort is stable, so equal scores keep the library's order.
@@ -175,7 +182,7 @@ export function buildDefaultPlan(
         ? [...picked].sort((a, b) => compoundRank(a) - compoundRank(b))
         : picked;
       // An experienced user's day opens with a warm-up chosen by its lead lift (D25); it
-      // takes one of the day's slots. No current split fills all eight, so the trim is a
+      // takes one of the day's slots. No current split picks more than seven lifts, so the trim is a
       // guard for a longer split: the last accessory would give way.
       const warmup = heavy
         ? pickWarmup(library, profile, ordered[0].primaryMuscles[0])

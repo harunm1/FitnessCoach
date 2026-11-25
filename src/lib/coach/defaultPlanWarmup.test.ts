@@ -17,7 +17,7 @@ function lift(
     equipment,
     primaryMuscles: [primary],
     secondaryMuscles: [],
-    level: "INTERMEDIATE",
+    level: "BEGINNER", // at or below every user's level, so level never decides these tests
   };
 }
 

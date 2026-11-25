@@ -103,6 +103,42 @@ describe("the starter plan prefers exercises with cues (#103)", () => {
     expect(picked).not.toContain("hard-cued");
   });
 
+  it("never gives a no-equipment beginner a move above their level, even with no easier one for the muscle (#103)", () => {
+    const lib = [
+      ...bodyOnly.filter((e) => e.primaryMuscles[0] !== "shoulders"),
+      move("handstand-pushup", "body only", "shoulders", {
+        cued: true,
+        level: "EXPERT",
+      }),
+    ];
+    const picked = pickedIds(noEquipment, lib);
+    expect(picked).not.toContain("handstand-pushup");
+  });
+
+  it("keeps a barbell lift ahead of a cued dumbbell lift for an expert", () => {
+    const lib = [
+      move("barbell-bench", "barbell", "chest", { level: "INTERMEDIATE" }),
+      move("cued-db-bench", "dumbbell", "chest", {
+        cued: true,
+        level: "INTERMEDIATE",
+      }),
+      move("barbell-squat", "barbell", "quadriceps", {
+        level: "INTERMEDIATE",
+      }),
+    ];
+    const picked = pickedIds(
+      {
+        daysPerWeek: 1,
+        equipment: ["barbell", "dumbbell"],
+        avoidMuscles: [],
+        level: "EXPERT",
+      },
+      lib,
+    );
+    expect(picked).toContain("barbell-bench");
+    expect(picked).not.toContain("cued-db-bench");
+  });
+
   it("never lets cues put a bodyweight move before a barbell lift for an experienced user", () => {
     const lib = [
       move("barbell-bench", "barbell", "chest", { level: "INTERMEDIATE" }),
