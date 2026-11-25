@@ -63,7 +63,11 @@ export function CameraCapture({
     open.current = { request: null, stream: null };
   }
 
-  function close() {
+  // Cancel, Escape and Capture give focus back to Take photo; a submit does
+  // not, because the person is typing elsewhere.
+  const refocus = useRef(true);
+  function close(returnFocus = true) {
+    refocus.current = returnFocus;
     release();
     setStream(null);
     setPhase("idle");
@@ -86,7 +90,9 @@ export function CameraCapture({
   // goes back to it instead of dropping to the page.
   const wasOpen = useRef(false);
   useEffect(() => {
-    if (phase === "idle" && wasOpen.current) takeRef.current?.focus();
+    if (phase === "idle" && wasOpen.current && refocus.current) {
+      takeRef.current?.focus();
+    }
     wasOpen.current = phase !== "idle";
   }, [phase]);
 
@@ -96,7 +102,7 @@ export function CameraCapture({
     const form = inputRef.current?.form;
     if (!form) return;
     const stopOnSubmit = () => {
-      if (open.current.request || open.current.stream) close();
+      if (open.current.request || open.current.stream) close(false);
     };
     form.addEventListener("submit", stopOnSubmit);
     return () => form.removeEventListener("submit", stopOnSubmit);
@@ -131,8 +137,12 @@ export function CameraCapture({
     if (!videoRef.current || capturing.current) return;
     capturing.current = true;
     const live = open.current.stream;
-    const file = await snapshot(videoRef.current);
-    capturing.current = false;
+    let file: File | null;
+    try {
+      file = await snapshot(videoRef.current);
+    } finally {
+      capturing.current = false;
+    }
     // Cancelled while the snapshot was being drawn: the photo is dropped.
     if (open.current.stream !== live) return;
     if (!file) {
@@ -177,7 +187,7 @@ export function CameraCapture({
           <p role="status" className="text-sm text-foreground/70">
             Starting the camera… Allow it in the browser&apos;s prompt.
           </p>
-          <button type="button" onClick={close} className={buttonClass}>
+          <button type="button" onClick={() => close()} className={buttonClass}>
             Cancel
           </button>
         </div>
@@ -207,7 +217,11 @@ export function CameraCapture({
             >
               Capture
             </button>
-            <button type="button" onClick={close} className={buttonClass}>
+            <button
+              type="button"
+              onClick={() => close()}
+              className={buttonClass}
+            >
               Cancel
             </button>
           </div>

@@ -295,6 +295,28 @@ describe("CameraCapture edge cases from review", () => {
     );
   });
 
+  it("leaves focus where the person is typing when a submit closes the preview", async () => {
+    const { stream: camera } = stream();
+    const { container } = render(
+      <form>
+        <input aria-label="Note" />
+        <CameraCapture
+          facing="user"
+          onPhoto={vi.fn()}
+          requestCamera={readyRequest(camera)}
+        />
+      </form>,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Take photo" }));
+    });
+    screen.getByLabelText("Note").focus();
+    await act(async () => {
+      fireEvent.submit(container.querySelector("form")!);
+    });
+    expect(document.activeElement).toBe(screen.getByLabelText("Note"));
+  });
+
   it("switches the camera off when the form around it is submitted", async () => {
     const { stream: camera, track } = stream();
     const { container } = render(
