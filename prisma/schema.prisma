@@ -61,6 +61,7 @@ model User {
   photos        ProgressPhoto[]
   bodyWeights   BodyWeight[]
   coachEvents   CoachEvent[]
+  exports       DataExport[]
 }
 
 // ---------------------------------------------------------------------------
@@ -528,4 +529,30 @@ model StripeWebhookEvent {
   id          String   @id
   type        String
   processedAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Data exports (D33)
+// ---------------------------------------------------------------------------
+
+enum ExportKind {
+  WORKOUT_CSV
+  COACH_CSV
+  MONTHLY_REPORT
+}
+
+// A file the server generated for the user and stored in R2: only the key lives here.
+// A download finds the row with where { id, userId }, so one user can never sign another's file.
+// The bytes > 0 CHECK is in the migration, since Prisma's schema has no CHECK.
+model DataExport {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      ExportKind
+  r2Key     String     @unique
+  bytes     Int
+  createdAt DateTime   @default(now())
+
+  // The "Your data" list, newest first, and the retention and rate-limit counts.
+  @@index([userId, createdAt])
 }

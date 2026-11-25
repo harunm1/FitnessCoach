@@ -880,6 +880,26 @@ The billing work lives on its own branch. The sign-in and tiers PR only has mile
 
 **Tools:** git, gh, Prisma, Vitest, tsc, ESLint, Prettier, review agents. No skills beyond the migration-safety guide.
 
+## 25 November: downloads (exports and photo download)
+
+**Asked:** The course lists "uploading and downloading files" for cloud storage and the app only uploaded and showed photos. Add downloads tied to database records: a Download button on the enlarged photo, and a "Your data" page that exports workout history and coach conversations as CSV, stored in the R2 bucket with a database row, listed with Download links; every download checked so one user can never reach another's file.
+
+**Got:** Decision D33. A new `DataExport` table (additive migration), CSV built on the server with proper quoting and a guard against spreadsheet formulas, the file stored in R2 with its attachment header, and two download routes (`/api/exports/[id]/download`, `/api/photos/[id]/download`) that look the row up by id and the signed-in user, sign a 60-second link and redirect, or send the file themselves if R2 does not honour the header. The monthly PDF report is a separate change that follows.
+
+**Did with it:** Wrote the failing tests first for the CSV, file names, headers, storage options and the rows built (they failed because the modules did not exist), then the code. Read the R2 S3 compatibility page and found that R2 lists `Content-Disposition` for uploads but no response-header override on download, with a 2024 community report of it being ignored, so the design stores the header on the file and checks the link before relying on it. Read the OWASP CSV injection page and chose its Excel-resistant tab prefix. An integration test on PostgreSQL covers each user getting only their own rows and a 404 for another user's export or photo; removing the user filter from either route makes it fail.
+
+**Tools:** git, gh, Prisma, Vitest, tsc, ESLint, Prettier, Firecrawl (R2 and OWASP pages), review agents. Skill: opinionated-prisma migration-safety.
+
+## 25 November: monthly progress report (PDF)
+
+**Asked:** A monthly progress report as a PDF, made on the server, stored and listed like the CSV exports: sessions, sets and volume per muscle group, personal bests, a coach summary only if one is already stored.
+
+**Got:** Decision D34. `pdf-lib` draws the report with the standard fonts; the numbers come from pure code in `src/lib/report/`, tested without a database, and a PostgreSQL test covers the Toronto month edges and an earlier best in the padding day. No coach summary is stored anywhere on `main`, so the line is not in the report.
+
+**Did with it:** Wrote the tests first (they failed because the modules did not exist). Read the pdf-lib documentation through Context7 and found that the standard fonts throw on characters outside Windows-1252, so the report draws "?" for those instead of failing. Checked the npm registry: `pdf-lib` is MIT, pure JavaScript, last released May 2022.
+
+**Tools:** git, gh, Prisma, Vitest, tsc, ESLint, Prettier, Context7 (pdf-lib), npm registry, review agents.
+
 ## 25 November: live-site bugs from the audit (B1 to B6)
 
 **Asked:** Fix six faults found on the deployed site: absurd workout durations, a 0.02 kg set, coach replies cut off, a follow-up question refused as off-topic, a Sign out button invisible in light mode, and two theme toggles on the import page.
