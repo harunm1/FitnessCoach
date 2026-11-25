@@ -53,9 +53,19 @@ export default function PhotoViewer({
               <span className="sr-only">Progress photo, </span>
               {photoCaption(photo, weightUnit)}
             </Dialog.Title>
-            <Dialog.Close className={buttonVariants({ variant: "outline" })}>
-              Close
-            </Dialog.Close>
+            <div className="flex items-center gap-2">
+              {/* A route that checks the photo is yours, then saves it (D33). */}
+              <a
+                href={`/api/photos/${photo.id}/download`}
+                aria-label={`Download ${alt.charAt(0).toLowerCase()}${alt.slice(1)}`}
+                className={buttonVariants({ variant: "outline" })}
+              >
+                Download
+              </a>
+              <Dialog.Close className={buttonVariants({ variant: "outline" })}>
+                Close
+              </Dialog.Close>
+            </div>
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
