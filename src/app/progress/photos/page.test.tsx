@@ -172,14 +172,14 @@ describe("progress photos page", () => {
       select: { image: true, weightUnit: true },
     });
     expect(html).toContain("Free Demo");
-    expect(html).toContain('data-testid="avatar-icon"');
+    expect(html).toContain('data-testid="avatar-initial"');
   });
 
   it("shows the profile photo through a signed link when there is one", async () => {
     findUnique.mockResolvedValue({ image: AVATAR });
     const html = await render();
     expect(html).toContain(`src="memory://${AVATAR}?expires=300"`);
-    expect(html).not.toContain('data-testid="avatar-icon"');
+    expect(html).not.toContain('data-testid="avatar-initial"');
   });
 
   it("won't sign another user's photo saved as this user's image", async () => {
@@ -188,7 +188,7 @@ describe("progress photos page", () => {
     });
     const html = await render();
     expect(html).not.toContain("someone-else");
-    expect(html).toContain('data-testid="avatar-icon"');
+    expect(html).toContain('data-testid="avatar-initial"');
   });
 
   it("shows the first 24 photos and offers more when there are more", async () => {
@@ -261,7 +261,7 @@ describe("progress photos page", () => {
     expect(html).not.toContain("R2_BUCKET");
     expect(html).toContain('name="photo"');
     expect(html).toContain("Free Demo");
-    expect(html).toContain('data-testid="avatar-icon"');
+    expect(html).toContain('data-testid="avatar-initial"');
     expect(console.error).toHaveBeenCalledWith(
       "[photos] gallery: couldn't sign photo links",
       expect.objectContaining({ userId: "session-owner" }),
