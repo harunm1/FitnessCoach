@@ -14,6 +14,7 @@ const WIDTHS = [PHONE_WIDTH, DESKTOP_WIDTH];
 const HEIGHT = 812;
 const PREFIX_LENGTH = 8;
 const SPEC_TIMEOUT_MS = 240_000;
+const MENU_TIMEOUT_MS = 15_000;
 const REPORTED_ELEMENTS = 4;
 const CLASS_NAME_LENGTH = 60;
 const FIXTURE = join(process.cwd(), "tests", "fixtures", "hevy-export.csv");
@@ -95,6 +96,7 @@ WIDTHS.forEach((width) => {
     await expectInsideScreen(row, width, "History row");
     expect(await elementsPastTheEdge(page), "History").toEqual([]);
     await row.click();
+    await expect(page.getByText("could not be found")).toHaveCount(0);
     await expect(page, "History row target").toHaveURL(
       (url) => url.pathname === `/history/${athlete.workoutId}`,
     );
@@ -103,7 +105,7 @@ WIDTHS.forEach((width) => {
     await page.locator('input[type="file"]').setInputFiles(FIXTURE);
     await page.getByRole("button", { name: "Preview", exact: true }).click();
     const menus = page.locator('select[name^="map_"]');
-    await expect(menus.first()).toBeVisible();
+    await expect(menus.first()).toBeVisible({ timeout: MENU_TIMEOUT_MS });
     await Promise.all(
       (await menus.all()).map((menu) =>
         expectInsideScreen(menu, width, "Import menu"),

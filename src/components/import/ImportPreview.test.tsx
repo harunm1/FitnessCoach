@@ -60,6 +60,9 @@ describe("ImportPreview", () => {
     const menu = html.slice(start, html.indexOf(">", start));
     expect(menu).toContain("w-full");
     expect(menu).toContain("min-w-0");
+    // The column it sits in must be allowed to shrink too, or the menu still widens it.
+    expect(html).toContain("grid min-w-0 grid-cols-1 gap-1");
+    expect(html).toContain("grid min-w-0 grid-cols-1 gap-3");
   });
 
   it("says how many unmatched names are not shown", () => {
