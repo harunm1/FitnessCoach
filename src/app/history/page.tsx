@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { HistoryList } from "@/components/history/HistoryList";
 import { HistoryShell } from "@/components/history/HistoryShell";
 import { requireUser } from "@/lib/auth/session";
@@ -31,6 +32,14 @@ export default async function HistoryPage({
       name={user.name}
       title="Past workouts"
     >
+      <div className="mb-6">
+        <Link
+          className="inline-flex min-h-11 items-center border border-foreground/30 px-4 text-sm font-semibold hover:bg-foreground/5"
+          href="/history/log"
+        >
+          Log a past workout
+        </Link>
+      </div>
       <HistoryList hasNext={hasNext} page={page} rows={rows} />
     </HistoryShell>
   );

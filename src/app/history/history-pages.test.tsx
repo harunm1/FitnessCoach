@@ -71,6 +71,18 @@ describe("/history", () => {
     expect(html).toContain("Imported");
   });
 
+  it("offers Log a past workout, with a list and with none", async () => {
+    history.loadHistoryPage.mockResolvedValue({
+      rows: [row(9)],
+      hasNext: false,
+    });
+    expect(await render()).toContain('href="/history/log"');
+    history.loadHistoryPage.mockResolvedValue({ rows: [], hasNext: false });
+    const empty = await render();
+    expect(empty).toContain('href="/history/log"');
+    expect(empty).toContain("Log a past workout");
+  });
+
   it("links to older and newer pages only when they exist", async () => {
     history.loadHistoryPage.mockResolvedValue({
       rows: [row(9)],

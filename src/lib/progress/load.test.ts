@@ -123,6 +123,12 @@ describe("loadFinishedWorkouts", () => {
     expect(live.manual).toBe(false);
   });
 
+  it("marks a strength workout logged by hand as manual, with no clock time", async () => {
+    findMany.mockResolvedValue([row({ source: "manual-strength" })]);
+    const [workout] = await loadFinishedWorkouts("user-1", since);
+    expect(workout).toMatchObject({ manual: true, imported: false });
+  });
+
   it("asks for the source and notes columns", async () => {
     await loadFinishedWorkouts("user-1", since);
     expect(findMany.mock.calls[0][0].select).toMatchObject({

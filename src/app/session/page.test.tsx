@@ -91,6 +91,8 @@ describe("/session (landing)", () => {
     expect(html).toContain("Explore by muscle");
     expect(html).toContain('href="/progress#run-log"');
     expect(html).toContain("Log a run");
+    expect(html).toContain('href="/history/log"');
+    expect(html).toContain("Log a past workout");
     expect(html).not.toContain("Finish workout");
     expect(html).not.toContain("Running distance");
   });

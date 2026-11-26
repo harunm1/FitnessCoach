@@ -9,6 +9,11 @@ export function streakInput(
 ): FinishedWorkout[] {
   return workouts.map((workout) => ({
     startedAt: workout.startedAt,
-    planDays: workout.imported ? fallbackPlanDays : workout.planDays,
+    // No plan days (an import, or a workout logged by hand with no plan) has no goal of
+    // its own, so the profile's days a week is used.
+    planDays:
+      workout.imported || workout.planDays === 0
+        ? fallbackPlanDays
+        : workout.planDays,
   }));
 }

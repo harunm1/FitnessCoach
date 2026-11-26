@@ -48,6 +48,19 @@ describe("streakInput (D36: imported history counts)", () => {
     expect(goalMetStreak(streakInput(importedHistory, 4), NOW)).toBe(0);
   });
 
+  it("judges a workout logged by hand, with no plan, against the fallback plan days (D49)", () => {
+    // Not imported, and no plan days: without the fallback its week would need 0 workouts
+    // and read as a goal week whatever else happened.
+    const manual = workout("2026-11-24T17:00:00Z", {
+      imported: false,
+      planDays: 0,
+    });
+    expect(streakInput([manual], 3)).toEqual([
+      { startedAt: manual.startedAt, planDays: 3 },
+    ]);
+    expect(goalMetStreak(streakInput([manual], 3), NOW)).toBe(0);
+  });
+
   it("keeps a live workout's own plan days", () => {
     const live = workout("2026-11-20T23:30:00Z", {
       imported: false,

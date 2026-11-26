@@ -214,6 +214,12 @@ export default async function SessionPage() {
               >
                 Log a run
               </Link>
+              <Link
+                className="inline-flex min-h-12 items-center text-sm underline underline-offset-4"
+                href="/history/log"
+              >
+                Log a past workout
+              </Link>
             </div>
 
             <BodyMap exercises={bodyMapExercises} />
