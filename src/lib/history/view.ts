@@ -1,6 +1,5 @@
 import { formatWeight, type WeightUnit } from "@/lib/units/convert";
-// Pure helpers for the history pages (D29): names, lengths, set labels, the best set
-// and the best set. No database, no React.
+// Pure helpers for the history pages (D29): names, lengths, set labels and the best set. No database, no React.
 
 import { DEFAULT_TIME_ZONE } from "@/lib/progress/dates";
 

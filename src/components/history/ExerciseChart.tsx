@@ -226,7 +226,10 @@ export function ExerciseChart({
         <summary className="min-h-11 cursor-pointer py-2 font-medium">
           Values by workout
         </summary>
-        <table className="w-full border-collapse text-left">
+        <table
+          aria-label="Values by workout"
+          className="w-full border-collapse text-left"
+        >
           <thead>
             <tr>
               <th scope="col">Date</th>

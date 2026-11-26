@@ -15,6 +15,7 @@ const TENTH_DAY_INDEX = 9;
 const DAY_IN_URL = /day=\d{4}-\d{2}-\d{2}/;
 const SCROLLED_PX = 200;
 const SCROLL_TOLERANCE_PX = 1;
+// Day links only: the month arrows sit outside the table, so nth() counts days from the 1st.
 const DAY_LINK = "table a[aria-label]";
 
 test("choosing a date keeps the page where it is and focus on the date", async ({

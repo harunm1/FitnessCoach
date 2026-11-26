@@ -83,7 +83,7 @@
 }
 
 /* Cards on the signed-in pages use a faint text-colour border (Tailwind's border-foreground/10
-   and /15); --card-line makes it clear in light mode and leaves dark as it was. Borders at /20
+   and /15); --card-line makes them clear in light mode. In dark mode /15 is unchanged and /10 rises to the same 15%. Borders at /20
    and above are already as clear, so they are left alone. */
 .appTheme :global(.border-foreground\/10),
 .appTheme :global(.border-foreground\/15) {
