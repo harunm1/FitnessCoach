@@ -8,7 +8,7 @@ import { STUB_PLAN_NAME } from "../helpers/model-stub";
 const STUB = "http://127.0.0.1:18028";
 const STARTER_NAME = "Starter week before the coach";
 
-// A signed-in Pro athlete who has taken the quiz (two gym days, no kit), has a starter week,
+// A signed-in athlete with coach access (PRO alone counts only with active billing, so a running trial grants it) who has taken the quiz (two gym days, no kit), has a starter week,
 // and has six strength exercises to be planned from. Returns the user's id.
 async function seedAthlete(page: Page, db: Client): Promise<string> {
   const prefix = `personalize-browser-${randomUUID()}`;
@@ -23,7 +23,7 @@ async function seedAthlete(page: Page, db: Client): Promise<string> {
   });
   expect(signup.ok()).toBe(true);
   await db.query(
-    'UPDATE "User" SET "emailVerified" = true, tier = \'PRO\' WHERE email = $1',
+    'UPDATE "User" SET "emailVerified" = true, tier = \'PRO\', "trialEndsAt" = now() + interval \'7 days\' WHERE email = $1',
     [email],
   );
   const {
