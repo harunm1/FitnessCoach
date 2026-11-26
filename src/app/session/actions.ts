@@ -14,6 +14,7 @@ import {
   type RunMetricsActionState,
 } from "@/lib/workout/runMetricsSchema";
 import { getNextPlanDayIndex } from "@/lib/workout/progression";
+import { SESSION_LANDING, workoutPath } from "@/lib/workout/sessionPaths";
 import { finishedActiveSeconds } from "@/lib/workout/activeTime";
 import {
   clockOf,
@@ -91,8 +92,8 @@ export async function saveRunMetrics(
     };
   }
 
-  revalidatePath("/session");
-  redirect("/session");
+  revalidatePath(workoutPath(workout.id));
+  redirect(workoutPath(workout.id));
 }
 
 export async function logSet(
@@ -125,6 +126,7 @@ export async function logSet(
   const traffic = painTrafficLight(during, nextMorning);
 
   let result: SetLogActionState | null;
+  let workoutId = 0;
   try {
     result = await prisma.$transaction(
       async (tx): Promise<SetLogActionState | null> => {
@@ -154,6 +156,7 @@ export async function logSet(
           },
         });
         const plannedExercise = workout?.planDay?.exercises[0];
+        if (workout) workoutId = workout.id;
         if (!workout || !plannedExercise) {
           return {
             status: "error",
@@ -225,14 +228,14 @@ export async function logSet(
   }
 
   if (result) return result;
-  revalidatePath("/session");
+  revalidatePath(workoutPath(workoutId));
   if (traffic.state === "stop") {
     return {
       status: "error",
       message: `${traffic.reason} This set was saved, and further sets for this exercise are blocked.`,
     };
   }
-  redirect("/session");
+  redirect(workoutPath(workoutId));
 }
 
 export async function startOrResumeWorkout() {
@@ -261,7 +264,7 @@ export async function startOrResumeWorkout() {
     select: { id: true },
   });
 
-  if (existingWorkout) redirect("/session");
+  if (existingWorkout) redirect(workoutPath(existingWorkout.id));
 
   const completedWorkoutCount = await prisma.workout.count({
     where: {
@@ -277,15 +280,16 @@ export async function startOrResumeWorkout() {
   const nextDay = nextDayIndex === null ? undefined : plan.days[nextDayIndex];
   if (!nextDay) redirect("/onboarding");
 
-  await prisma.workout.create({
+  const started = await prisma.workout.create({
     data: {
       user: { connect: { id: user.id } },
       plan: { connect: { id: plan.id, userId: user.id, active: true } },
       planDay: { connect: { id: nextDay.id, planId: plan.id } },
     },
+    select: { id: true },
   });
 
-  redirect("/session");
+  redirect(workoutPath(started.id));
 }
 
 const FINISH_TRIES = 2;
@@ -326,6 +330,6 @@ export async function finishWorkout() {
     if (count > 0) break;
   }
 
-  revalidatePath("/session");
-  redirect("/session");
+  revalidatePath(SESSION_LANDING);
+  redirect(SESSION_LANDING);
 }

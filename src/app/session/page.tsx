@@ -1,22 +1,15 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { weekdayLabel } from "@/lib/programs/weekdays";
 import { prisma } from "@/lib/prisma";
 import BodyMap from "@/components/BodyMap";
-import ExerciseCueDetails from "@/components/ExerciseCueDetails";
-import ExerciseLogPanel from "@/components/session/ExerciseLogPanel";
-import ActiveWorkoutClock from "@/components/session/ActiveWorkoutClock";
-import SessionSync from "@/components/session/SessionSync";
-import { latestLoggedAt } from "@/lib/workout/restRemaining";
-import RunMetricsForm from "@/components/RunMetricsForm";
 import LocalTime from "@/components/LocalTime";
 import WorkoutElapsedTime from "@/components/WorkoutElapsedTime";
 import { BODY_MAP_MUSCLE_NAMES } from "@/lib/body-map/muscles";
 import { getNextPlanDayIndex } from "@/lib/workout/progression";
-import { finishWorkout, startOrResumeWorkout } from "./actions";
+import { workoutPath } from "@/lib/workout/sessionPaths";
+import { startOrResumeWorkout } from "./actions";
 import { requireUser } from "@/lib/auth/session";
-import { formatDistance } from "@/lib/units/convert";
-import { loadUnitPrefs } from "@/lib/units/prefs";
-import { loadWorkingWeightsFor } from "@/lib/trainingProfile/load";
 import { AccountTheme } from "@/components/auth/account-theme";
 import { AppNav } from "@/components/nav/AppNav";
 import theme from "@/components/theme/app-theme.module.css";
@@ -24,9 +17,13 @@ import { loadAvatarUrl } from "@/lib/photos/avatar";
 
 export const dynamic = "force-dynamic";
 
+const BODY_MAP_EXERCISE_LIMIT = 200;
+const ORDINAL_WIDTH = 2;
+
+// The landing (D43): the next workout, Start, the last workout, Explore by muscle and a
+// way to log a run. A workout that is open is on its own page, so this redirects there.
 export default async function SessionPage() {
   const user = await requireUser();
-  const units = await loadUnitPrefs(user.id);
   // Started now so the photo link loads alongside the plan.
   const avatar = loadAvatarUrl(user.id);
   const plan = await prisma.plan.findFirst({
@@ -47,8 +44,6 @@ export default async function SessionPage() {
                   name: true,
                   equipment: true,
                   primaryMuscles: true,
-                  cues: true,
-                  commonMistakes: true,
                 },
               },
             },
@@ -57,6 +52,19 @@ export default async function SessionPage() {
       },
     },
   });
+  const activeWorkout = plan
+    ? await prisma.workout.findFirst({
+        where: {
+          userId: user.id,
+          planId: plan.id,
+          finishedAt: null,
+        },
+        orderBy: { startedAt: "desc" },
+        select: { id: true },
+      })
+    : null;
+  if (activeWorkout) redirect(workoutPath(activeWorkout.id));
+
   const bodyMapExercises = plan
     ? await prisma.exercise.findMany({
         where: {
@@ -66,7 +74,7 @@ export default async function SessionPage() {
           ],
         },
         orderBy: { name: "asc" },
-        take: 200,
+        take: BODY_MAP_EXERCISE_LIMIT,
         select: {
           id: true,
           name: true,
@@ -77,85 +85,31 @@ export default async function SessionPage() {
         },
       })
     : [];
-  const activeWorkout = plan
+  const finishedWorkout = plan
     ? await prisma.workout.findFirst({
         where: {
           userId: user.id,
           planId: plan.id,
-          finishedAt: null,
+          finishedAt: { not: null },
         },
-        orderBy: { startedAt: "desc" },
-        select: {
-          id: true,
-          startedAt: true,
-          planDayId: true,
-          distanceKm: true,
-          durationSeconds: true,
-          activeBankedSeconds: true,
-          activeSince: true,
-          sets: {
-            orderBy: [{ exerciseId: "asc" }, { setNumber: "asc" }],
-            select: {
-              id: true,
-              exerciseId: true,
-              setNumber: true,
-              reps: true,
-              weightKg: true,
-              painDuringSession: true,
-              painNextMorning: true,
-              loggedAt: true,
-            },
-          },
-        },
+        orderBy: { finishedAt: "desc" },
+        select: { startedAt: true, finishedAt: true, durationSeconds: true },
       })
     : null;
-  const finishedWorkout =
-    plan && !activeWorkout
-      ? await prisma.workout.findFirst({
-          where: {
-            userId: user.id,
-            planId: plan.id,
-            finishedAt: { not: null },
-          },
-          orderBy: { finishedAt: "desc" },
-          select: { startedAt: true, finishedAt: true, durationSeconds: true },
-        })
-      : null;
-  const completedWorkoutCount =
-    plan && !activeWorkout
-      ? await prisma.workout.count({
-          where: {
-            userId: user.id,
-            planId: plan.id,
-            finishedAt: { not: null },
-          },
-        })
-      : 0;
+  const completedWorkoutCount = plan
+    ? await prisma.workout.count({
+        where: {
+          userId: user.id,
+          planId: plan.id,
+          finishedAt: { not: null },
+        },
+      })
+    : 0;
   const nextDayIndex = plan
     ? getNextPlanDayIndex(completedWorkoutCount, plan.days.length)
     : null;
   const sessionDay =
-    plan?.days.find((day) => day.id === activeWorkout?.planDayId) ??
-    (nextDayIndex === null ? undefined : plan?.days[nextDayIndex]);
-  const renderedAtIso = new Date().toISOString();
-  // The weight lifted lately on each exercise of today's session, so the weight box starts
-  // there (D37). Only while a workout is open: that is when the form is shown.
-  const workingWeights = activeWorkout
-    ? await loadWorkingWeightsFor(
-        prisma,
-        user.id,
-        sessionDay?.exercises.map((slot) => slot.exerciseId) ?? [],
-      )
-    : new Map<string, number>();
-  const loggedByExercise = new Map<
-    string,
-    NonNullable<typeof activeWorkout>["sets"]
-  >();
-  for (const set of activeWorkout?.sets ?? []) {
-    const exerciseSets = loggedByExercise.get(set.exerciseId) ?? [];
-    exerciseSets.push(set);
-    loggedByExercise.set(set.exerciseId, exerciseSets);
-  }
+    nextDayIndex === null ? undefined : plan?.days[nextDayIndex];
 
   const avatarUrl = await avatar;
 
@@ -182,7 +136,7 @@ export default async function SessionPage() {
           <>
             <div className="mb-8">
               <p className="text-xs font-semibold tracking-[0.14em] text-foreground/60 uppercase">
-                {activeWorkout ? "Workout in progress" : "Next workout"}
+                Next workout
               </p>
               <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">
                 {sessionDay.name}
@@ -195,33 +149,6 @@ export default async function SessionPage() {
                   : ""}
               </p>
             </div>
-
-            {activeWorkout ? (
-              <div className="mb-6 border-l-2 border-foreground px-3 py-2 text-sm">
-                <p className="m-0" role="status">
-                  Workout in progress since{" "}
-                  <LocalTime
-                    iso={activeWorkout.startedAt.toISOString()}
-                    kind="time"
-                  />
-                </p>
-                <ActiveWorkoutClock
-                  // A new key when the server's clock changes, so the client state restarts.
-                  key={`${activeWorkout.activeBankedSeconds}-${activeWorkout.activeSince?.getTime() ?? "paused"}`}
-                  activeSinceIso={
-                    activeWorkout.activeSince?.toISOString() ?? null
-                  }
-                  bankedSeconds={activeWorkout.activeBankedSeconds}
-                  lastSetAtIso={
-                    activeWorkout.sets.length > 0
-                      ? latestLoggedAt(activeWorkout.sets).toISOString()
-                      : null
-                  }
-                  serverNowIso={renderedAtIso}
-                  workoutId={activeWorkout.id}
-                />
-              </div>
-            ) : null}
 
             {finishedWorkout?.finishedAt && (
               <div className="mb-6 border-l-2 border-foreground/30 px-3 py-2">
@@ -240,158 +167,54 @@ export default async function SessionPage() {
               </div>
             )}
 
-            {activeWorkout && <SessionSync userId={user.id} />}
-
-            {activeWorkout && (
-              <p className="mb-4 text-xs text-foreground/60">
-                {activeWorkout.sets.length} sets logged across this workout.
-              </p>
-            )}
-
             <section aria-label={`${sessionDay.name} exercises`}>
               <ol className="divide-y divide-foreground/15 border-y border-foreground/15">
-                {sessionDay.exercises.map((slot, index) => {
-                  const sets = loggedByExercise.get(slot.exerciseId) ?? [];
-                  return (
-                    <li
-                      className="grid gap-3 py-5 sm:grid-cols-[3rem_minmax(0,1fr)_auto] sm:items-center"
-                      key={slot.id}
-                    >
-                      <span className="font-mono text-xs text-foreground/50">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                      <div>
-                        <h2 className="m-0 text-base font-semibold">
-                          {slot.exercise.name}
-                        </h2>
-                        {slot.substitutionReason ? (
-                          <p
-                            className="mt-1 mb-0 text-xs font-medium text-foreground/70"
-                            role="note"
-                          >
-                            Substitution: {slot.substitutionReason}
-                          </p>
-                        ) : null}
-                        <p className="mt-1 mb-0 text-xs text-foreground/60 capitalize">
-                          {slot.exercise.primaryMuscles.join(" · ")}
-                          {slot.exercise.equipment &&
-                            ` · ${slot.exercise.equipment}`}
-                        </p>
-                        <ExerciseCueDetails
-                          exerciseName={slot.exercise.name}
-                          cues={slot.exercise.cues}
-                          commonMistakes={slot.exercise.commonMistakes}
-                        />
-                        {activeWorkout && (
-                          <ExerciseLogPanel
-                            equipment={slot.exercise.equipment}
-                            exerciseId={slot.exerciseId}
-                            exerciseName={slot.exercise.name}
-                            lastLoggedAtIso={
-                              sets.length > 0
-                                ? latestLoggedAt(sets).toISOString()
-                                : null
-                            }
-                            plannedSets={slot.sets}
-                            restSeconds={slot.restSeconds}
-                            serverNowIso={renderedAtIso}
-                            serverSets={sets.map((set) => ({
-                              id: set.id,
-                              setNumber: set.setNumber,
-                              reps: set.reps,
-                              weightKg: set.weightKg?.toString() ?? null,
-                              painDuringSession: set.painDuringSession,
-                              painNextMorning: set.painNextMorning,
-                            }))}
-                            suggestedWeightKg={
-                              workingWeights.get(slot.exerciseId) ?? null
-                            }
-                            targetReps={slot.reps}
-                            workoutId={activeWorkout.id}
-                            weightUnit={units.weightUnit}
-                          />
-                        )}
-                      </div>
-                      <p className="m-0 text-sm text-foreground/70 sm:text-right">
-                        {slot.sets} sets × {slot.reps} reps
-                        <span className="block text-xs text-foreground/50">
-                          {slot.restSeconds}s rest
-                        </span>
+                {sessionDay.exercises.map((slot, index) => (
+                  <li
+                    className="grid gap-1 py-4 sm:grid-cols-[3rem_minmax(0,1fr)_auto] sm:items-center"
+                    key={slot.id}
+                  >
+                    <span className="font-mono text-xs text-foreground/50">
+                      {String(index + 1).padStart(ORDINAL_WIDTH, "0")}
+                    </span>
+                    <div>
+                      <h2 className="m-0 text-base font-semibold">
+                        {slot.exercise.name}
+                      </h2>
+                      <p className="mt-1 mb-0 text-xs text-foreground/60 capitalize">
+                        {slot.exercise.primaryMuscles.join(" · ")}
+                        {slot.exercise.equipment &&
+                          ` · ${slot.exercise.equipment}`}
                       </p>
-                    </li>
-                  );
-                })}
+                    </div>
+                    <p className="m-0 text-sm text-foreground/70 sm:text-right">
+                      {slot.sets} sets × {slot.reps} reps
+                    </p>
+                  </li>
+                ))}
               </ol>
             </section>
 
-            <BodyMap exercises={bodyMapExercises} />
-
-            {activeWorkout && (
-              <section
-                aria-labelledby="run-entry-title"
-                className="mt-8 border-t border-foreground/15 pt-6"
-              >
-                <p
-                  className="m-0 text-[10px] font-semibold tracking-[0.12em] text-foreground/55 uppercase"
-                  data-projector-decorative="true"
-                >
-                  Optional workout entry
-                </p>
-                <h2
-                  className="mt-2 mb-0 text-lg font-semibold"
-                  id="run-entry-title"
-                >
-                  Running distance and time
-                </h2>
-                {activeWorkout.distanceKm !== null &&
-                  activeWorkout.durationSeconds !== null && (
-                    <p className="mt-2 mb-0 text-sm text-foreground/70">
-                      Saved run:{" "}
-                      {formatDistance(
-                        Number(activeWorkout.distanceKm),
-                        units.distanceUnit,
-                      )}{" "}
-                      in {Math.floor(activeWorkout.durationSeconds / 60)} min{" "}
-                      {activeWorkout.durationSeconds % 60} sec
-                    </p>
-                  )}
-                <RunMetricsForm
-                  distanceKm={activeWorkout.distanceKm?.toString() ?? null}
-                  distanceUnit={units.distanceUnit}
-                  durationSeconds={activeWorkout.durationSeconds}
-                />
-              </section>
-            )}
-
-            <p className="mt-6 text-xs text-foreground/60">
-              {activeWorkout
-                ? "Resume this session or finish it when you are done."
-                : "Your next plan day is ready when you are."}
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-wrap items-center gap-4">
               <form action={startOrResumeWorkout}>
                 <button
                   className="min-h-12 bg-foreground px-5 text-sm font-semibold text-background transition-opacity hover:opacity-80"
                   type="submit"
                 >
-                  {activeWorkout
-                    ? "Resume workout"
-                    : completedWorkoutCount > 0
-                      ? "Start next workout"
-                      : "Start workout"}
+                  {completedWorkoutCount > 0
+                    ? "Start next workout"
+                    : "Start workout"}
                 </button>
               </form>
-              {activeWorkout && (
-                <form action={finishWorkout}>
-                  <button
-                    className="min-h-12 border border-foreground/25 px-5 text-sm font-semibold transition-colors hover:bg-foreground/5"
-                    type="submit"
-                  >
-                    Finish workout
-                  </button>
-                </form>
-              )}
+              <Link
+                className="inline-flex min-h-12 items-center text-sm underline underline-offset-4"
+                href="/progress#run-log"
+              >
+                Log a run
+              </Link>
             </div>
+
+            <BodyMap exercises={bodyMapExercises} />
           </>
         ) : (
           <section className="py-10">

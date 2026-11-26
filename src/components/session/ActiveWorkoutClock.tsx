@@ -23,6 +23,7 @@ type ActiveWorkoutClockProps = {
   activeSinceIso: string | null; // null while paused
   lastSetAtIso: string | null; // newest saved set, server clock
   serverNowIso: string; // the server's clock when the page was built
+  hideFinish?: boolean; // the workout bar (D43) carries Finish, so the paused prompt has none
 };
 
 const TICK_MS = 1000;
@@ -75,7 +76,7 @@ function clockFromResult(result: Extract<ClockResult, { status: "ok" }>) {
 }
 
 export default function ActiveWorkoutClock(props: ActiveWorkoutClockProps) {
-  const { workoutId, lastSetAtIso, serverNowIso } = props;
+  const { workoutId, lastSetAtIso, serverNowIso, hideFinish = false } = props;
   const [clock, setClock] = useState<ActiveClock>(() => clockFromProps(props));
   // null until mounted: the server render has no device clock to show.
   const [nowMs, setNowMs] = useState<number | null>(null);
@@ -232,7 +233,7 @@ export default function ActiveWorkoutClock(props: ActiveWorkoutClockProps) {
   return (
     <div className="grid gap-2">
       <span className="inline-flex flex-wrap items-baseline gap-2 text-sm">
-        <span>
+        <span className="sr-only sm:not-sr-only">
           {running ? "Elapsed workout time" : "Workout time (paused)"}
         </span>
         <time
@@ -265,11 +266,13 @@ export default function ActiveWorkoutClock(props: ActiveWorkoutClockProps) {
                 ? "No set, tap or scroll for 30 minutes, so the workout was paused at your last activity. Resume or finish?"
                 : "The workout is paused. Resume or finish?"}
             </span>
-            <form action={finishWorkout}>
-              <button className={buttonClass} type="submit">
-                Finish workout now
-              </button>
-            </form>
+            {!hideFinish && (
+              <form action={finishWorkout}>
+                <button className={buttonClass} type="submit">
+                  Finish workout now
+                </button>
+              </form>
+            )}
           </>
         )}
       </div>

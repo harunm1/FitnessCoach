@@ -19,6 +19,6 @@ export async function syncQueuedSet(input: unknown): Promise<SyncOutcome> {
     };
   }
   const outcome = await recordQueuedSet(user.id, parsed.data);
-  if (outcome.status === "saved") revalidatePath("/session");
+  if (outcome.status === "saved") revalidatePath("/session", "layout");
   return outcome;
 }
