@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { weekdayLabel } from "@/lib/programs/weekdays";
 import { prisma } from "@/lib/prisma";
 import BodyMap from "@/components/BodyMap";
 import ExerciseCueDetails from "@/components/ExerciseCueDetails";
@@ -189,6 +190,9 @@ export default async function SessionPage() {
               <p className="mt-3 text-sm text-foreground/70">{plan.name}</p>
               <p className="mt-1 text-xs text-foreground/60">
                 Day {sessionDay.dayIndex + 1} of {plan.days.length}
+                {sessionDay.weekdays.length > 0
+                  ? ` · ${weekdayLabel(sessionDay.weekdays)}`
+                  : ""}
               </p>
             </div>
 
