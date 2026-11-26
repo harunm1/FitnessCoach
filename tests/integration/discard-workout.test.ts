@@ -38,6 +38,8 @@ const LANDING = "redirect:/session";
 const SET_NUMBERS = [1, 2];
 const SETS_LOGGED = SET_NUMBERS.length;
 const REPS = 5;
+const RUN_KM = 3;
+const RUN_SECONDS = 1200;
 let sequence = 0;
 
 function athlete() {
@@ -103,6 +105,21 @@ describe("discardWorkout with PostgreSQL", () => {
   it("removes the owner's unfinished workout and its sets, then returns to the landing", async () => {
     const owner = await athlete();
     const workout = await workoutWithSets(owner.id, false);
+    await db.queuedSetKey.create({
+      data: {
+        workoutId: workout.id,
+        clientId: randomUUID(),
+        exerciseId,
+        setNumber: 1,
+      },
+    });
+    await db.runLog.create({
+      data: {
+        workoutId: workout.id,
+        distanceKm: RUN_KM,
+        durationSec: RUN_SECONDS,
+      },
+    });
     requireUser.mockResolvedValue(owner);
 
     await expect(discardWorkout(workout.id)).rejects.toThrow(LANDING);
@@ -111,6 +128,11 @@ describe("discardWorkout with PostgreSQL", () => {
       await db.workout.findUnique({ where: { id: workout.id } }),
     ).toBeNull();
     expect(await setCount(workout.id)).toBe(0);
+    // The sync keys and the run entry go with it (onDelete: Cascade).
+    expect(
+      await db.queuedSetKey.count({ where: { workoutId: workout.id } }),
+    ).toBe(0);
+    expect(await db.runLog.count({ where: { workoutId: workout.id } })).toBe(0);
   });
 
   it("leaves the owner's other workouts alone", async () => {
