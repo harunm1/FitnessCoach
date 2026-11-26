@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import ExerciseCueDetails from "@/components/ExerciseCueDetails";
 import ExerciseCard from "@/components/session/ExerciseCard";
 import CheckInPanel from "@/components/session/CheckInPanel";
+import DiscardWorkoutButton from "@/components/session/DiscardWorkoutButton";
 import SessionSync from "@/components/session/SessionSync";
 import WorkoutBar from "@/components/session/WorkoutBar";
 import { latestLoggedAt } from "@/lib/workout/restRemaining";
@@ -86,12 +87,15 @@ export default async function WorkoutPage({
             {workout.plan?.name} · Day {day.dayIndex + 1}
             {day.weekdays.length > 0 ? ` · ${weekdayLabel(day.weekdays)}` : ""}
           </p>
-          <Link
-            className="mt-3 inline-flex min-h-11 items-center text-sm underline underline-offset-4"
-            href="/coach"
-          >
-            Ask the coach
-          </Link>
+          <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1">
+            <Link
+              className="inline-flex min-h-11 items-center text-sm underline underline-offset-4"
+              href="/coach"
+            >
+              Ask the coach
+            </Link>
+            <DiscardWorkoutButton workoutId={workout.id} />
+          </div>
         </div>
 
         <SessionSync userId={user.id} />
