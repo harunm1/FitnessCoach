@@ -33,7 +33,7 @@ export function SignOutButton({
     }
   }
   return (
-    <div>
+    <div className={variant === "icon" ? styles.signOutIconWrap : undefined}>
       <button
         type="button"
         onClick={signOut}
@@ -55,7 +55,12 @@ export function SignOutButton({
         )}
       </button>
       {error && (
-        <p role="alert" className={styles.signOutError}>
+        <p
+          role="alert"
+          className={
+            variant === "icon" ? styles.signOutIconError : styles.signOutError
+          }
+        >
           {error}
         </p>
       )}

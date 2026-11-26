@@ -67,11 +67,11 @@ export default async function AccountPage({
 
   return (
     <AccountTheme className={styles.accountPage}>
-      {/* The nav bar wraps onto two rows on phones, so the header can't keep
-          its fixed phone height. */}
-      <div
-        className={`${styles.accountHeader} h-auto! max-[760px]:py-3! lg:hidden`}
-      >
+      {/* On phones this is the page's top bar (AppNav's header). From 1024 px
+          the sidebar is fixed, so this wrapper collapses to nothing instead of
+          leaving an empty band; it must not be display:none, which would hide the
+          sidebar too. */}
+      <div className={`${styles.accountHeader} h-auto! max-[760px]:py-3!`}>
         <AppNav
           current="account"
           name={user.name}

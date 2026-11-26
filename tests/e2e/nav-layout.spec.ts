@@ -27,6 +27,7 @@ const DESKTOP_MIN_WIDTH = 1024;
 const SIDEBAR_WIDTH = 256;
 const PREFIX_LENGTH = 8;
 const TAB_PRESSES = 14;
+const MIN_TARGET = 44;
 const SHOTS_DIR = process.env.UI_SHOTS_DIR;
 
 let db: Client;
@@ -80,6 +81,14 @@ test("every page has the right navigation and no sideways scroll, at three width
           await expect(sidebar.getByRole("link"), where).toHaveCount(
             PAGES.length + 2,
           );
+          if (path === "/account") {
+            // The page's own header wrapper holds the sidebar; it must collapse, not leave a band.
+            const band = await sidebar.locator("xpath=..").boundingBox();
+            expect(
+              band?.height ?? 0,
+              `${where}: empty header band`,
+            ).toBeLessThanOrEqual(1);
+          }
           const box = await page.getByRole("heading").first().boundingBox();
           expect(
             box?.x ?? 0,
@@ -126,6 +135,11 @@ test("the phone menu opens, keeps focus inside, and closes with Escape", async (
     "aria-current",
     "page",
   );
+  const closeBox = await dialog
+    .getByRole("button", { name: "Close" })
+    .boundingBox();
+  expect(closeBox?.width ?? 0).toBeGreaterThanOrEqual(MIN_TARGET);
+  expect(closeBox?.height ?? 0).toBeGreaterThanOrEqual(MIN_TARGET);
   for (let press = 0; press < TAB_PRESSES; press += 1) {
     await page.keyboard.press("Tab");
     // The dialog moves focus back in a moment after Tab leaves its last control.

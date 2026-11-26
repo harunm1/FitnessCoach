@@ -33,6 +33,7 @@ export function AppNav({
     <>
       <aside
         data-app-sidebar
+        aria-label="Sidebar"
         className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col gap-5 border-r border-[var(--line)] bg-[var(--subtle)] p-4 text-[var(--text)] lg:flex"
       >
         <AccountBrand light />

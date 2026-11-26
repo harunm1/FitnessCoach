@@ -140,9 +140,10 @@
 /* D41: from 1024 px the app shell is a fixed 16 rem sidebar (AppNav renders it
    inside the page's <main>). Move that main's content right by the sidebar's
    width. This sits outside @layer so it beats the pages' own padding utilities.
-   Body text is 17 px on desktop (16 px on phones), labels never below 14 px. */
+   Pages with the shell get body text of 17 px on desktop (16 px on phones); labels
+   are never below 14 px. */
 @media (min-width: 64rem) {
-  html {
+  html:has([data-app-sidebar]) {
     font-size: 106.25%;
   }
 

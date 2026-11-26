@@ -94,5 +94,21 @@ describe("MobileNav", () => {
   it("uses the page's theme tokens inside the portal", async () => {
     const dialog = await open();
     expect(dialog.getAttribute("data-theme")).toBe("dark");
+    // The theme's class is what defines the tokens; without it the data-theme is inert.
+    expect(dialog.className).toContain("themeRoot");
+  });
+
+  it("closes when the link for the page you are already on is chosen", async () => {
+    const dialog = await open();
+    // The page does not remount for a same-page link, so the sheet must close itself.
+    fireEvent.click(within(dialog).getByRole("link", { name: "Coach" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("has a Close button of at least 44 px that uses the shell's tokens, not shadcn's", async () => {
+    const dialog = await open();
+    const close = within(dialog).getByRole("button", { name: "Close" });
+    expect(close.className).toContain("size-11");
+    expect(close.className).toContain("var(--text)");
   });
 });

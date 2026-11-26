@@ -1,11 +1,13 @@
 "use client";
 
-import { Menu } from "lucide-react";
+import { useState } from "react";
+import { Menu, X } from "lucide-react";
 import { AccountBrand } from "@/components/auth/account-ui";
 import { useAccountTheme } from "@/components/auth/account-theme";
 import accountStyles from "@/components/auth/account.module.css";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetDescription,
   SheetTitle,
@@ -29,8 +31,9 @@ export function MobileNav({
   avatarUrl: string | null;
 }) {
   const theme = useAccountTheme();
+  const [open, setOpen] = useState(false);
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
         aria-label="Open menu"
         className="inline-flex size-11 items-center justify-center rounded-lg border border-[var(--line)] text-[var(--text)] outline-offset-2 hover:bg-[var(--inset)] focus-visible:outline-2 focus-visible:outline-[var(--focus)] lg:hidden"
@@ -39,6 +42,7 @@ export function MobileNav({
       </SheetTrigger>
       <SheetContent
         side="left"
+        showCloseButton={false}
         data-theme={theme}
         className={`${accountStyles.themeRoot} gap-5 p-4`}
         style={{ background: "var(--subtle)", color: "var(--text)" }}
@@ -47,8 +51,14 @@ export function MobileNav({
         <SheetDescription className="sr-only">
           Pages, your account and the theme.
         </SheetDescription>
+        <SheetClose
+          aria-label="Close"
+          className="absolute top-3 right-3 inline-flex size-11 items-center justify-center rounded-lg text-[var(--text)] outline-offset-2 hover:bg-[var(--inset)] focus-visible:outline-2 focus-visible:outline-[var(--focus)]"
+        >
+          <X aria-hidden="true" className="size-5" />
+        </SheetClose>
         <AccountBrand light />
-        <NavLinks current={current} />
+        <NavLinks current={current} onNavigate={() => setOpen(false)} />
         <SidebarFoot
           name={name}
           avatarUrl={avatarUrl}

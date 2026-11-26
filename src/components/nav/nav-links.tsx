@@ -54,7 +54,15 @@ const LINK_OTHER =
 
 // The main nav: an icon beside each label, and aria-current on the page the
 // user is on. Used by the sidebar and by the phone menu.
-export function NavLinks({ current }: { current?: NavPage }) {
+export function NavLinks({
+  current,
+  onNavigate,
+}: {
+  current?: NavPage;
+  // Called when a link is chosen; the phone menu uses it to close itself, since a
+  // link to the page you are on does not remount the page.
+  onNavigate?: () => void;
+}) {
   return (
     <nav aria-label="Main" className="min-h-0 flex-1 overflow-y-auto">
       <ul className="m-0 flex list-none flex-col gap-1 p-0">
@@ -62,6 +70,7 @@ export function NavLinks({ current }: { current?: NavPage }) {
           <li key={page}>
             <Link
               href={href}
+              onClick={onNavigate}
               aria-current={current === page ? "page" : undefined}
               className={`${LINK_BASE} ${current === page ? LINK_CURRENT : LINK_OTHER}`}
             >
