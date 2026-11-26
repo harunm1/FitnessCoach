@@ -9,6 +9,7 @@ import {
   type SetLogActionState,
 } from "@/lib/workout/setLogSchema";
 import { getSetLogOperation } from "@/lib/workout/setLogOperation";
+import { MAX_SETS_PER_EXERCISE } from "@/lib/workout/setTable";
 import {
   runMetricsSchema,
   type RunMetricsActionState,
@@ -166,7 +167,8 @@ export async function logSet(
         const operation = getSetLogOperation(
           parsed.data.setNumber,
           workout.sets.map((set) => set.setNumber),
-          plannedExercise.sets,
+          // The plan's sets are the default; Add set may go on to the limit (D44).
+          MAX_SETS_PER_EXERCISE,
         );
         if (!operation) {
           return {
