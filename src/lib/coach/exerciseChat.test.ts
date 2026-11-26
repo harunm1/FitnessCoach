@@ -30,6 +30,20 @@ describe("buildExerciseChatMessages", () => {
     });
   });
 
+  it("lists the steps once when the stored cues are the dataset's instructions (#193)", () => {
+    const [system] = buildExerciseChatMessages(
+      { ...exercise, cues: exercise.instructions },
+      "chest",
+      [],
+      "Any tips?",
+    );
+    const lines = (system?.content ?? "").split("\n");
+    expect(lines.filter((l) => l.includes("Lower the dumbbells"))).toHaveLength(
+      1,
+    );
+    expect(system?.content).toContain("Saved form cues:\nNone");
+  });
+
   it("uses only the most recent eight conversation turns", () => {
     const history = Array.from({ length: 10 }, (_, index) => ({
       role: index % 2 === 0 ? ("USER" as const) : ("ASSISTANT" as const),

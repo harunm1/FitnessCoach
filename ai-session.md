@@ -989,3 +989,13 @@ Generated with Claude Code (Opus), tests written first and shown failing: the to
 Limits: the number check is an eval screen, not a live filter; a tool that fails to read makes the whole turn ask the user to send again, as the D36 history read did; the coach still sees a summary, not every workout, so a question about one old session is answered from the totals.
 
 **Tools:** git, gh, Vitest, tsc, ESLint, Prettier, Prisma generate, Firecrawl (Groq docs), Groq live eval run. Skills: none invoked; the user scoping and the failure path were checked by hand against the task file's security and error-handling items.
+
+## 26 November: form guidance missing on the live session page (#193)
+
+On the live site only Butt Lift (Bridge) showed "Form guidance". I checked the data before touching code: the page shows the panel only when an exercise's stored cues or common mistakes are not empty, the seed filled those only for the 30 exercises I had curated, and the other 846 rows kept the dataset's `instructions`, which the page never reads. I downloaded the dataset (876 rows, Unlicense, repository head `f00c92c`, checked 26 Nov) and counted: every row has instructions except five.
+
+**Did with it:** wrote the test first (every exercise a starter plan or a template can show must have guidance; the starter-plan ids come from running the plan builder over day counts, equipment sets and levels) and watched it fail on main with 60 exercises without guidance, including the three from the report. The fix stores the dataset's own steps as cues for every exercise without curated cues, and the seed now fails if any row ends with none. The starter plan still prefers the curated exercises, so the plans users get do not change. I seeded a scratch PostgreSQL from the live dataset and checked that all 876 rows have guidance. Decision D45 in `docs/ARCHITECTURE.md`.
+
+**Limits, said plainly:** for the five rows with no instructions (Iron Cross, One-Arm Kettlebell Swings, Push Press, Side Bridge, Side Jackknife) I wrote short cues myself, from no source; I list them in the pull request for review. I also display "Glute Bridge" instead of "Butt Lift (Bridge)" by changing the stored name, because no name mapping existed.
+
+**Tools:** git, Vitest, ESLint, tsc, Prettier, Prisma (generate, migrate deploy, seed), scratch PostgreSQL. Skills: none beyond the task file.

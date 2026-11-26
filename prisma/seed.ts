@@ -10,10 +10,15 @@ import {
   getExerciseCueFields,
   getMissingExerciseCueIds,
 } from "./exerciseCueData";
+import {
+  exercisesWithoutGuidance,
+  guidanceForExercise,
+} from "./exerciseGuidanceData";
+import { displayNameFor } from "../src/lib/exercises/displayNames";
 import { seedLocalDemoUsers } from "./demo-users";
 
 const EXERCISES_URL =
-  "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json";
+  "https://raw.githubusercontent.com/yuhonas/free-exercise-db/f00c92c7dcf1216a928a52c3706c7ce8e2f71ed5/dist/exercises.json";
 
 // The shape of one record in the dataset; only the fields we store.
 type SourceExercise = {
@@ -52,6 +57,12 @@ async function seedExercises() {
       `Curated exercise cues are missing from the source library: ${missingCueIds.join(", ")}`,
     );
   }
+  const withoutGuidance = exercisesWithoutGuidance(exercises);
+  if (withoutGuidance.length > 0) {
+    throw new Error(
+      `No form guidance for: ${withoutGuidance.join(", ")}. Add cues to prisma/data/exercise-guidance-fallback.json.`,
+    );
+  }
   let cueCount = 0;
 
   // Batches keep the number of round trips down; 876 single upserts would be slow.
@@ -60,13 +71,15 @@ async function seedExercises() {
     const batch = exercises.slice(i, i + batchSize);
     await prisma.$transaction(
       batch.map((e) => {
-        const cueFields = getExerciseCueFields(e.id);
-        if (cueFields) cueCount += 1;
+        if (getExerciseCueFields(e.id)) cueCount += 1;
+        // Curated cues first, then the dataset's own steps (#193, D45).
+        const guidance = guidanceForExercise(e.id, e.instructions);
+        const name = displayNameFor(e.id, e.name);
         return prisma.exercise.upsert({
           where: { id: e.id },
           create: {
             id: e.id,
-            name: e.name,
+            name,
             level: LEVELS[e.level],
             equipment: e.equipment,
             category: e.category,
@@ -74,11 +87,11 @@ async function seedExercises() {
             secondaryMuscles: e.secondaryMuscles,
             instructions: e.instructions,
             images: e.images,
-            cues: cueFields?.cues ?? [],
-            commonMistakes: cueFields?.commonMistakes ?? [],
+            cues: guidance.cues,
+            commonMistakes: guidance.commonMistakes,
           },
           update: {
-            name: e.name,
+            name,
             level: LEVELS[e.level],
             equipment: e.equipment,
             category: e.category,
@@ -86,8 +99,8 @@ async function seedExercises() {
             secondaryMuscles: e.secondaryMuscles,
             instructions: e.instructions,
             images: e.images,
-            cues: cueFields?.cues ?? [],
-            commonMistakes: cueFields?.commonMistakes ?? [],
+            cues: guidance.cues,
+            commonMistakes: guidance.commonMistakes,
           },
         });
       }),

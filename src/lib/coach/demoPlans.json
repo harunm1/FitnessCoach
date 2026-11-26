@@ -1,6 +1,6 @@
 {
   "promptVersion": "plan-v3",
-  "promptFingerprint": "6d14992702a470245915112c25a8ef116419eae77cc4d429ae9f310e63f877cf",
+  "promptFingerprint": "62f145eb7ed5d3ee4a8da6dd2bbe3af7b154079c9bd0a543dd49bc3c6887bdc9",
   "source": "eval/results/2026-11-20-chain-fixtures-demo-v3-all.jsonl",
   "plans": [
     {
@@ -865,7 +865,7 @@
             "name": "Day 3",
             "exercises": [
               {
-                "exercise": "Butt Lift (Bridge)",
+                "exercise": "Glute Bridge",
                 "sets": 4,
                 "reps": 15,
                 "restSeconds": 60,
@@ -1117,7 +1117,7 @@
                 "rpe": 7
               },
               {
-                "exercise": "Butt Lift (Bridge)",
+                "exercise": "Glute Bridge",
                 "sets": 3,
                 "reps": 12,
                 "restSeconds": 60,
@@ -1191,7 +1191,7 @@
                 "rpe": 7
               },
               {
-                "exercise": "Butt Lift (Bridge)",
+                "exercise": "Glute Bridge",
                 "sets": 3,
                 "reps": 20,
                 "restSeconds": 60,
@@ -1333,7 +1333,7 @@
                 "rpe": 8
               },
               {
-                "exercise": "Butt Lift (Bridge)",
+                "exercise": "Glute Bridge",
                 "sets": 3,
                 "reps": 15,
                 "restSeconds": 75,
