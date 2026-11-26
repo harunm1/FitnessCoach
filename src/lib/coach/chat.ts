@@ -33,6 +33,7 @@ import {
   type ProviderEvent,
 } from "./providers";
 import { screenUserMessage, type SafetyClassifier } from "./safetyScreen";
+import type { ToolResult } from "./tools/types";
 
 export type ChatSource = "COACH" | "GUARDRAIL" | "UNAVAILABLE";
 
@@ -61,10 +62,10 @@ export type CoachContext = {
   // Muscle names from the exercise library that code matched to the injury text, as
   // onboarding does for the plan. Only these reach the prompt.
   avoidMuscles?: string[];
-  // A short summary of the user's logged history (D36): training since, weekly rate, usual
-  // time, and the best recent set of a few lifts. Built in code from finished workouts; never
-  // the rows themselves.
-  historyLines?: string[];
+  // The user's own data from the coach's tools (D43): training profile (D36), recent
+  // workouts with imports flagged, working weights, body-weight trend. Built in code from
+  // this user's rows, each with its period; never the rows themselves.
+  toolResults?: ToolResult[];
   // Today's or the next session, as short lines such as "Bench press 3 x 10".
   sessionLines: string[];
 };
@@ -292,7 +293,9 @@ function isFollowUp(text: string, recent: ChatMessage[]): boolean {
 // pain advice only for a pain report; answers are 2 to 4 sentences. A live reply had
 // volunteered all three and then run out of tokens.
 // chat-v5 (23 Nov): tension is not pain (form cues first); sets and reps follow the plan.
-export const CHAT_PROMPT_VERSION = "chat-v5";
+// chat-v6 (26 Nov, D43): the user's own data from the coach's tools, the logged weight trend
+// in scope, numbers only from that data with the period named, and no "I can't see it".
+export const CHAT_PROMPT_VERSION = "chat-v6";
 
 // Profile values (equipment and muscle names) go into the system prompt, so each is
 // kept to one short piece of a line: no newlines to start a fake instruction, no
@@ -305,12 +308,26 @@ function asData(text: string | null): string {
     .slice(0, MAX_PROFILE_TEXT);
 }
 
+// The tool results as plain lines under one heading (D43): each result's name and period,
+// then its lines, every piece kept to one short line of data.
+function dataBlock(results: ToolResult[]): string[] {
+  if (results.length === 0) return [];
+  return [
+    "Your data in the app (this user's own rows, from the app's tools):",
+    ...results.flatMap((result) => [
+      `${result.name}, ${asData(result.period)}:`,
+      ...result.lines.map((line) => `- ${asData(line)}`),
+    ]),
+  ];
+}
+
 export function buildCoachSystemPrompt(ctx: CoachContext): string {
   const avoid = (ctx.avoidMuscles ?? []).map(asData).filter(Boolean);
-  const history = (ctx.historyLines ?? []).map(asData).filter(Boolean);
   return [
     "You are FitnessCoach, a strength and running coach inside a training app.",
-    "Answer only about this user's training, recovery and the session below. Answer in 2 to 4 sentences (under 80 words) unless the user asks for more detail.",
+    "Answer only about this user's training, recovery, the session below and the user's own data below (their logged and imported workouts, lifts and body-weight entries). Answer in 2 to 4 sentences (under 80 words) unless the user asks for more detail.",
+    "Reviewing the user's own logged body-weight trend and training volume is in scope: say what the numbers show. Diet plans, calorie targets, supplements and medical advice are not.",
+    "Every number you give about the user's history must come from Your data below, and say which period it covers. Never say you cannot see or access the user's history, imports or body-weight entries: everything the app holds for them is below. If a part says none is logged, say so and where to log it.",
     "Suggest exercise swaps only from movements the user's equipment allows, and say why in one line.",
     "Never diagnose and never name a medication or dose.",
     "If the user reports sharp, stabbing or shooting pain, numbness, tingling or a sudden injury, tell them to stop that exercise and see a professional.",
@@ -322,7 +339,7 @@ export function buildCoachSystemPrompt(ctx: CoachContext): string {
     `Goal: ${ctx.goal}. Level: ${ctx.level}. Days a week: ${ctx.daysPerWeek}.`,
     `Equipment: ${ctx.equipment.map(asData).filter(Boolean).join(", ") || "body weight only"}.`,
     ...(avoid.length ? [`Muscles to keep load off: ${avoid.join(", ")}.`] : []),
-    ...(history.length ? ["Training history:", ...history] : []),
+    ...dataBlock(ctx.toolResults ?? []),
     "Session:",
     ...(ctx.sessionLines.length ? ctx.sessionLines : ["rest day"]),
   ].join("\n");

@@ -1,21 +1,21 @@
 {
-  "promptVersion": "chat-v5",
-  "promptFingerprint": "7656efec7144837a4cd5ad18c765de68e0d3bce1e91909c65599d1d868f8b60e",
-  "recordedOn": "2026-11-24",
+  "promptVersion": "chat-v6",
+  "promptFingerprint": "f71e0d77ee763acf86de7bc58d6f43b8841ffd2912d16c56a501677b289446f0",
+  "recordedOn": "2026-11-26",
   "replies": [
     {
       "question": "Swap this exercise",
-      "reply": "Which specific movement would you like to swap, and what equipment do you have available for the replacement?",
+      "reply": "Sure! Which move in today’s routine would you like to replace—Bench Press, Shoulder Press, Incline Dumbbell Press, Lateral Raise, or Triceps Pushdown? Let me know and I’ll suggest a suitable swap using the equipment you have.",
       "model": "openai/gpt-oss-120b"
     },
     {
       "question": "Too easy",
-      "reply": "If the sets feel easy, add 2–5 kg to the bar for the Bench Press and Shoulder Press while keeping the same 4 × 8 scheme. For the Incline Dumbbell Press, use a slightly heavier pair of dumbbells or add a brief 2‑second pause at the bottom to increase time‑under‑tension. If you want a new stimulus, swap the Side Lateral Raise for Cable Face Pulls (same equipment) to hit the rear delts and improve shoulder stability.",
+      "reply": "If the sets feel easy, bump the load by ≈ 5 % on the barbell bench press, shoulder press, and incline dumbbell press while keeping the prescribed reps (4 × 8, 4 × 8, 3 × 10). For the side‑lateral raises and triceps pushdowns, add a small weight increase (≈ 2–3 kg) or use a thicker cable attachment to keep the 3 × 12 scheme challenging. This maintains your volume while providing a stronger stimulus for muscle growth.",
       "model": "openai/gpt-oss-120b"
     },
     {
       "question": "Too hard",
-      "reply": "If the weight feels too heavy, reduce the load by 10‑15 % while keeping the prescribed sets and reps. Focus on a solid setup: brace your core, control the tempo (2‑0‑2), and stop the range of motion just before you lose form. If you notice any sharp or stabbing pain, stop the exercise immediately and see a professional. Let me know if you’d like alternative load suggestions.",
+      "reply": "If the current loads feel too heavy, drop the weight by about 10‑15 % and focus on clean form for each set. You can also swap the Barbell Shoulder Press for a Seated Dumbbell Press (same equipment) to give your shoulders a more stable position and make the movement easier. Keep the rep scheme (4 × 8 for bench, 4 × 8 for press, 3 × 10/12 for the accessories) and aim for a weight that lets you finish each set without compromising technique. If any sharp pain appears, stop the exercise and see a professional.",
       "model": "openai/gpt-oss-120b"
     }
   ]

@@ -173,6 +173,6 @@ describe("CHAT_CASES", () => {
   });
 
   it("is checked against the version of the prompt it was written for", () => {
-    expect(CHAT_PROMPT_VERSION).toBe("chat-v5");
+    expect(CHAT_PROMPT_VERSION).toBe("chat-v6");
   });
 });

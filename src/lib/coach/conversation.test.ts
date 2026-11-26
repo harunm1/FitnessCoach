@@ -15,12 +15,35 @@ const profile = {
   injuries: null,
 };
 
-function dbWith(overrides: Record<string, unknown>) {
+type Overrides = Record<string, unknown> & {
+  // The last 28 days of workouts with their sets (getRecentWorkouts, D43).
+  recentWorkouts?: unknown[];
+  importSpan?: unknown;
+  weighIns?: unknown[];
+};
+
+function dbWith(overrides: Overrides) {
+  const { recentWorkouts = [], importSpan, weighIns = [], ...rest } = overrides;
+  const given = (rest.workout ?? {}) as Record<string, unknown>;
+  const history = (given.findMany ?? (async () => [])) as (
+    args: unknown,
+  ) => Promise<unknown[]>;
   const workout = {
     count: vi.fn(async () => 0),
-    // The training history (D36): no finished workouts unless a test gives some.
-    findMany: vi.fn(async () => []),
-    ...(overrides.workout as object | undefined),
+    // The training history (D36) selects start times only; getRecentWorkouts (D43) selects
+    // the sets too. No finished workouts unless a test gives some.
+    ...given,
+    findMany: vi.fn(async (args: { select?: { sets?: unknown } }) =>
+      args?.select?.sets ? recentWorkouts : history(args),
+    ),
+    aggregate: vi.fn(
+      async () =>
+        importSpan ?? {
+          _count: { _all: 0 },
+          _min: { startedAt: null },
+          _max: { startedAt: null },
+        },
+    ),
   };
   return {
     profile: { findUnique: vi.fn(async () => profile) },
@@ -29,10 +52,16 @@ function dbWith(overrides: Record<string, unknown>) {
       findUnique: vi.fn(async () => ({ weightUnit: "KG", distanceUnit: "KM" })),
     },
     setLog: { findMany: vi.fn(async () => []) },
-    ...overrides,
+    bodyWeight: { findMany: vi.fn(async () => weighIns) },
+    ...rest,
     workout,
   } as unknown as Parameters<typeof coachContextFor>[0];
 }
+
+const toolLines = (
+  context: Awaited<ReturnType<typeof coachContextFor>>,
+  name: string,
+) => context?.toolResults?.find((result) => result.name === name)?.lines;
 
 describe("coachContextFor training history (D36)", () => {
   const NOW = new Date("2026-11-25T17:00:00Z");
@@ -75,10 +104,13 @@ describe("coachContextFor training history (D36)", () => {
 
     const context = await coachContextFor(db, "owner", NOW);
 
-    expect(context?.historyLines?.[0]).toMatch(/^Training since /);
-    expect(context?.historyLines?.[0]).toContain("intermediate");
-    expect(context?.historyLines?.[1]).toContain("Bench Press 80 kg x 5");
-    expect(JSON.stringify(context?.historyLines)).not.toMatch(
+    const profileLines = toolLines(context, "getTrainingProfile");
+    expect(profileLines?.[1]).toMatch(/^Training since /);
+    expect(profileLines?.[1]).toContain("intermediate");
+    expect(toolLines(context, "getExerciseHistory")?.[0]).toContain(
+      "Bench Press 80 kg x 5",
+    );
+    expect(JSON.stringify(context?.toolResults)).not.toMatch(
       /\d{4}-\d{2}-\d{2}/,
     );
   });
@@ -109,13 +141,17 @@ describe("coachContextFor training history (D36)", () => {
 
     const context = await coachContextFor(db, "owner", NOW);
 
-    expect(context?.historyLines?.[1]).toContain("Bench Press 135 lb x 5");
+    expect(toolLines(context, "getExerciseHistory")?.[0]).toContain(
+      "Bench Press 135 lb x 5",
+    );
   });
 
-  it("has no history lines for a user with no finished workouts", async () => {
+  it("says there is no history for a user with no finished workouts", async () => {
     const context = await coachContextFor(dbWith({}), "owner", NOW);
 
-    expect(context?.historyLines).toEqual([]);
+    expect(toolLines(context, "getTrainingProfile")).toEqual([
+      "No finished workouts yet.",
+    ]);
   });
 });
 
@@ -235,5 +271,91 @@ describe("saveExchange", () => {
       expect.objectContaining({ where: { id: 99, userId: "owner" } }),
     );
     expect(createMany).not.toHaveBeenCalled();
+  });
+});
+
+// The live failure of 25 Nov 17:20 (D43): asked to "review my hevy import history, and weight
+// loss", the coach said it had no access to either. The context now carries both. A seeded
+// fixture, never his data.
+describe("coachContextFor reads the user's own data (D43)", () => {
+  const NOW = new Date("2026-11-26T17:00:00Z");
+  const importedSet = {
+    reps: 5,
+    weightKg: "80",
+    exercise: { name: "Bench Press" },
+  };
+  const fixture = {
+    recentWorkouts: [
+      { source: "hevy-import", sets: [importedSet, importedSet] },
+      { source: "live", sets: [importedSet] },
+    ],
+    importSpan: {
+      _count: { _all: 412 },
+      _min: { startedAt: new Date("2024-03-14T22:00:00Z") },
+      _max: { startedAt: new Date("2026-11-20T23:00:00Z") },
+    },
+    weighIns: [
+      { date: new Date("2026-09-01T00:00:00Z"), weightKg: "84.2" },
+      { date: new Date("2026-11-24T00:00:00Z"), weightKg: "81.0" },
+    ],
+  };
+
+  it("has the import count and the body-weight trend, each with its period", async () => {
+    const context = await coachContextFor(dbWith(fixture), "owner", NOW);
+
+    const recent = context?.toolResults?.find(
+      (result) => result.name === "getRecentWorkouts",
+    );
+    expect(recent?.period).toBe("last 28 days (29 Oct 2026 to 26 Nov 2026)");
+    expect(recent?.lines).toContain(
+      "Imported from Hevy, all time: 412 workouts, 14 Mar 2024 to 20 Nov 2026.",
+    );
+    const weight = context?.toolResults?.find(
+      (result) => result.name === "getBodyWeightTrend",
+    );
+    expect(weight?.period).toBe("last 90 days (28 Aug 2026 to 26 Nov 2026)");
+    expect(weight?.lines).toContain(
+      "Change: -3.2 kg over 84 days, -0.27 kg a week.",
+    );
+    expect(context?.toolResults?.map((result) => result.name)).toEqual([
+      "getTrainingProfile",
+      "getRecentWorkouts",
+      "getExerciseHistory",
+      "getBodyWeightTrend",
+    ]);
+  });
+
+  it("scopes every read of the user's rows to the signed-in user", async () => {
+    const db = dbWith(fixture);
+    await coachContextFor(db, "owner", NOW);
+
+    const calls = [
+      ...vi.mocked(db.workout.findMany).mock.calls,
+      ...vi.mocked(db.workout.aggregate).mock.calls,
+      ...vi.mocked(db.bodyWeight.findMany).mock.calls,
+      ...vi.mocked(db.setLog.findMany).mock.calls,
+    ].map(([args]) => args as { where: Record<string, unknown> });
+    expect(calls.length).toBeGreaterThanOrEqual(5);
+    for (const { where } of calls) {
+      const owner =
+        where.userId ?? (where.workout as { userId?: string })?.userId;
+      expect(owner).toBe("owner");
+    }
+  });
+});
+
+// D43 failure path: one tool that cannot read fails the whole context, so the request reports
+// "send it again" (request.ts) and no model call is made with a prompt missing that data,
+// which would still tell the model it holds everything the app has.
+describe("coachContextFor when a tool cannot read (D43)", () => {
+  it("rejects instead of building a context without that tool's data", async () => {
+    const db = dbWith({});
+    vi.mocked(db.bodyWeight.findMany).mockRejectedValueOnce(
+      new Error("connection lost"),
+    );
+
+    await expect(coachContextFor(db, "owner")).rejects.toThrow(
+      "connection lost",
+    );
   });
 });
