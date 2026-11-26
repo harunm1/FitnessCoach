@@ -96,10 +96,10 @@ WIDTHS.forEach((width) => {
     await expectInsideScreen(row, width, "History row");
     expect(await elementsPastTheEdge(page), "History").toEqual([]);
     await row.click();
-    await expect(page.getByText("could not be found")).toHaveCount(0);
     await expect(page, "History row target").toHaveURL(
       (url) => url.pathname === `/history/${athlete.workoutId}`,
     );
+    await expect(page.getByText("could not be found")).toHaveCount(0);
 
     await page.goto("/import");
     await page.locator('input[type="file"]').setInputFiles(FIXTURE);
