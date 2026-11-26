@@ -14,8 +14,9 @@ vi.mock("@/lib/prisma", () => ({ prisma: {} }));
 vi.mock("@/lib/coach/conversation", () => ({ loadConversation, hasProfile }));
 vi.mock("@/lib/photos/avatar", () => ({ loadAvatarUrl }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+vi.mock("./personalize-action", () => ({ personalizeWithCoach: vi.fn() }));
 import CoachPage from "./page";
-import { NO_PROFILE_MESSAGE, TIER_MESSAGE } from "./copy";
+import { NO_PROFILE_MESSAGE, PERSONALIZE_INTRO, TIER_MESSAGE } from "./copy";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -81,5 +82,42 @@ describe("coach page", () => {
     expect(html).toContain(NO_PROFILE_MESSAGE);
     expect(html).toContain('href="/onboarding"');
     expect(html).not.toContain('name="message"');
+  });
+
+  it("puts Personalize with the coach, with its one-line explanation, above the chat (demo step 5)", async () => {
+    requireAccount.mockResolvedValue({
+      user: { id: "owner" },
+      access: { permissions: ["coach"] },
+    });
+
+    const html = renderToStaticMarkup(await CoachPage());
+
+    expect(PERSONALIZE_INTRO).toBe(
+      "Rebuild this week from your profile and history.",
+    );
+    expect(html).toContain(PERSONALIZE_INTRO);
+    expect(html).toContain("Personalize with the coach");
+    expect(html.indexOf("Personalize with the coach")).toBeLessThan(
+      html.indexOf('name="message"'),
+    );
+  });
+
+  it("does not show Personalize with the coach on the tier or quiz messages", async () => {
+    requireAccount.mockResolvedValue({
+      user: { id: "owner" },
+      access: { permissions: ["quiz", "default-plan", "tracking"] },
+    });
+    expect(renderToStaticMarkup(await CoachPage())).not.toContain(
+      "Personalize with the coach",
+    );
+
+    requireAccount.mockResolvedValue({
+      user: { id: "owner" },
+      access: { permissions: ["coach"] },
+    });
+    hasProfile.mockResolvedValue(false);
+    expect(renderToStaticMarkup(await CoachPage())).not.toContain(
+      "Personalize with the coach",
+    );
   });
 });

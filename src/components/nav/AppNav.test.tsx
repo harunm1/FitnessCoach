@@ -3,20 +3,27 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/components/auth/account-theme", () => ({
   ThemeToggle: () => <button type="button">Theme</button>,
+  useAccountTheme: () => "light",
 }));
 vi.mock("@/components/auth/sign-out-button", () => ({
-  SignOutButton: () => <button type="button">Sign out</button>,
+  SignOutButton: ({ variant }: { variant?: string }) => (
+    <button type="button" data-variant={variant}>
+      Sign out
+    </button>
+  ),
 }));
 
-import { AppNav } from "./AppNav";
+import { AppNav, NAV_LINKS } from "./AppNav";
 
 // Every <a> in the markup as { href, text, current }.
 function links(html: string) {
-  return [...html.matchAll(/<a([^>]*)>(.*?)<\/a>/g)].map(([, attrs, text]) => ({
-    href: attrs.match(/href="([^"]*)"/)?.[1] ?? null,
-    text: text.replace(/<[^>]*>/g, "").trim(),
-    current: attrs.includes('aria-current="page"'),
-  }));
+  return [...html.matchAll(/<a\s([^>]*)>(.*?)<\/a>/g)].map(
+    ([, attrs, text]) => ({
+      href: attrs.match(/href="([^"]*)"/)?.[1] ?? null,
+      text: text.replace(/<[^>]*>/g, "").trim(),
+      current: attrs.includes('aria-current="page"'),
+    }),
+  );
 }
 
 function render(props: Partial<Parameters<typeof AppNav>[0]> = {}) {
@@ -25,8 +32,8 @@ function render(props: Partial<Parameters<typeof AppNav>[0]> = {}) {
   );
 }
 
-describe("AppNav", () => {
-  it("links the logo to the home page, then every main page, then the account", () => {
+describe("AppNav sidebar", () => {
+  it("links the logo, every main page, Settings, the user's name, then the phone bar's logo", () => {
     expect(links(render()).map(({ href, text }) => ({ href, text }))).toEqual([
       { href: "/", text: "FitnessCoach" },
       { href: "/session", text: "Session" },
@@ -36,12 +43,28 @@ describe("AppNav", () => {
       { href: "/progress/photos", text: "Photos" },
       { href: "/history", text: "History" },
       { href: "/import", text: "Import" },
+      { href: "/account", text: "Settings" },
       { href: "/account", text: "Free Demo" },
+      { href: "/", text: "FitnessCoach" },
     ]);
+  });
+
+  it("is a fixed sidebar that the page content can offset for", () => {
+    const html = render();
+    expect(html).toContain("data-app-sidebar");
+    expect(html).toMatch(
+      /<aside[^>]*data-app-sidebar[^>]*class="[^"]*\bfixed\b/,
+    );
   });
 
   it("puts the main pages in a labelled nav", () => {
     expect(render()).toContain('<nav aria-label="Main"');
+  });
+
+  it("gives every page link an icon beside its label", () => {
+    const nav =
+      render().match(/<nav aria-label="Main"[\s\S]*?<\/nav>/)?.[0] ?? "";
+    expect(nav.match(/<svg/g)?.length).toBe(NAV_LINKS.length);
   });
 
   it.each([
@@ -52,12 +75,18 @@ describe("AppNav", () => {
     ["photos", "/progress/photos"],
     ["history", "/history"],
     ["import", "/import"],
-    ["account", "/account"],
   ] as const)("marks only %s as the current page", (current, href) => {
     const found = links(render({ current }));
     expect(
       found.filter((link) => link.current).map((link) => link.href),
     ).toEqual([href]);
+  });
+
+  it("marks Settings (and the user's name, which opens it) on the account page", () => {
+    const current = links(render({ current: "account" })).filter(
+      (link) => link.current,
+    );
+    expect(current.map((link) => link.text)).toEqual(["Settings", "Free Demo"]);
   });
 
   it("marks no page as current when the page isn't in the menu", () => {
@@ -70,16 +99,22 @@ describe("AppNav", () => {
     );
   });
 
-  it("shows the page's own controls beside the badge", () => {
-    expect(
-      render({ actions: <button type="button">Sign out</button> }),
-    ).toContain("Sign out");
+  it("shows the page's own controls once, in the in-flow header", () => {
+    const html = render({
+      actions: <button type="button">Edit profile</button>,
+    });
+    expect(html.match(/Edit profile/g)).toHaveLength(1);
   });
 
-  it("includes the common theme, verification and sign-out controls", () => {
+  it("has the theme toggle and ONE icon-only sign-out, and no verified badge", () => {
     const html = render();
     expect(html).toContain("Theme");
-    expect(html).toContain("Verified account");
-    expect(html).toContain("Sign out");
+    expect(html.match(/Sign out/g)).toHaveLength(1);
+    expect(html).toContain('data-variant="icon"');
+    expect(html).not.toContain("Verified account");
+  });
+
+  it("keeps the in-flow header for phones only, apart from page actions", () => {
+    expect(render()).toMatch(/<header[^>]*class="[^"]*\blg:hidden\b/);
   });
 });

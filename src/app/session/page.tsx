@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 const BODY_MAP_EXERCISE_LIMIT = 200;
 const ORDINAL_WIDTH = 2;
 
-// The landing (D43): the next workout, Start, the last workout, Explore by muscle and a
+// The landing (D46): the next workout, Start, the last workout, Explore by muscle and a
 // way to log a run. A workout that is open is on its own page, so this redirects there.
 export default async function SessionPage() {
   const user = await requireUser();

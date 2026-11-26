@@ -1,4 +1,4 @@
-// The bar fixed to the bottom of the workout page (D43): the clock, Pause or Resume, and
+// The bar fixed to the bottom of the workout page (D46): the clock, Pause or Resume, and
 // Finish workout, always in view, so Finish needs no scrolling on a long workout or a phone.
 import { finishWorkout } from "@/app/session/actions";
 import ActiveWorkoutClock from "./ActiveWorkoutClock";

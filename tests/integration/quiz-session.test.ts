@@ -603,7 +603,7 @@ describe("quiz and session authorization with PostgreSQL", () => {
     const otherPlan = await plan(second.id, "Second plan");
     const otherWorkout = await workout(second.id, otherPlan);
     await signIn(first);
-    // Starting and resuming both land on the workout's own page (D43).
+    // Starting and resuming both land on the workout's own page (D46).
     await expect(startOrResumeWorkout()).rejects.toThrow(
       /^redirect:\/session\/\d+$/,
     );
@@ -893,7 +893,7 @@ describe("quiz and session authorization with PostgreSQL", () => {
     ).toBeNull();
   });
 
-  it("opens a workout page only for its owner while it is open (D43)", async () => {
+  it("opens a workout page only for its owner while it is open (D46)", async () => {
     const ownWorkout = await workout(
       first.id,
       await plan(first.id, "First plan"),

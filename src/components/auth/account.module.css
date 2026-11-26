@@ -22,6 +22,10 @@
   --error-line: #edcfcc;
   --art-plate: #c9cbc2;
   --art-handle: #e1e2dc;
+  --brand: #1d4ed8;
+  --brand-soft: #e6edfc;
+  --on-brand: #ffffff;
+  --shell-muted: #626262;
   color-scheme: light;
 }
 
@@ -49,6 +53,10 @@
   --error-line: #5a3531;
   --art-plate: #9b9e92;
   --art-handle: #30312c;
+  --brand: #8ab4ff;
+  --brand-soft: #1b2a4a;
+  --on-brand: #0a0a0a;
+  --shell-muted: #b0b0aa;
   color-scheme: dark;
 }
 
@@ -77,6 +85,10 @@
     --error-line: #5a3531;
     --art-plate: #9b9e92;
     --art-handle: #30312c;
+    --brand: #8ab4ff;
+    --brand-soft: #1b2a4a;
+    --on-brand: #0a0a0a;
+    --shell-muted: #b0b0aa;
     color-scheme: dark;
   }
 }
@@ -88,7 +100,7 @@
   --account-line: var(--line);
   color: var(--text);
   background: var(--page);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   min-height: 100svh;
 }
 .authPage *,
@@ -156,7 +168,7 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 1.8px;
   font-weight: 650;
 }
@@ -197,7 +209,7 @@
 }
 .artCaption {
   display: block;
-  font-size: 9px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 2px;
   color: var(--quiet);
@@ -284,7 +296,7 @@
   align-items: center;
   gap: 7px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 650;
   letter-spacing: 1.4px;
   margin-bottom: 13px;
@@ -523,6 +535,13 @@
   gap: 20px;
   background: var(--surface);
 }
+@media (min-width: 64rem) {
+  .accountHeader {
+    min-height: 0;
+    padding: 0;
+    border-bottom: 0;
+  }
+}
 .headerRight {
   display: flex;
   align-items: center;
@@ -560,10 +579,48 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+.signOutIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--shell-muted, var(--foreground));
+  cursor: pointer;
+}
+.signOutIcon:hover {
+  background: var(--inset, transparent);
+  color: var(--text, var(--foreground));
+}
+.signOutIcon:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.signOutIconWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+/* The sidebar's error floats above the icon so it cannot squeeze the name. */
+.signOutIconError {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  width: 200px;
+  padding: 8px 10px;
+  border: 1px solid var(--error-line, currentColor);
+  border-radius: 8px;
+  background: var(--error-bg, var(--surface));
+  color: var(--error);
+  font-size: 14px;
+  margin: 0;
+}
 .signOutError {
   max-width: 180px;
   color: var(--error);
-  font-size: 11px;
+  font-size: 14px;
   margin: 5px 0 0;
 }
 .accountContent {
@@ -578,7 +635,7 @@
   margin-bottom: 31px;
 }
 .eyebrow {
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 650;
   letter-spacing: 1.6px;
   color: var(--muted);
@@ -607,7 +664,7 @@
   border: 1px solid var(--success-line);
   border-radius: 30px;
   color: var(--success);
-  font-size: 11px;
+  font-size: 14px;
   background: var(--success-bg);
 }
 .dashboardGrid {
@@ -652,7 +709,7 @@
   padding: 7px 11px;
   border: 1px solid var(--line);
   border-radius: 20px;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--accent);
 }
@@ -667,7 +724,7 @@
 .trialDescription {
   color: var(--muted);
   line-height: 1.8;
-  font-size: 13px;
+  font-size: 14px;
   max-width: 410px;
 }
 .trialPerks {
@@ -676,7 +733,7 @@
   gap: 10px 19px;
   margin: 22px 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 14px;
 }
 .trialPerks span {
   display: inline-flex;
@@ -691,26 +748,26 @@
   max-width: 265px;
 }
 .trialFinePrint {
-  font-size: 10px;
+  font-size: 14px;
   color: var(--muted);
   line-height: 1.7;
   margin-top: 12px;
 }
 .trialFormError {
   color: var(--error);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.7;
   margin-top: 10px;
 }
 .trialFormStatus {
   color: var(--accent);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.7;
   margin-top: 10px;
 }
 .trialStatus {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.8;
   margin-top: 22px;
 }
@@ -741,7 +798,7 @@
   border-radius: 6px;
 }
 .trialRemaining {
-  font-size: 11px;
+  font-size: 14px;
   color: var(--accent);
 }
 .card {
@@ -801,11 +858,11 @@
   min-width: 0;
 }
 .accessText strong {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
 }
 .accessText p {
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1.7;
   color: var(--muted);
   margin-top: 4px;
@@ -887,7 +944,7 @@
   align-items: center;
   gap: 12px;
   min-height: 44px;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted);
 }
 .photoZoom input {
@@ -902,7 +959,7 @@
   white-space: nowrap;
 }
 .profileTop p {
-  font-size: 11px;
+  font-size: 14px;
   color: var(--muted);
   margin-top: 5px;
 }
@@ -912,7 +969,7 @@
   gap: 21px;
 }
 .profileList dt {
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 550;
   color: var(--quiet);
   text-transform: uppercase;
@@ -920,7 +977,7 @@
   margin-bottom: 7px;
 }
 .profileList dd {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text);
   overflow-wrap: anywhere;
 }
@@ -936,7 +993,7 @@
   padding-top: 22px;
 }
 .securityBox p {
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1.8;
   color: var(--quiet);
   margin: 9px 0 14px;
@@ -946,7 +1003,7 @@
   align-items: center;
   gap: 7px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 550;
   text-underline-offset: 4px;
 }
@@ -957,7 +1014,7 @@
   gap: 20px;
   padding-top: 28px;
   color: var(--quiet);
-  font-size: 10px;
+  font-size: 14px;
 }
 .accountFooter span {
   display: inline-flex;
@@ -1067,11 +1124,11 @@
     font-size: 35px;
   }
   .introText {
-    font-size: 13px;
+    font-size: 14px;
   }
   .readyBadge {
     padding: 7px 10px;
-    font-size: 10px;
+    font-size: 14px;
   }
   .dashboardGrid {
     grid-template-columns: 1fr;
@@ -1149,7 +1206,7 @@
   background: transparent;
   color: var(--text);
   font: inherit;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 550;
   cursor: pointer;
   text-align: left;
@@ -1212,7 +1269,7 @@
 .passwordDialog .dialogDescription {
   margin: 15px 0 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.8;
 }
 .passwordChangeForm {
@@ -1250,7 +1307,7 @@
   gap: 8px;
   min-height: 32px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   cursor: pointer;
 }
 .showPasswordLabel input {
@@ -1262,7 +1319,7 @@
   margin: 0;
 }
 .passwordDialog .textLink {
-  font-size: 12px;
+  font-size: 14px;
   text-underline-offset: 4px;
 }
 .dialogActions {
@@ -1283,7 +1340,7 @@
   background: var(--surface);
   color: var(--text);
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
 }
 .dialogCancel:hover {
@@ -1391,7 +1448,7 @@
   background: transparent;
   color: var(--text);
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
 }
 .secondaryButton:hover:not(:disabled) {
@@ -1412,7 +1469,7 @@
   min-width: 0;
 }
 .billingPlans legend {
-  font-size: 13px;
+  font-size: 14px;
   margin-bottom: 12px;
 }
 .billingOption {
@@ -1439,7 +1496,7 @@
 }
 .billingOption small {
   margin-top: 5px;
-  font-size: 12px;
+  font-size: 14px;
   overflow-wrap: anywhere;
 }
 .billingPlans:disabled .billingOption {
@@ -1493,7 +1550,7 @@
   gap: 12px;
   margin: 18px 0 4px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14px;
 }
 .socialDivider::before,
 .socialDivider::after {

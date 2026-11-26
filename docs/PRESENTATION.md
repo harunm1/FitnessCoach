@@ -27,7 +27,7 @@ From the course's presentation guidelines and rubric (read 3 November). Slides a
 2. **Quiz to plan, instantly:** a Server Action writes the profile and a rule-based week to PostgreSQL; the plan page reads it back (D11).
 3. **Log a set:** a mutation and the state change on the session screen.
 4. **Progress photo:** upload to the private bucket and view it through a short-lived URL (cloud storage).
-5. **Personalize with the coach:** the model's plan passes the verifier and replaces the week (advanced feature 2); with the provider unreachable, the fallback shows at once (D12).
+5. **Personalize with the coach** (on the **Coach** page, above the chat, D40): the model's plan passes the verifier and replaces the week (advanced feature 2); with the provider unreachable, the fallback shows at once (D12).
 
 **Backups:** a recording of steps 4 and 5 and screenshots of the call log, in case Wi-Fi, the bucket or the providers fail.
 

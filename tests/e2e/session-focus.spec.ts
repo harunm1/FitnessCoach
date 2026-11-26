@@ -1,4 +1,4 @@
-// Browser proof for the workout page (D43): Start opens /session/[id] with only that
+// Browser proof for the workout page (D46): Start opens /session/[id] with only that
 // workout, Finish stays in view at phone width from the last exercise, a set logged offline
 // still queues there, and a reload (or /session) returns to the same workout.
 import { randomUUID } from "node:crypto";

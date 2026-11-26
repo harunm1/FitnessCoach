@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// The bar fixed to the bottom of the workout page (D43): the clock, Pause or Resume, and
+// The bar fixed to the bottom of the workout page (D46): the clock, Pause or Resume, and
 // Finish workout, always in view, so Finish never sits below a long list of exercises.
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
