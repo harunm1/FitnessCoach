@@ -48,7 +48,7 @@ export function ImportPreview({
       </p>
 
       {unmatched.length > 0 && (
-        <fieldset className="grid gap-3 border border-foreground/15 p-4">
+        <fieldset className="grid min-w-0 grid-cols-1 gap-3 border border-foreground/15 p-4">
           <legend className="px-1 text-sm font-semibold">
             Exercises we could not match
           </legend>
@@ -64,13 +64,16 @@ export function ImportPreview({
             </p>
           )}
           {unmatched.map((title, index) => (
-            <label key={title} className="grid gap-1 text-sm">
+            <label
+              key={title}
+              className="grid min-w-0 grid-cols-1 gap-1 text-sm"
+            >
               <span className="font-medium">{title}</span>
               <input type="hidden" name={`title_${index}`} value={title} />
               <select
                 name={`map_${index}`}
                 defaultValue=""
-                className="border border-foreground/30 bg-background px-2 py-2"
+                className="w-full min-w-0 border border-foreground/30 bg-background px-2 py-2"
               >
                 <option value="">Skip these sets</option>
                 {library.map((exercise) => (

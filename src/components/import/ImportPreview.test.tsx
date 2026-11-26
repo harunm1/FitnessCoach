@@ -48,6 +48,20 @@ describe("ImportPreview", () => {
     expect(html).toContain("Farmers Walk");
   });
 
+  it("lets each mapping menu shrink to the screen, so a long exercise name never pushes it off a phone (D48)", () => {
+    const html = renderToStaticMarkup(
+      <ImportPreview
+        summary={summary}
+        unmatched={["Zercher Carry"]}
+        library={library}
+      />,
+    );
+    const start = html.indexOf("<select");
+    const menu = html.slice(start, html.indexOf(">", start));
+    expect(menu).toContain("w-full");
+    expect(menu).toContain("min-w-0");
+  });
+
   it("says how many unmatched names are not shown", () => {
     const html = renderToStaticMarkup(
       <ImportPreview
