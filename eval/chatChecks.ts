@@ -118,11 +118,22 @@ function groundingViolations(
   ];
 }
 
-// Any of the phrases, ignoring case and the kind of space: a model may write "90 days" with a
-// narrow no-break space (U+202F), as Groq did on 26 Nov.
-const plain = (text: string) => text.replace(/\s+/gu, " ").toLowerCase();
+// Any of the phrases as whole words, ignoring case and the kind of space: a model may write
+// "90 days" with a narrow no-break space (U+202F), as Groq did on 26 Nov. "90 days" matches
+// "the past 90 days" and not "the past 190 days"; an empty phrase is no requirement.
+const plain = (text: string) => text.replace(/\s+/gu, " ").toLowerCase().trim();
+const escaped = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 function namesPeriod(reply: string, phrases: string[]): boolean {
-  return phrases.some((phrase) => plain(reply).includes(plain(phrase)));
+  const wanted = phrases.map(plain).filter(Boolean);
+  return (
+    wanted.length === 0 ||
+    wanted.some((phrase) =>
+      new RegExp(
+        `(?<![\\p{L}\\p{N}])${escaped(phrase)}(?![\\p{L}\\p{N}])`,
+        "u",
+      ).test(plain(reply)),
+    )
+  );
 }
 
 export function checkChatReply(

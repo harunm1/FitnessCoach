@@ -119,9 +119,27 @@ describe("the reply names its period (D43, verifier S2)", () => {
     expect(checkChatReply(GOOD_REPLY, { ...reviewCase, sources })).toEqual([]);
   });
 
+  // The reply's "90" + U+202F + "days", written as an escape so a formatter cannot turn it
+  // into a plain space and make the test pass for the wrong reason.
   it("reads a narrow no-break space as a space, as the 26 Nov Groq reply wrote '90 days'", () => {
-    const live =
-      "You imported 412 workouts. Over the past 90 days you are down 3.2 kg.";
+    const narrow = String.fromCharCode(0x202f);
+    const live = `You imported 412 workouts. Over the past 90${narrow}days you are down 3.2 kg.`;
+    expect(live).not.toContain("90 days");
     expect(checkChatReply(live, { ...reviewCase, sources })).toEqual([]);
+  });
+
+  it("does not take a longer number for the period (delta check)", () => {
+    const wrong =
+      "You imported 412 workouts. Over the past 190 days you are down 3.2 kg.";
+    expect(checkChatReply(wrong, { ...reviewCase, sources })).toContain(
+      "missing-period",
+    );
+  });
+
+  it("ignores an empty period phrase", () => {
+    const noPeriod = "You imported 412 workouts and are down 3.2 kg.";
+    expect(
+      checkChatReply(noPeriod, { ...reviewCase, sources, mustName: [""] }),
+    ).toEqual([]);
   });
 });
