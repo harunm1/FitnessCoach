@@ -19,6 +19,11 @@ export default defineConfig({
       reuseExistingServer: false,
     },
     {
+      command: "tsx tests/helpers/model-stub.ts",
+      url: "http://127.0.0.1:18028/health",
+      reuseExistingServer: false,
+    },
+    {
       command: "npm run start -- --hostname 127.0.0.1 --port 13100",
       url: `${baseURL}/sign-in`,
       reuseExistingServer: false,
@@ -46,6 +51,13 @@ export default defineConfig({
         STRIPE_MONTHLY_PRICE_ID: "",
         STRIPE_YEARLY_PRICE_ID: "",
         STRIPE_WEBHOOK_SECRET: "",
+        // The coach's model is a loopback stub (D40); no browser fixture may reach a real provider.
+        // Demo mode (D12) drops retry waits, so a down provider reaches the fallback at once.
+        COACH_PROVIDER: "groq",
+        COACH_GROQ_URL: "http://127.0.0.1:18028/chat/completions",
+        COACH_DEMO_MODE: "1",
+        GROQ_API_KEY: "browser-test-key-not-real",
+        GEMINI_API_KEY: "",
         // The program adapter's model (D38): a fixed reply, never used on Vercel. One
         // rep change for day 2, slot 4 (Dumbbell Lunges, 10 to 12 reps).
         PROGRAM_MODEL_STUB: JSON.stringify({

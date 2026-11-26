@@ -1,43 +1,21 @@
 import type { ReactNode } from "react";
-import { AccountBrand, AccountIcon } from "@/components/auth/account-ui";
-import { ThemeToggle } from "@/components/auth/account-theme";
-import { SignOutButton } from "@/components/auth/sign-out-button";
-import { UserBadge } from "@/components/photos/UserBadge";
-import { NavLinks } from "./NavLinks";
+import { AccountBrand } from "@/components/auth/account-ui";
+import { MobileNav } from "./MobileNav";
+import { NAV_LINKS, NavLinks, type NavPage } from "./nav-links";
+import { SidebarFoot } from "./SidebarFoot";
 
-export type NavPage =
-  | "session"
-  | "programs"
-  | "coach"
-  | "progress"
-  | "photos"
-  | "history"
-  | "import"
-  | "account";
+export { NAV_LINKS };
+export type { NavPage };
 
-// The main pages a signed-in user can move between, in menu order.
-export const NAV_LINKS: {
-  page: Exclude<NavPage, "account">;
-  href: string;
-  label: string;
-}[] = [
-  { page: "session", href: "/session", label: "Session" },
-  { page: "programs", href: "/programs", label: "Programs" },
-  { page: "coach", href: "/coach", label: "Coach" },
-  { page: "progress", href: "/progress", label: "Progress" },
-  { page: "photos", href: "/progress/photos", label: "Photos" },
-  { page: "history", href: "/history", label: "History" },
-  { page: "import", href: "/import", label: "Import" },
-];
-
-// The bar at the top of every signed-in page: the logo, the main pages,
-// and the user's badge, which opens the account page. Colours follow the
-// page's text colour, so it fits both the light and dark themes. The header
-// is a container ("nav"), so NavLinks lays the links out by the header's own
-// width: a menu on a phone, a row of their own on a narrow page column, and
-// the same row as the logo only when all three fit (live bug L1, 25 Nov 2026).
-// `current` marks the page the user is on; `actions` holds a page's own
-// controls, like the theme toggle or sign out.
+// The navigation of every signed-in page (D42). From 1024 px it is a fixed
+// left sidebar: the logo, the pages with icons, and at the foot the user's
+// photo and name, the theme toggle and a one-click sign-out. Below that it is a
+// bar with the logo and a Menu button that opens the same links in a sheet.
+// The page's own `<main>` is moved right for the sidebar by a rule in
+// globals.css that matches `[data-app-sidebar]`, so a page keeps its own
+// container. Colours are the page theme's tokens, so it fits light and dark.
+// `current` marks the page the user is on; `actions` holds a page's own small
+// controls and is shown once, at the top of the content, at every width.
 export function AppNav({
   current,
   name,
@@ -52,29 +30,31 @@ export function AppNav({
   className?: string;
 }) {
   return (
-    <header
-      className={`@container/nav flex w-full flex-wrap items-center gap-x-6 gap-y-3 ${className}`}
-    >
-      {/* The same FitnessCoach logo as the sign-in pages. It links to /,
-          which sends signed-in users to their session. */}
-      <AccountBrand light />
-      <NavLinks current={current} links={NAV_LINKS} />
-      <div className="ml-auto flex min-w-0 items-center gap-3 sm:gap-4 max-sm:[&_button>span]:hidden">
-        <UserBadge
+    <>
+      <aside
+        data-app-sidebar
+        aria-label="Sidebar"
+        className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col gap-5 border-r border-[var(--line)] bg-[var(--subtle)] p-4 text-[var(--text)] lg:flex"
+      >
+        <AccountBrand light />
+        <NavLinks current={current} />
+        <SidebarFoot
           name={name}
-          imageUrl={avatarUrl}
+          avatarUrl={avatarUrl}
           current={current === "account"}
         />
-        <ThemeToggle />
-        <span className="flex shrink-0 items-center gap-1.5 text-sm text-foreground/70">
-          <AccountIcon name="shield" size={16} />
-          <span className="hidden @min-[88rem]/nav:inline">
-            Verified account
-          </span>
-        </span>
-        <SignOutButton />
-        {actions}
-      </div>
-    </header>
+      </aside>
+      <header
+        className={`flex w-full items-center gap-3 ${actions ? "lg:mb-6 lg:justify-end lg:border-b-0 lg:pb-0" : "lg:hidden"} ${className}`}
+      >
+        <div className="lg:hidden">
+          <AccountBrand light />
+        </div>
+        <div className="ml-auto flex items-center gap-3">
+          {actions}
+          <MobileNav current={current} name={name} avatarUrl={avatarUrl} />
+        </div>
+      </header>
+    </>
   );
 }

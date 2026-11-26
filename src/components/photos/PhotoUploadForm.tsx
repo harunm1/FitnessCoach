@@ -79,9 +79,9 @@ export function PhotoUploadForm({
   return (
     <form
       action={action}
-      className="grid gap-4 border border-foreground/15 p-5"
+      className="grid gap-4 border border-foreground/15 p-5 [&>*]:min-w-0"
     >
-      <fieldset className="grid gap-2 text-sm">
+      <fieldset className="grid min-w-0 gap-2 text-sm">
         <legend className="font-medium">Type of photo</legend>
         <div className="flex flex-wrap gap-x-6">
           {KIND_OPTIONS.map((option) => (
@@ -148,7 +148,7 @@ export function PhotoUploadForm({
           ref={fileRef}
           required={!taken}
           onChange={() => setTaken(null)}
-          className="text-sm file:mr-3 file:min-h-11 file:border file:border-foreground/30 file:bg-transparent file:px-4 file:text-sm"
+          className="w-full min-w-0 text-sm file:mr-3 file:min-h-11 file:border file:border-foreground/30 file:bg-transparent file:px-4 file:text-sm"
         />
         <span className="text-xs text-foreground/60">
           JPEG, PNG or WebP, up to 50 MB. Photos are saved at up to 1600 px, so
