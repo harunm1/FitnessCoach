@@ -34,6 +34,7 @@ export default function RunLogSection({
   return (
     <section
       aria-labelledby="run-log-title"
+      id="run-log"
       className="grid gap-4 border-t border-foreground/15 pt-6"
     >
       <div>

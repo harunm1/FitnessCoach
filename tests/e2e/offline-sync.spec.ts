@@ -73,8 +73,9 @@ async function signedInAthleteWithWorkout(
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL((url) => url.pathname === "/account");
   await page.goto("/session");
+  await expect(page).toHaveURL(/\/session\/\d+$/);
   await expect(
-    page.getByText("Workout in progress since", { exact: false }),
+    page.getByRole("region", { name: "Workout controls" }),
   ).toBeVisible();
   return { workoutId: workout.id, exerciseName };
 }
@@ -172,7 +173,7 @@ test.describe("offline set logging", () => {
       prefix,
     );
     // The page stays reachable but the server action request fails, as on a weak signal.
-    await page.route("**/session", (route) =>
+    await page.route("**/session/*", (route) =>
       route.request().method() === "POST" ? route.abort() : route.continue(),
     );
 
@@ -180,7 +181,7 @@ test.describe("offline set logging", () => {
     await expect(page.getByText("Saved offline, 1 to sync")).toBeVisible();
     expect(await savedSets(db, workoutId)).toEqual([]);
 
-    await page.unroute("**/session");
+    await page.unroute("**/session/*");
     await page.reload();
 
     await expect(page.getByText("All sets synced")).toBeVisible({
