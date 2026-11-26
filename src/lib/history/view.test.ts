@@ -3,7 +3,6 @@ import {
   bestSet,
   groupInOrder,
   setLabel,
-  topWeightLine,
   totalVolumeKg,
   weightRecords,
   workoutName,
@@ -140,29 +139,6 @@ describe("bestSet", () => {
 
   it("returns null for no sets", () => {
     expect(bestSet([])).toBeNull();
-  });
-});
-
-describe("topWeightLine", () => {
-  it("needs two weighted workouts to draw a line", () => {
-    expect(topWeightLine([])).toBeNull();
-    expect(topWeightLine([60])).toBeNull();
-    expect(topWeightLine([null, 60, null])).toBeNull();
-  });
-
-  it("spreads the points across the box, heaviest at the top", () => {
-    const line = topWeightLine([40, 60, 50], { width: 100, height: 40 });
-    expect(line).toEqual({
-      points: "0,40 50,0 100,20",
-      min: 40,
-      max: 60,
-      count: 3,
-    });
-  });
-
-  it("skips workouts without a weight and draws a flat line mid-box", () => {
-    const line = topWeightLine([50, null, 50], { width: 100, height: 40 });
-    expect(line).toEqual({ points: "0,20 100,20", min: 50, max: 50, count: 2 });
   });
 });
 
