@@ -40,7 +40,7 @@ export function ImportForm({
   }
 
   return (
-    <form onSubmit={submit} className="grid gap-3">
+    <form onSubmit={submit} className="grid gap-3 [&>*]:min-w-0">
       <label className="grid gap-1 text-sm font-medium">
         Hevy workout export (.csv, up to 2 MB)
         <input
@@ -52,7 +52,7 @@ export function ImportForm({
             setTooBig(chosen !== null && chosen.size > MAX_IMPORT_BYTES);
             setFile(chosen);
           }}
-          className="border border-foreground/30 bg-background px-2 py-2 text-sm font-normal"
+          className="w-full min-w-0 border border-foreground/30 bg-background px-2 py-2 text-sm font-normal"
         />
       </label>
       <button
