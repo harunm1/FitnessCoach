@@ -85,3 +85,17 @@ describe("onboarding page (D36)", () => {
     expect(html).toContain('<option value="BEGINNER" selected="">');
   });
 });
+
+describe("onboarding page (D38)", () => {
+  it("offers starting from a template or building with the coach on the Programs page", async () => {
+    const html = await render();
+    expect(html).toContain("Start from a template");
+    expect(html).toContain("Build with the coach");
+    expect(html).toMatch(
+      /<a[^>]*href="\/programs#start-program"[^>]*>Start from a template<\/a>/,
+    );
+    expect(html).toMatch(
+      /<a[^>]*href="\/programs\?start=coach"[^>]*>Build with the coach<\/a>/,
+    );
+  });
+});

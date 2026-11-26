@@ -1,0 +1,124 @@
+{
+  "id": "full-body-3-beginner",
+  "version": 1,
+  "name": "Full body, 3 days (beginner)",
+  "summary": "Three full-body days a week with the main barbell lifts, for someone new to lifting or coming back after a long break.",
+  "level": "BEGINNER",
+  "goals": ["STRENGTH", "GENERAL_FITNESS", "MUSCLE", "FAT_LOSS"],
+  "daysPerWeek": 3,
+  "equipment": ["barbell", "dumbbell"],
+  "repBand": {
+    "min": 8,
+    "max": 12
+  },
+  "progression": {
+    "kind": "linear",
+    "loadStepPercent": 5,
+    "rule": "Linear progression: when every set of an exercise reaches its target reps, add about 5% to that exercise next session. If you miss the target twice in a row, keep the weight."
+  },
+  "deloadEveryWeeks": 8,
+  "days": [
+    {
+      "name": "Full body A",
+      "weekdays": ["MON"],
+      "exercises": [
+        {
+          "exerciseId": "Barbell_Squat",
+          "sets": 3,
+          "reps": 8,
+          "restSeconds": 150,
+          "rpe": 7
+        },
+        {
+          "exerciseId": "Barbell_Bench_Press_-_Medium_Grip",
+          "sets": 3,
+          "reps": 8,
+          "restSeconds": 150,
+          "rpe": 7
+        },
+        {
+          "exerciseId": "Bent_Over_Barbell_Row",
+          "sets": 3,
+          "reps": 8,
+          "restSeconds": 120,
+          "rpe": 7
+        },
+        {
+          "exerciseId": "Crunches",
+          "sets": 3,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 7
+        }
+      ]
+    },
+    {
+      "name": "Full body B",
+      "weekdays": ["WED"],
+      "exercises": [
+        {
+          "exerciseId": "Romanian_Deadlift",
+          "sets": 3,
+          "reps": 8,
+          "restSeconds": 150,
+          "rpe": 7
+        },
+        {
+          "exerciseId": "Standing_Military_Press",
+          "sets": 3,
+          "reps": 8,
+          "restSeconds": 120,
+          "rpe": 7
+        },
+        {
+          "exerciseId": "Chin-Up",
+          "sets": 3,
+          "reps": 8,
+          "restSeconds": 120,
+          "rpe": 7
+        },
+        {
+          "exerciseId": "Dumbbell_Lunges",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 90,
+          "rpe": 7
+        }
+      ]
+    },
+    {
+      "name": "Full body C",
+      "weekdays": ["FRI"],
+      "exercises": [
+        {
+          "exerciseId": "Barbell_Squat",
+          "sets": 3,
+          "reps": 8,
+          "restSeconds": 150,
+          "rpe": 7
+        },
+        {
+          "exerciseId": "Dumbbell_Bench_Press",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 120,
+          "rpe": 7
+        },
+        {
+          "exerciseId": "One-Arm_Dumbbell_Row",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 90,
+          "rpe": 7
+        },
+        {
+          "exerciseId": "Hanging_Leg_Raise",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 60,
+          "rpe": 7
+        }
+      ]
+    }
+  ]
+}

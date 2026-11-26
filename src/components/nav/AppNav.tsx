@@ -7,6 +7,7 @@ import { NavLinks } from "./NavLinks";
 
 export type NavPage =
   | "session"
+  | "programs"
   | "coach"
   | "progress"
   | "photos"
@@ -21,6 +22,7 @@ export const NAV_LINKS: {
   label: string;
 }[] = [
   { page: "session", href: "/session", label: "Session" },
+  { page: "programs", href: "/programs", label: "Programs" },
   { page: "coach", href: "/coach", label: "Coach" },
   { page: "progress", href: "/progress", label: "Progress" },
   { page: "photos", href: "/progress/photos", label: "Photos" },
