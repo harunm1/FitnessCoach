@@ -84,9 +84,13 @@ async function logSet(page: Page, exerciseName: string, setNumber: number) {
   const exercise = page.locator("li").filter({
     has: page.getByRole("heading", { name: exerciseName, exact: true }),
   });
-  await exercise.getByLabel("REPS", { exact: true }).fill("8");
+  await exercise
+    .getByLabel(`Reps for set ${setNumber}`, { exact: true })
+    .fill("8");
   // New accounts show pounds (D30); the queue stores kilograms.
-  await exercise.getByLabel("LB", { exact: true }).fill("20");
+  await exercise
+    .getByLabel(`Weight (lb) for set ${setNumber}`, { exact: true })
+    .fill("20");
   await exercise
     .getByRole("button", { name: `Log set ${setNumber}`, exact: true })
     .click();
@@ -138,11 +142,15 @@ test.describe("offline set logging", () => {
     await logSet(page, exerciseName, SET_ONE);
     // The form moves to set 2 in the same render that lists set 1: filling it before that
     // would type into the form that is about to be replaced.
-    await expect(page.getByText("Set 1: 8 reps · 20 lb")).toBeVisible();
+    await expect(
+      page.getByRole("row", { name: "Set 1: 8 reps · 20 lb" }),
+    ).toBeVisible();
     await logSet(page, exerciseName, SET_TWO);
 
     await expect(page.getByText("Saved offline, 2 to sync")).toBeVisible();
-    await expect(page.getByText("Set 2: 8 reps · 20 lb")).toBeVisible();
+    await expect(
+      page.getByRole("row", { name: "Set 2: 8 reps · 20 lb" }),
+    ).toBeVisible();
     await expect(page.getByText("Waiting to sync")).toHaveCount(SET_TWO);
     expect(await savedSets(db, workoutId)).toEqual([]);
 
@@ -152,7 +160,9 @@ test.describe("offline set logging", () => {
       timeout: SYNC_TIMEOUT_MS,
     });
     await expect(page.getByText("Waiting to sync")).toHaveCount(0);
-    await expect(page.getByText("Set 2: 8 reps · 20 lb")).toBeVisible();
+    await expect(
+      page.getByRole("row", { name: "Set 2: 8 reps · 20 lb" }),
+    ).toBeVisible();
     const rows = await savedSets(db, workoutId);
     expect(rows.map((row) => row.setNumber)).toEqual([SET_ONE, SET_TWO]);
     // Each set came through the queue, so each has its applied clientId.

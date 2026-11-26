@@ -21,7 +21,6 @@ import BodyWeightSection from "./progress/BodyWeightSection";
 import DayDetails from "./progress/DayDetails";
 import RunLogSection from "./progress/RunLogSection";
 import RunMetricsForm from "./RunMetricsForm";
-import SetLogForm from "./SetLogForm";
 import { photoAlt, photoCaption } from "@/lib/photos/label";
 import { weightPlaceholder } from "@/lib/workout/weightPlaceholder";
 
@@ -29,52 +28,6 @@ const LB_MI = { weightUnit: "LB", distanceUnit: "MI" } as const;
 const KG_KM = { weightUnit: "KG", distanceUnit: "KM" } as const;
 
 describe("session logging", () => {
-  it("labels the set weight in pounds and posts the unit it showed", () => {
-    const html = renderToStaticMarkup(
-      <SetLogForm
-        exerciseId="e1"
-        targetReps={5}
-        nextSetNumber={1}
-        equipment="barbell"
-        weightUnit="LB"
-      />,
-    );
-    expect(html).toContain("LB");
-    expect(html).toContain('placeholder="Load in lb"');
-    expect(html).toMatch(/name="weightUnit"[^>]*value="LB"/);
-  });
-
-  it("puts a kg/lb switch next to the weight box, with the current unit pressed", () => {
-    const html = renderToStaticMarkup(
-      <SetLogForm
-        exerciseId="e1"
-        targetReps={5}
-        nextSetNumber={1}
-        equipment="barbell"
-        weightUnit="LB"
-      />,
-    );
-    // A pressed button for lb and an unpressed one for kg, each ending at its closing tag.
-    expect(html).toMatch(/<button[^>]*aria-pressed="true"[^>]*>lb<\/button>/);
-    expect(html).toMatch(/<button[^>]*aria-pressed="false"[^>]*>kg<\/button>/);
-    expect(html).toContain("Weight unit");
-  });
-
-  it("keeps kilograms when asked for them", () => {
-    const html = renderToStaticMarkup(
-      <SetLogForm
-        exerciseId="e1"
-        targetReps={5}
-        nextSetNumber={1}
-        equipment="barbell"
-        weightUnit="KG"
-      />,
-    );
-    expect(html).toContain("KG");
-    expect(html).toContain('placeholder="Load in kg"');
-    expect(html).toMatch(/name="weightUnit"[^>]*value="KG"/);
-  });
-
   it("asks for the run distance in miles and shows the saved km converted", () => {
     const html = renderToStaticMarkup(
       <RunMetricsForm

@@ -45,9 +45,7 @@ export default function SetTable(props: SetTableProps) {
         <tr className="text-left text-xs text-foreground/60">
           <th className="py-1 pr-2 font-medium">Set</th>
           <th className="py-1 pr-2 font-medium">Previous</th>
-          {kind === "WEIGHT_REPS" && (
-            <th className="py-1 pr-2 font-medium">{label}</th>
-          )}
+          <th className="py-1 pr-2 font-medium">{label}</th>
           <th className="py-1 pr-2 font-medium">Reps</th>
           <th className="py-1 font-medium">
             <span className="sr-only">Done</span>
@@ -74,13 +72,11 @@ export default function SetTable(props: SetTableProps) {
               >
                 <td className="py-2 pr-2 font-mono">{setNumber}</td>
                 <td className="py-2 pr-2 text-foreground/60">{previous}</td>
-                {kind === "WEIGHT_REPS" && (
-                  <td className="py-2 pr-2">
-                    {logged.weightKg === null
-                      ? "-"
-                      : fromKg(Number(logged.weightKg), weightUnit)}
-                  </td>
-                )}
+                <td className="py-2 pr-2">
+                  {logged.weightKg === null
+                    ? "BW"
+                    : fromKg(Number(logged.weightKg), weightUnit)}
+                </td>
                 <td className="py-2 pr-2">{logged.reps}</td>
                 <td className="py-2">
                   <span aria-hidden="true">✓</span>
@@ -100,24 +96,23 @@ export default function SetTable(props: SetTableProps) {
             <tr className="border-t border-foreground/10" key={setNumber}>
               <td className="py-2 pr-2 font-mono">{setNumber}</td>
               <td className="py-2 pr-2 text-foreground/60">{previous}</td>
-              {kind === "WEIGHT_REPS" && (
-                <td className="py-2 pr-2">
-                  <input
-                    aria-label={`Weight (${label}) for set ${setNumber}`}
-                    className={inputClass}
-                    inputMode="decimal"
-                    onChange={(event) =>
-                      props.onDraft(setNumber, {
-                        ...draft,
-                        weight: event.target.value,
-                      })
-                    }
-                    type="number"
-                    step="0.01"
-                    value={draft.weight}
-                  />
-                </td>
-              )}
+              <td className="py-2 pr-2">
+                <input
+                  aria-label={`Weight (${label}) for set ${setNumber}`}
+                  className={inputClass}
+                  inputMode="decimal"
+                  onChange={(event) =>
+                    props.onDraft(setNumber, {
+                      ...draft,
+                      weight: event.target.value,
+                    })
+                  }
+                  placeholder={kind === "REPS_ONLY" ? "BW" : undefined}
+                  type="number"
+                  step="0.01"
+                  value={draft.weight}
+                />
+              </td>
               <td className="py-2 pr-2">
                 <input
                   aria-label={`Reps for set ${setNumber}`}

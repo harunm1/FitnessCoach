@@ -14,6 +14,7 @@ import {
 } from "@/lib/offline/sessionSetQueue";
 import { firstStoppedSet } from "@/lib/offline/stoppedSet";
 import { createTapGuard, DOUBLE_TAP_WINDOW_MS } from "@/lib/offline/tapGuard";
+import WeightUnitSwitch from "@/components/WeightUnitSwitch";
 import { fromKg, type WeightUnit } from "@/lib/units/convert";
 import { weightFieldToKg } from "@/lib/units/input";
 import type { PreviousSet } from "@/lib/workout/previousSets";
@@ -102,6 +103,9 @@ export default function ExerciseCard(props: ExerciseCardProps) {
     const typed = drafts[setNumber];
     if (typed) return typed;
     const before = props.previous.find((set) => set.setNumber === setNumber);
+    // A bodyweight exercise starts with no weight: a typed one is weight added to the body.
+    if (kind === "REPS_ONLY")
+      return { weight: "", reps: String(props.targetReps) };
     const kg =
       before?.weightKg !== undefined && before.weightKg !== null
         ? Number(before.weightKg)
@@ -120,10 +124,7 @@ export default function ExerciseCard(props: ExerciseCardProps) {
     const parsed = setLogSchema.safeParse({
       setNumber,
       reps,
-      weightKg:
-        kind === "WEIGHT_REPS"
-          ? weightFieldToKg(weight, props.weightUnit)
-          : undefined,
+      weightKg: weightFieldToKg(weight, props.weightUnit),
       painDuringSession: "",
       painNextMorning: score === null ? "" : String(score),
     });
@@ -190,6 +191,7 @@ export default function ExerciseCard(props: ExerciseCardProps) {
         >
           {(props.primaryMuscle ?? props.exerciseName).charAt(0)}
         </span>
+        <WeightUnitSwitch current={props.weightUnit} />
         <label className="ml-auto grid gap-1 text-xs text-foreground/60">
           Rest timer
           <select

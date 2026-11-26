@@ -3,10 +3,12 @@ import { redirect } from "next/navigation";
 import { weekdayLabel } from "@/lib/programs/weekdays";
 import { prisma } from "@/lib/prisma";
 import ExerciseCueDetails from "@/components/ExerciseCueDetails";
-import ExerciseLogPanel from "@/components/session/ExerciseLogPanel";
+import ExerciseCard from "@/components/session/ExerciseCard";
+import CheckInPanel from "@/components/session/CheckInPanel";
 import SessionSync from "@/components/session/SessionSync";
 import WorkoutBar from "@/components/session/WorkoutBar";
 import { latestLoggedAt } from "@/lib/workout/restRemaining";
+import { loadPreviousSets } from "@/lib/workout/previousSets";
 import { loadOpenWorkout } from "@/lib/workout/loadOpenWorkout";
 import { parseWorkoutId, SESSION_LANDING } from "@/lib/workout/sessionPaths";
 import { requireUser } from "@/lib/auth/session";
@@ -41,6 +43,11 @@ export default async function WorkoutPage({
   const units = await loadUnitPrefs(user.id);
   const avatarUrl = await loadAvatarUrl(user.id);
   const workingWeights = await loadWorkingWeightsFor(
+    prisma,
+    user.id,
+    day.exercises.map((slot) => slot.exerciseId),
+  );
+  const previousSets = await loadPreviousSets(
     prisma,
     user.id,
     day.exercises.map((slot) => slot.exerciseId),
@@ -88,6 +95,7 @@ export default async function WorkoutPage({
         </div>
 
         <SessionSync userId={user.id} />
+        <CheckInPanel workoutId={workout.id} />
 
         <section aria-label={`${day.name} exercises`}>
           <ol className="divide-y divide-foreground/15 border-y border-foreground/15">
@@ -129,7 +137,10 @@ export default async function WorkoutPage({
                     commonMistakes={slot.exercise.commonMistakes}
                   />
                   <div>
-                    <ExerciseLogPanel
+                    <ExerciseCard
+                      key={`${slot.exerciseId}-${units.weightUnit}`}
+                      previous={previousSets.get(slot.exerciseId) ?? []}
+                      primaryMuscle={slot.exercise.primaryMuscles[0] ?? null}
                       equipment={slot.exercise.equipment}
                       exerciseId={slot.exerciseId}
                       exerciseName={slot.exercise.name}
