@@ -999,3 +999,11 @@ On the live site only Butt Lift (Bridge) showed "Form guidance". I checked the d
 **Limits, said plainly:** for the five rows with no instructions (Iron Cross, One-Arm Kettlebell Swings, Push Press, Side Bridge, Side Jackknife) I wrote short cues myself, from no source; I list them in the pull request for review. I also display "Glute Bridge" instead of "Butt Lift (Bridge)" by changing the stored name, because no name mapping existed.
 
 **Tools:** git, Vitest, ESLint, tsc, Prettier, Prisma (generate, migrate deploy, seed), scratch PostgreSQL. Skills: none beyond the task file.
+
+## 26 November: a page for the workout (D46) and cards with a set table (D44)
+
+His review of 25 November said the session page was cluttered and Finish sat at the very bottom. I wrote the decision rows first, then the code. The workout moved to `/session/[id]` with a bar fixed to the bottom (clock, Pause, Finish); `/session` became the landing. A blind verifier found a possible redirect loop for a workout whose plan day was deleted and an overlap test that could not fail; both were fixed with a test first. The second change replaces the set form with a Hevy-style card and set table (previous set, pre-filled rows, check to log, Add and Remove set, a rest choice, a notes line) and moves the two pain boxes into one optional check-in at the top.
+
+**Limits, said plainly:** distance and duration sets, thumbnails and supersets are not built (D44 lists why). Notes, the rest choice and the check-in are stored in the browser only. The card components were written before their unit tests, then tested; the Playwright specs were run against the new build only.
+
+**Tools:** git, gh, Vitest, Playwright, tsc, ESLint, Prettier, scratch PostgreSQL, blind verifier agents.

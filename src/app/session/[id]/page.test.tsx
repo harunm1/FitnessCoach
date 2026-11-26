@@ -31,7 +31,13 @@ vi.mock("@/components/auth/account-theme", () => ({
   ),
 }));
 vi.mock("@/components/session/SessionSync", () => ({ default: () => null }));
-vi.mock("@/components/session/ExerciseLogPanel", () => ({
+vi.mock("@/lib/workout/previousSets", () => ({
+  loadPreviousSets: vi.fn().mockResolvedValue(new Map()),
+}));
+vi.mock("@/components/session/CheckInPanel", () => ({
+  default: () => <p>How do you feel today?</p>,
+}));
+vi.mock("@/components/session/ExerciseCard", () => ({
   default: ({ exerciseName }: { exerciseName: string }) => (
     <p>log {exerciseName}</p>
   ),

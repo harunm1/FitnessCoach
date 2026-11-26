@@ -126,9 +126,13 @@ export async function logSet(
   const exercise = page.locator("li").filter({
     has: page.getByRole("heading", { name: exerciseName, exact: true }),
   });
-  await exercise.getByLabel("REPS", { exact: true }).fill("8");
+  await exercise
+    .getByLabel(`Reps for set ${setNumber}`, { exact: true })
+    .fill("8");
   // New accounts show pounds (D30).
-  await exercise.getByLabel("LB", { exact: true }).fill("20");
+  await exercise
+    .getByLabel(`Weight (lb) for set ${setNumber}`, { exact: true })
+    .fill("20");
   await exercise
     .getByRole("button", { name: `Log set ${setNumber}`, exact: true })
     .click();

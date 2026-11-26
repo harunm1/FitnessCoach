@@ -345,6 +345,23 @@ describe("syncQueuedSet", () => {
     expect(result.status).toBe("error");
   });
 
+  it("accepts an added set after the planned ones, up to six (Add set, D44)", async () => {
+    const workout = await openWorkout(owner.id);
+    await signIn(owner);
+    const numbers = Array.from({ length: 6 }, (_, i) => i + 1);
+    const results = await numbers.reduce<Promise<string[]>>(
+      async (done, setNumber) => [
+        ...(await done),
+        (await syncQueuedSet(queued(workout.id, { setNumber }))).status,
+      ],
+      Promise.resolve([]),
+    );
+    expect(results).toEqual(numbers.map(() => "saved"));
+    expect(
+      (await syncQueuedSet(queued(workout.id, { setNumber: 7 }))).status,
+    ).toBe("error");
+  });
+
   it("refuses malformed input without writing", async () => {
     const workout = await openWorkout(owner.id);
     await signIn(owner);

@@ -11,6 +11,7 @@ import { painTrafficLight } from "@/lib/coach/painTrafficLight";
 import type { SyncOutcome } from "@/lib/offline/types";
 import type { QueuedSetInput } from "./queuedSetSchema";
 import { getSetLogOperation } from "./setLogOperation";
+import { MAX_SETS_PER_EXERCISE } from "./setTable";
 
 type Db = Prisma.TransactionClient;
 
@@ -142,7 +143,8 @@ async function recordInTransaction(
   const operation = getSetLogOperation(
     input.setNumber,
     workout.sets.map((set) => set.setNumber),
-    planned.sets,
+    // The plan's sets are the default; Add set may go on to the limit (D44).
+    MAX_SETS_PER_EXERCISE,
   );
   if (!operation) {
     return failed(
