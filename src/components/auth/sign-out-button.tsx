@@ -5,7 +5,16 @@ import { authClient } from "@/lib/auth/client";
 import { AccountIcon } from "./account-ui";
 import styles from "./account.module.css";
 
-export function SignOutButton() {
+const ICON_SIZE = 20;
+const LABELLED_ICON_SIZE = 16;
+
+// "icon" is the sidebar's one-click sign-out: just the icon, with the same
+// accessible name. "button" is the labelled button.
+export function SignOutButton({
+  variant = "button",
+}: {
+  variant?: "button" | "icon";
+}) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -29,13 +38,21 @@ export function SignOutButton() {
         type="button"
         onClick={signOut}
         disabled={pending}
-        className={styles.signOutButton}
+        className={
+          variant === "icon" ? styles.signOutIcon : styles.signOutButton
+        }
         aria-label={pending ? "Signing out…" : "Sign out"}
+        title="Sign out"
       >
-        <AccountIcon name="logout" size={16} />
-        <span className={styles.signOutLabel}>
-          {pending ? "Signing out…" : "Sign out"}
-        </span>
+        <AccountIcon
+          name="logout"
+          size={variant === "icon" ? ICON_SIZE : LABELLED_ICON_SIZE}
+        />
+        {variant === "button" && (
+          <span className={styles.signOutLabel}>
+            {pending ? "Signing out…" : "Sign out"}
+          </span>
+        )}
       </button>
       {error && (
         <p role="alert" className={styles.signOutError}>

@@ -69,7 +69,9 @@ export default async function AccountPage({
     <AccountTheme className={styles.accountPage}>
       {/* The nav bar wraps onto two rows on phones, so the header can't keep
           its fixed phone height. */}
-      <div className={`${styles.accountHeader} h-auto! max-[760px]:py-3!`}>
+      <div
+        className={`${styles.accountHeader} h-auto! max-[760px]:py-3! lg:hidden`}
+      >
         <AppNav
           current="account"
           name={user.name}
