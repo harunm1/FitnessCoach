@@ -65,6 +65,38 @@ describe("ExerciseChart", () => {
     expect(out).toContain("Nov 13: top set 90 kg, estimated 1RM 120 kg");
   });
 
+  // Verifier finding 6: the tooltips are SVG titles, which a finger cannot open. The same
+  // numbers are in a table behind a "Values by workout" disclosure, oldest first.
+  it("lists each workout's values in a table a tap or the keyboard can open", () => {
+    const out = html();
+    expect(out).toContain("<details");
+    expect(out).toContain("Values by workout");
+    const rows = out.match(/<tr[ >]/g) ?? [];
+    expect(rows).toHaveLength(points.length + 1);
+    ["Nov 6", "Nov 13", "Nov 20"].forEach((date) =>
+      expect(out).toContain(`<th scope="row">${date}</th>`),
+    );
+    expect(out).toContain("<td>90 kg</td><td>120 kg</td>");
+  });
+
+  it("uses the chosen unit in the table, and a dash where there is no estimate", () => {
+    // The app rounds pounds to the nearest half: 90 kg is 198.5 lb, as 100 kg is 220.5 lb.
+    expect(html("LB")).toContain("<td>198.5 lb</td>");
+    const bodyweight = chartPoints([
+      { workoutId: 3, startedAt: day(20), sets: [set(5, 100)] },
+      { workoutId: 2, startedAt: day(13), sets: [set(10, 90)] },
+      {
+        workoutId: 1,
+        startedAt: day(6),
+        sets: [{ ...set(12, 0), weightKg: null }],
+      },
+    ]);
+    const out = renderToStaticMarkup(
+      <ExerciseChart points={bodyweight} weightUnit="KG" />,
+    );
+    expect(out).toContain("<td>bodyweight</td><td>–</td>");
+  });
+
   it("switches every number to pounds for a user who chose pounds", () => {
     const out = html("LB");
     expect(out).toContain("Weight (lb)");

@@ -22,6 +22,7 @@ const MARKER = 3.5;
 const SQUARE = MARKER * 1.6;
 const HIT_RADIUS = 12;
 const FONT = 11;
+const NO_VALUE = "–";
 
 const DATE_FORMAT = new Intl.DateTimeFormat("en", {
   month: "short",
@@ -221,6 +222,37 @@ export function ExerciseChart({
           );
         })}
       </svg>
+      <details className="text-sm">
+        <summary className="min-h-11 cursor-pointer py-2 font-medium">
+          Values by workout
+        </summary>
+        <table className="w-full border-collapse text-left">
+          <thead>
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col">Top set</th>
+              <th scope="col">Est. 1RM</th>
+            </tr>
+          </thead>
+          <tbody>
+            {points.map((point) => (
+              <tr key={point.workoutId}>
+                <th scope="row">{DATE_FORMAT.format(point.date)}</th>
+                <td>
+                  {point.topKg === null
+                    ? "bodyweight"
+                    : formatWeight(point.topKg, weightUnit)}
+                </td>
+                <td>
+                  {point.e1rmKg === null
+                    ? NO_VALUE
+                    : formatWeight(point.e1rmKg, weightUnit)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </details>
       <figcaption className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground/70">
         <span>
           <span aria-hidden="true">● </span>Top weight
