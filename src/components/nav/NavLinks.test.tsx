@@ -38,8 +38,8 @@ describe("the header's layout classes", () => {
     const nav = html.match(/<nav[^>]*>/)?.[0] ?? "";
     expect(nav).toContain("order-last");
     expect(nav).toContain("w-full");
-    expect(nav).toContain("@6xl/nav:order-none");
-    expect(nav).toContain("@6xl/nav:flex-1");
+    expect(nav).toContain("@7xl/nav:order-none");
+    expect(nav).toContain("@7xl/nav:flex-1");
     expect(nav).not.toContain("sm:flex-1");
   });
 

@@ -15,7 +15,8 @@ type NavLink = {
 // column can be narrower than the screen:
 //   under 36rem   a Menu button that opens a column of links (a phone);
 //   36rem and up  the links in a row of their own below the logo and the controls;
-//   72rem and up  the links in the same row as the logo and the controls.
+//   80rem and up  the links in the same row as the logo and the controls (seven links, 26 Nov:
+//                 72rem was too tight once Programs was added, and CI fonts clipped the row).
 // It is one list in every layout, so there is one set of links for a screen reader.
 export function NavLinks({
   current,
@@ -39,7 +40,7 @@ export function NavLinks({
     <nav
       aria-label="Main"
       onKeyDown={(event) => closeOnEscape(event.key)}
-      className="order-last grid w-full min-w-0 gap-2 @6xl/nav:order-none @6xl/nav:w-auto @6xl/nav:flex-1"
+      className="order-last grid w-full min-w-0 gap-2 @7xl/nav:order-none @7xl/nav:w-auto @7xl/nav:flex-1"
     >
       <button
         aria-controls={listId}

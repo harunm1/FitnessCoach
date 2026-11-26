@@ -68,7 +68,9 @@ export function AppNav({
         <ThemeToggle />
         <span className="flex shrink-0 items-center gap-1.5 text-sm text-foreground/70">
           <AccountIcon name="shield" size={16} />
-          <span className="hidden @7xl/nav:inline">Verified account</span>
+          <span className="hidden @min-[88rem]/nav:inline">
+            Verified account
+          </span>
         </span>
         <SignOutButton />
         {actions}
