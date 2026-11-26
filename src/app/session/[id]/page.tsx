@@ -19,6 +19,8 @@ import { loadAvatarUrl } from "@/lib/photos/avatar";
 
 export const dynamic = "force-dynamic";
 
+const ORDINAL_WIDTH = 2;
+
 // One workout and nothing else (D43): its exercises in order with their sets, the rest
 // timer and cues, and the bar fixed to the bottom with the clock, Pause and Finish.
 export default async function WorkoutPage({
@@ -44,12 +46,14 @@ export default async function WorkoutPage({
     day.exercises.map((slot) => slot.exerciseId),
   );
   const renderedAtIso = new Date().toISOString();
-  const loggedByExercise = new Map<string, typeof workout.sets>();
-  for (const set of workout.sets) {
-    const exerciseSets = loggedByExercise.get(set.exerciseId) ?? [];
-    exerciseSets.push(set);
-    loggedByExercise.set(set.exerciseId, exerciseSets);
-  }
+  const loggedByExercise = workout.sets.reduce(
+    (grouped, set) =>
+      grouped.set(set.exerciseId, [
+        ...(grouped.get(set.exerciseId) ?? []),
+        set,
+      ]),
+    new Map<string, typeof workout.sets>(),
+  );
 
   return (
     <AccountTheme
@@ -92,12 +96,14 @@ export default async function WorkoutPage({
               return (
                 <li className="grid gap-3 py-5" key={slot.id}>
                   <div className="flex items-baseline justify-between gap-3">
-                    <h2 className="m-0 text-base font-semibold">
-                      <span className="mr-2 font-mono text-xs text-foreground/50">
-                        {String(index + 1).padStart(2, "0")}
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-mono text-xs text-foreground/50">
+                        {String(index + 1).padStart(ORDINAL_WIDTH, "0")}
                       </span>
-                      {slot.exercise.name}
-                    </h2>
+                      <h2 className="m-0 text-base font-semibold">
+                        {slot.exercise.name}
+                      </h2>
+                    </div>
                     <p className="m-0 shrink-0 text-sm text-foreground/70">
                       {slot.sets} × {slot.reps}
                       <span className="ml-2 text-xs text-foreground/50">
@@ -156,19 +162,19 @@ export default async function WorkoutPage({
             })}
           </ol>
         </section>
-      </div>
 
-      <WorkoutBar
-        workoutId={workout.id}
-        bankedSeconds={workout.activeBankedSeconds}
-        activeSinceIso={workout.activeSince?.toISOString() ?? null}
-        lastSetAtIso={
-          workout.sets.length > 0
-            ? latestLoggedAt(workout.sets).toISOString()
-            : null
-        }
-        serverNowIso={renderedAtIso}
-      />
+        <WorkoutBar
+          workoutId={workout.id}
+          bankedSeconds={workout.activeBankedSeconds}
+          activeSinceIso={workout.activeSince?.toISOString() ?? null}
+          lastSetAtIso={
+            workout.sets.length > 0
+              ? latestLoggedAt(workout.sets).toISOString()
+              : null
+          }
+          serverNowIso={renderedAtIso}
+        />
+      </div>
     </AccountTheme>
   );
 }

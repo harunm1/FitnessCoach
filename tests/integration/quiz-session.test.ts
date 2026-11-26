@@ -43,6 +43,7 @@ import { requireUser } from "@/lib/auth/session";
 import { saveQuizProfile } from "@/app/onboarding/actions";
 import OnboardingPage from "@/app/onboarding/page";
 import SessionPage from "@/app/session/page";
+import WorkoutPage from "@/app/session/[id]/page";
 import { askExerciseCoach } from "@/app/session/bodyMapActions";
 import {
   finishWorkout,
@@ -161,6 +162,9 @@ async function workout(
     data: { userId, planId: savedPlan.id, planDayId: savedPlan.days[0].id },
   });
 }
+
+const openWorkoutPage = (workoutId: number) =>
+  WorkoutPage({ params: Promise.resolve({ id: String(workoutId) }) });
 
 beforeAll(async () => {
   passwordHash = await hashPassword(password);
@@ -563,10 +567,16 @@ describe("quiz and session authorization with PostgreSQL", () => {
         commonMistakes: ["Letting the wrists bend back."],
       },
     });
-    await plan(first.id, "Plan with mixed cue coverage", exercises[0], true);
+    const cuePlan = await plan(
+      first.id,
+      "Plan with mixed cue coverage",
+      exercises[0],
+      true,
+    );
+    const cueWorkout = await workout(first.id, cuePlan);
     await signIn(first);
 
-    const html = renderToStaticMarkup(await SessionPage());
+    const html = renderToStaticMarkup(await openWorkoutPage(cueWorkout.id));
 
     expect(html).toContain("Form guidance");
     expect(html).toContain("Form cues");
@@ -593,10 +603,18 @@ describe("quiz and session authorization with PostgreSQL", () => {
     const otherPlan = await plan(second.id, "Second plan");
     const otherWorkout = await workout(second.id, otherPlan);
     await signIn(first);
-    await expect(startOrResumeWorkout()).rejects.toThrow("redirect:/session");
-    await expect(startOrResumeWorkout()).rejects.toThrow("redirect:/session");
+    // Starting and resuming both land on the workout's own page (D43).
+    await expect(startOrResumeWorkout()).rejects.toThrow(
+      /^redirect:\/session\/\d+$/,
+    );
+    await expect(startOrResumeWorkout()).rejects.toThrow(
+      /^redirect:\/session\/\d+$/,
+    );
     const saved = await db.workout.findMany({ where: { userId: first.id } });
     expect(saved).toHaveLength(1);
+    await expect(startOrResumeWorkout()).rejects.toThrow(
+      `redirect:/session/${saved[0].id}`,
+    );
     expect(saved[0]).toMatchObject({
       planId: ownPlan.id,
       planDayId: ownPlan.days[0].id,
@@ -628,7 +646,7 @@ describe("quiz and session authorization with PostgreSQL", () => {
           workoutId: String(otherWorkout.id),
         }),
       ),
-    ).rejects.toThrow("redirect:/session");
+    ).rejects.toThrow(`redirect:/session/${ownWorkout.id}`);
     expect(
       await db.setLog.count({ where: { workoutId: otherWorkout.id } }),
     ).toBe(0);
@@ -875,6 +893,36 @@ describe("quiz and session authorization with PostgreSQL", () => {
     ).toBeNull();
   });
 
+  it("opens a workout page only for its owner while it is open (D43)", async () => {
+    const ownWorkout = await workout(
+      first.id,
+      await plan(first.id, "First plan"),
+    );
+    const otherWorkout = await workout(
+      second.id,
+      await plan(second.id, "Second plan"),
+    );
+    await signIn(first);
+    await expect(SessionPage()).rejects.toThrow(
+      `redirect:/session/${ownWorkout.id}`,
+    );
+    await expect(openWorkoutPage(ownWorkout.id)).resolves.toBeDefined();
+    // Another user's workout, a missing one and a bad address all get the same answer.
+    for (const id of [otherWorkout.id, 2_000_000_000]) {
+      await expect(openWorkoutPage(id)).rejects.toThrow(/^redirect:\/session$/);
+    }
+    await expect(
+      WorkoutPage({ params: Promise.resolve({ id: "abc" }) }),
+    ).rejects.toThrow(/^redirect:\/session$/);
+    await db.workout.update({
+      where: { id: ownWorkout.id },
+      data: { finishedAt: new Date() },
+    });
+    await expect(openWorkoutPage(ownWorkout.id)).rejects.toThrow(
+      /^redirect:\/session$/,
+    );
+  });
+
   it("shows elapsed time during a workout and its duration after finishing", async () => {
     const ownWorkout = await workout(
       first.id,
@@ -893,12 +941,14 @@ describe("quiz and session authorization with PostgreSQL", () => {
     });
     await signIn(first);
 
-    const activeHtml = renderToStaticMarkup(await SessionPage());
+    const activeHtml = renderToStaticMarkup(
+      await openWorkoutPage(ownWorkout.id),
+    );
     expect(activeHtml).toContain("Elapsed workout time");
     expect(activeHtml).toContain('role="timer"');
     expect(activeHtml).not.toContain("Workout duration");
 
-    await expect(finishWorkout()).rejects.toThrow("redirect:/session");
+    await expect(finishWorkout()).rejects.toThrow(/^redirect:\/session$/);
     const saved = await db.workout.findUniqueOrThrow({
       where: { id: ownWorkout.id },
     });
@@ -932,7 +982,7 @@ describe("quiz and session authorization with PostgreSQL", () => {
           userId: second.id,
         }),
       ),
-    ).rejects.toThrow("redirect:/session");
+    ).rejects.toThrow(`redirect:/session/${ownWorkout.id}`);
     const saved = await db.workout.findUniqueOrThrow({
       where: { id: ownWorkout.id },
     });

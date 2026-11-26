@@ -144,7 +144,7 @@ test.describe("session clock and rest timer", () => {
     expect(row.activeBankedSeconds).toBeLessThan(SECONDS_PER_MINUTE);
 
     await page
-      .getByRole("button", { name: "Finish workout now", exact: true })
+      .getByRole("button", { name: "Finish workout", exact: true })
       .first()
       .click();
     await expect(page.getByText("Workout duration")).toBeVisible();

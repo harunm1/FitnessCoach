@@ -157,8 +157,10 @@ test("an athlete completes the quiz and logs a session without touching another 
     await page
       .getByRole("button", { name: "Start workout", exact: true })
       .click();
+    // Start lands on the workout's own page (D43), which holds the clock and Finish.
+    await expect(page).toHaveURL(/\/session\/\d+$/);
     await expect(
-      page.getByText(/Workout in progress since/, { exact: false }),
+      page.getByRole("region", { name: "Workout controls" }),
     ).toBeVisible();
     expect(await visibleTextBelowProjectorSize(page)).toEqual([]);
 
@@ -208,13 +210,10 @@ test("an athlete completes the quiz and logs a session without touching another 
     await expect(
       page.getByText("Set 1: 8 reps · 25 lb", { exact: true }),
     ).toBeVisible();
-    await page.getByLabel("Distance (km)", { exact: true }).fill("5.25");
-    await page.getByLabel("MINUTES", { exact: true }).fill("30");
-    await page.getByLabel("SECONDS", { exact: true }).fill("15");
-    await page.getByRole("button", { name: "Save run", exact: true }).click();
-    await expect(
-      page.getByText("Saved run: 5.25 km in 30 min 15 sec", { exact: true }),
-    ).toBeVisible();
+    // The running box is not on the workout page any more (D43).
+    await expect(page.getByLabel("Distance (km)", { exact: true })).toHaveCount(
+      0,
+    );
     await page
       .getByRole("button", { name: "Finish workout", exact: true })
       .click();
@@ -240,8 +239,7 @@ test("an athlete completes the quiz and logs a session without touching another 
       [owner.id],
     );
     expect(saved.finishedAt).not.toBeNull();
-    expect(saved.distanceKm).toBe("5.25");
-    expect(saved.durationSeconds).toBe(1815);
+    expect(saved.distanceKm).toBeNull();
     const countSets = async (workoutId: number) => {
       const {
         rows: [row],
