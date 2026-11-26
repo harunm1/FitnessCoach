@@ -79,6 +79,14 @@ export function AccountTheme({
   );
 }
 
+// The page's theme as the `data-theme` value its wrapper carries, for UI that
+// renders in a portal (outside the wrapper) and must pick up the same tokens.
+export function useAccountTheme(): "light" | "dark" | "system" {
+  const context = useContext(ThemeContext);
+  if (!context) throw new Error("useAccountTheme must be inside AccountTheme.");
+  return context.theme ?? "system";
+}
+
 export function ThemeToggle() {
   const context = useContext(ThemeContext);
   if (!context) throw new Error("ThemeToggle must be inside AccountTheme.");
