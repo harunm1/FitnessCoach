@@ -343,3 +343,19 @@ describe("coachContextFor reads the user's own data (D43)", () => {
     }
   });
 });
+
+// D43 failure path: one tool that cannot read fails the whole context, so the request reports
+// "send it again" (request.ts) and no model call is made with a prompt missing that data,
+// which would still tell the model it holds everything the app has.
+describe("coachContextFor when a tool cannot read (D43)", () => {
+  it("rejects instead of building a context without that tool's data", async () => {
+    const db = dbWith({});
+    vi.mocked(db.bodyWeight.findMany).mockRejectedValueOnce(
+      new Error("connection lost"),
+    );
+
+    await expect(coachContextFor(db, "owner")).rejects.toThrow(
+      "connection lost",
+    );
+  });
+});

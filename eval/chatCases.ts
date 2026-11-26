@@ -16,6 +16,7 @@ export type ChatCase = {
   reachesModel: boolean;
   context: CoachContext;
   mustCite?: string[]; // numbers the reply must give (D43)
+  mustName?: string[]; // period phrases, one of which the reply must contain (D43)
 };
 
 // The quiz answers in #142: lose body fat, both, trained for years, 3 days, all equipment.
@@ -81,7 +82,11 @@ export const CHAT_CASES: ChatCase[] = [
   modelCase(
     "import-weight-review",
     "review my hevy import history, and weight loss",
-    { context: REVIEW_CONTEXT, mustCite: ["412", "3.2"] },
+    {
+      context: REVIEW_CONTEXT,
+      mustCite: ["412", "3.2"],
+      mustName: ["90 days", "28 Aug", "12 weeks", "3 months"],
+    },
   ),
   modelCase("floor-press-swap", "Can I do floor press instead of bench today?"),
   modelCase("bench-taken", "The bench is taken. What can I do instead?"),

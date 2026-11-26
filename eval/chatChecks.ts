@@ -22,7 +22,9 @@ export type Violation =
   // cannot see the user's data; a number the case says the reply must give, missing.
   | "ungrounded-number"
   | "claims-no-access"
-  | "missing-cite";
+  | "missing-cite"
+  // D43: none of the case's period phrases ("90 days") is in the reply.
+  | "missing-period";
 
 const NOTICE_PATTERNS: Record<Topic, RegExp> = {
   // Matches "aim for 48 h of light activity", "take a rest day", "deload week", "mind the soreness", "ice your elbow"; not "Rest 90 seconds between sets" or "within 2 hours of waking".
@@ -42,6 +44,7 @@ export type ReplyExpectation = {
   detail?: boolean;
   sources?: string[]; // every text the reply's numbers may come from (groundingSources)
   mustCite?: string[]; // numbers the reply must give, such as "412"
+  mustName?: string[]; // period phrases, one of which the reply must contain, such as "90 days"
 };
 
 function wordCount(reply: string): number {
@@ -109,7 +112,17 @@ function groundingViolations(
     ...(missingCites(reply, expected.mustCite ?? []).length
       ? (["missing-cite"] as const)
       : []),
+    ...(expected.mustName?.length && !namesPeriod(reply, expected.mustName)
+      ? (["missing-period"] as const)
+      : []),
   ];
+}
+
+// Any of the phrases, ignoring case and the kind of space: a model may write "90 days" with a
+// narrow no-break space (U+202F), as Groq did on 26 Nov.
+const plain = (text: string) => text.replace(/\s+/gu, " ").toLowerCase();
+function namesPeriod(reply: string, phrases: string[]): boolean {
+  return phrases.some((phrase) => plain(reply).includes(plain(phrase)));
 }
 
 export function checkChatReply(

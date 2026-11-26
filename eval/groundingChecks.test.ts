@@ -97,13 +97,31 @@ describe("the 25 Nov case (D43)", () => {
     expect(checkChatReply(live, { ...reviewCase, sources }).sort()).toEqual([
       "claims-no-access",
       "missing-cite",
+      "missing-period",
     ]);
     expect(checkChatReply(GOOD_REPLY, { ...reviewCase, sources })).toEqual([]);
     expect(
-      checkChatReply("You lost 5 kg. You imported 412 workouts, 3.2 kg down.", {
-        ...reviewCase,
-        sources,
-      }),
+      checkChatReply(
+        "You lost 5 kg in the last 90 days. You imported 412 workouts, 3.2 kg down.",
+        { ...reviewCase, sources },
+      ),
     ).toEqual(["ungrounded-number"]);
+  });
+});
+
+describe("the reply names its period (D43, verifier S2)", () => {
+  it("flags a reply to the 25 Nov case that gives the numbers but no period", () => {
+    const noPeriod =
+      "You have 412 workouts imported from Hevy, and your weight is down 3.2 kg.";
+    expect(checkChatReply(noPeriod, { ...reviewCase, sources })).toEqual([
+      "missing-period",
+    ]);
+    expect(checkChatReply(GOOD_REPLY, { ...reviewCase, sources })).toEqual([]);
+  });
+
+  it("reads a narrow no-break space as a space, as the 26 Nov Groq reply wrote '90 days'", () => {
+    const live =
+      "You imported 412 workouts. Over the past 90 days you are down 3.2 kg.";
+    expect(checkChatReply(live, { ...reviewCase, sources })).toEqual([]);
   });
 });
