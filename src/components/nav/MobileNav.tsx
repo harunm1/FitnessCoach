@@ -51,12 +51,6 @@ export function MobileNav({
         <SheetDescription className="sr-only">
           Pages, your account and the theme.
         </SheetDescription>
-        <SheetClose
-          aria-label="Close"
-          className="absolute top-3 right-3 inline-flex size-11 items-center justify-center rounded-lg text-[var(--text)] outline-offset-2 hover:bg-[var(--inset)] focus-visible:outline-2 focus-visible:outline-[var(--focus)]"
-        >
-          <X aria-hidden="true" className="size-5" />
-        </SheetClose>
         <AccountBrand light />
         <NavLinks current={current} onNavigate={() => setOpen(false)} />
         <SidebarFoot
@@ -64,6 +58,14 @@ export function MobileNav({
           avatarUrl={avatarUrl}
           current={current === "account"}
         />
+        {/* After the links in the DOM, so the sheet opens with focus on the first link; it is
+            positioned at the top right. */}
+        <SheetClose
+          aria-label="Close"
+          className="absolute top-3 right-3 inline-flex size-11 items-center justify-center rounded-lg text-[var(--text)] outline-offset-2 hover:bg-[var(--inset)] focus-visible:outline-2 focus-visible:outline-[var(--focus)]"
+        >
+          <X aria-hidden="true" className="size-5" />
+        </SheetClose>
       </SheetContent>
     </Sheet>
   );

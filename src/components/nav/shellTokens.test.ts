@@ -93,3 +93,21 @@ describe("shell type sizes (D41)", () => {
     expect(source).not.toMatch(/var\(--(muted|primary|accent)\b/);
   });
 });
+
+describe("the shell's global CSS (D41)", () => {
+  const globals = readFileSync(
+    join(__dirname, "..", "..", "app", "globals.css"),
+    "utf8",
+  );
+
+  it("steps the font size up only on pages that have the sidebar", () => {
+    expect(globals).toContain("html:has([data-app-sidebar])");
+    // A bare `html { font-size ...` rule would rescale every page, sign-in included.
+    expect(globals).not.toMatch(/html \{\s+font-size/);
+  });
+
+  it("moves a main that holds the sidebar right by the sidebar and a gutter", () => {
+    expect(globals).toContain("main:has([data-app-sidebar])");
+    expect(globals).toContain("padding-left: 18rem");
+  });
+});
