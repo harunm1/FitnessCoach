@@ -138,6 +138,8 @@ test("the Coach page offers Personalize with the coach, and a plan that passes t
   }
 });
 
+// Needs a test database without the seeded exercise library: in demo mode a down provider first
+// serves a cached demo plan whose exercise names must exist, which only the seeded library has.
 test("with the provider down the fallback message shows at once and the week stays", async ({
   page,
 }) => {
