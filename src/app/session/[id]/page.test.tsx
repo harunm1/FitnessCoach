@@ -107,6 +107,11 @@ describe("/session/[id]", () => {
     expect(html).toContain('href="/coach"');
   });
 
+  it("offers Discard workout for the open workout (D47)", async () => {
+    loadOpenWorkout.mockResolvedValue(workout);
+    expect(await render("42")).toContain("Discard workout");
+  });
+
   it.each([["a missing, finished or foreign workout", "42", null]])(
     "sends %s back to /session with one answer",
     async (_name, id, found) => {
