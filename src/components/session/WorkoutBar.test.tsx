@@ -37,6 +37,14 @@ describe("WorkoutBar", () => {
     ).toBeTruthy();
   });
 
+  it("starts to the right of the 16 rem sidebar from 1024 px and uses no hard-coded colour (D42)", () => {
+    render(<WorkoutBar {...props} />);
+    const bar = screen.getByRole("region", { name: "Workout controls" });
+    // The sidebar is fixed, left-0, w-64, z-30: the bar must not cover its footer.
+    expect(bar.className).toContain("lg:left-64");
+    expect(bar.className).not.toContain("rgba(");
+  });
+
   it("offers Resume while the clock is paused, and one Finish button only", () => {
     render(<WorkoutBar {...props} activeSinceIso={null} bankedSeconds={90} />);
     const bar = screen.getByRole("region", { name: "Workout controls" });
