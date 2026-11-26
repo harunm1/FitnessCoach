@@ -22,7 +22,7 @@ import {
   GROQ_MODEL,
 } from "../src/lib/coach/providers";
 import { CHAT_CASES } from "./chatCases";
-import { checkChatReply } from "./chatChecks";
+import { checkChatReply, groundingSources } from "./chatChecks";
 
 const PAUSE_MS = Number(process.env.PAUSE_MS ?? 3000);
 
@@ -48,7 +48,12 @@ async function main() {
     const context: CoachContext = chatCase.context;
     const turn = await coachReply(model, context, [], chatCase.message);
     const violations =
-      turn.source === "COACH" ? checkChatReply(turn.reply, chatCase) : [];
+      turn.source === "COACH"
+        ? checkChatReply(turn.reply, {
+            ...chatCase,
+            sources: groundingSources(context, chatCase.message),
+          })
+        : [];
     const row = {
       id: chatCase.id,
       prompt: CHAT_PROMPT_VERSION,
