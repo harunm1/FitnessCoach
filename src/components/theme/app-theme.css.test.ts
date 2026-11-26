@@ -40,6 +40,16 @@ describe("the light theme of the signed-in pages", () => {
     expect(override).toContain("border-color: var(--card-line);");
   });
 
+  // Verifier finding 2: cards also use border-foreground/10, fainter than /15, so they stayed
+  // faint. /20 and above are already at least as clear as the 24% line, so they are not touched.
+  it("lifts the faintest card borders (/10 and /15) to the clear line, and nothing stronger", () => {
+    expect(css).toContain(":global(.border-foreground\\/10),");
+    expect(css).toContain(":global(.border-foreground\\/15) {");
+    ["20", "25", "30", "40"].forEach((strength) =>
+      expect(css).not.toContain(`border-foreground\\/${strength}`),
+    );
+  });
+
   it("keeps the dark theme's own background and its old border strength", () => {
     const dark = rule('.appTheme.appTheme[data-theme="dark"]');
     expect(dark).toContain("--background: #0a0a0a;");
