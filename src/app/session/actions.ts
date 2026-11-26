@@ -261,6 +261,7 @@ export async function startOrResumeWorkout() {
       userId: user.id,
       planId: plan.id,
       finishedAt: null,
+      planDay: { isNot: null },
     },
     orderBy: { startedAt: "desc" },
     select: { id: true },

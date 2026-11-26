@@ -73,6 +73,15 @@ describe("/session (landing)", () => {
     await expect(SessionPage()).rejects.toThrow("redirect:/session/42");
   });
 
+  it("only redirects to a workout whose page can open (a plan day still exists)", async () => {
+    prisma.workout.findFirst.mockResolvedValue(null);
+    renderToStaticMarkup(await SessionPage());
+    const open = prisma.workout.findFirst.mock.calls
+      .map(([args]) => args.where)
+      .find((where) => where.finishedAt === null);
+    expect(open.planDay).toEqual({ isNot: null });
+  });
+
   it("with none open: Start, the muscle explorer and a Log a run link; no Finish", async () => {
     prisma.workout.findFirst.mockResolvedValue(null);
     const html = renderToStaticMarkup(await SessionPage());

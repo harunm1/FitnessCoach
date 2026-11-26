@@ -73,13 +73,22 @@ test.describe("workout page", () => {
     await expect(
       page.getByRole("button", { name: "Pause clock" }),
     ).toBeInViewport();
-    // The last card is not hidden behind the bar.
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await expect(
-      page
-        .getByRole("button", { name: `Log set ${SET_ONE}`, exact: true })
-        .last(),
-    ).toBeInViewport();
+    // Nothing of the last card sits behind the bar, also while the paused prompt makes the
+    // bar taller.
+    const clearOfBar = async () => {
+      await page.evaluate(() =>
+        window.scrollTo(0, document.documentElement.scrollHeight),
+      );
+      const card = await page.locator("ol > li").last().boundingBox();
+      const bar = await page
+        .getByRole("region", { name: "Workout controls" })
+        .boundingBox();
+      expect(card!.y + card!.height).toBeLessThanOrEqual(bar!.y);
+    };
+    await clearOfBar();
+    await page.getByRole("button", { name: "Pause clock" }).click();
+    await expect(page.getByText("The workout is paused.")).toBeVisible();
+    await clearOfBar();
   });
 
   test("a set logged offline still queues on the workout page", async ({
