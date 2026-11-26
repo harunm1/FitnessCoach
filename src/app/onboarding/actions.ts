@@ -53,7 +53,7 @@ export async function saveQuizProfile(
         secondaryMuscles: true,
       },
     });
-    // Every exercise now has cues (D42); the starter plan still prefers the curated ones (D26).
+    // Every exercise now has cues (D45); the starter plan still prefers the curated ones (D26).
     const library = rows.map(({ commonMistakes, ...row }) => ({
       ...row,
       cues: curatedCues({ cues: row.cues, commonMistakes }),

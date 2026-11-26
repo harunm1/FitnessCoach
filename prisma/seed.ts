@@ -72,7 +72,7 @@ async function seedExercises() {
     await prisma.$transaction(
       batch.map((e) => {
         if (getExerciseCueFields(e.id)) cueCount += 1;
-        // Curated cues first, then the dataset's own steps (#193, D42).
+        // Curated cues first, then the dataset's own steps (#193, D45).
         const guidance = guidanceForExercise(e.id, e.instructions);
         const name = displayNameFor(e.id, e.name);
         return prisma.exercise.upsert({

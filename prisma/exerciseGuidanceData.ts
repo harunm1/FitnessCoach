@@ -1,4 +1,4 @@
-// What the seed stores as form guidance for one exercise (#193, D42): the curated cues
+// What the seed stores as form guidance for one exercise (#193, D45): the curated cues
 // when the exercise has them, otherwise the dataset's instructions, otherwise the short
 // cues we wrote for the few rows the dataset ships without instructions.
 import fallbackCues from "./data/exercise-guidance-fallback.json";

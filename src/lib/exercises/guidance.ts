@@ -1,4 +1,4 @@
-// Form guidance for an exercise (#193, D42). Two tiers: the curated cues and common
+// Form guidance for an exercise (#193, D45). Two tiers: the curated cues and common
 // mistakes in prisma/data/exercise-cues.json (D26), and, for every other exercise, the
 // dataset's own step-by-step instructions, stored as cues. The session page shows
 // "Form guidance" whenever the stored cues or common mistakes are not empty.
@@ -12,7 +12,7 @@ export type GuidanceSources = {
   curated?: ExerciseGuidance;
   // free-exercise-db `instructions`: public domain, steps in order.
   instructions: readonly string[];
-  // Short cues we wrote for a dataset row that ships no instructions (D42).
+  // Short cues we wrote for a dataset row that ships no instructions (D45).
   fallbackCues?: readonly string[];
 };
 
