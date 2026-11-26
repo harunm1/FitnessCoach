@@ -157,7 +157,7 @@ test("an athlete completes the quiz and logs a session without touching another 
     await page
       .getByRole("button", { name: "Start workout", exact: true })
       .click();
-    // Start lands on the workout's own page (D43), which holds the clock and Finish.
+    // Start lands on the workout's own page (D46), which holds the clock and Finish.
     await expect(page).toHaveURL(/\/session\/\d+$/);
     await expect(
       page.getByRole("region", { name: "Workout controls" }),
@@ -204,7 +204,7 @@ test("an athlete completes the quiz and logs a session without touching another 
     await expect(
       exercise.getByRole("row", { name: "Set 1: 8 reps · 25 lb" }),
     ).toBeVisible();
-    // The running box is not on the workout page any more (D43).
+    // The running box is not on the workout page any more (D46).
     await expect(page.getByLabel("Distance (km)", { exact: true })).toHaveCount(
       0,
     );

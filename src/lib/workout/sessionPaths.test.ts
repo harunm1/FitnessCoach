@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SESSION_LANDING, parseWorkoutId, workoutPath } from "./sessionPaths";
 
-describe("session paths (D43)", () => {
+describe("session paths (D46)", () => {
   it("gives a workout its own address and the landing stays /session", () => {
     expect(SESSION_LANDING).toBe("/session");
     expect(workoutPath(42)).toBe("/session/42");

@@ -23,7 +23,7 @@ type ActiveWorkoutClockProps = {
   activeSinceIso: string | null; // null while paused
   lastSetAtIso: string | null; // newest saved set, server clock
   serverNowIso: string; // the server's clock when the page was built
-  hideFinish?: boolean; // the workout bar (D43) carries Finish, so the paused prompt has none
+  hideFinish?: boolean; // the workout bar (D46) carries Finish, so the paused prompt has none
 };
 
 const TICK_MS = 1000;

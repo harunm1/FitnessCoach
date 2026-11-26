@@ -980,7 +980,17 @@ Seven fixes, one commit each, tests written first and shown failing. L4: a re-up
 
 **Tools:** git, Vitest, Playwright, tsc, ESLint, Prettier, Tailwind probe, scratch PostgreSQL, two Sonnet verifier agents. Skills: systematic debugging.
 
-## 26 November: a page for the workout (D43) and cards with a set table (D44)
+## 26 November: the coach reads the user's own data (D43)
+
+On 25 November the live coach, asked to "review my hevy import history, and weight loss", said it had no access to either and sent him to a trainer. The message had passed the word list; the prompt simply held no import or weight data. Design first (D43 in `docs/ARCHITECTURE.md`): four read-only tools in `src/lib/coach/tools/` that the server runs on every turn for the signed-in user only (training profile, last 28 days of workouts with imports flagged and the all-time import count, working weights over 8 weeks, body-weight trend over 90 days), each with its period, in the prompt as one data block (`chat-v6`). Model-chosen tool calls were beaten: Groq's local tool calling takes two requests per answer (its docs, checked 26 November), which doubles the cost of the turns that matter on the free tier and delays the first streamed sentence.
+
+Generated with Claude Code (Opus), tests written first and shown failing: the tool functions (date and unit wording, pounds, no entries), the context for the 25 November message on a seeded fixture, every query scoped to the signed-in user (unit, and an integration test with two users against PostgreSQL that CI runs), the prompt block and its rules, and the guardrail scope. Writing the guardrail test found a real gap: "what diet should I follow to lose weight?" was not caught by the word list (only the prompt stopped it); the pattern now covers it, and the nutrition reply says the coach can still review the logged weight trend. Three eval screens were added (numbers grounded in the data, no "I can't see it", required numbers), with criteria written before the run; on one Groq run the 25 November case passed all three, and two older cases were flagged for advice numbers and list markers, read by hand as not about the user's data (`docs/COACH_EVAL.md`). The three stored demo replies were recorded again for `chat-v6`.
+
+Limits: the number check is an eval screen, not a live filter; a tool that fails to read makes the whole turn ask the user to send again, as the D36 history read did; the coach still sees a summary, not every workout, so a question about one old session is answered from the totals.
+
+**Tools:** git, gh, Vitest, tsc, ESLint, Prettier, Prisma generate, Firecrawl (Groq docs), Groq live eval run. Skills: none invoked; the user scoping and the failure path were checked by hand against the task file's security and error-handling items.
+
+## 26 November: a page for the workout (D46) and cards with a set table (D44)
 
 His review of 25 November said the session page was cluttered and Finish sat at the very bottom. I wrote the decision rows first, then the code. The workout moved to `/session/[id]` with a bar fixed to the bottom (clock, Pause, Finish); `/session` became the landing. A blind verifier found a possible redirect loop for a workout whose plan day was deleted and an overlap test that could not fail; both were fixed with a test first. The second change replaces the set form with a Hevy-style card and set table (previous set, pre-filled rows, check to log, Add and Remove set, a rest choice, a notes line) and moves the two pain boxes into one optional check-in at the top.
 

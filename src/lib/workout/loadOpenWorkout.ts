@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 
-// The workout page's data (D43): one open workout of this user on the user's active plan,
+// The workout page's data (D46): one open workout of this user on the user's active plan,
 // with its plan day's exercises in order and the sets logged so far. Null for a missing,
 // finished or another user's workout, so the page can answer all three the same way.
 export async function loadOpenWorkout(

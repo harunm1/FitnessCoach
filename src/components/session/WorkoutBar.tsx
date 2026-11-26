@@ -1,4 +1,4 @@
-// The bar fixed to the bottom of the workout page (D43): the clock, Pause or Resume, and
+// The bar fixed to the bottom of the workout page (D46): the clock, Pause or Resume, and
 // Finish workout, always in view, so Finish needs no scrolling on a long workout or a phone.
 import { finishWorkout } from "@/app/session/actions";
 import ActiveWorkoutClock from "./ActiveWorkoutClock";
@@ -15,7 +15,7 @@ export default function WorkoutBar(props: WorkoutBarProps) {
   return (
     <div
       aria-label="Workout controls"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-foreground/20 bg-background px-4 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-2px_8px_rgba(0,0,0,0.08)]"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-foreground/20 bg-background px-4 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:left-64"
       role="region"
     >
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-2">

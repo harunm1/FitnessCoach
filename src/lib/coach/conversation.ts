@@ -1,10 +1,9 @@
 // The coach conversation in the database (#63): loading it, the coach's context, and saving one exchange, always by user id.
 import type { PrismaClient } from "@/generated/prisma/client";
 import { unitsFromRow } from "@/lib/units/convert";
-import { loadTrainingProfile } from "@/lib/trainingProfile/load";
-import { coachSummaryLines } from "@/lib/trainingProfile/summary";
 import { getNextPlanDayIndex } from "@/lib/workout/progression";
 import type { CoachContext } from "./chat";
+import { runCoachTools, type ToolResult } from "./tools";
 
 type Db = Pick<
   PrismaClient,
@@ -16,6 +15,7 @@ type Db = Pick<
   | "setLog"
   | "user"
   | "exercise"
+  | "bodyWeight"
   | "$transaction"
 >;
 
@@ -57,7 +57,8 @@ export async function loadConversation(
   return { id: found.id, messages: found.messages.toReversed() };
 }
 
-// Only what the coach needs (CoachContext): the profile and the next session's lines.
+// Only what the coach needs (CoachContext): the profile, the next session's lines, and the
+// results of the coach's tools for this user (D43).
 export async function coachContextFor(
   db: Db,
   userId: string,
@@ -74,28 +75,26 @@ export async function coachContextFor(
     },
   });
   if (!profile) return null;
-  const [avoidMuscles, sessionLines, historyLines] = await Promise.all([
+  const [avoidMuscles, sessionLines, toolResults] = await Promise.all([
     musclesToAvoid(db, profile.injuries),
     nextSessionLines(db, userId),
-    trainingHistoryLines(db, userId, now),
+    toolResultsFor(db, userId, now),
   ]);
-  return { ...profile, avoidMuscles, sessionLines, historyLines };
+  return { ...profile, avoidMuscles, sessionLines, toolResults };
 }
 
-// A short summary of the logged history, in the user's weight unit (D36); empty with none.
-async function trainingHistoryLines(
+// The user's own data, in their weight unit (D36, D43): training profile, recent workouts with
+// imports flagged, working weights and the body-weight trend.
+async function toolResultsFor(
   db: Db,
   userId: string,
   now: Date,
-): Promise<string[]> {
-  const [history, units] = await Promise.all([
-    loadTrainingProfile(db, userId, now),
-    db.user.findUnique({
-      where: { id: userId },
-      select: { weightUnit: true, distanceUnit: true },
-    }),
-  ]);
-  return coachSummaryLines(history, unitsFromRow(units).weightUnit);
+): Promise<ToolResult[]> {
+  const units = await db.user.findUnique({
+    where: { id: userId },
+    select: { weightUnit: true, distanceUnit: true },
+  });
+  return runCoachTools(db, userId, unitsFromRow(units).weightUnit, now);
 }
 
 // The injury text never goes to a model (practice 6). Code picks the library's muscle

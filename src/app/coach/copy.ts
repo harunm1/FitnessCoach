@@ -19,3 +19,6 @@ export const MESSAGE_MAX_LENGTH = 1000;
 // Shown with a stored reply in demo mode when both model providers failed (D12, #59).
 export const SAVED_EXAMPLE_MESSAGE =
   "The coach can't answer right now, so here is a reply it wrote earlier to the same question for a sample profile. It is not about your plan and is not saved; send it again in a minute for a live answer.";
+// The line above the "Personalize with the coach" button on the coach screen (demo step 5).
+export const PERSONALIZE_INTRO =
+  "Rebuild this week from your profile and history.";

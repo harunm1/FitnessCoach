@@ -81,9 +81,10 @@ export const REPLIES = {
   MINDSET_REFRAME:
     "You don't have to earn your training or make up for anything, and a missed session or a hard day doesn't change what you're worth. Your plan stays as it is: pick one session you'd like to do this week, and we'll build from there.",
   // Nutrition is out of scope (8 November design review, decision 5, #43): no diet,
-  // calorie, supplement or meal advice, so the question never reaches the model.
+  // calorie, supplement or meal advice, so the question never reaches the model. Reviewing
+  // the user's own logged weight trend is in scope (D43), so the reply says the coach still can.
   NUTRITION_REDIRECT:
-    "I'm a training coach, so I don't give diet, calorie, supplement or meal advice. A registered dietitian can build that around you. I'm still here for your plan, your running and your recovery.",
+    "I'm a training coach, so I don't give diet, calorie, supplement or meal advice. A registered dietitian can build that around you. I can still review your logged body-weight trend and your training, and help with your plan, running and recovery.",
   OFF_TOPIC:
     "I'm your training coach, so I can help with your plan, exercises, running and recovery. What would you like to work on?",
 } as const;
@@ -112,8 +113,10 @@ const NUTRITION = new RegExp(
   [
     // "what should I eat", "what do I have for dinner", "what to take before a run"
     String.raw`\bwhat\b[^.?!]{0,30}\b(eat|have for (breakfast|lunch|dinner)|(?<!\b(rest|break|breaks|time|days?|recovery|pause)\b[^.?!]{0,15})take (for|before|after))\b`,
-    // "what foods help recovery", "what vitamins should I take", "what supplements"
-    String.raw`\bwhat\b[^.?!]{0,20}\b(foods?|snacks?(?!-)|supplements?|vitamins?|meals?(?!\s+times?\b))\b`,
+    // "what foods help recovery", "what vitamins should I take", "what supplements", "what
+    // diet should I follow to lose weight" (D43: a review of the logged weight trend is in
+    // scope, a diet is not)
+    String.raw`\bwhat\b[^.?!]{0,20}\b(foods?|snacks?(?!-)|supplements?|vitamins?|diets?|meals?(?!\s+times?\b))\b`,
     // "should I eat before a run", "do I need to eat more", "can I eat late"
     String.raw`\b(should|can|could|do|would|will)\s+i\b[^.?!]{0,20}\beat\b`,
     // "should I cut calories", "can I take creatine", "do I track carbs"

@@ -104,7 +104,7 @@ export async function signedInAthleteWithWorkout(
   await expect(page).toHaveURL((url) => url.pathname === "/account");
   await page.goto("/session");
   if (workout) {
-    // An open workout reopens at its own page (D43), with the bar fixed to the bottom.
+    // An open workout reopens at its own page (D46), with the bar fixed to the bottom.
     await expect(page).toHaveURL(/\/session\/\d+$/);
     await expect(
       page.getByRole("region", { name: "Workout controls" }),

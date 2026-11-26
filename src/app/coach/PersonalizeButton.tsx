@@ -1,6 +1,6 @@
 "use client";
 
-// "Personalize with the coach" (#58). Placed on the plan screen by its owner; the
+// "Personalize with the coach" (#58). Mounted on the Coach page (D40); the
 // action decides everything, this only shows the outcome.
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";

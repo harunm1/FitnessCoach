@@ -235,6 +235,31 @@ describe("checkUserMessage", () => {
     expect(REPLIES.NUTRITION_REDIRECT).not.toMatch(/\d/);
   });
 
+  // D43: reviewing the user's own logged weight trend and training volume is in scope (the
+  // 25 Nov message reaches the coach); diet plans and calorie targets still decline, and the
+  // decline says what the coach can still do with the logged data.
+  it.each([
+    "review my hevy import history, and weight loss",
+    "can you review my weight trend and training volume this month?",
+    "how is my weight loss going since I started lifting?",
+  ])("lets a review of the user's own logged data through: %s", (text) => {
+    expect(checkUserMessage(text)).toEqual({ action: "ALLOW" });
+  });
+
+  it.each([
+    "give me a calorie target to lose weight",
+    "what diet should I follow to lose weight?",
+    "build me a meal plan for my weight loss",
+  ])("still declines a diet or calorie request: %s", (text) => {
+    expect(checkUserMessage(text).action).toBe("NUTRITION_REDIRECT");
+  });
+
+  it("says the coach can still review the logged weight trend when it declines diet advice", () => {
+    expect(REPLIES.NUTRITION_REDIRECT).toMatch(
+      /review your logged body-weight trend/i,
+    );
+  });
+
   it.each([
     "I want to lose fat before summer",
     "how fast can I lose weight safely",

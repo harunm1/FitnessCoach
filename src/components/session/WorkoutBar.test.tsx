@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// The bar fixed to the bottom of the workout page (D43): the clock, Pause or Resume, and
+// The bar fixed to the bottom of the workout page (D46): the clock, Pause or Resume, and
 // Finish workout, always in view, so Finish never sits below a long list of exercises.
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -35,6 +35,14 @@ describe("WorkoutBar", () => {
     expect(
       within(bar).getByRole("button", { name: "Finish workout" }),
     ).toBeTruthy();
+  });
+
+  it("starts to the right of the 16 rem sidebar from 1024 px and uses no hard-coded colour (D42)", () => {
+    render(<WorkoutBar {...props} />);
+    const bar = screen.getByRole("region", { name: "Workout controls" });
+    // The sidebar is fixed, left-0, w-64, z-30: the bar must not cover its footer.
+    expect(bar.className).toContain("lg:left-64");
+    expect(bar.className).not.toContain("rgba(");
   });
 
   it("offers Resume while the clock is paused, and one Finish button only", () => {

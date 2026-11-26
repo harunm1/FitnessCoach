@@ -23,7 +23,7 @@ export const dynamic = "force-dynamic";
 
 const ORDINAL_WIDTH = 2;
 
-// One workout and nothing else (D43): its exercises in order with their sets, the rest
+// One workout and nothing else (D46): its exercises in order with their sets, the rest
 // timer and cues, and the bar fixed to the bottom with the clock, Pause and Finish.
 export default async function WorkoutPage({
   params,

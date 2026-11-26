@@ -1,4 +1,4 @@
-// Addresses of the session screens (D43): /session is the landing, /session/[id] is one
+// Addresses of the session screens (D46): /session is the landing, /session/[id] is one
 // workout.
 export const SESSION_LANDING = "/session";
 
