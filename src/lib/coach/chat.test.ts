@@ -142,7 +142,7 @@ describe("buildCoachSystemPrompt", () => {
       /sharp, stabbing or shooting pain.*stop that exercise and see a professional/,
     );
     expect(prompt).toMatch(/never add recovery, rest-time or injury advice/i);
-    expect(CHAT_PROMPT_VERSION).toBe("chat-v5");
+    expect(CHAT_PROMPT_VERSION).toBe("chat-v6");
     expect(prompt).not.toMatch(/under 120 words/);
     expect(prompt).toContain("Equipment: dumbbell, body only.");
     expect(prompt).toContain("rest day");

@@ -100,9 +100,18 @@ const { requirePermission, AccessDeniedError, revalidatePath, chatModel, db } =
       },
       profile: { findUnique: vi.fn(async () => db.profileRow) },
       plan: { findFirst: vi.fn(async () => null) },
-      // No finished workouts: the coach's training history (D36) is empty.
-      workout: { count: vi.fn(async () => 0), findMany: vi.fn(async () => []) },
+      // No finished workouts, imports or weigh-ins: the coach's tools (D36, D43) find none.
+      workout: {
+        count: vi.fn(async () => 0),
+        findMany: vi.fn(async () => []),
+        aggregate: vi.fn(async () => ({
+          _count: { _all: 0 },
+          _min: { startedAt: null },
+          _max: { startedAt: null },
+        })),
+      },
       setLog: { findMany: vi.fn(async () => []) },
+      bodyWeight: { findMany: vi.fn(async () => []) },
       user: {
         findUnique: vi.fn(async () => ({
           weightUnit: "KG",
