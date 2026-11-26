@@ -1,8 +1,50 @@
 import { describe, expect, it } from "vitest";
 import snapshot from "../../../prisma/data/exercise-instructions-snapshot.json";
-import { FALLBACK_CUE_IDS } from "../../../prisma/exerciseGuidanceData";
+import cueData from "../../../prisma/data/exercise-cues.json";
+import {
+  FALLBACK_CUE_IDS,
+  exercisesWithoutGuidance,
+} from "../../../prisma/exerciseGuidanceData";
 import { DISPLAY_NAME_BY_ID, displayNameFor } from "./displayNames";
-import { curatedCues, guidanceForSeed, hasGuidance } from "./guidance";
+import {
+  curatedCues,
+  guidanceForSeed,
+  hasGuidance,
+  withCuratedCues,
+} from "./guidance";
+
+describe("exercisesWithoutGuidance (the seed's guard)", () => {
+  it("lists a row with no curated cues, no steps and no fallback", () => {
+    expect(
+      exercisesWithoutGuidance([
+        { id: "Nothing_Known", instructions: [] },
+        { id: "Blank_Steps", instructions: ["  "] },
+        { id: "Has_Steps", instructions: ["Do it."] },
+        { id: "Side_Bridge", instructions: [] },
+        { id: "Barbell_Squat", instructions: [] },
+      ]),
+    ).toEqual(["Nothing_Known", "Blank_Steps"]);
+  });
+});
+
+describe("curated rows carry common mistakes (curatedCues relies on it)", () => {
+  it.each(Object.entries(cueData))("%s", (_id, entry) => {
+    expect(entry.commonMistakes.length).toBeGreaterThan(0);
+  });
+});
+
+describe("withCuratedCues (what the quiz hands the starter plan)", () => {
+  it("keeps cues of curated rows, empties the others, and drops commonMistakes", () => {
+    const rows = [
+      { id: "a", cues: ["Brace"], commonMistakes: ["Round"] },
+      { id: "b", cues: ["Step."], commonMistakes: [] },
+    ];
+    expect(withCuratedCues(rows)).toEqual([
+      { id: "a", cues: ["Brace"] },
+      { id: "b", cues: [] },
+    ]);
+  });
+});
 
 const curated = { cues: ["Brace"], commonMistakes: ["Rounding"] };
 

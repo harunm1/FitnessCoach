@@ -39,3 +39,12 @@ export const hasGuidance = (guidance: ExerciseGuidance): boolean =>
 // never do. The starter plan keeps preferring the curated tier (D26) through this.
 export const curatedCues = (row: ExerciseGuidance): string[] =>
   row.commonMistakes.length > 0 ? row.cues : [];
+
+// Rows as the quiz hands them to the starter plan: cues only for curated rows.
+export const withCuratedCues = <T extends ExerciseGuidance>(
+  rows: readonly T[],
+): Omit<T, "commonMistakes">[] =>
+  rows.map(({ commonMistakes, ...row }) => ({
+    ...row,
+    cues: curatedCues({ cues: row.cues, commonMistakes }),
+  }));

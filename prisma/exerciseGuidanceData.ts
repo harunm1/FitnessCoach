@@ -4,6 +4,7 @@
 import fallbackCues from "./data/exercise-guidance-fallback.json";
 import {
   guidanceForSeed,
+  hasGuidance,
   type ExerciseGuidance,
 } from "../src/lib/exercises/guidance";
 import { getExerciseCueFields } from "./exerciseCueData";
@@ -15,6 +16,14 @@ function fallbackFor(exerciseId: string): readonly string[] | undefined {
     ? fallbackCues[exerciseId as keyof typeof fallbackCues]
     : undefined;
 }
+
+// The seed's guard: ids of rows that would be stored with no guidance at all.
+export const exercisesWithoutGuidance = (
+  rows: readonly { id: string; instructions: readonly string[] }[],
+): string[] =>
+  rows
+    .filter((r) => !hasGuidance(guidanceForExercise(r.id, r.instructions)))
+    .map((r) => r.id);
 
 export function guidanceForExercise(
   exerciseId: string,
