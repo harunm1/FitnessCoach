@@ -9,6 +9,7 @@ import {
   planPromptFingerprint,
   type CachedPlan,
 } from "./demoPlans";
+import { displayNameFor } from "@/lib/exercises/displayNames";
 import { EVAL_PROFILES } from "./evalProfiles";
 import { generatePlan, type PlanModel } from "./generatePlan";
 import { ProviderError } from "./providers";
@@ -18,10 +19,13 @@ import {
   type VerifyProfile,
 } from "./verify";
 
-// The exercises the 30 October replies name, with the fields the app stores.
-const library: CategorisedExercise[] = JSON.parse(
-  readFileSync("eval/fixtures-library.json", "utf8"),
-);
+// The exercises the 30 October replies name, with the fields the app stores. Names are the
+// ones the seed stores (displayNameFor, #193), as the live library holds them.
+const library: CategorisedExercise[] = (
+  JSON.parse(
+    readFileSync("eval/fixtures-library.json", "utf8"),
+  ) as CategorisedExercise[]
+).map((e) => ({ ...e, name: displayNameFor(e.id, e.name ?? e.id) }));
 const byId = new Map(library.map((e) => [e.id, e]));
 const HTTP_TOO_MANY = 429;
 const ONE_CALL = 1;
