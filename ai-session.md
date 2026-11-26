@@ -1007,3 +1007,13 @@ His review of 25 November said the session page was cluttered and Finish sat at 
 **Limits, said plainly:** distance and duration sets, thumbnails and supersets are not built (D44 lists why). Notes, the rest choice and the check-in are stored in the browser only. The card components were written before their unit tests, then tested; the Playwright specs were run against the new build only.
 
 **Tools:** git, gh, Vitest, Playwright, tsc, ESLint, Prettier, scratch PostgreSQL, blind verifier agents.
+
+## 26 November: Discard workout (D47) and the Import menus on a phone (D48)
+
+A teammate's report of 26 November listed two things before the demo freeze: the workout page needs a way to throw away a workout, and the History and Import row menus need a fix. I took one pull request for each.
+
+**Discard workout:** my approach was the smallest change that does not touch the schema: delete the unfinished workout and let the existing cascades remove its sets. The rules I set before writing code were owner only, unfinished only, and the same 404 for a missing, finished or foreign workout. The tests came first: unit tests for the delete's filter, the action and the confirmation, then an integration test against PostgreSQL with two users. I broke the filter on purpose to check the integration test fails when the owner or finished guard is missing (two tests failed, then the code was restored). One decision was mine: the task said to return to `/dashboard`, which does not exist in this app, so the action returns to `/session`.
+
+**Import menus:** I did not fix first. I read what the History and Import pages do, found no menu on a History row (rows are links), and found the per-exercise select lists on the Import preview. A browser test that signs in, uploads the Hevy fixture and measures each menu failed at 375 px (a menu ended 660 px from the left edge) and passed at 1280 px; History rows were correct at both. The fix is a few layout classes, and the same test passes after it.
+
+**AI use:** an AI assistant wrote the tests and code from my task file, read the existing session, History and Import code, and ran the checks. A separate reviewer with no sight of the work read the full diff before each pull request. **Limits:** the report said "row menus" and I found only the Import selects; if the teammate meant something else I could not reproduce it. `window.confirm` is an unstyled browser box. **Tools:** git, gh, Vitest, Playwright, tsc, ESLint, Prettier, Prisma, a scratch PostgreSQL, MDN (CSS grid), an independent reviewer agent.
