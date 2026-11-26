@@ -58,6 +58,8 @@ export default async function SessionPage() {
           userId: user.id,
           planId: plan.id,
           finishedAt: null,
+          // The workout page needs its plan day; without one it would send the user back.
+          planDay: { isNot: null },
         },
         orderBy: { startedAt: "desc" },
         select: { id: true },
