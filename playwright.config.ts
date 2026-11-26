@@ -46,6 +46,19 @@ export default defineConfig({
         STRIPE_MONTHLY_PRICE_ID: "",
         STRIPE_YEARLY_PRICE_ID: "",
         STRIPE_WEBHOOK_SECRET: "",
+        // The program adapter's model (D38): a fixed reply, never used on Vercel. One
+        // rep change for day 2, slot 4 (Dumbbell Lunges, 10 to 12 reps).
+        PROGRAM_MODEL_STUB: JSON.stringify({
+          changes: [
+            {
+              op: "reps",
+              day: 2,
+              slot: 4,
+              reps: 12,
+              reason: "Lunges suit the top of the rep band for a beginner.",
+            },
+          ],
+        }),
         NEXT_TELEMETRY_DISABLED: "1",
       },
     },

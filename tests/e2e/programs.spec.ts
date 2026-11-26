@@ -1,9 +1,9 @@
-// Program templates in the browser (D38). The test server has no model key, so this is
-// the "coach unavailable" path: the template comes back at once with a plain note and
-// the rule swaps for the user's kit. Reverting a needed swap makes the server refuse the
-// save and say why; keeping it saves the program, which then shows in its folder.
-// Reverting a coach change and saving is covered by the component and integration
-// tests (ProgramReview.test.tsx, tests/integration/programs.test.ts).
+// Program templates in the browser (D38). The test server answers the coach with a fixed
+// reply (PROGRAM_MODEL_STUB in playwright.config.ts): one rep change for day B. The
+// athlete sees it beside the rule swaps for a dumbbell-only kit, reverts the coach
+// change, and saves. Reverting a needed swap makes the server refuse the save and say
+// why. The saved program keeps the template's reps for the reverted change. The
+// "coach unavailable" path is covered by adapt.test.ts and the integration tests.
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
@@ -99,9 +99,7 @@ test("an athlete picks a template, sees the fitted changes, reverts one and save
         name: "Changes to Full body, 3 days (beginner)",
       }),
     ).toBeVisible();
-    await expect(
-      page.getByText("could not adapt this template just now"),
-    ).toBeVisible();
+    await expect(page.getByText("Suggested by the coach")).toBeVisible();
     const keep = page.getByRole("checkbox", { name: "Keep this change" });
     expect(await keep.count()).toBeGreaterThan(0);
     await expect(
@@ -123,8 +121,17 @@ test("an athlete picks a template, sees the fitted changes, reverts one and save
     await expect(refusal).toBeVisible();
     await expect(refusal).toContainText("needs barbell");
 
-    // Keep it again and move day A to Tuesday: the program saves.
+    // Keep it again, revert the coach's rep change for day B, and move day A to
+    // Tuesday: the program saves with the template's reps for that slot.
     await keep.first().check();
+    const dayB = page.getByRole("region", { name: "Full body B" });
+    await expect(dayB.getByText(/^Dumbbell Lunges: 3 x 12$/)).toBeVisible();
+    await page
+      .getByRole("checkbox", {
+        name: /^Keep this change: Full body B: Dumbbell Lunges, 10 → 12 reps$/,
+      })
+      .uncheck();
+    await expect(dayB.getByText(/^Dumbbell Lunges: 3 x 10$/)).toBeVisible();
     await page
       .getByRole("combobox", { name: "Weekday for Full body A", exact: true })
       .selectOption("TUE");
@@ -154,6 +161,28 @@ test("an athlete picks a template, sees the fitted changes, reverts one and save
       source: "TEMPLATE",
       templateId: "full-body-3-beginner",
     });
+    const { rows: saved } = await db.query<{
+      reps: number;
+      weekdays: string[];
+    }>(
+      `SELECT pe.reps, pd.weekdays::text[] AS weekdays
+         FROM "PlanExercise" pe
+         JOIN "PlanDay" pd ON pd.id = pe."planDayId"
+         JOIN "Plan" p ON p.id = pd."planId"
+        WHERE p."userId" = $1 AND p.active
+          AND pe."exerciseId" = 'Dumbbell_Lunges' AND pd.name = 'Full body B'`,
+      [user.id],
+    );
+    expect(saved).toEqual([{ reps: 10, weekdays: ["WED"] }]);
+    const {
+      rows: [savedDayA],
+    } = await db.query<{ weekdays: string[] }>(
+      `SELECT pd.weekdays::text[] AS weekdays FROM "PlanDay" pd
+         JOIN "Plan" p ON p.id = pd."planId"
+        WHERE p."userId" = $1 AND p.active AND pd.name = 'Full body A'`,
+      [user.id],
+    );
+    expect(savedDayA.weekdays).toEqual(["TUE"]);
   } finally {
     try {
       // The user first: plans and plan exercises go with it by cascade.
