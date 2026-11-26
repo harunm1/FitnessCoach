@@ -52,6 +52,7 @@ afterEach(() => {
 
 describe("groqModel address", () => {
   it("calls the address in COACH_GROQ_URL when it is set (the browser tests' stub, D40)", async () => {
+    vi.stubEnv("VERCEL", "");
     vi.stubEnv("COACH_GROQ_URL", "http://127.0.0.1:18028/chat/completions");
     const fetchMock = mockFetch(200, groqReply(JSON.stringify(plan)));
     await groqModel(KEY)("Build a plan as JSON");
