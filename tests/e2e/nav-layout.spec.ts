@@ -5,7 +5,15 @@ import { signInFreshUser } from "./helpers/signed-in";
 
 // Live bug L1, 25 Nov 2026: the top navigation's six links stacked in a column between the
 // logo and the account controls on a signed-in page. Checked at a phone, a tablet and a laptop.
-const LINKS = ["Session", "Coach", "Progress", "Photos", "History", "Import"];
+const LINKS = [
+  "Session",
+  "Programs",
+  "Coach",
+  "Progress",
+  "Photos",
+  "History",
+  "Import",
+];
 const ROW_TOLERANCE_PX = 2;
 
 const mainLinks = (page: Page) =>
