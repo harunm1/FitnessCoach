@@ -10,13 +10,15 @@ import {
   getExerciseCueFields,
   getMissingExerciseCueIds,
 } from "./exerciseCueData";
-import { guidanceForExercise } from "./exerciseGuidanceData";
-import { hasGuidance } from "../src/lib/exercises/guidance";
+import {
+  exercisesWithoutGuidance,
+  guidanceForExercise,
+} from "./exerciseGuidanceData";
 import { displayNameFor } from "../src/lib/exercises/displayNames";
 import { seedLocalDemoUsers } from "./demo-users";
 
 const EXERCISES_URL =
-  "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json";
+  "https://raw.githubusercontent.com/yuhonas/free-exercise-db/f00c92c7dcf1216a928a52c3706c7ce8e2f71ed5/dist/exercises.json";
 
 // The shape of one record in the dataset; only the fields we store.
 type SourceExercise = {
@@ -55,9 +57,7 @@ async function seedExercises() {
       `Curated exercise cues are missing from the source library: ${missingCueIds.join(", ")}`,
     );
   }
-  const withoutGuidance = exercises
-    .filter((e) => !hasGuidance(guidanceForExercise(e.id, e.instructions)))
-    .map((e) => e.id);
+  const withoutGuidance = exercisesWithoutGuidance(exercises);
   if (withoutGuidance.length > 0) {
     throw new Error(
       `No form guidance for: ${withoutGuidance.join(", ")}. Add cues to prisma/data/exercise-guidance-fallback.json.`,
