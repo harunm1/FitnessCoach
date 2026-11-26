@@ -10,8 +10,13 @@ const STARTER_NAME = "Starter week before the coach";
 
 // A signed-in athlete with coach access (PRO alone counts only with active billing, so a running trial grants it) who has taken the quiz (two gym days, no kit), has a starter week,
 // and has six strength exercises to be planned from. Returns the user's id.
-async function seedAthlete(page: Page, db: Client): Promise<string> {
-  const prefix = `personalize-browser-${randomUUID()}`;
+// Everything it makes starts with `prefix`, so cleanUp can remove it (the quiz spec builds its
+// starter plan from the shared Exercise table and would pick these up).
+async function seedAthlete(
+  page: Page,
+  db: Client,
+  prefix: string,
+): Promise<string> {
   const email = `${prefix}@example.test`;
   const password = "Personalize-browser-password-123!";
   const ip = `2001:db8:${randomUUID().slice(0, 4)}::3`;
@@ -80,6 +85,17 @@ async function seedAthlete(page: Page, db: Client): Promise<string> {
   return userId;
 }
 
+async function cleanUp(db: Client, prefix: string): Promise<void> {
+  try {
+    await db.query('DELETE FROM "User" WHERE email LIKE $1', [`${prefix}%`]);
+    await db.query('DELETE FROM "Exercise" WHERE id LIKE $1', [
+      `${prefix}-ex-%`,
+    ]);
+  } finally {
+    await db.end();
+  }
+}
+
 async function activePlan(db: Client, userId: string) {
   const { rows } = await db.query<{ name: string; source: string }>(
     'SELECT name, source FROM "Plan" WHERE "userId" = $1 AND active',
@@ -92,10 +108,11 @@ test("the Coach page offers Personalize with the coach, and a plan that passes t
   page,
 }) => {
   const db = new Client({ connectionString: testDatabaseURL() });
+  const prefix = `personalize-browser-${randomUUID()}`;
   await db.connect();
   try {
     await page.request.post(`${STUB}/mode?set=ok`);
-    const userId = await seedAthlete(page, db);
+    const userId = await seedAthlete(page, db, prefix);
 
     await page.goto("/coach");
     await expect(
@@ -117,7 +134,7 @@ test("the Coach page offers Personalize with the coach, and a plan that passes t
       { name: STUB_PLAN_NAME, source: "COACH" },
     ]);
   } finally {
-    await db.end();
+    await cleanUp(db, prefix);
   }
 });
 
@@ -125,10 +142,11 @@ test("with the provider down the fallback message shows at once and the week sta
   page,
 }) => {
   const db = new Client({ connectionString: testDatabaseURL() });
+  const prefix = `personalize-browser-${randomUUID()}`;
   await db.connect();
   try {
     await page.request.post(`${STUB}/mode?set=down`);
-    const userId = await seedAthlete(page, db);
+    const userId = await seedAthlete(page, db, prefix);
 
     await page.goto("/coach");
     const startedAt = Date.now();
@@ -145,6 +163,6 @@ test("with the provider down the fallback message shows at once and the week sta
     ]);
   } finally {
     await page.request.post(`${STUB}/mode?set=ok`);
-    await db.end();
+    await cleanUp(db, prefix);
   }
 });
