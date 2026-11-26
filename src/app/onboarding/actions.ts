@@ -7,6 +7,7 @@ import {
 } from "@/lib/onboarding/schema";
 import { PlanSource, TrainingMode } from "@/generated/prisma/client";
 import { buildDefaultPlan } from "@/lib/coach/defaultPlan";
+import { curatedCues } from "@/lib/exercises/guidance";
 import { saveHybridQuizWeek } from "@/lib/onboarding/hybridQuiz";
 import { verifyPlan } from "@/lib/coach/verify";
 import { requireUser } from "@/lib/auth/session";
@@ -40,17 +41,23 @@ export async function saveQuizProfile(
   }
 
   try {
-    const library = await prisma.exercise.findMany({
+    const rows = await prisma.exercise.findMany({
       select: {
         id: true,
         category: true,
         cues: true,
+        commonMistakes: true,
         level: true,
         equipment: true,
         primaryMuscles: true,
         secondaryMuscles: true,
       },
     });
+    // Every exercise now has cues (D42); the starter plan still prefers the curated ones (D26).
+    const library = rows.map(({ commonMistakes, ...row }) => ({
+      ...row,
+      cues: curatedCues({ cues: row.cues, commonMistakes }),
+    }));
     const injuryText = parsed.data.injuries.toLowerCase();
     const muscleNames = [
       ...new Set(
