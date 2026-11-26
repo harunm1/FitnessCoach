@@ -9,26 +9,29 @@ export type PreviousSet = {
   weightKg: string | null;
 };
 
-type PreviousRow = PreviousSet & { exerciseId: string; workoutId: number };
-
-// More than any one exercise has in a few workouts; the read stays bounded.
-const ROW_LIMIT = 400;
-
-// The first workout met per exercise (newest first) supplies all of that exercise's sets.
-export function newestWorkoutSets(
-  rows: PreviousRow[],
-): Map<string, PreviousSet[]> {
-  const workoutOf = new Map<string, number>();
-  return rows.reduce((byExercise, row) => {
-    const chosen = workoutOf.get(row.exerciseId) ?? row.workoutId;
-    workoutOf.set(row.exerciseId, chosen);
-    if (chosen !== row.workoutId) return byExercise;
-    const { setNumber, reps, weightKg } = row;
-    return byExercise.set(row.exerciseId, [
-      ...(byExercise.get(row.exerciseId) ?? []),
-      { setNumber, reps, weightKg },
-    ]);
-  }, new Map<string, PreviousSet[]>());
+// One exercise: the newest finished workout that has it, then that workout's sets. Asked per
+// exercise so one done long ago (or only in an import) still has its Previous.
+async function previousFor(
+  db: Pick<PrismaClient, "setLog">,
+  userId: string,
+  exerciseId: string,
+): Promise<PreviousSet[]> {
+  const newest = await db.setLog.findFirst({
+    where: { exerciseId, workout: { userId, finishedAt: { not: null } } },
+    orderBy: { workout: { finishedAt: "desc" } },
+    select: { workoutId: true },
+  });
+  if (!newest) return [];
+  const rows = await db.setLog.findMany({
+    where: { exerciseId, workoutId: newest.workoutId },
+    orderBy: { setNumber: "asc" },
+    select: { setNumber: true, reps: true, weightKg: true },
+  });
+  return rows.map((row) => ({
+    setNumber: row.setNumber,
+    reps: row.reps,
+    weightKg: row.weightKg === null ? null : row.weightKg.toString(),
+  }));
 }
 
 export async function loadPreviousSets(
@@ -36,28 +39,12 @@ export async function loadPreviousSets(
   userId: string,
   exerciseIds: string[],
 ): Promise<Map<string, PreviousSet[]>> {
-  if (exerciseIds.length === 0) return new Map();
-  const rows = await db.setLog.findMany({
-    where: {
-      exerciseId: { in: exerciseIds },
-      workout: { userId, finishedAt: { not: null } },
-    },
-    orderBy: [{ workout: { finishedAt: "desc" } }, { setNumber: "asc" }],
-    take: ROW_LIMIT,
-    select: {
-      workoutId: true,
-      exerciseId: true,
-      setNumber: true,
-      reps: true,
-      weightKg: true,
-    },
-  });
-  return newestWorkoutSets(
-    rows.map((row) => ({
-      ...row,
-      weightKg: row.weightKg === null ? null : row.weightKg.toString(),
-    })),
+  const found = await Promise.all(
+    exerciseIds.map(
+      async (id) => [id, await previousFor(db, userId, id)] as const,
+    ),
   );
+  return new Map(found.filter(([, sets]) => sets.length > 0));
 }
 
 // "60 kg x 8", "8 reps" for a bodyweight set, "-" when there was no such set.

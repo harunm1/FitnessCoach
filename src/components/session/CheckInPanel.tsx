@@ -8,7 +8,7 @@ import {
   PAIN_TRAFFIC_THRESHOLDS,
   painTrafficLight,
 } from "@/lib/coach/painTrafficLight";
-import { parseCheckIn } from "@/lib/workout/setTable";
+import { checkInInvalid, parseCheckIn } from "@/lib/workout/setTable";
 import { checkInKey, useDeviceValue } from "@/lib/workout/useDeviceValue";
 
 const TRAFFIC_STYLE = {
@@ -17,9 +17,12 @@ const TRAFFIC_STYLE = {
   repeat: "border-green-700 text-green-800",
 } as const;
 
-export function useCheckInScore(workoutId: number): number | null {
+export function useCheckIn(workoutId: number): {
+  score: number | null;
+  invalid: boolean;
+} {
   const [raw] = useDeviceValue(checkInKey(workoutId));
-  return parseCheckIn(raw);
+  return { score: parseCheckIn(raw), invalid: checkInInvalid(raw) };
 }
 
 export default function CheckInPanel({ workoutId }: { workoutId: number }) {
@@ -43,6 +46,15 @@ export default function CheckInPanel({ workoutId }: { workoutId: number }) {
           value={raw}
         />
       </label>
+      {checkInInvalid(raw) && (
+        <p
+          className="mt-3 mb-0 border-l-2 border-red-700 px-3 py-2 text-sm text-red-800"
+          role="status"
+        >
+          Enter a whole number from 0 to 10, or clear the box to skip. Logging
+          waits until then.
+        </p>
+      )}
       {traffic && (
         <p
           aria-live="polite"

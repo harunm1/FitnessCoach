@@ -11,11 +11,14 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { enqueue } = vi.hoisted(() => ({ enqueue: vi.fn() }));
+const { enqueue, queueItems } = vi.hoisted(() => ({
+  enqueue: vi.fn(),
+  queueItems: { current: [] as unknown[] },
+}));
 vi.mock("@/lib/offline/sessionSetQueue", () => ({
   sessionSetQueue: { enqueue },
   useSessionSetQueue: () => ({
-    items: [],
+    items: queueItems.current,
     online: true,
     syncing: false,
     justSynced: false,
@@ -47,6 +50,7 @@ const base = {
 };
 
 beforeEach(() => {
+  queueItems.current = [];
   enqueue.mockReset().mockResolvedValue(undefined);
   window.localStorage.clear();
 });
@@ -138,22 +142,117 @@ describe("ExerciseCard", () => {
     expect(screen.getByText("Set 1 logged")).toBeTruthy();
   });
 
-  it("sends the check-in with each set and blocks logging at a stop-range score", async () => {
-    window.localStorage.setItem("fc.checkin.7", "3");
-    const view = render(<ExerciseCard {...base} />);
+  it("sends the check-in with each set, so a stop-range score is stored and the server blocks the exercise", async () => {
+    window.localStorage.setItem("fc.checkin.7", "7");
+    render(<ExerciseCard {...base} />);
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Log set 1" }));
     });
-    expect(enqueue.mock.calls[0][0]).toMatchObject({ painNextMorning: 3 });
-    cleanup();
-    window.localStorage.setItem("fc.checkin.7", "7");
+    expect(enqueue.mock.calls[0][0]).toMatchObject({ painNextMorning: 7 });
+  });
+
+  it("blocks the exercise once a stored set is in the stop range, and corrects it with today's check-in", async () => {
+    render(
+      <ExerciseCard
+        {...base}
+        serverSets={[
+          {
+            id: 1,
+            setNumber: 1,
+            reps: 8,
+            weightKg: "61.37",
+            painDuringSession: null,
+            painNextMorning: 7,
+          },
+        ]}
+        weightUnit="LB"
+      />,
+    );
+    expect(screen.getByText(/Logging is blocked/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Log set 2" })).toHaveProperty(
+      "disabled",
+      true,
+    );
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: "Correct logged set 1" }),
+      );
+    });
+    // The stored weight goes back unchanged, not rounded to a plate step.
+    expect(enqueue.mock.calls[0][0]).toMatchObject({
+      setNumber: 1,
+      weightKg: "61.37",
+      painNextMorning: null,
+    });
+  });
+
+  it("refuses a check-in that is not a whole number from 0 to 10 instead of treating it as skipped", () => {
+    window.localStorage.setItem("fc.checkin.7", "60");
     render(<ExerciseCard {...base} />);
-    expect(view).toBeTruthy();
-    expect(screen.getByRole("alert").textContent).toContain("stop range");
+    expect(screen.getByText(/whole number from 0 to 10/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Log set 1" })).toHaveProperty(
       "disabled",
       true,
     );
+  });
+
+  it("prefills last time's weight exactly and converts typed pounds to kilograms for the queue", async () => {
+    const view = render(
+      <ExerciseCard
+        {...base}
+        previous={[{ setNumber: 1, reps: 10, weightKg: "62.3" }]}
+      />,
+    );
+    expect(screen.getByLabelText("Weight (kg) for set 1")).toHaveProperty(
+      "value",
+      "62.3",
+    );
+    view.unmount();
+    render(<ExerciseCard {...base} weightUnit="LB" />);
+    fireEvent.change(screen.getByLabelText("Weight (lb) for set 1"), {
+      target: { value: "135" },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Log set 1" }));
+    });
+    expect(enqueue.mock.calls[0][0]).toMatchObject({ weightKg: "61.23" });
+  });
+
+  it("does not grow the table when an added row is logged", () => {
+    const logged = (setNumber: number) => ({
+      id: setNumber,
+      setNumber,
+      reps: 8,
+      weightKg: "60",
+      painDuringSession: null,
+      painNextMorning: null,
+    });
+    const view = render(<ExerciseCard {...base} />);
+    fireEvent.click(screen.getByRole("button", { name: "Add set" }));
+    expect(screen.getAllByRole("row")).toHaveLength(5);
+    view.rerender(
+      <ExerciseCard {...base} serverSets={[1, 2, 3, 4].map(logged)} />,
+    );
+    expect(screen.getAllByRole("row")).toHaveLength(5);
+  });
+
+  it("lists a queued set as waiting to sync", () => {
+    queueItems.current = [
+      {
+        clientId: "c1",
+        workoutId: 7,
+        exerciseId: "bench",
+        setNumber: 1,
+        reps: 8,
+        weightKg: "60",
+        painDuringSession: null,
+        painNextMorning: null,
+        queuedAt: 1,
+        error: null,
+      },
+    ];
+    render(<ExerciseCard {...base} />);
+    expect(screen.getByText("Waiting to sync")).toBeTruthy();
   });
 
   it("keeps the rest choice per exercise and offers Off", () => {

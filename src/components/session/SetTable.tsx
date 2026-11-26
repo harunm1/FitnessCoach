@@ -12,12 +12,14 @@ import {
   type WeightUnit,
 } from "@/lib/units/convert";
 import type { ExerciseKind } from "@/lib/workout/setTable";
+import { weightPlaceholder } from "@/lib/workout/weightPlaceholder";
 
 export type SetDraft = { weight: string; reps: string };
 
 type SetTableProps = {
   exerciseName: string;
   kind: ExerciseKind;
+  equipment: string | null;
   rowCount: number;
   rows: SetRow[]; // logged sets, saved or queued
   nextSetNumber: number;
@@ -107,7 +109,7 @@ export default function SetTable(props: SetTableProps) {
                       weight: event.target.value,
                     })
                   }
-                  placeholder={kind === "REPS_ONLY" ? "BW" : undefined}
+                  placeholder={weightPlaceholder(props.equipment, weightUnit)}
                   type="number"
                   step="0.01"
                   value={draft.weight}

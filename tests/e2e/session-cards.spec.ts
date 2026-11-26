@@ -54,15 +54,27 @@ test.describe("exercise card", () => {
     await expect(page.getByRole("row")).toHaveCount(PLANNED_ROWS + HEADER_ROWS);
   });
 
-  test("a pain check-in in the stop range blocks the checks", async ({
+  test("a stop-range check-in is stored with the set, then blocks the exercise", async ({
+    page,
+  }) => {
+    const { exerciseName } = await signedInAthleteWithWorkout(page, db, prefix);
+    await page.getByText("How do you feel today?").click();
+    await page.getByLabel("Pain or soreness today, 0 to 10").fill("7");
+    await logSet(page, exerciseName, SET_ONE);
+    await expect(page.getByText("Logging is blocked")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Log set 2", exact: true }),
+    ).toBeDisabled();
+  });
+
+  test("a check-in that is not a whole number from 0 to 10 stops logging", async ({
     page,
   }) => {
     await signedInAthleteWithWorkout(page, db, prefix);
     await page.getByText("How do you feel today?").click();
-    await page.getByLabel("Pain or soreness today, 0 to 10").fill("7");
+    await page.getByLabel("Pain or soreness today, 0 to 10").fill("60");
     await expect(
       page.getByRole("button", { name: "Log set 1", exact: true }),
     ).toBeDisabled();
-    await expect(page.getByText("Logging is blocked")).toBeVisible();
   });
 });

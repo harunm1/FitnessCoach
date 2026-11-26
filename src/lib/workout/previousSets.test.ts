@@ -1,69 +1,50 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  formatPrevious,
-  loadPreviousSets,
-  newestWorkoutSets,
-} from "./previousSets";
-
-const row = (
-  exerciseId: string,
-  workoutId: number,
-  setNumber: number,
-  reps: number,
-  weightKg: string | null,
-) => ({ exerciseId, workoutId, setNumber, reps, weightKg });
-
-describe("newestWorkoutSets", () => {
-  it("keeps only the newest workout's sets for each exercise", () => {
-    // Rows arrive newest workout first, as the query orders them.
-    const byExercise = newestWorkoutSets([
-      row("bench", 9, 1, 8, "60"),
-      row("bench", 9, 2, 8, "62.5"),
-      row("squat", 9, 1, 5, "100"),
-      row("bench", 4, 1, 10, "50"),
-      row("squat", 3, 1, 5, "90"),
-    ]);
-    expect(byExercise.get("bench")).toEqual([
-      { setNumber: 1, reps: 8, weightKg: "60" },
-      { setNumber: 2, reps: 8, weightKg: "62.5" },
-    ]);
-    expect(byExercise.get("squat")).toEqual([
-      { setNumber: 1, reps: 5, weightKg: "100" },
-    ]);
-  });
-});
+import { formatPrevious, loadPreviousSets } from "./previousSets";
 
 describe("loadPreviousSets", () => {
-  it("reads only this user's finished workouts and skips the query for no exercises", async () => {
-    const findMany = vi.fn().mockResolvedValue([]);
-    const db = { setLog: { findMany } } as never;
-    expect(await loadPreviousSets(db, "u1", [])).toEqual(new Map());
-    expect(findMany).not.toHaveBeenCalled();
-    await loadPreviousSets(db, "u1", ["bench"]);
-    expect(findMany.mock.calls[0][0].where).toEqual({
-      exerciseId: { in: ["bench"] },
+  const fakeDb = (
+    newestByExercise: Record<string, number>,
+    setsByWorkout: Record<number, unknown[]>,
+  ) => {
+    const findFirst = vi.fn(async ({ where }) =>
+      where.exerciseId in newestByExercise
+        ? { workoutId: newestByExercise[where.exerciseId] }
+        : null,
+    );
+    const findMany = vi.fn(async ({ where }) => setsByWorkout[where.workoutId]);
+    return {
+      db: { setLog: { findFirst, findMany } } as never,
+      findFirst,
+      findMany,
+    };
+  };
+
+  it("takes each exercise's newest finished workout, whenever it was, and only this user's", async () => {
+    const { db, findFirst } = fakeDb(
+      { bench: 9, squat: 3 },
+      {
+        9: [{ setNumber: 1, reps: 8, weightKg: { toString: () => "62.50" } }],
+        3: [{ setNumber: 1, reps: 5, weightKg: null }],
+      },
+    );
+    const result = await loadPreviousSets(db, "u1", ["bench", "squat", "row"]);
+    expect(result.get("bench")).toEqual([
+      { setNumber: 1, reps: 8, weightKg: "62.50" },
+    ]);
+    expect(result.get("squat")).toEqual([
+      { setNumber: 1, reps: 5, weightKg: null },
+    ]);
+    expect(result.has("row")).toBe(false);
+    expect(findFirst.mock.calls[0][0].where).toEqual({
+      exerciseId: "bench",
       workout: { userId: "u1", finishedAt: { not: null } },
     });
   });
 
-  it("turns database decimals into strings", async () => {
-    const findMany = vi.fn().mockResolvedValue([
-      {
-        workoutId: 2,
-        exerciseId: "bench",
-        setNumber: 1,
-        reps: 8,
-        weightKg: { toString: () => "62.50" },
-      },
-    ]);
-    const result = await loadPreviousSets(
-      { setLog: { findMany } } as never,
-      "u1",
-      ["bench"],
-    );
-    expect(result.get("bench")).toEqual([
-      { setNumber: 1, reps: 8, weightKg: "62.50" },
-    ]);
+  it("asks nothing for no exercises", async () => {
+    const { db, findFirst } = fakeDb({}, {});
+    expect(await loadPreviousSets(db, "u1", [])).toEqual(new Map());
+    expect(findFirst).not.toHaveBeenCalled();
   });
 });
 

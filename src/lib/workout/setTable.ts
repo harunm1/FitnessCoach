@@ -57,6 +57,12 @@ export function parseCheckIn(raw: string): number | null {
 
 const painTrafficLightMax = 10;
 
+// Something is typed but is not a whole number from 0 to 10: the safety check must not read
+// that as skipped.
+export function checkInInvalid(raw: string): boolean {
+  return raw.trim() !== "" && parseCheckIn(raw) === null;
+}
+
 export function checkInStops(score: number | null): boolean {
   return score !== null && painTrafficLight(0, score).state === "stop";
 }

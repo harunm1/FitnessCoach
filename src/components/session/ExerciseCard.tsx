@@ -15,7 +15,7 @@ import {
 import { firstStoppedSet } from "@/lib/offline/stoppedSet";
 import { createTapGuard, DOUBLE_TAP_WINDOW_MS } from "@/lib/offline/tapGuard";
 import WeightUnitSwitch from "@/components/WeightUnitSwitch";
-import { fromKg, type WeightUnit } from "@/lib/units/convert";
+import { fromKg, fromKgForEdit, type WeightUnit } from "@/lib/units/convert";
 import { weightFieldToKg } from "@/lib/units/input";
 import type { PreviousSet } from "@/lib/workout/previousSets";
 import { setLogSchema } from "@/lib/workout/setLogSchema";
@@ -34,7 +34,7 @@ import {
   restKey,
   useDeviceValue,
 } from "@/lib/workout/useDeviceValue";
-import { useCheckInScore } from "./CheckInPanel";
+import { useCheckIn } from "./CheckInPanel";
 import SetTable, { type SetDraft } from "./SetTable";
 
 type ExerciseCardProps = {
@@ -56,7 +56,7 @@ type ExerciseCardProps = {
 
 export default function ExerciseCard(props: ExerciseCardProps) {
   const queue = useSessionSetQueue();
-  const score = useCheckInScore(props.workoutId);
+  const { score, invalid: checkInBad } = useCheckIn(props.workoutId);
   const [restRaw, setRestRaw] = useDeviceValue(restKey(props.exerciseId));
   const [notes, setNotes] = useDeviceValue(
     notesKey(props.workoutId, props.exerciseId),
@@ -77,19 +77,26 @@ export default function ExerciseCard(props: ExerciseCardProps) {
   );
   const merged = mergeLoggedSets(props.serverSets, pending, props.plannedSets);
   const [extraRows, setExtraRows] = useState(0);
+  // The plan's sets plus the rows added or removed here, never fewer than the logged ones.
   const rowCount = Math.min(
     Math.max(
-      initialRowCount(props.plannedSets, merged.loggedCount) + extraRows,
+      initialRowCount(props.plannedSets, 0) + extraRows,
       merged.loggedCount,
       1,
     ),
     MAX_SETS_PER_EXERCISE,
   );
   const stoppedSet = firstStoppedSet(merged.rows);
-  const blocked = Boolean(stoppedSet) || checkInStops(score);
+  // A stop-range check-in is stored with the next set, so the server records it and blocks
+  // the exercise (#92); a check-in that is not a number waits for the user to fix it.
+  const blocked = Boolean(stoppedSet) || checkInBad;
+  const stopWarning = checkInStops(score) && !stoppedSet;
   const kind = exerciseKind(props.equipment);
 
-  const restChoice = restRaw === "" ? props.restSeconds : Number(restRaw);
+  const choices = restChoicesWith(props.restSeconds);
+  const stored = Number(restRaw);
+  const restChoice =
+    restRaw !== "" && choices.includes(stored) ? stored : props.restSeconds;
   const queuedAtIso =
     merged.latestQueuedAt === null
       ? null
@@ -108,10 +115,12 @@ export default function ExerciseCard(props: ExerciseCardProps) {
       return { weight: "", reps: String(props.targetReps) };
     const kg =
       before?.weightKg !== undefined && before.weightKg !== null
-        ? Number(before.weightKg)
-        : props.suggestedWeightKg;
+        ? fromKgForEdit(Number(before.weightKg), props.weightUnit)
+        : props.suggestedWeightKg === null
+          ? null
+          : fromKg(props.suggestedWeightKg, props.weightUnit);
     return {
-      weight: kg === null ? "" : String(fromKg(kg, props.weightUnit)),
+      weight: kg === null ? "" : String(kg),
       reps: String(props.targetReps),
     };
   };
@@ -178,7 +187,7 @@ export default function ExerciseCard(props: ExerciseCardProps) {
       String(stoppedSet.reps),
       stoppedSet.weightKg === null
         ? ""
-        : String(fromKg(Number(stoppedSet.weightKg), props.weightUnit)),
+        : String(fromKgForEdit(Number(stoppedSet.weightKg), props.weightUnit)),
     );
   };
 
@@ -199,7 +208,7 @@ export default function ExerciseCard(props: ExerciseCardProps) {
             onChange={(event) => setRestRaw(event.target.value)}
             value={String(restChoice)}
           >
-            {restChoicesWith(props.restSeconds).map((seconds) => (
+            {choices.map((seconds) => (
               <option key={seconds} value={seconds}>
                 {formatRestChoice(seconds)}
               </option>
@@ -218,6 +227,7 @@ export default function ExerciseCard(props: ExerciseCardProps) {
       <SetTable
         draftFor={draftFor}
         exerciseName={props.exerciseName}
+        equipment={props.equipment}
         kind={kind}
         locked={blocked || coolingDown}
         nextSetNumber={merged.nextSetNumber}
@@ -248,14 +258,14 @@ export default function ExerciseCard(props: ExerciseCardProps) {
           Remove set
         </button>
       </div>
-      {blocked && (
+      {stoppedSet && (
         <p
           className="m-0 border-l-2 border-red-700 px-3 py-2 text-sm text-red-800"
           role="alert"
         >
           Logging is blocked because a pain score reached the stop range (6 out
           of 10 or higher).
-          {stoppedSet && !checkInStops(score) && (
+          {!checkInStops(score) && !checkInBad && (
             <>
               {" "}
               <button className="underline" onClick={correct} type="button">
@@ -263,6 +273,18 @@ export default function ExerciseCard(props: ExerciseCardProps) {
               </button>
             </>
           )}
+        </p>
+      )}
+      {checkInBad && (
+        <p className="m-0 border-l-2 border-red-700 px-3 py-2 text-sm text-red-800">
+          Today&apos;s check-in is not a whole number from 0 to 10. Fix it or
+          clear it to log sets.
+        </p>
+      )}
+      {stopWarning && (
+        <p className="m-0 border-l-2 border-amber-700 px-3 py-2 text-sm text-amber-800">
+          Today&apos;s check-in is in the stop range. The next set is saved with
+          it and then this exercise is blocked.
         </p>
       )}
       {error && (
