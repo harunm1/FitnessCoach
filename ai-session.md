@@ -988,4 +988,4 @@ Generated with Claude Code (Opus), tests written first and shown failing: the to
 
 Limits: the number check is an eval screen, not a live filter; a tool that fails to read makes the whole turn ask the user to send again, as the D36 history read did; the coach still sees a summary, not every workout, so a question about one old session is answered from the totals.
 
-**Tools:** git, gh, Vitest, tsc, ESLint, Prettier, Prisma generate, Firecrawl (Groq docs), Groq live eval run. Skills: security discipline (user scoping), error handling as design (failure path kept as the D36 one).
+**Tools:** git, gh, Vitest, tsc, ESLint, Prettier, Prisma generate, Firecrawl (Groq docs), Groq live eval run. Skills: none invoked; the user scoping and the failure path were checked by hand against the task file's security and error-handling items.
