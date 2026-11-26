@@ -130,12 +130,15 @@ describe("workout import on PostgreSQL", () => {
     const repair = await db.$transaction((tx) =>
       saveImport(tx, user.id, parsed.workouts, complete),
     );
-    expect(repair).toMatchObject({ imported: 0, alreadyImported: 2 });
+    // Pull Day has only Pull Up, unmapped in the first upload, so it was never stored: the
+    // second upload creates it (imported 1) and repairs Push Day (alreadyImported 1).
+    expect(repair).toMatchObject({ imported: 1, alreadyImported: 1 });
     expect(repair.repairedSets).toBeGreaterThan(0);
     const after = await db.setLog.count({
       where: { workout: { userId: user.id } },
     });
-    expect(after).toBe(before + repair.repairedSets);
+    expect(after).toBe(before + repair.sets);
+    expect(repair.sets).toBeGreaterThan(repair.repairedSets);
 
     const again = await db.$transaction((tx) =>
       saveImport(tx, user.id, parsed.workouts, complete),
