@@ -11,14 +11,12 @@ import {
   weightLabel,
   type WeightUnit,
 } from "@/lib/units/convert";
-import type { ExerciseKind } from "@/lib/workout/setTable";
 import { weightPlaceholder } from "@/lib/workout/weightPlaceholder";
 
 export type SetDraft = { weight: string; reps: string };
 
 type SetTableProps = {
   exerciseName: string;
-  kind: ExerciseKind;
   equipment: string | null;
   rowCount: number;
   rows: SetRow[]; // logged sets, saved or queued
@@ -35,7 +33,7 @@ const inputClass =
   "h-10 w-full min-w-0 border border-foreground/20 bg-white px-2 text-sm text-foreground";
 
 export default function SetTable(props: SetTableProps) {
-  const { kind, weightUnit } = props;
+  const { weightUnit } = props;
   const label = weightLabel(weightUnit);
   const numbers = Array.from({ length: props.rowCount }, (_, i) => i + 1);
   return (

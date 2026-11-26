@@ -228,7 +228,6 @@ export default function ExerciseCard(props: ExerciseCardProps) {
         draftFor={draftFor}
         exerciseName={props.exerciseName}
         equipment={props.equipment}
-        kind={kind}
         locked={blocked || coolingDown}
         nextSetNumber={merged.nextSetNumber}
         onDraft={(setNumber, draft) =>
