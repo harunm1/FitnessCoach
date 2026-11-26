@@ -86,8 +86,24 @@ export async function saveWeek(
   // so a failed plan save leaves the profile as it was.
   beforeSave?: (tx: Prisma.TransactionClient) => Promise<void>,
 ): Promise<{ planId: number }> {
+  return savePlanData(
+    prisma,
+    userId,
+    weekToPlanData(userId, week, source),
+    beforeSave,
+  );
+}
+
+// The same save for any plan's nested create input (a program template, D38, builds
+// its own): one active plan per user, the user row locked, one retry on an abort.
+export async function savePlanData(
+  prisma: PrismaClient,
+  userId: string,
+  data: Prisma.PlanUncheckedCreateInput,
+  beforeSave?: (tx: Prisma.TransactionClient) => Promise<void>,
+): Promise<{ planId: number }> {
   try {
-    return await saveWeekOnce(prisma, userId, week, source, beforeSave);
+    return await savePlanOnce(prisma, userId, data, beforeSave);
   } catch (error) {
     if (!wasAborted(error)) throw error;
     console.warn("saveWeek: retrying once after Postgres aborted it", {
@@ -95,15 +111,14 @@ export async function saveWeek(
       error,
     });
     // beforeSave runs again: the aborted transaction rolled back whatever it wrote.
-    return saveWeekOnce(prisma, userId, week, source, beforeSave);
+    return savePlanOnce(prisma, userId, data, beforeSave);
   }
 }
 
-async function saveWeekOnce(
+async function savePlanOnce(
   prisma: PrismaClient,
   userId: string,
-  week: { name: string; days: WeekDay[] },
-  source: PlanSourceName,
+  data: Prisma.PlanUncheckedCreateInput,
   beforeSave?: (tx: Prisma.TransactionClient) => Promise<void>,
 ): Promise<{ planId: number }> {
   const plan = await prisma.$transaction(async (tx) => {
@@ -117,7 +132,7 @@ async function saveWeekOnce(
       data: { active: false },
     });
     return tx.plan.create({
-      data: weekToPlanData(userId, week, source),
+      data,
       select: { id: true },
     });
   });

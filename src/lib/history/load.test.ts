@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { workout, setLog } = vi.hoisted(() => ({
   workout: { findMany: vi.fn(), findFirst: vi.fn() },
-  setLog: { findMany: vi.fn() },
+  setLog: { findMany: vi.fn(), groupBy: vi.fn() },
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/prisma", () => ({ prisma: { workout, setLog } }));
@@ -23,6 +23,7 @@ beforeEach(() => {
   workout.findMany.mockResolvedValue([]);
   workout.findFirst.mockResolvedValue(null);
   setLog.findMany.mockResolvedValue([]);
+  setLog.groupBy.mockResolvedValue([]);
 });
 
 describe("loadHistoryPage", () => {
@@ -180,6 +181,9 @@ describe("loadWorkoutDetail", () => {
       imported: false,
       notes: "Felt strong",
       run: { distanceKm: 5, seconds: 1800, rpe: 7 },
+      // 10 x 60 + 8 x 62.5 (the push-up set has no weight).
+      volumeKg: 1100,
+      recordExerciseIds: [],
       exercises: [
         {
           id: "Bench",
@@ -196,6 +200,57 @@ describe("loadWorkoutDetail", () => {
         },
       ],
     });
+  });
+
+  // Live bug L5: a record is a top weight above everything this user lifted in earlier
+  // workouts, so the lookup is by user, before this workout's start.
+  it("marks an exercise as a record when its top weight beats the earlier best", async () => {
+    workout.findFirst.mockResolvedValue({
+      id: 41,
+      startedAt: start,
+      finishedAt: end,
+      source: "live",
+      notes: null,
+      distanceKm: null,
+      durationSeconds: null,
+      planDay: { name: "Push" },
+      run: null,
+      sets: [
+        {
+          setNumber: 1,
+          reps: 5,
+          weightKg: decimal("70.00"),
+          rpe: null,
+          exercise: { id: "Bench", name: "Bench Press" },
+        },
+        {
+          setNumber: 1,
+          reps: 5,
+          weightKg: decimal("50.00"),
+          rpe: null,
+          exercise: { id: "Row", name: "Row" },
+        },
+      ],
+    });
+    setLog.groupBy.mockResolvedValue([
+      { exerciseId: "Bench", _max: { weightKg: decimal("65.00") } },
+      { exerciseId: "Row", _max: { weightKg: decimal("55.00") } },
+    ]);
+    const detail = await loadWorkoutDetail("session-owner", 41);
+    expect(detail?.recordExerciseIds).toEqual(["Bench"]);
+    expect(setLog.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        by: ["exerciseId"],
+        where: {
+          exerciseId: { in: ["Bench", "Row"] },
+          workout: {
+            userId: "session-owner",
+            finishedAt: { not: null },
+            startedAt: { lt: start },
+          },
+        },
+      }),
+    );
   });
 
   it("shows an imported workout's title as its name, not as notes", async () => {

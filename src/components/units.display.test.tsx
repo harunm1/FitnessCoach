@@ -216,6 +216,7 @@ describe("import preview", () => {
     lastDay: "2024-07-01",
     skippedWarmups: 4,
     skippedRows: 1,
+    repairableWorkouts: 0,
   };
 
   it("names the unit the user chose instead of saying kg", () => {

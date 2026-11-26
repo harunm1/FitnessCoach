@@ -1,0 +1,152 @@
+{
+  "id": "hypertrophy-split-3",
+  "version": 1,
+  "name": "Muscle-building split, 3 days",
+  "summary": "Chest and back, legs, then shoulders and arms: more sets per muscle in the 6 to 12 rep range, for building size on three days.",
+  "level": "INTERMEDIATE",
+  "goals": ["MUSCLE"],
+  "daysPerWeek": 3,
+  "equipment": ["barbell", "dumbbell", "cable", "machine"],
+  "repBand": {
+    "min": 6,
+    "max": 12
+  },
+  "progression": {
+    "kind": "double",
+    "loadStepPercent": 5,
+    "rule": "Double progression: add reps each session until every set reaches the top of its range, then add about 5% load and start again at the bottom of the range."
+  },
+  "deloadEveryWeeks": 7,
+  "days": [
+    {
+      "name": "Chest and back",
+      "weekdays": ["MON"],
+      "exercises": [
+        {
+          "exerciseId": "Dumbbell_Bench_Press",
+          "sets": 4,
+          "reps": 8,
+          "restSeconds": 120,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Seated_Cable_Rows",
+          "sets": 4,
+          "reps": 10,
+          "restSeconds": 90,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Incline_Dumbbell_Press",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 90,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Wide-Grip_Lat_Pulldown",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 90,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Dumbbell_Flyes",
+          "sets": 3,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        }
+      ]
+    },
+    {
+      "name": "Legs",
+      "weekdays": ["WED"],
+      "exercises": [
+        {
+          "exerciseId": "Leg_Press",
+          "sets": 4,
+          "reps": 10,
+          "restSeconds": 120,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Romanian_Deadlift",
+          "sets": 3,
+          "reps": 8,
+          "restSeconds": 150,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Split_Squat_with_Dumbbells",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 90,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Seated_Leg_Curl",
+          "sets": 3,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Standing_Calf_Raises",
+          "sets": 4,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        }
+      ]
+    },
+    {
+      "name": "Shoulders and arms",
+      "weekdays": ["FRI"],
+      "exercises": [
+        {
+          "exerciseId": "Seated_Dumbbell_Press",
+          "sets": 4,
+          "reps": 8,
+          "restSeconds": 120,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Side_Lateral_Raise",
+          "sets": 4,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Face_Pull",
+          "sets": 3,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Dumbbell_Bicep_Curl",
+          "sets": 3,
+          "reps": 10,
+          "restSeconds": 60,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Triceps_Pushdown",
+          "sets": 3,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        },
+        {
+          "exerciseId": "Hammer_Curls",
+          "sets": 2,
+          "reps": 12,
+          "restSeconds": 60,
+          "rpe": 8
+        }
+      ]
+    }
+  ]
+}

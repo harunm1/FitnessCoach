@@ -10,13 +10,18 @@ import { MAX_IMPORT_BYTES, parseHevyCsv } from "@/lib/import/hevy";
 import type { ImportWorkout } from "@/lib/import/hevy";
 import { matchExercises, type LibraryName } from "@/lib/import/match";
 import { buildImportReport, type ImportReport } from "@/lib/import/report";
-import { saveImport, type ImportResult } from "@/lib/import/save";
+import {
+  countRepairable,
+  saveImport,
+  type ImportResult,
+} from "@/lib/import/save";
 import { prisma } from "@/lib/prisma";
 import { dayKey } from "@/lib/progress/dates";
 
 export type ImportSummary = {
   workouts: number;
   newWorkouts: number; // not saved by an earlier upload
+  repairableWorkouts: number; // saved earlier but missing exercises the file has
   sets: number;
   firstDay: string;
   lastDay: string;
@@ -142,7 +147,7 @@ export async function importWorkouts(
         userId: user.id,
         importKey: { in: workouts.map((workout) => workout.key) },
       },
-      select: { importKey: true },
+      select: { importKey: true, sets: { select: { exerciseId: true } } },
       // At most one row per key in the file, so the limit never cuts a real match (#76).
       take: workouts.length,
     });
@@ -152,6 +157,7 @@ export async function importWorkouts(
       summary: {
         workouts: workouts.length,
         newWorkouts: workouts.length - existing.length,
+        repairableWorkouts: countRepairable(workouts, existing, matched),
         sets: workouts.reduce((total, w) => total + w.sets.length, 0),
         firstDay: days[0],
         lastDay: days[days.length - 1],
