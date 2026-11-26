@@ -25,7 +25,11 @@ import { loadRecentRuns } from "@/lib/progress/loadRuns";
 import { loadBodyWeights } from "@/lib/progress/loadWeights";
 import { yearBefore } from "@/lib/progress/weightChart";
 import { regionLabels, slugsFor } from "@/lib/progress/muscleSlugs";
-import { muscleShare, musclesWorked } from "@/lib/progress/muscles";
+import {
+  muscleShare,
+  musclesWorked,
+  unmappedExercises,
+} from "@/lib/progress/muscles";
 import { streakInput } from "@/lib/progress/streakInput";
 import { activeStreakWeeks, goalMetStreak } from "@/lib/progress/streaks";
 import type { ProgressWorkout } from "@/lib/progress/types";
@@ -232,6 +236,9 @@ export default async function ProgressPage({
     monthWorkouts.flatMap((workout) => workout.sets),
   );
   const shares = muscleShare(monthWorkouts.map((workout) => workout.sets));
+  const unmapped = unmappedExercises(
+    monthWorkouts.flatMap((workout) => workout.sets),
+  );
   const strengthWorkouts = monthWorkouts.filter(workedAnything).length;
   const mapLabel = `Muscles worked in ${monthName(month)}`;
 
@@ -308,7 +315,11 @@ export default async function ProgressPage({
               labels={regionLabels(shares, strengthWorkouts, monthName(month))}
               slugs={slugsFor([...worked.primary, ...worked.secondary])}
             />
-            <MuscleStats shares={shares} workouts={strengthWorkouts} />
+            <MuscleStats
+              shares={shares}
+              workouts={strengthWorkouts}
+              unmapped={unmapped}
+            />
           </section>
 
           <RunLogSection

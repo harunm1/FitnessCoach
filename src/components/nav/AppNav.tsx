@@ -1,9 +1,9 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { AccountBrand, AccountIcon } from "@/components/auth/account-ui";
 import { ThemeToggle } from "@/components/auth/account-theme";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { UserBadge } from "@/components/photos/UserBadge";
+import { NavLinks } from "./NavLinks";
 
 export type NavPage =
   | "session"
@@ -32,7 +32,10 @@ export const NAV_LINKS: {
 
 // The bar at the top of every signed-in page: the logo, the main pages,
 // and the user's badge, which opens the account page. Colours follow the
-// page's text colour, so it fits both the light and dark themes.
+// page's text colour, so it fits both the light and dark themes. The header
+// is a container ("nav"), so NavLinks lays the links out by the header's own
+// width: a menu on a phone, a row of their own on a narrow page column, and
+// the same row as the logo only when all three fit (live bug L1, 25 Nov 2026).
 // `current` marks the page the user is on; `actions` holds a page's own
 // controls, like the theme toggle or sign out.
 export function AppNav({
@@ -50,33 +53,12 @@ export function AppNav({
 }) {
   return (
     <header
-      className={`flex w-full flex-wrap items-center gap-x-6 gap-y-3 ${className}`}
+      className={`@container/nav flex w-full flex-wrap items-center gap-x-6 gap-y-3 ${className}`}
     >
       {/* The same FitnessCoach logo as the sign-in pages. It links to /,
           which sends signed-in users to their session. */}
       <AccountBrand light />
-      <nav
-        aria-label="Main"
-        className="order-last w-full min-w-0 sm:order-none sm:w-auto sm:flex-1"
-      >
-        <ul className="m-0 flex list-none flex-wrap items-center gap-x-4 gap-y-2 p-0">
-          {NAV_LINKS.map(({ page, href, label }) => (
-            <li key={page}>
-              <Link
-                href={href}
-                aria-current={current === page ? "page" : undefined}
-                className={
-                  current === page
-                    ? "text-sm font-semibold whitespace-nowrap underline decoration-2 underline-offset-4"
-                    : "text-sm whitespace-nowrap opacity-70 hover:opacity-100"
-                }
-              >
-                {label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <NavLinks current={current} links={NAV_LINKS} />
       <div className="ml-auto flex min-w-0 items-center gap-3 sm:gap-4 max-sm:[&_button>span]:hidden">
         <UserBadge
           name={name}
@@ -86,7 +68,9 @@ export function AppNav({
         <ThemeToggle />
         <span className="flex shrink-0 items-center gap-1.5 text-sm text-foreground/70">
           <AccountIcon name="shield" size={16} />
-          <span className="max-sm:hidden">Verified account</span>
+          <span className="hidden @min-[88rem]/nav:inline">
+            Verified account
+          </span>
         </span>
         <SignOutButton />
         {actions}

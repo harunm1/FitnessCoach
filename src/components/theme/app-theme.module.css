@@ -10,6 +10,10 @@
    The class is written twice so these rules win over AccountTheme's own
    colours, which reuse the names --primary, --muted and --accent. */
 .appTheme.appTheme {
+  /* Light: the neutral near-white the design tokens already define, with card borders
+     drawn from the text colour (live bug L7, 25 Nov 2026). The dark rules below win. */
+  --background: var(--secondary);
+  --card-line: color-mix(in oklab, var(--foreground) 24%, transparent);
   --primary: #19211d;
   --primary-foreground: #f5f6f2;
   --muted: oklch(0.97 0 0);
@@ -30,6 +34,7 @@
 
 .appTheme.appTheme[data-theme="dark"] {
   --background: #0a0a0a;
+  --card-line: color-mix(in oklab, var(--foreground) 15%, transparent);
   --foreground: #ededed;
   --card: #171717;
   --card-foreground: #ededed;
@@ -54,6 +59,7 @@
 @media (prefers-color-scheme: dark) {
   .appTheme.appTheme[data-theme="system"] {
     --background: #0a0a0a;
+    --card-line: color-mix(in oklab, var(--foreground) 15%, transparent);
     --foreground: #ededed;
     --card: #171717;
     --card-foreground: #ededed;
@@ -74,6 +80,14 @@
     --map-worked: #6dbb87;
     --map-neutral: #34352f;
   }
+}
+
+/* Cards on the signed-in pages use a faint text-colour border (Tailwind's border-foreground/10
+   and /15); --card-line makes them clear in light mode. In dark mode /15 is unchanged and /10 rises to the same 15%. Borders at /20
+   and above are already as clear, so they are left alone. */
+.appTheme :global(.border-foreground\/10),
+.appTheme :global(.border-foreground\/15) {
+  border-color: var(--card-line);
 }
 
 /* Fixed colours from shared components. Each falls back to its usual colour,

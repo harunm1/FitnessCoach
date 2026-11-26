@@ -13,6 +13,7 @@ const summary = {
   lastDay: "2024-07-01",
   skippedWarmups: 4,
   skippedRows: 1,
+  repairableWorkouts: 0,
 };
 const library = [
   { id: "carry", name: "Farmers Walk" },
@@ -68,15 +69,67 @@ describe("ImportPreview", () => {
       />,
     );
     expect(html).toContain("already imported");
-    expect(html).toMatch(/<button[^>]*disabled/);
+    expect(html).toMatch(/<button[^>]* disabled=""/);
+  });
+
+  it("keeps the save button on when stored workouts are missing exercises (live bug L4)", () => {
+    const html = renderToStaticMarkup(
+      <ImportPreview
+        summary={{ ...summary, newWorkouts: 0, repairableWorkouts: 2 }}
+        unmatched={[]}
+        library={library}
+      />,
+    );
+    expect(html).not.toMatch(/<button[^>]* disabled=""/);
+    expect(html).toContain("2 saved workouts are missing exercises");
+  });
+
+  it("keeps the save button on when a name can still be mapped", () => {
+    const html = renderToStaticMarkup(
+      <ImportPreview
+        summary={{ ...summary, newWorkouts: 0 }}
+        unmatched={["Zercher Carry"]}
+        library={library}
+      />,
+    );
+    expect(html).not.toMatch(/<button[^>]* disabled=""/);
   });
 });
 
 describe("ImportResultPanel", () => {
+  it("says how many sets were added to workouts that were already imported (live bug L4)", () => {
+    const html = renderToStaticMarkup(
+      <ImportResultPanel
+        result={{
+          imported: 0,
+          alreadyImported: 3,
+          sets: 11,
+          skippedSets: 0,
+          repairedWorkouts: 2,
+          repairedSets: 11,
+        }}
+        report={{
+          skippedWarmups: 0,
+          skippedTimedSets: 0,
+          skippedNames: [],
+          moreSkippedNames: 0,
+        }}
+      />,
+    );
+    expect(html).toContain("Added 11 missing sets to 2 workouts");
+  });
+
   it("says what was saved and links to Progress", () => {
     const html = renderToStaticMarkup(
       <ImportResultPanel
-        result={{ imported: 2, alreadyImported: 1, sets: 30, skippedSets: 3 }}
+        result={{
+          imported: 2,
+          alreadyImported: 1,
+          sets: 30,
+          skippedSets: 3,
+          repairedWorkouts: 0,
+          repairedSets: 0,
+        }}
         report={{
           skippedWarmups: 0,
           skippedTimedSets: 0,
@@ -103,6 +156,8 @@ const result = {
   alreadyImported: 0,
   sets: 3200,
   skippedSets: 21,
+  repairedWorkouts: 0,
+  repairedSets: 0,
 };
 
 afterEach(cleanup);

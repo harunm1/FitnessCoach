@@ -1,6 +1,5 @@
 import { formatWeight, type WeightUnit } from "@/lib/units/convert";
-// Pure helpers for the history pages (D29): names, lengths, set labels, the best set
-// and the points of the top-weight line. No database, no React.
+// Pure helpers for the history pages (D29): names, lengths, set labels and the best set. No database, no React.
 
 import { DEFAULT_TIME_ZONE } from "@/lib/progress/dates";
 
@@ -11,7 +10,6 @@ const DATE_FORMAT = new Intl.DateTimeFormat("en", {
   year: "numeric",
   timeZone: DEFAULT_TIME_ZONE,
 });
-export const LINE_BOX = { width: 240, height: 60 };
 
 type SetValues = { reps: number; weightKg: number | null; rpe: number | null };
 
@@ -63,27 +61,27 @@ export function bestSet<T extends SetValues>(sets: T[]): T | null {
   }, null);
 }
 
-// SVG polyline points for the top weight of each workout, oldest first. Workouts
-// without a weight are skipped; fewer than two weighted workouts draw no line.
-export function topWeightLine(
-  topWeights: (number | null)[],
-  box: { width: number; height: number } = LINE_BOX,
-): { points: string; min: number; max: number; count: number } | null {
-  const weights = topWeights.filter((value): value is number => value !== null);
-  if (weights.length < 2) return null;
-  const min = Math.min(...weights);
-  const max = Math.max(...weights);
-  const step = box.width / (weights.length - 1);
-  const y = (value: number) =>
-    max === min
-      ? box.height / 2
-      : box.height - ((value - min) / (max - min)) * box.height;
-  const points = weights
-    .map((value, i) => `${round(i * step)},${round(y(value))}`)
-    .join(" ");
-  return { points, min, max, count: weights.length };
+// Total weight lifted: reps times weight over every weighted set. A bodyweight set has no
+// weight to multiply, so it adds nothing (live bug L5, 25 Nov 2026).
+export function totalVolumeKg(
+  exercises: { sets: { reps: number; weightKg: number | null }[] }[],
+): number {
+  return exercises
+    .flatMap((exercise) => exercise.sets)
+    .reduce((sum, set) => sum + set.reps * (set.weightKg ?? 0), 0);
 }
 
-function round(value: number) {
-  return Math.round(value * 10) / 10;
+// The exercises whose top weight here beats the heaviest weight lifted before this workout.
+// A first time (no earlier weight) and a bodyweight exercise are not records.
+export function weightRecords(
+  exercises: { id: string; sets: { weightKg: number | null }[] }[],
+  earlierBestKg: Record<string, number>,
+): string[] {
+  return exercises
+    .filter(({ id, sets }) => {
+      const top = Math.max(0, ...sets.map((set) => set.weightKg ?? 0));
+      const before = Object.hasOwn(earlierBestKg, id) ? earlierBestKg[id] : 0;
+      return before > 0 && top > before;
+    })
+    .map(({ id }) => id);
 }

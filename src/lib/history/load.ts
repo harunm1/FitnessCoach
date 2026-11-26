@@ -12,7 +12,12 @@ import type {
   WorkoutDetail,
 } from "./types";
 import { workoutMinutes } from "@/lib/workout/duration";
-import { groupInOrder, workoutName } from "./view";
+import {
+  groupInOrder,
+  totalVolumeKg,
+  weightRecords,
+  workoutName,
+} from "./view";
 
 // The newest sets of one exercise read for its page; years of three sessions a week.
 // Past it, the last (possibly cut) workout is dropped, unless it is the only one, and
@@ -127,6 +132,26 @@ export async function loadWorkoutDetail(
     }),
   );
 
+  // The heaviest weight this user lifted in each of these exercises before this workout.
+  const earlier = await prisma.setLog.groupBy({
+    by: ["exerciseId"],
+    where: {
+      exerciseId: { in: exercises.map((exercise) => exercise.id) },
+      workout: {
+        userId,
+        finishedAt: { not: null },
+        startedAt: { lt: row.startedAt },
+      },
+    },
+    _max: { weightKg: true },
+  });
+  const earlierBestKg = Object.fromEntries(
+    earlier.map((entry) => [
+      entry.exerciseId,
+      toNumber(entry._max.weightKg) ?? 0,
+    ]),
+  );
+
   return {
     id: row.id,
     name: workoutName({
@@ -137,6 +162,8 @@ export async function loadWorkoutDetail(
     }),
     startedAt: row.startedAt,
     minutes: workoutMinutes(row),
+    volumeKg: totalVolumeKg(exercises),
+    recordExerciseIds: weightRecords(exercises, earlierBestKg),
     imported,
     notes: imported ? null : row.notes,
     run:

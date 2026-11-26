@@ -208,3 +208,38 @@ describe("matchExercises, verifier findings", () => {
     expect(matchExercises(titles, lib).unmatched).toEqual(titles);
   });
 });
+
+// Live bug L2 (25 Nov 2026): the six exercises the user logged in November all match a
+// library exercise, so a missing muscle there came from sets never saved (L4), not from the
+// names. Library names checked against free-exercise-db dist/exercises.json on 25 Nov 2026.
+describe("the exercises behind the November coverage report", () => {
+  const library = [
+    "Barbell Curl",
+    "Cable Hammer Curls - Rope Attachment",
+    "Incline Dumbbell Curl",
+    "Face Pull",
+    "Seated Cable Rows",
+    "Wide-Grip Lat Pulldown",
+  ].map((name) => ({ id: name, name }));
+
+  it("maps each of them, with equipment in the Hevy name", () => {
+    const titles = [
+      "Bicep Curl (Barbell)",
+      "Hammer Curl (Cable)",
+      "Seated Incline Curl (Dumbbell)",
+      "Face Pull",
+      "Seated Cable Row",
+      "Lat Pulldown (Cable)",
+    ];
+    const { matched, unmatched } = matchExercises(titles, library);
+    expect(unmatched).toEqual([]);
+    expect(matched).toEqual({
+      "Bicep Curl (Barbell)": "Barbell Curl",
+      "Hammer Curl (Cable)": "Cable Hammer Curls - Rope Attachment",
+      "Seated Incline Curl (Dumbbell)": "Incline Dumbbell Curl",
+      "Face Pull": "Face Pull",
+      "Seated Cable Row": "Seated Cable Rows",
+      "Lat Pulldown (Cable)": "Wide-Grip Lat Pulldown",
+    });
+  });
+});
