@@ -7,7 +7,7 @@ import { SidebarFoot } from "./SidebarFoot";
 export { NAV_LINKS };
 export type { NavPage };
 
-// The navigation of every signed-in page (D41). From 1024 px it is a fixed
+// The navigation of every signed-in page (D42). From 1024 px it is a fixed
 // left sidebar: the logo, the pages with icons, and at the foot the user's
 // photo and name, the theme toggle and a one-click sign-out. Below that it is a
 // bar with the logo and a Menu button that opens the same links in a sheet.

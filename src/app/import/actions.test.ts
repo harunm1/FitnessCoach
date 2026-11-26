@@ -80,7 +80,10 @@ describe("importWorkouts", () => {
 
   it("previews how many workouts are already imported", async () => {
     database.workout.findMany.mockResolvedValue([
-      { importKey: "2024-06-20T22:30:00.000Z|Push Day" },
+      {
+        importKey: "2024-06-20T22:30:00.000Z|Push Day",
+        sets: [{ exerciseId: "bench" }, { exerciseId: "facepull" }],
+      },
     ]);
     const state = await importWorkouts(
       idle,
@@ -88,6 +91,24 @@ describe("importWorkouts", () => {
     );
     if (state.status !== "preview") throw new Error(JSON.stringify(state));
     expect(state.summary.newWorkouts).toBe(1);
+    expect(state.summary.repairableWorkouts).toBe(0);
+  });
+
+  // Live bug L4: a stored workout that lacks an exercise the file has (and we can match) is
+  // counted, so the page offers the import again instead of disabling the button.
+  it("previews how many already-imported workouts are missing exercises", async () => {
+    database.workout.findMany.mockResolvedValue([
+      {
+        importKey: "2024-06-20T22:30:00.000Z|Push Day",
+        sets: [{ exerciseId: "bench" }],
+      },
+    ]);
+    const state = await importWorkouts(
+      idle,
+      form({ intent: "preview", file: csvFile() }),
+    );
+    if (state.status !== "preview") throw new Error(JSON.stringify(state));
+    expect(state.summary.repairableWorkouts).toBe(1);
   });
 
   it("bounds the already-imported lookup to the user's own rows and the file's workout count (#76)", async () => {
@@ -99,7 +120,10 @@ describe("importWorkouts", () => {
     const query = database.workout.findMany.mock.calls[0][0];
     expect(query.take).toBe(state.summary.workouts);
     expect(query.where.userId).toBe("user-1");
-    expect(query.select).toEqual({ importKey: true });
+    expect(query.select).toEqual({
+      importKey: true,
+      sets: { select: { exerciseId: true } },
+    });
   });
 
   it("refuses a missing file, a non-CSV name and an oversize file", async () => {

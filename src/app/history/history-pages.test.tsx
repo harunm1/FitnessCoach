@@ -137,6 +137,8 @@ describe("/history/[workoutId]", () => {
     imported: false,
     notes: "Felt strong",
     run: { distanceKm: 5, seconds: 1800, rpe: 7 },
+    volumeKg: 1100,
+    recordExerciseIds: [],
     exercises: [
       {
         id: "Barbell_Bench_Press_-_Medium_Grip",
@@ -154,8 +156,10 @@ describe("/history/[workoutId]", () => {
     history.loadWorkoutDetail.mockResolvedValue(detail);
     const html = await render("41");
     expect(loadUnitPrefs).toHaveBeenCalledWith("session-owner");
-    expect(html).toContain("10 reps × 132.5 lb");
-    expect(html).toContain("8 reps × 138 lb · RPE 9");
+    // Weight and reps are table cells now (live bug L5): 60 kg is 132.5 lb, 62.5 kg is 138 lb.
+    expect(html).toContain("Weight (lb)");
+    expect(html).toMatch(/<td[^>]*>132\.5<\/td><td[^>]*>10<\/td>/);
+    expect(html).toMatch(/<td[^>]*>138<\/td><td[^>]*>8<\/td><td[^>]*>9<\/td>/);
     expect(html).toContain("3.11 mi in 30:00");
     expect(html).toContain("9:39 /mi");
     expect(html).not.toContain(" kg");
@@ -168,8 +172,11 @@ describe("/history/[workoutId]", () => {
     expect(history.loadWorkoutDetail).toHaveBeenCalledWith("session-owner", 41);
     expect(html).toContain("Push");
     expect(html).toContain("Bench Press");
-    expect(html).toContain("10 reps × 60 kg");
-    expect(html).toContain("8 reps × 62.5 kg · RPE 9");
+    expect(html).toContain("Weight (kg)");
+    expect(html).toMatch(/<td[^>]*>60<\/td><td[^>]*>10<\/td>/);
+    expect(html).toMatch(
+      /<td[^>]*>62\.5<\/td><td[^>]*>8<\/td><td[^>]*>9<\/td>/,
+    );
     expect(html).toContain("5 km");
     expect(html).toContain("30:00");
     expect(html).toContain("6:00 /km");
@@ -247,10 +254,13 @@ describe("/history/exercise/[exerciseId]", () => {
     expect(html).toContain("5 reps × 55 kg");
     expect(html).toContain('href="/history/41"');
     expect(html).toContain("<polyline");
-    expect(html).toContain("Top weight per workout, 55 to 65 kg");
+    expect(html).toContain(
+      "Top weight and estimated 1RM over 2 workouts, 55 to 65 kg",
+    );
     expect(html).not.toContain("Older sets");
-    expect(html).toContain('<svg aria-hidden="true"');
-    expect(html).not.toContain('role="img"');
+    // The chart is a described image, with a tooltip per workout (live bug L6).
+    expect(html).toContain('role="img"');
+    expect(html).toContain("<title>");
     expect(html).toContain('<ol role="list"');
   });
 
@@ -259,7 +269,9 @@ describe("/history/exercise/[exerciseId]", () => {
     history.loadExerciseHistory.mockResolvedValue(exercise);
     const html = await render("Bench");
     expect(html).toContain("6 reps × 143.5 lb · RPE 8");
-    expect(html).toContain("Top weight per workout, 121.5 to 143.5 lb");
+    expect(html).toContain(
+      "Top weight and estimated 1RM over 2 workouts, 121.5 to 143.5 lb",
+    );
     expect(html).not.toContain(" kg");
   });
 

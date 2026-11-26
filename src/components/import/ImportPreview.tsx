@@ -35,6 +35,10 @@ export function ImportPreview({
         {summary.lastDay}. {summary.newWorkouts}{" "}
         {summary.newWorkouts === 1 ? "is" : "are"} new
         {alreadyImported > 0 && `; ${alreadyImported} already imported`}.
+        {summary.repairableWorkouts > 0 &&
+          ` ${plural(summary.repairableWorkouts, "saved workout")} ${
+            summary.repairableWorkouts === 1 ? "is" : "are"
+          } missing exercises this file has; importing adds them.`}
       </p>
       <p className="text-xs text-foreground/70">
         {plural(summary.skippedWarmups, "warm-up set")} and{" "}
@@ -84,10 +88,16 @@ export function ImportPreview({
         type="submit"
         name="intent"
         value="save"
-        disabled={summary.newWorkouts === 0}
+        disabled={
+          summary.newWorkouts === 0 &&
+          summary.repairableWorkouts === 0 &&
+          unmatched.length === 0
+        }
         className="w-fit border border-foreground bg-foreground px-4 py-2 text-sm font-semibold text-background disabled:opacity-50"
       >
-        Import {plural(summary.newWorkouts, "workout")}
+        {summary.newWorkouts === 0
+          ? "Import and fill in missing exercises"
+          : `Import ${plural(summary.newWorkouts, "workout")}`}
       </button>
     </section>
   );
@@ -129,6 +139,13 @@ export function ImportResultPanel({
         Imported {plural(result.imported, "workout")} with{" "}
         {plural(result.sets, "set")}.
       </p>
+      {result.repairedSets > 0 && (
+        <p className="text-sm text-foreground/70">
+          Added {plural(result.repairedSets, "missing set")} to{" "}
+          {plural(result.repairedWorkouts, "workout")} that were already
+          imported.
+        </p>
+      )}
       {result.alreadyImported > 0 && (
         <p className="text-sm text-foreground/70">
           {plural(result.alreadyImported, "workout")}{" "}

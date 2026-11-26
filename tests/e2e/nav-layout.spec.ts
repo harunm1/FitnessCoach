@@ -1,4 +1,4 @@
-// Browser proof for the app shell (D41): a fixed sidebar from 1024 px and a menu sheet below it, on
+// Browser proof for the app shell (D42): a fixed sidebar from 1024 px and a menu sheet below it, on
 // every signed-in page, at 375, 768 and 1280 px in light and dark, with no sideways scrolling.
 // Set UI_SHOTS_DIR to also write a screenshot of every page, width and theme into that folder
 // (docs/demo/ui/ for the before and after set).

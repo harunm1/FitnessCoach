@@ -112,7 +112,7 @@ test("signed-in password changes stay in a mobile dialog and keep the current se
     ).toBeFocused();
     await page.reload();
     await expect(page.getByText(email, { exact: true })).toBeVisible();
-    // On a phone, Sign out is in the menu sheet (D41).
+    // On a phone, Sign out is in the menu sheet (D42).
     await page.getByRole("button", { name: "Open menu", exact: true }).click();
     await page
       .getByRole("dialog")

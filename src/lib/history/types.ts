@@ -27,6 +27,8 @@ export type WorkoutDetail = {
   imported: boolean;
   notes: string | null; // an imported workout's notes are its title, so null here
   run: { distanceKm: number; seconds: number; rpe: number | null } | null;
+  volumeKg: number; // reps times weight, summed over the weighted sets
+  recordExerciseIds: string[]; // exercises whose top weight beat every earlier workout
   exercises: { id: string; name: string; sets: HistorySet[] }[];
 };
 

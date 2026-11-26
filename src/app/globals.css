@@ -137,7 +137,7 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-/* D41: from 1024 px the app shell is a fixed 16 rem sidebar (AppNav renders it
+/* D42: from 1024 px the app shell is a fixed 16 rem sidebar (AppNav renders it
    inside the page's <main>). Move that main's content right by the sidebar's
    width. This sits outside @layer so it beats the pages' own padding utilities.
    Pages with the shell get body text of 17 px on desktop (16 px on phones); labels

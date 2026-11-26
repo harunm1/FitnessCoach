@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-// D41: the shell's accent and text tokens must reach WCAG 2.2 1.4.3 (4.5:1) on
+// D42: the shell's accent and text tokens must reach WCAG 2.2 1.4.3 (4.5:1) on
 // the colours they sit on, in the light and the dark theme.
 const css = readFileSync(
   join(__dirname, "..", "auth", "account.module.css"),
@@ -70,7 +70,7 @@ it("repeats the dark tokens for the system theme", () => {
   }
 });
 
-describe("shell type sizes (D41)", () => {
+describe("shell type sizes (D42)", () => {
   const dir = __dirname;
   const files = readdirSync(dir).filter(
     (f) => /\.tsx?$/.test(f) && !f.includes(".test."),
@@ -94,7 +94,7 @@ describe("shell type sizes (D41)", () => {
   });
 });
 
-describe("the shell's global CSS (D41)", () => {
+describe("the shell's global CSS (D42)", () => {
   const globals = readFileSync(
     join(__dirname, "..", "..", "app", "globals.css"),
     "utf8",

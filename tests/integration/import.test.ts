@@ -104,6 +104,51 @@ describe("workout import on PostgreSQL", () => {
     ).toBe(4);
   });
 
+  // Live bug L4: the first upload skipped an unmapped exercise, so the stored workout had
+  // only part of it; a later upload with the exercise mapped fills it in, once.
+  it("fills in exercises a first upload skipped, without duplicating sets", async () => {
+    const parsed = parseHevyCsv(
+      readFileSync("tests/fixtures/hevy-export.csv", "utf8"),
+    );
+    if (!parsed.ok) throw new Error(parsed.error);
+    const user = await athlete();
+    const { bench, carry } = twoExercises();
+    const partial = { "Bench Press (Barbell)": bench };
+    const complete = {
+      ...partial,
+      "Face Pull (Cable)": carry,
+      "Pull Up": carry,
+    };
+    const first = await db.$transaction((tx) =>
+      saveImport(tx, user.id, parsed.workouts, partial),
+    );
+    expect(first.repairedSets).toBe(0);
+    const before = await db.setLog.count({
+      where: { workout: { userId: user.id } },
+    });
+
+    const repair = await db.$transaction((tx) =>
+      saveImport(tx, user.id, parsed.workouts, complete),
+    );
+    // Pull Day has only Pull Up, unmapped in the first upload, so it was never stored: the
+    // second upload creates it (imported 1) and repairs Push Day (alreadyImported 1).
+    expect(repair).toMatchObject({ imported: 1, alreadyImported: 1 });
+    expect(repair.repairedSets).toBeGreaterThan(0);
+    const after = await db.setLog.count({
+      where: { workout: { userId: user.id } },
+    });
+    expect(after).toBe(before + repair.sets);
+    expect(repair.sets).toBeGreaterThan(repair.repairedSets);
+
+    const again = await db.$transaction((tx) =>
+      saveImport(tx, user.id, parsed.workouts, complete),
+    );
+    expect(again).toMatchObject({ repairedSets: 0, sets: 0 });
+    expect(
+      await db.setLog.count({ where: { workout: { userId: user.id } } }),
+    ).toBe(after);
+  });
+
   it("saves two file titles mapped to one exercise with sets numbered in order", async () => {
     const csv = [
       "title,start_time,end_time,exercise_title,set_type,weight_kg,reps",

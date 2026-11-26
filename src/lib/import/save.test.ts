@@ -46,7 +46,8 @@ const onlySkipped: ImportWorkout = {
 
 // Returns the ids of the rows the fake "created"; keys listed in `existing` are skipped
 // the way skipDuplicates skips them.
-function fakeDb(existing: string[] = []) {
+// `have` lists, per importKey, the exercise ids the stored workout already has sets for.
+function fakeDb(existing: string[] = [], have: Record<string, string[]> = {}) {
   const createdWorkouts = vi.fn(
     async ({ data }: { data: { importKey: string }[] }) =>
       data
@@ -56,11 +57,18 @@ function fakeDb(existing: string[] = []) {
   const createdSets = vi.fn<
     (args: { data: unknown }) => Promise<{ count: number }>
   >(async () => ({ count: 0 }));
+  const found = vi.fn(async () =>
+    existing.map((key, index) => ({
+      id: 500 + index,
+      importKey: key,
+      sets: (have[key] ?? []).map((exerciseId) => ({ exerciseId })),
+    })),
+  );
   const db = {
-    workout: { createManyAndReturn: createdWorkouts },
+    workout: { createManyAndReturn: createdWorkouts, findMany: found },
     setLog: { createMany: createdSets },
   } as unknown as ImportDb;
-  return { db, createdWorkouts, createdSets };
+  return { db, createdWorkouts, createdSets, found };
 }
 
 const mapping = { "Bench Press (Barbell)": "bench" };
@@ -95,12 +103,15 @@ describe("saveImport", () => {
           loggedAt: push.startedAt,
         },
       ],
+      skipDuplicates: true,
     });
     expect(result).toEqual({
       imported: 1,
       alreadyImported: 0,
       sets: 1,
       skippedSets: 1,
+      repairedWorkouts: 0,
+      repairedSets: 0,
     });
   });
 
@@ -113,11 +124,13 @@ describe("saveImport", () => {
       alreadyImported: 0,
       sets: 0,
       skippedSets: 1,
+      repairedWorkouts: 0,
+      repairedSets: 0,
     });
   });
 
   it("adds nothing for a workout already imported", async () => {
-    const { db, createdSets } = fakeDb([push.key]);
+    const { db, createdSets } = fakeDb([push.key], { [push.key]: ["bench"] });
     const result = await saveImport(db, "user-1", [push], mapping);
     expect(createdSets).not.toHaveBeenCalled();
     expect(result).toEqual({
@@ -125,6 +138,118 @@ describe("saveImport", () => {
       alreadyImported: 1,
       sets: 0,
       skippedSets: 1,
+      repairedWorkouts: 0,
+      repairedSets: 0,
+    });
+  });
+
+  // Live bug L4, 25 Nov: "Full Body B" was saved with only its Romanian Deadlift because the
+  // other names were unmapped at the first upload; a re-upload then found the workout and
+  // added nothing, so the missing exercises could never be filled in.
+  describe("a workout already imported with only some of its exercises", () => {
+    const fullBody: ImportWorkout = {
+      key: "2026-10-07T17:00:00.000Z|Full Body B",
+      title: "Full Body B",
+      startedAt: when("2026-10-07T17:00:00.000Z"),
+      finishedAt: when("2026-10-07T18:31:00.000Z"),
+      sets: [
+        {
+          exerciseTitle: "Romanian Deadlift",
+          setNumber: 1,
+          reps: 8,
+          weightKg: 100,
+          rpe: null,
+        },
+        {
+          exerciseTitle: "Face Pull",
+          setNumber: 1,
+          reps: 15,
+          weightKg: 20,
+          rpe: null,
+        },
+        {
+          exerciseTitle: "Face Pull",
+          setNumber: 2,
+          reps: 14,
+          weightKg: 20,
+          rpe: null,
+        },
+        {
+          exerciseTitle: "Lat Pulldown",
+          setNumber: 1,
+          reps: 10,
+          weightKg: 50,
+          rpe: null,
+        },
+      ],
+    };
+    const all = {
+      "Romanian Deadlift": "rdl",
+      "Face Pull": "face",
+      "Lat Pulldown": "lat",
+    };
+
+    it("adds the exercises the stored workout lacks, numbered from 1", async () => {
+      const { db, createdSets } = fakeDb([fullBody.key], {
+        [fullBody.key]: ["rdl"],
+      });
+      const result = await saveImport(db, "user-1", [fullBody], all);
+      expect(createdSets).toHaveBeenCalledTimes(1);
+      expect(createdSets.mock.calls[0][0].data).toEqual([
+        {
+          workoutId: 500,
+          exerciseId: "face",
+          setNumber: 1,
+          reps: 15,
+          weightKg: 20,
+          rpe: null,
+          loggedAt: fullBody.startedAt,
+        },
+        {
+          workoutId: 500,
+          exerciseId: "face",
+          setNumber: 2,
+          reps: 14,
+          weightKg: 20,
+          rpe: null,
+          loggedAt: fullBody.startedAt,
+        },
+        {
+          workoutId: 500,
+          exerciseId: "lat",
+          setNumber: 1,
+          reps: 10,
+          weightKg: 50,
+          rpe: null,
+          loggedAt: fullBody.startedAt,
+        },
+      ]);
+      expect(result).toMatchObject({
+        imported: 0,
+        alreadyImported: 1,
+        repairedWorkouts: 1,
+        repairedSets: 3,
+        sets: 3,
+      });
+    });
+
+    it("never touches an exercise the workout already has, so a third upload adds nothing", async () => {
+      const { db, createdSets } = fakeDb([fullBody.key], {
+        [fullBody.key]: ["rdl", "face", "lat"],
+      });
+      const result = await saveImport(db, "user-1", [fullBody], all);
+      expect(createdSets).not.toHaveBeenCalled();
+      expect(result).toMatchObject({ repairedWorkouts: 0, repairedSets: 0 });
+    });
+
+    it("only looks at the user's own workouts", async () => {
+      const { db, found } = fakeDb([fullBody.key], { [fullBody.key]: ["rdl"] });
+      await saveImport(db, "user-1", [fullBody], all);
+      expect(found).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: "user-1", importKey: { in: [fullBody.key] } },
+        }),
+      );
     });
   });
   it("numbers sets per library exercise when two file titles map to the same one", async () => {

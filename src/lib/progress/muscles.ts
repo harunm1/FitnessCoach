@@ -1,6 +1,7 @@
 // Which muscles a workout worked, for the body map and its statistics (#16).
 // Muscle names are the 17 used by the exercise library (free-exercise-db).
 export type LoggedSet = {
+  exerciseName?: string; // lets a few pulling exercises count toward traps (live bug L2)
   category: string; // exercise category: strength, stretching, cardio...
   primaryMuscles: string[];
   secondaryMuscles: string[];
@@ -8,6 +9,28 @@ export type LoggedSet = {
 
 // Stretches and cardio list muscles too, but they are not training those muscles.
 const SKIPPED_CATEGORIES = new Set(["stretching", "cardio"]);
+
+// The library lists no traps for face pulls, rows or pulldowns, but they work them (his spec,
+// live feedback 25 Nov 2026), so these name families count traps as a secondary muscle.
+const TRAPS_FROM_NAME = /\b(face pulls?|rows?|pulldowns?)\b/i;
+
+function secondaryFor(set: LoggedSet): string[] {
+  const addsTraps =
+    set.exerciseName !== undefined && TRAPS_FROM_NAME.test(set.exerciseName);
+  return addsTraps ? [...set.secondaryMuscles, "traps"] : set.secondaryMuscles;
+}
+
+// Strength exercises that name no muscle: they would count as nothing on the map, so the
+// page lists them as unmapped instead (live bug L2). Once each, sorted.
+export function unmappedExercises(sets: LoggedSet[]): string[] {
+  const names = new Set<string>();
+  for (const set of sets) {
+    if (SKIPPED_CATEGORIES.has(set.category)) continue;
+    if (set.primaryMuscles.length + set.secondaryMuscles.length > 0) continue;
+    names.add(set.exerciseName ?? "Unnamed exercise");
+  }
+  return [...names].sort();
+}
 
 // The muscles the sets worked. Primary and secondary are kept apart so the map can
 // show them differently later; a muscle that is primary anywhere is listed as primary.
@@ -20,7 +43,7 @@ export function musclesWorked(sets: LoggedSet[]): {
   for (const set of sets) {
     if (SKIPPED_CATEGORIES.has(set.category)) continue;
     set.primaryMuscles.forEach((muscle) => primary.add(muscle));
-    set.secondaryMuscles.forEach((muscle) => secondary.add(muscle));
+    secondaryFor(set).forEach((muscle) => secondary.add(muscle));
   }
   primary.forEach((muscle) => secondary.delete(muscle));
   return { primary: [...primary].sort(), secondary: [...secondary].sort() };
