@@ -69,6 +69,27 @@ describe("NavLinks as a menu on a phone", () => {
     expect(screen.getByRole("list").className).toContain("flex-col");
   });
 
+  // Verifier finding 3: Escape was handled on the list only, so it did nothing while focus sat
+  // on the Menu button, and a keyboard user pressing it from a link lost their place.
+  it("closes with Escape from the Menu button too", () => {
+    render(<NavLinks current="history" links={links} />);
+    const button = screen.getByRole("button", { name: "Menu" });
+    fireEvent.click(button);
+    fireEvent.keyDown(button, { key: "Escape" });
+    expect(button.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("puts focus back on the Menu button when Escape closes it from a link", () => {
+    render(<NavLinks current="history" links={links} />);
+    const button = screen.getByRole("button", { name: "Menu" });
+    fireEvent.click(button);
+    const link = screen.getByText("Session");
+    link.focus();
+    fireEvent.keyDown(link, { key: "Escape" });
+    expect(button.getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(button);
+  });
+
   it("closes again with Escape, and keeps the current page marked", () => {
     render(<NavLinks current="history" links={links} />);
     fireEvent.click(screen.getByRole("button", { name: "Menu" }));

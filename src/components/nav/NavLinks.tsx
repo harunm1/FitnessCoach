@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import type { NavPage } from "./AppNav";
 
 type NavLink = {
@@ -26,9 +26,19 @@ export function NavLinks({
 }) {
   const [open, setOpen] = useState(false);
   const listId = useId();
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  // Escape closes the menu from the button or from any link, and puts focus back on the
+  // button so a keyboard user keeps their place (verifier finding 3). Only while it is open,
+  // so Escape elsewhere in the header is left alone.
+  const closeOnEscape = (key: string) => {
+    if (key !== "Escape" || !open) return;
+    setOpen(false);
+    buttonRef.current?.focus();
+  };
   return (
     <nav
       aria-label="Main"
+      onKeyDown={(event) => closeOnEscape(event.key)}
       className="order-last grid w-full min-w-0 gap-2 @6xl/nav:order-none @6xl/nav:w-auto @6xl/nav:flex-1"
     >
       <button
@@ -36,6 +46,7 @@ export function NavLinks({
         aria-expanded={open}
         className="min-h-11 w-fit border border-current/30 px-4 text-sm font-medium @xl/nav:hidden"
         onClick={() => setOpen((value) => !value)}
+        ref={buttonRef}
         type="button"
       >
         Menu
@@ -45,9 +56,6 @@ export function NavLinks({
           open ? "flex flex-col" : "hidden"
         }`}
         id={listId}
-        onKeyDown={(event) => {
-          if (event.key === "Escape") setOpen(false);
-        }}
       >
         {links.map(({ page, href, label }) => (
           <li key={page}>
