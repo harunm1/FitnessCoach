@@ -48,6 +48,23 @@ describe("ImportPreview", () => {
     expect(html).toContain("Farmers Walk");
   });
 
+  it("lets each mapping menu shrink to the screen, so a long exercise name never pushes it off a phone (D48)", () => {
+    const html = renderToStaticMarkup(
+      <ImportPreview
+        summary={summary}
+        unmatched={["Zercher Carry"]}
+        library={library}
+      />,
+    );
+    const start = html.indexOf("<select");
+    const menu = html.slice(start, html.indexOf(">", start));
+    expect(menu).toContain("w-full");
+    expect(menu).toContain("min-w-0");
+    // The column it sits in must be allowed to shrink too, or the menu still widens it.
+    expect(html).toContain("grid min-w-0 grid-cols-1 gap-1");
+    expect(html).toContain("grid min-w-0 grid-cols-1 gap-3");
+  });
+
   it("says how many unmatched names are not shown", () => {
     const html = renderToStaticMarkup(
       <ImportPreview
