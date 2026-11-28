@@ -40,13 +40,62 @@ async function submit(duration: string) {
 }
 
 describe("RunForm", () => {
-  it("allows a mobile text keyboard for the colon in a run time", () => {
+  it("formats digits as a time on mobile and desktop", () => {
     render(<RunForm today="2026-11-24" />);
     const time = screen.getByLabelText<HTMLInputElement>("Time (h:mm:ss)");
     expect(time.type).toBe("text");
-    expect(time.getAttribute("inputmode")).not.toBe("numeric");
+    expect(time.getAttribute("inputmode")).toBe("numeric");
+    fireEvent.change(time, { target: { value: "32" } });
+    expect(time.value).toBe("32:");
+    fireEvent.change(time, { target: { value: "32:15" } });
+    expect(time.value).toBe("32:15");
+    fireEvent.change(time, { target: { value: "013215" } });
+    expect(time.value).toBe("01:32:15");
     fireEvent.change(time, { target: { value: "0:32:15" } });
     expect(time.value).toBe("0:32:15");
+  });
+
+  it("backspaces across an automatically added separator", () => {
+    render(<RunForm today="2026-11-24" />);
+    const time = screen.getByLabelText<HTMLInputElement>("Time (h:mm:ss)");
+    fireEvent.focus(time);
+    fireEvent.input(time, { target: { value: "32" }, inputType: "insertText" });
+    expect(time.value).toBe("32:");
+    time.setSelectionRange(3, 3);
+    fireEvent.input(time, {
+      target: { value: "32", selectionStart: 2, selectionEnd: 2 },
+      inputType: "deleteContentBackward",
+    });
+    expect(time.value).toBe("3");
+  });
+
+  it("keeps the cursor near an edited digit", () => {
+    render(<RunForm today="2026-11-24" />);
+    const time = screen.getByLabelText<HTMLInputElement>("Time (h:mm:ss)");
+    fireEvent.input(time, {
+      target: { value: "3215" },
+      inputType: "insertText",
+    });
+    fireEvent.input(time, {
+      target: { value: "39:15", selectionStart: 2, selectionEnd: 2 },
+      inputType: "insertText",
+    });
+    expect(time.value).toBe("39:15");
+    expect(time.selectionStart).toBe(2);
+  });
+
+  it("submits automatically formatted digits as a clock time", async () => {
+    logRun.mockResolvedValue({
+      status: "saved",
+      date: "2026-11-23",
+      distanceKm: 5.2,
+      pace: null,
+      planDayName: null,
+    });
+    render(<RunForm today="2026-11-24" />);
+    await submit("003112");
+    const submitted = logRun.mock.calls[0][1] as FormData;
+    expect(submitted.get("duration")).toBe("00:31:12");
   });
 
   it("keeps what was typed when the server refuses it, and reads the error out", async () => {
