@@ -84,7 +84,6 @@ export default function RunForm({
           id="run-time"
           name="duration"
           type="text"
-          inputMode="numeric"
           autoComplete="off"
           placeholder="0:32:15"
           defaultValue={typed?.duration ?? ""}

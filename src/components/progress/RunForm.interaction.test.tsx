@@ -40,6 +40,15 @@ async function submit(duration: string) {
 }
 
 describe("RunForm", () => {
+  it("allows a mobile text keyboard for the colon in a run time", () => {
+    render(<RunForm today="2026-11-24" />);
+    const time = screen.getByLabelText<HTMLInputElement>("Time (h:mm:ss)");
+    expect(time.type).toBe("text");
+    expect(time.getAttribute("inputmode")).not.toBe("numeric");
+    fireEvent.change(time, { target: { value: "0:32:15" } });
+    expect(time.value).toBe("0:32:15");
+  });
+
   it("keeps what was typed when the server refuses it, and reads the error out", async () => {
     const values = {
       date: "2026-11-23",
