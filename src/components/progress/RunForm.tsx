@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import { logRun, type RunActionState } from "@/app/progress/run/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,7 @@ export default function RunForm({
     logRun,
     { status: "idle" },
   );
+  const previousDuration = useRef("");
   // React resets the form after each action, to these defaults: after an
   // error they are what the user typed, so nothing has to be typed again.
   const typed = state.status === "error" ? state.values : undefined;
@@ -89,6 +90,62 @@ export default function RunForm({
           placeholder="0:32:15"
           defaultValue={typed?.duration ?? ""}
           className="w-28"
+          onFocus={(event) => {
+            previousDuration.current = event.currentTarget.value;
+          }}
+          onChange={(event) => {
+            const input = event.currentTarget;
+            let value = input.value;
+            let cursor = input.selectionStart ?? value.length;
+            const inputType = (event.nativeEvent as InputEvent).inputType;
+            if (
+              inputType === "insertFromPaste" &&
+              /^(?:\d{1,2}:)?\d{1,3}:[0-5]\d$/.test(value)
+            ) {
+              previousDuration.current = value;
+              return;
+            }
+            if (
+              inputType === "deleteContentBackward" &&
+              previousDuration.current[cursor] === ":" &&
+              cursor > 0
+            ) {
+              value = value.slice(0, cursor - 1) + value.slice(cursor);
+              cursor -= 1;
+            }
+            if (/^\d:([0-5]\d):([0-5]\d)$/.test(value)) {
+              previousDuration.current = value;
+              return;
+            }
+            if (!/^[\d:]*$/.test(value)) {
+              previousDuration.current = value;
+              return;
+            }
+            const digitsBeforeCursor = value
+              .slice(0, cursor)
+              .replace(/\D/g, "").length;
+            const digits = value.replace(/\D/g, "").slice(0, 5);
+            const formatted =
+              digits.length === 0
+                ? digits
+                : digits.length <= 2
+                  ? `${digits.slice(0, 1)}:${digits.slice(1)}`
+                  : `${digits.slice(0, 1)}:${digits.slice(1, 3)}:${digits.slice(3)}`;
+            input.value = formatted;
+            let position = 0;
+            let seen = 0;
+            while (position < formatted.length && seen < digitsBeforeCursor) {
+              if (/\d/.test(formatted[position])) seen += 1;
+              position += 1;
+            }
+            if (
+              position === formatted.length - 1 &&
+              formatted[position] === ":"
+            )
+              position += 1;
+            input.setSelectionRange(position, position);
+            previousDuration.current = formatted;
+          }}
           required
         />
       </div>
