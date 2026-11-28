@@ -51,16 +51,14 @@ describe("RunForm", () => {
     expect(time.value).toBe("1:32:");
     fireEvent.change(time, { target: { value: "1:32:15" } });
     expect(time.value).toBe("1:32:15");
-    fireEvent.change(time, { target: { value: "013215" } });
-    expect(time.value).toBe("01:32:15");
     fireEvent.change(time, { target: { value: "0:32:15" } });
     expect(time.value).toBe("0:32:15");
   });
 
-  it("reformats a sixth typed digit as a two-digit hour", () => {
+  it("keeps the first digit as hours when additional digits are typed", () => {
     render(<RunForm today="2026-11-24" />);
     const time = screen.getByLabelText<HTMLInputElement>("Time (h:mm:ss)");
-    const values = ["1:", "1:2", "1:23:", "1:23:4", "1:23:45", "12:34:56"];
+    const values = ["1:", "1:2", "1:23:", "1:23:4", "1:23:45", "1:23:45"];
     for (const [index, digit] of [..."123456"].entries()) {
       fireEvent.input(time, {
         target: { value: time.value + digit },

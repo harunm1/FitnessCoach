@@ -124,15 +124,13 @@ export default function RunForm({
             const digitsBeforeCursor = value
               .slice(0, cursor)
               .replace(/\D/g, "").length;
-            const digits = value.replace(/\D/g, "").slice(0, 6);
+            const digits = value.replace(/\D/g, "").slice(0, 5);
             const formatted =
               digits.length === 0
                 ? digits
-                : digits.length === 6
-                  ? `${digits.slice(0, 2)}:${digits.slice(2, 4)}:${digits.slice(4)}`
-                  : digits.length <= 2
-                    ? `${digits.slice(0, 1)}:${digits.slice(1)}`
-                    : `${digits.slice(0, 1)}:${digits.slice(1, 3)}:${digits.slice(3)}`;
+                : digits.length <= 2
+                  ? `${digits.slice(0, 1)}:${digits.slice(1)}`
+                  : `${digits.slice(0, 1)}:${digits.slice(1, 3)}:${digits.slice(3)}`;
             input.value = formatted;
             let position = 0;
             let seen = 0;
